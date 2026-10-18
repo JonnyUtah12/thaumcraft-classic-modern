@@ -22,6 +22,34 @@ Investigated 2026-10-17 (this project) and 2026-10-16 (sibling project
 - Where MIT API material is adapted, the file header credits
   `thaumcraft-api (c) 2013 Azanor, MIT`.
 
+## Decision: original research lang strings (TC-M3-01, 2026-10-18)
+
+The extracted research graph (`data/thaumcraft/research/*.json`) embeds the
+original `tc.research_name.*` / `tc.research_text.*` /
+`tc.research_page.*` strings **verbatim**, as short All Rights Reserved
+quotation from the unlicensed artifact. Decision and rationale:
+
+- The TC-M3-01 acceptance requires the original strings preserved
+  verbatim; reconstruction would silently change display text and break
+  the mechanical cross-check against the original `en_US.lang`
+  (`ResearchGraphDataTest` asserts byte-identical strings).
+- These are short user-facing strings quoted for interoperability — the
+  graph is a faithful reproduction of the original data set, not a
+  redistribution of the asset pack. The asset-overlay rule for full
+  `assets/.../lang` files (row above, D-004) is unchanged; the full lang
+  files stay out of the repo.
+- The embedded strings are **verification data, not runtime display
+  strings**: the port resolves `nameKey`/`textKey` through the game
+  language system, so the port's own lang files remain the display
+  source and can be reworded independently if ever required.
+- Two entries (`CAP_iron`, `ROD_wood`) have no lang strings in the
+  original; the graph keeps them UNKNOWN (null) rather than inventing
+  text.
+
+If Azanor ever objects to this quotation, the strings can be stripped
+from the shipped JSON (the extractor and tests keep them verifiable
+against the local reference tree); no runtime behavior depends on them.
+
 ## Open questions (kept local, not blocking)
 
 - Whether Azanor would grant asset redistribution for an unofficial port is
