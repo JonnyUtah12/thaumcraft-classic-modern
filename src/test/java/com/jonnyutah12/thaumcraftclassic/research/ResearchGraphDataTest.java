@@ -324,6 +324,38 @@ class ResearchGraphDataTest {
     }
 
     @Test
+    void entryAndCategoryIdsMatchTheContentMappingIdContract() throws IOException {
+        // TC-M2-01 pinned the canonical 1.21.1 id contract in
+        // docs/content-mapping.csv: research/research_category rows carry
+        // original_id "Thaumcraft:<KEY>" and new_id "thaumcraft:<key>".
+        // The graph keeps the original key as its canonical lookup key
+        // (lang keys and the inventory use it); this guards the derivation.
+        ResearchGraph graph = loadGraph();
+        String csv = System.getProperty("tc.contentMappingFile");
+        assertNotNull(csv, "system property 'tc.contentMappingFile' is not set — run tests through ./gradlew test");
+        Map<String, String> contract = new HashMap<>();
+        boolean first = true;
+        for (String line : Files.readAllLines(Path.of(csv))) {
+            if (first) {
+                first = false;
+                continue;
+            }
+            String[] parts = line.split(",", 4);
+            if (parts.length >= 3 && (parts[2].equals("research") || parts[2].equals("research_category"))) {
+                contract.put(parts[0].trim(), parts[1].trim());
+            }
+        }
+        Map<String, String> expected = new HashMap<>();
+        for (ResearchCategoryData category : graph.categories()) {
+            expected.put("Thaumcraft:" + category.key(), "thaumcraft:" + category.key().toLowerCase());
+        }
+        for (ResearchEntryData entry : graph.entries()) {
+            expected.put("Thaumcraft:" + entry.key(), "thaumcraft:" + entry.key().toLowerCase());
+        }
+        assertEquals(expected, contract, "research id contract must match the graph exactly");
+    }
+
+    @Test
     void graphIsAcyclicAndEveryReferenceResolves() throws IOException {
         ResearchGraph graph = loadGraph();
         for (ResearchEntryData entry : graph.entries()) {

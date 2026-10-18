@@ -76,6 +76,15 @@ refuses a mismatch. Field semantics mirror the original API exactly
   parses list *definitions* with their source positions and applies them
   in source order.
 
+- **Canonical keys vs registry ids**: the JSON keys entries and categories
+  by the *original* research keys (`FOCUSHELLBAT`, `BASICS`) — lang keys,
+  the TC-M0-04 inventory and the original `ResearchCategories`/
+  `ResearchManager` all address entries that way. The modern registry ids
+  come from the `new_id` column of `docs/content-mapping.csv`
+  (`thaumcraft:<key>` lowercase, TC-M2-01 contract, guarded by
+  `ContentMappingIdContractTest`); `ResearchGraphDataTest` cross-checks
+  the derivation so the graph and the id contract cannot drift.
+
 ## Verification (what the tests pin)
 
 `ResearchGraphDataTest` (runs against the repo docs and, when present, the
