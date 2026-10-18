@@ -17,7 +17,7 @@ evidence). Task ids are Kanban ids on the board.
 | Build/load foundation | — | TC-M1-01 (t_e81a4a3b) | IN PROGRESS |
 | Registration + id stability | common registration | TC-M2-01 (t_749e3134) | NOT STARTED |
 | Persistence (world/player) | WorldMagicData, PlayerKnowledge | TC-M2-02 (t_0083a616) | NOT STARTED |
-| Networking | common/lib/network (40 classes) | TC-M2-03 (t_cbc91aec) | NOT STARTED |
+| Networking | common/lib/network (40 classes) | TC-M2-03 (t_cbc91aec) | DONE |
 | Configuration | config class | TC-M2-04 (t_c87a23bc) | DONE |
 | Research graph | Research.java | TC-M3-01 (t_eef90e8c) | NOT STARTED |
 | Research progression | ResearchManager | TC-M3-02 (t_25f6eeb2) | NOT STARTED |

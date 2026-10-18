@@ -11,6 +11,10 @@
    progression, persistence across save/reload. Run by
    `./gradlew runGameTestServer`; CI asserts the "required tests passed"
    line explicitly (a green exit with zero tests is a failure).
+   Client-dist boot (payload registration and dist-safe handlers must also
+   construct on the client) is smoke-tested manually with
+   `xvfb-run ./gradlew runClient`: require the mod init line and
+   "Sound engine started" with no errors naming mod classes, then stop it.
 3. **In-instance integration** (manual/scripted): the disposable ATM10 8.3
    instance at `~/minecraft mods/atm10-test` (never the user's primary
    instance). Headless client via Xvfb/llvmpipe where no display is needed;

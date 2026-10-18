@@ -2,7 +2,9 @@ package com.jonnyutah12.thaumcraftclassic;
 
 import com.jonnyutah12.thaumcraftclassic.config.TcConfig;
 import com.jonnyutah12.thaumcraftclassic.gametest.ConfigParityGameTest;
+import com.jonnyutah12.thaumcraftclassic.gametest.ModNetworkGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ModSmokeGameTest;
+import com.jonnyutah12.thaumcraftclassic.network.ModNetwork;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -37,6 +39,10 @@ public final class ThaumcraftClassic {
         // Registration holders are wired in by the content milestones
         // (M2+). Nothing may register before its holder is initialized.
 
+        // Networking payloads register on both dists before any connection
+        // can be accepted (docs/architecture/networking.md).
+        modEventBus.addListener(ModNetwork::register);
+
         modEventBus.addListener(ThaumcraftClassic::registerGameTests);
 
         LOGGER.info("Thaumcraft Classic (unofficial port of Thaumcraft 4.2.3.5) initializing; target MC {} / NeoForge",
@@ -46,5 +52,6 @@ public final class ThaumcraftClassic {
     private static void registerGameTests(final RegisterGameTestsEvent event) {
         event.register(ModSmokeGameTest.class);
         event.register(ConfigParityGameTest.class);
+        event.register(ModNetworkGameTest.class);
     }
 }
