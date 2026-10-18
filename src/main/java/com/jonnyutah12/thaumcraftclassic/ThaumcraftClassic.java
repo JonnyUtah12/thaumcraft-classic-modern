@@ -4,7 +4,9 @@ import com.jonnyutah12.thaumcraftclassic.config.TcConfig;
 import com.jonnyutah12.thaumcraftclassic.gametest.ConfigParityGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ModNetworkGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ModSmokeGameTest;
+import com.jonnyutah12.thaumcraftclassic.gametest.RegistrationGameTest;
 import com.jonnyutah12.thaumcraftclassic.network.ModNetwork;
+import com.jonnyutah12.thaumcraftclassic.registration.ModRegistration;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -36,8 +38,12 @@ public final class ThaumcraftClassic {
         // TcConfig's typed accessors (docs/config-reference.md).
         TcConfig.register(modContainer);
 
-        // Registration holders are wired in by the content milestones
-        // (M2+). Nothing may register before its holder is initialized.
+        // TC-M2-01 registration architecture: every DeferredRegister holder
+        // (blocks, items, block entities, entities, data components, tabs,
+        // particles, mob effects) is attached here, in dependency order,
+        // before any RegisterEvent can fire. Id contract + harness:
+        // docs/architecture/registration.md.
+        ModRegistration.init(modEventBus);
 
         // Networking payloads register on both dists before any connection
         // can be accepted (docs/architecture/networking.md).
@@ -53,5 +59,6 @@ public final class ThaumcraftClassic {
         event.register(ModSmokeGameTest.class);
         event.register(ConfigParityGameTest.class);
         event.register(ModNetworkGameTest.class);
+        event.register(RegistrationGameTest.class);
     }
 }

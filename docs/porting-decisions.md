@@ -15,6 +15,19 @@ impact, per the project brief.
   the platform permits. Saves/scripts/expectations stay maximally compatible.
 - The mod is clearly labelled "Unofficial" in display name and metadata to
   avoid impersonating Azanor's official release.
+- TC-M2-01 addendum: "paths preserved" means lowercased only. 1.21.1 rejects
+  uppercase in the path as well as the namespace, so the canonical id for
+  every content entry is `thaumcraft:` + lower(original id path) — a
+  mechanical, auditable rule pinned by docs/content-mapping.csv's `new_id`
+  column and guarded by ContentMappingIdContractTest (unit) and
+  RegistrationGameTest (in-game). Ids are frozen once shipped. Two
+  documented exceptions: (1) the two original sound event ids containing
+  uppercase letters were renamed to snake_case (`runicShieldCharge` →
+  `runic_shield_charge`, `runicShieldEffect` → `runic_shield_effect`) —
+  recorded in docs/asset-mapping.csv and docs/sound-events.md; (2) the
+  original wand-trigger "ids" are registration call signatures, not resource
+  locations, so those content-mapping rows share the pseudo-id
+  `thaumcraft:wandtrigger` (reference-only, never registered).
 
 ## D-002 — Java package `com.jonnyutah12.thaumcraftclassic`
 
