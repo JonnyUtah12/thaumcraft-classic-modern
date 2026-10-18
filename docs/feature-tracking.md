@@ -38,7 +38,7 @@ evidence). Task ids are Kanban ids on the board.
 | Wands (rods/caps) | items/wands | TC-M6-01 (t_aaab7bef) | NOT STARTED |
 | Foci + casting | focus classes | TC-M6-02 (t_ae471793) | NOT STARTED |
 | Focus behaviors/combos | projectile classes | TC-M6-03 (t_a0113d55) | NOT STARTED |
-| Block/item catalog | content-mapping.csv | TC-M6-04 (t_12f350af) | NOT STARTED |
+| Block/item catalog | content-mapping.csv | TC-M6-04 (t_12f350af) — decomposed into TC-M6-04a..f; row ownership in docs/catalog-triage.md | IN PROGRESS |
 | Enchantments/potions | lib/enchantment, api/potions | TC-M6-05 (t_a8f8a37c) | NOT STARTED |
 | Entities/AI | common/entities (125 classes) | TC-M6-06 (t_cd287131) | NOT STARTED |
 | Armor/equipment | items/armor | TC-M6-07 (t_1ba6e428) | NOT STARTED |
