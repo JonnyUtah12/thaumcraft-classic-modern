@@ -85,3 +85,21 @@ subset of systems) exists at `~/minecraft mods/thaumaturgical-legacy`
 original ids. Its build harness, test infrastructure, accessory design, and
 reverse-engineering documents are reused as engineering inputs; its gameplay
 classes are re-implemented against the original behavior.
+
+## D-010 — Configuration: one COMMON spec; numeric-id options not ported
+
+The original config is a single Forge 1.7.10 `Configuration` file
+(`Thaumcraft.cfg`, 62 options in 8 categories, all reads in
+`Config.java`). The port implements the same option set as one NeoForge
+`ModConfigSpec` registered as `ModConfig.Type.COMMON`
+(`thaumcraft-common.toml`): same category names, option names, types,
+defaults and comments, so a config file reads the same on both platforms.
+Nine options that exist only to assign numeric registry ids
+(`biome_*`, `outer_lands_dim`, `ench_*`, `thaumcraft_*_id`) have no
+target-platform equivalent — 1.21.1 registries are name-keyed — and are
+not implemented; they remain listed, marked not-ported, in
+docs/config-reference.md so the parity record stays complete. The
+original's read-time value clamps (golem/runic/node options) are
+reproduced at read time, not by rewriting the file, exactly like the
+original. Fidelity impact: none for gameplay options; the nine id options
+were plumbing for 1.7.10's id-based registries.

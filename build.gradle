@@ -156,6 +156,8 @@ tasks.named('test', Test).configure {
             layout.buildDirectory.file('generated/sources/modMetadata/META-INF/neoforge.mods.toml').get().asFile.absolutePath
     systemProperty 'tc.assetMappingFile',
             file('docs/asset-mapping.csv').absolutePath
+    systemProperty 'tc.configReferenceFile',
+            file('docs/config-reference.md').absolutePath
 }
 
 publishing {

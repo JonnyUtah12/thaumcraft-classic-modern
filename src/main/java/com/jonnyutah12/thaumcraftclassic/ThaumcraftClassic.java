@@ -1,5 +1,7 @@
 package com.jonnyutah12.thaumcraftclassic;
 
+import com.jonnyutah12.thaumcraftclassic.config.TcConfig;
+import com.jonnyutah12.thaumcraftclassic.gametest.ConfigParityGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ModSmokeGameTest;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
@@ -28,6 +30,10 @@ public final class ThaumcraftClassic {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ThaumcraftClassic(final IEventBus modEventBus, final ModContainer modContainer) {
+        // Configuration first: every later system reads options through
+        // TcConfig's typed accessors (docs/config-reference.md).
+        TcConfig.register(modContainer);
+
         // Registration holders are wired in by the content milestones
         // (M2+). Nothing may register before its holder is initialized.
 
@@ -39,5 +45,6 @@ public final class ThaumcraftClassic {
 
     private static void registerGameTests(final RegisterGameTestsEvent event) {
         event.register(ModSmokeGameTest.class);
+        event.register(ConfigParityGameTest.class);
     }
 }
