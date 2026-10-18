@@ -10,7 +10,7 @@
   source are never attributed to REA.
 - **Vineflower 1.11.1** (`~/opt/tools/vineflower-1.11.1.jar`, Apache-2.0)
   under JDK 21: full Java decompilation of both JARs.
-  - Thaumcraft: `-e` (inner-class merging) → ~859 Java files.
+  - Thaumcraft: `-e` (inner-class merging) → 859 Java files.
   - Baubles: 26 Java files.
 - **javap** for bytecode-level checks where decompiler output is ambiguous.
 - **Original API sources** (MIT): `../reference/api-repos/thaumcraft-api`
@@ -28,6 +28,18 @@
   "/home/aaron/minecraft mods/Baubles-1.7.10-1.0.1.10.jar" \
   ../reference/decompiled/baubles
 ```
+
+## Completeness verification (2026-10-17)
+
+- Thaumcraft JAR: 942 `.class` entries, 859 top-level classes → decompiled
+  tree has exactly 859 `.java` files; all 83 inner classes are merged into
+  their outer files (spot-checked, e.g. `DepLoader.java` contains its
+  nested classes).
+- Baubles JAR: 27 `.class` entries → 26 `.java` files: 25 top-level +
+  `PacketPipeline$2.java` kept separate; `ContainerPlayerExpanded$1` merged
+  into its outer file. Every class entry accounted for.
+- No decompiled source is committed: the trees live in `../reference/`
+  (outside the repo) and `git status` is clean.
 
 ## Evidence discipline
 
