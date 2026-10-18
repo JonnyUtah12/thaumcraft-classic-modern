@@ -1,0 +1,2 @@
+original_id,new_id,display_name,implementation_status,test_status,known_differences,notes
+# Seed: rows added by TC-M0-04 (full inventory) and each content task. Original ids keep their path; namespace lowercased (D-001).

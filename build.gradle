@@ -1,0 +1,183 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.148'
+    id 'idea'
+}
+
+tasks.named('wrapper', Wrapper).configure {
+    distributionType = Wrapper.DistributionType.BIN
+}
+
+version = mod_version
+group = mod_group_id
+
+sourceSets.main.resources {
+    srcDir('src/generated/resources')
+    exclude("**/*.bbmodel")
+    exclude("src/generated/**/.cache")
+}
+
+repositories {
+    // Curios API (optional Baubles-equivalent accessory integration) — the mod's own Maven.
+    maven {
+        name = "Blameless Maven"
+        url = "https://maven.theillusivec4.top/"
+    }
+}
+
+base {
+    archivesName = mod_id
+}
+
+// Mojang ships Java 21 to end users in 1.21.1, so mods target Java 21.
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+neoForge {
+    version = project.neo_version
+
+    parchment {
+        mappingsVersion = project.parchment_mappings_version
+        minecraftVersion = project.parchment_minecraft_version
+    }
+
+    runs {
+        client {
+            client()
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        server {
+            server()
+            programArgument '--nogui'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        gameTestServer {
+            type = "gameTestServer"
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        data {
+            data()
+            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            logLevel = org.slf4j.event.Level.DEBUG
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+// localRuntime: present for local/in-game testing but never published as a
+// hard dependency (the mod must load with or without Curios).
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+dependencies {
+    // Optional accessory integration. The bridge compiles against the Curios
+    // API but bundles nothing; core loads with or without it. -Ptc.noCurios
+    // removes it from localRuntime to exercise the built-in fallback.
+    compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"
+    if (!project.hasProperty('tc.noCurios')) {
+        localRuntime "top.theillusivec4.curios:curios-neoforge:${curios_version}"
+    }
+
+    // Unit-test harness. The test source set has no Minecraft/NeoForge
+    // classpath: unit tests cover pure logic, data, and build wiring.
+    // In-game behavior is covered by NeoForge gametests (docs/testing.md).
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.tomlj:tomlj:1.1.1'
+}
+
+// --- Original-asset pipeline (docs/licensing-and-attribution.md) -------------
+// Thaumcraft 4.2.3.5 is All Rights Reserved: original textures/models/sounds/
+// lang are NOT committed to this repository. They live in the local reference
+// tree extracted from the user's own JAR. When that tree exists, the build
+// overlays it into the output JAR so local/release artifacts carry the original
+// visuals; CI (no reference tree) builds a code-only JAR and the unit tests
+// assert the asset mapping instead of the assets themselves.
+def originalAssetsDir = file("${rootDir}/../reference/assets")
+def overlayOriginalAssets = tasks.register("overlayOriginalAssets", Sync) {
+    onlyIf { originalAssetsDir.exists() }
+    from(originalAssetsDir) { include 'thaumcraft/**' }
+    into(layout.buildDirectory.dir('generated/resources/original-assets/assets'))
+}
+sourceSets.main.resources {
+    srcDir(layout.buildDirectory.dir('generated/resources/original-assets'))
+}
+tasks.named('processResources') { dependsOn overlayOriginalAssets }
+
+var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            loader_version_range   : loader_version_range,
+            curios_version         : curios_version,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description,
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from "src/main/templates"
+    into "build/generated/sources/modMetadata"
+}
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+// Unit tests receive build-wired values so they never hardcode them;
+// gradle.properties stays the single source of truth (docs/release-process.md).
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
+    dependsOn generateModMetadata
+    systemProperty 'tc.modId', mod_id
+    systemProperty 'tc.modName', mod_name
+    systemProperty 'tc.modLicense', mod_license
+    systemProperty 'tc.modVersion', mod_version
+    systemProperty 'tc.minecraftVersion', minecraft_version
+    systemProperty 'tc.neoVersion', neo_version
+    systemProperty 'tc.curiosVersion', curios_version
+    systemProperty 'tc.generatedModsToml',
+            layout.buildDirectory.file('generated/sources/modMetadata/META-INF/neoforge.mods.toml').get().asFile.absolutePath
+    systemProperty 'tc.assetMappingFile',
+            file('docs/asset-mapping.csv').absolutePath
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/repo"
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}
