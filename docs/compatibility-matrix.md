@@ -13,7 +13,7 @@ without test evidence linked in the Kanban task.
 | --- | --- | --- |
 | Build/load foundation | Gradle build, mod loads in game-test server, metadata correct | IT (unit + smoke gametest, CI) |
 | Aspects | Original 25+7+… definitions, combination rules, discovery | NI |
-| Research | Full original graph, prerequisites, unlock triggers, persistence | NI |
+| Research | Full original graph, prerequisites, unlock triggers, persistence | PARTIAL (graph data extracted 1:1 and unit-verified, TC-M3-01; progression/triggers in-game TC-M3-02) |
 | Thaumonomicon | Pages, minigames, navigation, text | NI |
 | Vis / aura / nodes | Generation, capacity, depletion, wand interaction, persistence | NI |
 | Flux / taint | Spread, transformation, biome effects | NI |

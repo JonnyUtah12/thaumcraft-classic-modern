@@ -247,6 +247,12 @@ tasks.named('test', Test).configure {
             file('docs/config-reference.md').absolutePath
     systemProperty 'tc.contentMappingFile',
             file('docs/content-mapping.csv').absolutePath
+    systemProperty 'tc.researchDataDir',
+            file('src/main/resources/data/thaumcraft/research').absolutePath
+    systemProperty 'tc.contentInventoryFile',
+            file('docs/original-content-inventory.md').absolutePath
+    systemProperty 'tc.originalLangFile',
+            file('../reference/assets/thaumcraft/lang/en_US.lang').absolutePath
 }
 
 publishing {
