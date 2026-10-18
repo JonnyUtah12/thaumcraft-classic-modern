@@ -6,8 +6,10 @@ Verified 2026-10-17 on this machine.
 
 - SHA-256: `3dba9786966974701578a658d1bb369bf35bdf5f363079f5ac9c4910a39113be`
 - Size: 12,565,807 bytes
-- Contents: 942 `.class` entries; 1,107 files under `assets/thaumcraft`;
-  `assets/minecraft` (15), `mcmod.info`, `dependancies.info`,
+- Contents: 942 `.class` entries; 1,091 entries under `assets/thaumcraft`
+  (1,079 files + 12 directory entries); `assets/minecraft` (15) — the
+  1,107 figure sometimes quoted is *all* `assets/` entries including both
+  namespaces and the `assets/` root entry itself. Also `mcmod.info`, `dependancies.info`,
   `changelog.txt`, `pack.mcmeta`, `TCLogo.png`, embedded `truetyper/`
   (a bundled library), and `thaumcraft/codechicken/*` (CodeChickenLib
   pieces bundled by the author).
