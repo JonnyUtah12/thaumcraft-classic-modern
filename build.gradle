@@ -1,3 +1,6 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
 plugins {
     id 'java-library'
     id 'maven-publish'
@@ -56,6 +59,9 @@ neoForge {
         gameTestServer {
             type = "gameTestServer"
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // TC-M2-01 registration harness: probe content + the id-contract CSV.
+            systemProperty 'thaumcraft.testprobe', 'true'
+            systemProperty 'tc.contentMappingFile', file('docs/content-mapping.csv').getAbsolutePath()
         }
 
         data {
@@ -74,6 +80,14 @@ neoForge {
             sourceSet(sourceSets.main)
         }
     }
+
+    // TC-M2-02: codec round-trip tests exercise Mojang Codec/NBT classes, so the
+    // test source set now runs against the Minecraft/NeoForge classpath.
+    // (In-game behavior remains covered by NeoForge gametests, docs/testing.md.)
+    unitTest {
+        enable()
+        testedMod = mods."${mod_id}"
+    }
 }
 
 // localRuntime: present for local/in-game testing but never published as a
@@ -91,13 +105,17 @@ dependencies {
         localRuntime "top.theillusivec4.curios:curios-neoforge:${curios_version}"
     }
 
-    // Unit-test harness. The test source set has no Minecraft/NeoForge
-    // classpath: unit tests cover pure logic, data, and build wiring.
-    // In-game behavior is covered by NeoForge gametests (docs/testing.md).
+    // Unit-test harness. With neoForge.unitTest enabled the test source set has
+    // the Minecraft/NeoForge classpath: unit tests cover pure logic, data, build
+    // wiring, and persistence codecs. In-game behavior is covered by NeoForge
+    // gametests (docs/testing.md).
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.tomlj:tomlj:1.1.1'
+    // Versionless: with neoForge.unitTest the Minecraft dependency platform pins
+    // gson strictly (2.10.1 for 1.21.1); an explicit version would conflict.
+    testImplementation 'com.google.code.gson:gson'
 }
 
 // --- Original-asset pipeline (docs/licensing-and-attribution.md) -------------
@@ -108,15 +126,80 @@ dependencies {
 // visuals; CI (no reference tree) builds a code-only JAR and the unit tests
 // assert the asset mapping instead of the assets themselves.
 def originalAssetsDir = file("${rootDir}/../reference/assets")
+
+// The original 1.7.10 sounds.json is not platform-valid as-is: its file
+// references carry no namespace, and 1.21.1 resolves unnamespaced references
+// against the `minecraft` namespace (the TC-M2-03 client smoke run logged a
+// caught ResourceLocationException for `minecraft:runicShieldEffect` — a single
+// invalid id discards the whole file). Event keys, by contrast, must stay
+// unnamespaced: 1.21.1 derives the event namespace from the assets/<ns>/
+// directory. The overlay therefore rewrites the registry: file references
+// prefixed with `thaumcraft:`, per-event `category` dropped (1.21.1 sets
+// category at the play site), and the two camelCase ids — invalid in 1.21.1
+// resource ids ([a-z0-9/._-] only) — normalized to snake_case.
+// docs/asset-mapping.csv records the same renames; OriginalSoundOverlayTest
+// guards both sides.
+def soundEventRenames = [
+        'runicShieldEffect' : 'runic_shield_effect',
+        'runicShieldCharge' : 'runic_shield_charge',
+]
+
 def overlayOriginalAssets = tasks.register("overlayOriginalAssets", Sync) {
     onlyIf { originalAssetsDir.exists() }
-    from(originalAssetsDir) { include 'thaumcraft/**' }
+    from(originalAssetsDir) {
+        include 'thaumcraft/**'
+        exclude 'thaumcraft/sounds.json' // rewritten by transformOriginalSoundsJson
+    }
     into(layout.buildDirectory.dir('generated/resources/original-assets/assets'))
+    eachFile { details ->
+        def path = details.relativePath.pathString
+        if (path.startsWith('thaumcraft/sounds/') && path.endsWith('.ogg')) {
+            def renamed = soundEventRenames[path - 'thaumcraft/sounds/' - '.ogg']
+            if (renamed != null) {
+                details.relativePath = new RelativePath(true, 'thaumcraft', 'sounds', renamed + '.ogg')
+            }
+        }
+    }
 }
+
+def transformOriginalSoundsJson = tasks.register("transformOriginalSoundsJson") {
+    onlyIf { originalAssetsDir.exists() }
+    def sourceJson = file("${originalAssetsDir}/thaumcraft/sounds.json")
+    def outputJson = layout.buildDirectory.file('generated/resources/original-sounds/assets/thaumcraft/sounds.json')
+    inputs.file(sourceJson)
+    inputs.property('soundEventRenames', soundEventRenames)
+    outputs.file(outputJson)
+    doLast {
+        def text = sourceJson.getText('UTF-8')
+        if (text.startsWith('\uFEFF')) { text = text.substring(1) } // strip BOM
+        def original = new JsonSlurper().parseText(text)
+        def converted = original.collectEntries { eventKey, definition ->
+            def body = definition.findAll { key, value -> key != 'category' }
+            body.sounds = (definition.sounds ?: []).collect { entry ->
+                if (entry instanceof Map) {
+                    def copy = new LinkedHashMap(entry)
+                    def name = entry.name as String
+                    copy.name = 'thaumcraft:' + soundEventRenames.getOrDefault(name, name)
+                    return copy
+                }
+                return 'thaumcraft:' + soundEventRenames.getOrDefault(entry as String, entry as String)
+            }
+            def id = eventKey as String
+            // Keys stay unnamespaced: SoundManager resolves them as
+            // fromNamespaceAndPath(<directory namespace>, key).
+            return [ soundEventRenames.getOrDefault(id, id), body ]
+        }
+        def out = outputJson.get().asFile
+        out.parentFile.mkdirs()
+        out.text = JsonOutput.prettyPrint(JsonOutput.toJson(converted))
+    }
+}
+
 sourceSets.main.resources {
     srcDir(layout.buildDirectory.dir('generated/resources/original-assets'))
+    srcDir(layout.buildDirectory.dir('generated/resources/original-sounds'))
 }
-tasks.named('processResources') { dependsOn overlayOriginalAssets }
+tasks.named('processResources') { dependsOn overlayOriginalAssets, transformOriginalSoundsJson }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
     var replaceProperties = [
@@ -144,7 +227,7 @@ neoForge.ideSyncTask generateModMetadata
 // gradle.properties stays the single source of truth (docs/release-process.md).
 tasks.named('test', Test).configure {
     useJUnitPlatform()
-    dependsOn generateModMetadata
+    dependsOn generateModMetadata, overlayOriginalAssets, transformOriginalSoundsJson
     systemProperty 'tc.modId', mod_id
     systemProperty 'tc.modName', mod_name
     systemProperty 'tc.modLicense', mod_license
@@ -156,8 +239,14 @@ tasks.named('test', Test).configure {
             layout.buildDirectory.file('generated/sources/modMetadata/META-INF/neoforge.mods.toml').get().asFile.absolutePath
     systemProperty 'tc.assetMappingFile',
             file('docs/asset-mapping.csv').absolutePath
+    systemProperty 'tc.originalAssetsOverlayDir',
+            layout.buildDirectory.dir('generated/resources/original-assets/assets').get().asFile.absolutePath
+    systemProperty 'tc.originalSoundsJson',
+            layout.buildDirectory.file('generated/resources/original-sounds/assets/thaumcraft/sounds.json').get().asFile.absolutePath
     systemProperty 'tc.configReferenceFile',
             file('docs/config-reference.md').absolutePath
+    systemProperty 'tc.contentMappingFile',
+            file('docs/content-mapping.csv').absolutePath
 }
 
 publishing {

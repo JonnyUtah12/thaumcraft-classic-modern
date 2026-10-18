@@ -72,8 +72,16 @@ tracked by the content inventory (TC-M0-04), not per asset row.
 `.ogg`, the event name and the classes that call `playSound` for it
 (entities, tile machines, wand casting, nodes/taint, ambience). Conversion
 notes: 1.21.1 drops the per-event `category` field (category is chosen at
-the play site) and adds optional `subtitles`; event keys stay identical
-under the `thaumcraft` namespace. One event (`urnbreak`) is defined but
+the play site) and adds optional `subtitles`; event keys stay unnamespaced
+(1.21.1 derives the event namespace from the `assets/<ns>/` directory), but
+the build overlay prefixes every file reference with `thaumcraft:` (1.21.1
+resolves unnamespaced references against the `minecraft` namespace). Two
+original ids contain uppercase letters, which 1.21.1 resource ids reject —
+a single invalid id discards the whole file (caught
+`ResourceLocationException` in the TC-M2-03 client smoke run):
+`runicShieldEffect` → `runic_shield_effect` and `runicShieldCharge`
+→ `runic_shield_charge`; their oggs are renamed to match in the overlay
+output. One event (`urnbreak`) is defined but
 never played — `BlockLoot`'s step sound name resolves to the vanilla
 `dig.*` namespace, so the ogg is marked unused. TC-M7-05 extends the CSV
 with the 1.21.1 trigger sites.
@@ -153,9 +161,10 @@ runtime assets.
 
 - 1079 files on disk = 1079 CSV rows; each path appears exactly once
   (verified programmatically after generation).
-- `new_asset` is the same path (D-004 overlay keeps paths identical, the
-  `thaumcraft` namespace is already lowercase); exceptions: `lang/*.lang`
-  → generated `translations/<locale>.json`, unused assets → empty.
+- `new_asset` is the same path (D-004 overlay keeps paths identical);
+  exceptions: `lang/*.lang` → generated `translations/<locale>.json`,
+  the two camelCase sound ids above (renamed to snake_case — 1.21.1 ids
+  are `[a-z0-9/._-]` only), unused assets → empty.
 - TC-M0-04 (content inventory, not yet started): every content entry must
   list its required assets by these exact paths; `used_by` in the CSV is
   the join key (class → content id mapping happens there).
