@@ -11,7 +11,7 @@ evidence). Task ids are Kanban ids on the board.
 | Environment/artifact verification | JARs, instance | TC-M0-01 (t_6ebc7418) | DONE |
 | Decompilation workflow | REA + Vineflower | TC-M0-02 (t_22824a88) | DONE |
 | API repo reference | api repos @ 1.7.10 | TC-M0-03 (t_cc8fc2e9) | DONE |
-| Content + system inventory | decompiled tree | TC-M0-04 (t_83241bc7) | NOT STARTED |
+| Content + system inventory | decompiled tree | TC-M0-04 (t_83241bc7) | DONE |
 | Asset inventory/mapping | assets (1079 files) | TC-M0-05 (t_66f308b2) | NOT STARTED |
 | Balance values | decompiled constants | TC-M0-06 (t_b9cd76b8) | NOT STARTED |
 | Build/load foundation | — | TC-M1-01 (t_e81a4a3b) | IN PROGRESS |
