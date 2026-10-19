@@ -5,8 +5,10 @@ import com.jonnyutah12.thaumcraftclassic.gametest.ConfigParityGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ModNetworkGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ModSmokeGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.RegistrationGameTest;
+import com.jonnyutah12.thaumcraftclassic.gametest.SoundRegistryGameTest;
 import com.jonnyutah12.thaumcraftclassic.network.ModNetwork;
 import com.jonnyutah12.thaumcraftclassic.registration.ModRegistration;
+import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -45,6 +47,11 @@ public final class ThaumcraftClassic {
         // docs/architecture/registration.md.
         ModRegistration.init(modEventBus);
 
+        // TC-M7-05 sound-event registry: the 66 original TC sound events
+        // (definitions + oggs arrive via the D-004 asset overlay; the id set
+        // is pinned here and guarded by SoundRegistryParityTest/GameTest).
+        ModSounds.register(modEventBus);
+
         // Networking payloads register on both dists before any connection
         // can be accepted (docs/architecture/networking.md).
         modEventBus.addListener(ModNetwork::register);
@@ -60,5 +67,6 @@ public final class ThaumcraftClassic {
         event.register(ConfigParityGameTest.class);
         event.register(ModNetworkGameTest.class);
         event.register(RegistrationGameTest.class);
+        event.register(SoundRegistryGameTest.class);
     }
 }

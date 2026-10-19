@@ -1,8 +1,11 @@
 package com.jonnyutah12.thaumcraftclassic.network;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
@@ -24,9 +27,20 @@ public final class ClientEffectHooks {
 
     // --- notifications (original PlayerNotifications / GuiResearchBrowser) ---
 
-    /** TODO(M4 research UI): warp toast + whispers sound, per original PacketWarpMessage. */
+    /**
+     * TC-M7-05 sound half WIRED: the original PacketWarpMessage client handler
+     * plays {@code thaumcraft:whispers} on the client player (volume 0.5,
+     * pitch 1.0) whenever a warp gain (data &gt; 0) arrives, for both sticky
+     * and temporary warp. The toast remains TODO(M4 research UI).
+     */
     static void warpNotification(final int change, final int warpKind) {
         LOGGER.debug("warp notification: kind={} change={}", warpKind, change);
+        if (change > 0) {
+            final Minecraft mc = Minecraft.getInstance();
+            if (mc.player != null) {
+                mc.player.playSound(ModSounds.WHISPERS.value(), 0.5F, 1.0F);
+            }
+        }
     }
 
     /** TODO(M4 research UI): aspect pool gain toast, per original PacketAspectPool. */
@@ -39,7 +53,14 @@ public final class ClientEffectHooks {
         LOGGER.debug("aspect discovery notification: {}", tag);
     }
 
-    /** TODO(M4 research UI): research popup + book highlight, per original PacketResearchComplete. */
+    /**
+     * TODO(M4 research UI): research popup + book highlight, per original
+     * PacketResearchComplete. TC-M7-05 contract note: the original also plays
+     * {@code thaumcraft:learn} on the client player (volume 0.2, pitch
+     * 1.0 + rand*0.1) but ONLY for clue-type research — the condition needs
+     * the research graph (TC-M3-01/02), so the play site is deferred with it;
+     * see docs/sound-events.md#learn.
+     */
     static void researchCompleteNotification(final String key) {
         LOGGER.debug("research complete notification: {}", key);
     }
@@ -51,9 +72,22 @@ public final class ClientEffectHooks {
         LOGGER.debug("biome change at ({}, {}) -> {}", x, z, biome);
     }
 
-    /** TODO(M4 client effects): warp vignette / mist fog, per original PacketMiscEvent. */
+    /**
+     * TC-M7-05 sound half WIRED: the original PacketMiscEvent client handler
+     * plays {@code thaumcraft:heartbeat} at the client player's position
+     * (volume 1.0, pitch 1.0) for event kind 0 (warp heartbeat); kinds 1-3
+     * are fog/vignette only. The vignette itself remains TODO(M4 client
+     * effects).
+     */
     static void miscEvent(final int eventKind) {
         LOGGER.debug("misc client event: kind={}", eventKind);
+        if (eventKind == 0) {
+            final Minecraft mc = Minecraft.getInstance();
+            if (mc.level != null && mc.player != null) {
+                mc.level.playLocalSound(mc.player.getX(), mc.player.getY(), mc.player.getZ(),
+                        ModSounds.HEARTBEAT.value(), SoundSource.MASTER, 1.0F, 1.0F, false);
+            }
+        }
     }
 
     /** TODO(M5 tiles/sensors): note-block & sensor value mirror, per original PacketNote. */
@@ -83,8 +117,20 @@ public final class ClientEffectHooks {
         LOGGER.debug("fx block arc at {} source={}", pos, sourceEntityId);
     }
 
+    /**
+     * TC-M7-05 sound half WIRED: the original PacketFXBlockZap client handler
+     * plays {@code thaumcraft:zap} at the block position (volume 0.1, pitch
+     * 1.0 + rand*0.2) alongside the node-bolt particle. The particle/beam
+     * half remains TODO(M4 client effects → TC-M7-02).
+     */
     static void fxBlockZap(final Vec3 pos, final Vec3 direction) {
         LOGGER.debug("fx block zap at {} dir={}", pos, direction);
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level != null) {
+            mc.level.playLocalSound(pos.x, pos.y, pos.z,
+                    ModSounds.ZAP.value(), SoundSource.MASTER,
+                    0.1F, 1.0F + mc.level.getRandom().nextFloat() * 0.2F, false);
+        }
     }
 
     static void fxBlockDig(final BlockPos targetPos, final ResourceLocation blockOrItemId, final int data,
