@@ -4,9 +4,11 @@ import com.jonnyutah12.thaumcraftclassic.config.TcConfig;
 import com.jonnyutah12.thaumcraftclassic.gametest.ConfigParityGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ModNetworkGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ModSmokeGameTest;
+import com.jonnyutah12.thaumcraftclassic.gametest.PersistenceGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.RegistrationGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.SoundRegistryGameTest;
 import com.jonnyutah12.thaumcraftclassic.network.ModNetwork;
+import com.jonnyutah12.thaumcraftclassic.player.ModAttachments;
 import com.jonnyutah12.thaumcraftclassic.registration.ModRegistration;
 import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
 import com.mojang.logging.LogUtils;
@@ -47,6 +49,12 @@ public final class ThaumcraftClassic {
         // docs/architecture/registration.md.
         ModRegistration.init(modEventBus);
 
+        // TC-M2-02 persistence substrate: player knowledge/warp data attachments
+        // (copyOnDeath + S2C sync). The world-side store (WorldMagicData) is a
+        // SavedData created lazily per level; chunk hooks self-register via
+        // @EventBusSubscriber. See docs/architecture/persistence.md.
+        ModAttachments.ATTACHMENT_TYPES.register(modEventBus);
+
         // TC-M7-05 sound-event registry: the 66 original TC sound events
         // (definitions + oggs arrive via the D-004 asset overlay; the id set
         // is pinned here and guarded by SoundRegistryParityTest/GameTest).
@@ -67,6 +75,7 @@ public final class ThaumcraftClassic {
         event.register(ConfigParityGameTest.class);
         event.register(ModNetworkGameTest.class);
         event.register(RegistrationGameTest.class);
+        event.register(PersistenceGameTest.class);
         event.register(SoundRegistryGameTest.class);
     }
 }
