@@ -20,7 +20,7 @@ evidence). Task ids are Kanban ids on the board.
 | Networking | common/lib/network (40 classes) | TC-M2-03 (t_cbc91aec) | DONE |
 | Configuration | config class | TC-M2-04 (t_c87a23bc) | DONE |
 | Research graph | ConfigResearch.java (201 entries) | TC-M3-01 (t_eef90e8c) | DONE |
-| Research progression | ResearchManager | TC-M3-02 (t_25f6eeb2) | NOT STARTED |
+| Research progression | ResearchManager | TC-M3-02 (t_25f6eeb2) | DONE |
 | Thaumonomicon GUI | client/gui | TC-M3-03 (t_38e57cb0) | NOT STARTED |
 | Research minigames | note puzzle classes | TC-M3-04 (t_4ebb83af) | NOT STARTED |
 | Aspects | api/aspects | TC-M4-01 (t_0cc0a0ca) | NOT STARTED |
