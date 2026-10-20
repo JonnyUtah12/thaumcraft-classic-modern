@@ -251,6 +251,8 @@ tasks.named('test', Test).configure {
             file('src/main/resources/data/thaumcraft/research').absolutePath
     systemProperty 'tc.contentInventoryFile',
             file('docs/original-content-inventory.md').absolutePath
+    systemProperty 'tc.balanceValuesFile',
+            file('docs/balance-values.md').absolutePath
     systemProperty 'tc.originalLangFile',
             file('../reference/assets/thaumcraft/lang/en_US.lang').absolutePath
 }

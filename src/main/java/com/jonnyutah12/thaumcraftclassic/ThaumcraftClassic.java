@@ -6,6 +6,7 @@ import com.jonnyutah12.thaumcraftclassic.gametest.ModNetworkGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ModSmokeGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.PersistenceGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.RegistrationGameTest;
+import com.jonnyutah12.thaumcraftclassic.gametest.ResearchProgressionGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.SoundRegistryGameTest;
 import com.jonnyutah12.thaumcraftclassic.network.ModNetwork;
 import com.jonnyutah12.thaumcraftclassic.player.ModAttachments;
@@ -77,5 +78,6 @@ public final class ThaumcraftClassic {
         event.register(RegistrationGameTest.class);
         event.register(PersistenceGameTest.class);
         event.register(SoundRegistryGameTest.class);
+        event.register(ResearchProgressionGameTest.class);
     }
 }

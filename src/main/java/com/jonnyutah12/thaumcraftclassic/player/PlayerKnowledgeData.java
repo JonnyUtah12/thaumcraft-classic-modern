@@ -1,6 +1,5 @@
 package com.jonnyutah12.thaumcraftclassic.player;
 
-import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
@@ -124,17 +123,19 @@ public record PlayerKnowledgeData(
         return false;
     }
 
-    /** TC4 parity: {@code PlayerKnowledge.hasDiscoveredParentAspects}. */
-    public boolean hasDiscoveredParentAspects(final Aspect aspect) {
-        if (aspect.isPrimal()) {
-            return true;
-        }
-        final List<Aspect> components = aspect.getComponents();
-        if (components == null) {
+    /**
+     * TC4 parity: {@code PlayerKnowledge.hasDiscoveredParentAspects}, expressed on
+     * aspect tags. The original takes the {@code Aspect} registry type; that type
+     * lives in the aspect package (TC-M4-01's), and this record must not depend on
+     * it. The original returns true for primal aspects and false when components
+     * are absent — callers pass the two component tags of a non-primal aspect
+     * (primal callers short-circuit true; null components → null tags → false).
+     */
+    public boolean hasDiscoveredParentAspectTags(final String parentTagA, final String parentTagB) {
+        if (parentTagA == null || parentTagB == null) {
             return false;
         }
-        return hasAspectDiscovered(components.get(0).getTag())
-                && hasAspectDiscovered(components.get(1).getTag());
+        return hasAspectDiscovered(parentTagA) && hasAspectDiscovered(parentTagB);
     }
 
     // -------------------------------------------------- functional mutators
@@ -151,8 +152,10 @@ public record PlayerKnowledgeData(
     /**
      * TC4 parity: {@code PlayerKnowledge.addAspectPool} on the single
      * discovered/pool map. Amount 0 never changes anything; a negative amount
-     * only succeeds while the pool is positive (reduce), and a reduced-to-zero
-     * aspect stays in the map — discovery is never undone by pool changes.
+     * only succeeds while the pool is positive (reduce), and the reduce itself is
+     * all-or-nothing like the original {@code AspectList.reduce} — a pool below
+     * the cost is left untouched, never driven negative. A reduced-to-zero aspect
+     * stays in the map — discovery is never undone by pool changes.
      * Returns {@code this} when nothing changed, so callers can detect the
      * original's boolean return by identity.
      */
@@ -161,7 +164,7 @@ public record PlayerKnowledgeData(
             return this;
         }
         final int current = aspectAmount(aspectTag);
-        if (amount < 0 && current <= 0) {
+        if (amount < 0 && current < -amount) {
             return this;
         }
         final int merged = current + amount;

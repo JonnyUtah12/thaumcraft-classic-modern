@@ -6,6 +6,8 @@ import com.jonnyutah12.thaumcraftclassic.network.payload.AspectPlaceToServerPayl
 import com.jonnyutah12.thaumcraftclassic.network.payload.NotePayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.PlayerCompleteToServerPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.ScannedToServerPayload;
+import com.jonnyutah12.thaumcraftclassic.research.ResearchManager;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import org.slf4j.Logger;
 
@@ -42,10 +44,15 @@ public final class ServerNetworkHooks {
                 payload.tablePos(), payload.q(), payload.r(), payload.aspectTag().orElse("(none)"));
     }
 
-    /** TODO(M4 research): complete/note a research entry for the sender, per original PacketPlayerCompleteToServer. */
+    /**
+     * TC-M3-02: the Thaumonomicon completion request, per original
+     * {@code PacketPlayerCompleteToServer.onMessage} — the research manager owns
+     * the semantics (prerequisite gate, aspect-pool payment, completion, siblings).
+     */
     static void completeResearchRequest(final PlayerCompleteToServerPayload payload, final Player player) {
-        LOGGER.debug("research request from {}: key={} type={}", player.getGameProfile().getName(),
-                payload.key(), payload.requestType());
+        if (player instanceof ServerPlayer serverPlayer) {
+            ResearchManager.handlePlayerCompleteRequest(payload, serverPlayer);
+        }
     }
 
     /** TODO(M3 equipment/hover): hover flight toggle, per original PacketFlyToServer. */
