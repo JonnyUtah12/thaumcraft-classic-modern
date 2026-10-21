@@ -23,7 +23,7 @@ evidence). Task ids are Kanban ids on the board.
 | Research progression | ResearchManager | TC-M3-02 (t_25f6eeb2) | DONE |
 | Thaumonomicon GUI | client/gui | TC-M3-03 (t_38e57cb0) | NOT STARTED |
 | Research minigames | note puzzle classes | TC-M3-04 (t_4ebb83af) | NOT STARTED |
-| Aspects | api/aspects | TC-M4-01 (t_0cc0a0ca) | NOT STARTED |
+| Aspects | api/aspects | TC-M4-01 (t_0cc0a0ca) | DONE (docs/aspects.md) |
 | Vis core | api/visnet, wands | TC-M4-02 (t_d7272167) | NOT STARTED |
 | Arcane workbench | RecipeArcaneWorkbench | TC-M4-03 (t_81c79f33) | NOT STARTED |
 | Infusion altar | TileInfusion* | TC-M4-04 (t_30961958) | NOT STARTED |
