@@ -2,6 +2,7 @@ package com.jonnyutah12.thaumcraftclassic.registration;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.aspect.EssentiaContainer;
+import com.jonnyutah12.thaumcraftclassic.wands.VisPool;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
@@ -35,6 +36,22 @@ public final class ModDataComponents {
                     () -> DataComponentType.<EssentiaContainer>builder()
                             .persistent(EssentiaContainer.CODEC)
                             .networkSynchronized(EssentiaContainer.STREAM_CODEC)
+                            .build());
+
+    /**
+     * Vis charge carried by a stack (TC-M4-02): replaces the original's
+     * per-aspect centi-vis {@code NBTTagInt} keys written on wand/amulet
+     * stacks by {@code ItemWandCasting.storeVis}/{@code getVis}. Capacity is
+     * not stored — it derives from the rod component via
+     * {@code WandVis.maxVis}; the rod/cap components arrive with TC-M6-01.
+     * Synced to the client for the charge tooltip the original rendered from
+     * the same NBT. Semantics: docs/architecture/vis.md.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<VisPool>> VIS_POOL =
+            DATA_COMPONENT_TYPES.register("vis_pool",
+                    () -> DataComponentType.<VisPool>builder()
+                            .persistent(VisPool.CODEC)
+                            .networkSynchronized(VisPool.STREAM_CODEC)
                             .build());
 
     private ModDataComponents() {
