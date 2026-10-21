@@ -1,0 +1,5390 @@
+{
+  "formatVersion": 1,
+  "source": "decompiled thaumcraft/common/config/ConfigAspects.java + thaumcraft/api/aspects/Aspect.java (Thaumcraft 4.2.3.5). Extracted mechanically by scripts/extract_essentia_tags.py.",
+  "notes": [
+    "dyes loop expanded to 16 oredict entries (dyeBlack..dyeWhite).",
+    "wisp loop expanded to 48 entity entries keyed by NBT Type.",
+    "potion-meta loop collapsed to one wildcard entry (all variants inherited the base potion tags; 1.21.1 potions have no meta)."
+  ],
+  "counts": {
+    "aspects": 48,
+    "itemTags": 287,
+    "oredictTags": 56,
+    "entityTags": 116
+  },
+  "itemTags": [
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "stone"
+      },
+      "aspects": {
+        "terra": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "cobblestone"
+      },
+      "aspects": {
+        "terra": 1,
+        "perditio": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "logWood"
+      },
+      "aspects": {
+        "arbor": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "plankWood"
+      },
+      "aspects": {
+        "arbor": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "slabWood"
+      },
+      "aspects": {
+        "arbor": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "stairWood"
+      },
+      "aspects": {
+        "arbor": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "stickWood"
+      },
+      "aspects": {
+        "arbor": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "treeSapling"
+      },
+      "aspects": {
+        "arbor": 1,
+        "herba": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "treeLeaves"
+      },
+      "aspects": {
+        "herba": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "oreLapis"
+      },
+      "aspects": {
+        "terra": 1,
+        "sensus": 3
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "oreDiamond"
+      },
+      "aspects": {
+        "terra": 1,
+        "lucrum": 3,
+        "vitreus": 3
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "gemDiamond"
+      },
+      "aspects": {
+        "vitreus": 4,
+        "lucrum": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "oreRedstone"
+      },
+      "aspects": {
+        "terra": 1,
+        "potentia": 2,
+        "machina": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:lit_redstone_ore",
+        "meta": 0,
+        "srgField": "field_150439_ay"
+      },
+      "aspects": {
+        "terra": 1,
+        "potentia": 3,
+        "machina": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "oreEmerald"
+      },
+      "aspects": {
+        "terra": 1,
+        "lucrum": 4,
+        "vitreus": 3
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "gemEmerald"
+      },
+      "aspects": {
+        "vitreus": 4,
+        "lucrum": 5
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "oreQuartz"
+      },
+      "aspects": {
+        "terra": 1,
+        "vitreus": 3
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:quartz",
+        "meta": 0,
+        "srgField": "field_151128_bU"
+      },
+      "aspects": {
+        "vitreus": 1,
+        "potentia": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:gold_nugget",
+        "meta": 0,
+        "srgField": "field_151074_bl"
+      },
+      "aspects": {
+        "metallum": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "nuggetIron"
+      },
+      "aspects": {
+        "metallum": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "oreIron"
+      },
+      "aspects": {
+        "terra": 1,
+        "metallum": 3
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dustIron"
+      },
+      "aspects": {
+        "metallum": 3,
+        "perditio": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:iron_ingot",
+        "meta": 0,
+        "srgField": "field_151042_j"
+      },
+      "aspects": {
+        "metallum": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "oreGold"
+      },
+      "aspects": {
+        "terra": 1,
+        "metallum": 2,
+        "lucrum": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dustGold"
+      },
+      "aspects": {
+        "metallum": 2,
+        "perditio": 1,
+        "lucrum": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:gold_ingot",
+        "meta": 0,
+        "srgField": "field_151043_k"
+      },
+      "aspects": {
+        "metallum": 3,
+        "lucrum": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:coal_ore",
+        "meta": 0,
+        "srgField": "field_150365_q"
+      },
+      "aspects": {
+        "terra": 1,
+        "potentia": 2,
+        "ignis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:coal",
+        "meta": 32767,
+        "srgField": "field_151044_h"
+      },
+      "aspects": {
+        "potentia": 2,
+        "ignis": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dustRedstone"
+      },
+      "aspects": {
+        "potentia": 2,
+        "machina": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dustGlowstone"
+      },
+      "aspects": {
+        "sensus": 1,
+        "lux": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "glowstone"
+      },
+      "aspects": {
+        "sensus": 3,
+        "lux": 10
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "nuggetCopper"
+      },
+      "aspects": {
+        "metallum": 1
+      },
+      "condition": "foundCopperIngot"
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "ingotCopper"
+      },
+      "aspects": {
+        "metallum": 3,
+        "permutatio": 1
+      },
+      "condition": "foundCopperIngot"
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dustCopper"
+      },
+      "aspects": {
+        "metallum": 2,
+        "perditio": 1,
+        "permutatio": 1
+      },
+      "condition": "foundCopperIngot"
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "oreCopper"
+      },
+      "aspects": {
+        "metallum": 2,
+        "terra": 1,
+        "permutatio": 1
+      },
+      "condition": "foundCopperIngot"
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemnugget",
+        "meta": 17
+      },
+      "aspects": {
+        "ordo": 1,
+        "metallum": 5,
+        "terra": 1,
+        "permutatio": 2
+      },
+      "condition": "foundCopperIngot"
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "nuggetTin"
+      },
+      "aspects": {
+        "metallum": 1
+      },
+      "condition": "foundTinIngot"
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "ingotTin"
+      },
+      "aspects": {
+        "metallum": 3,
+        "vitreus": 1
+      },
+      "condition": "foundTinIngot"
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dustTin"
+      },
+      "aspects": {
+        "metallum": 2,
+        "perditio": 1,
+        "vitreus": 1
+      },
+      "condition": "foundTinIngot"
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "oreTin"
+      },
+      "aspects": {
+        "metallum": 3,
+        "perditio": 1,
+        "vitreus": 1
+      },
+      "condition": "foundTinIngot"
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemnugget",
+        "meta": 18
+      },
+      "aspects": {
+        "ordo": 1,
+        "metallum": 5,
+        "terra": 1,
+        "vitreus": 2
+      },
+      "condition": "foundTinIngot"
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "nuggetSilver"
+      },
+      "aspects": {
+        "metallum": 1
+      },
+      "condition": "foundSilverIngot"
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "ingotSilver"
+      },
+      "aspects": {
+        "metallum": 3,
+        "lucrum": 1
+      },
+      "condition": "foundSilverIngot"
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dustSilver"
+      },
+      "aspects": {
+        "metallum": 2,
+        "perditio": 1,
+        "lucrum": 1
+      },
+      "condition": "foundSilverIngot"
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "oreSilver"
+      },
+      "aspects": {
+        "metallum": 3,
+        "perditio": 1,
+        "lucrum": 1
+      },
+      "condition": "foundSilverIngot"
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemnugget",
+        "meta": 19
+      },
+      "aspects": {
+        "ordo": 1,
+        "metallum": 5,
+        "terra": 1,
+        "lucrum": 2
+      },
+      "condition": "foundSilverIngot"
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "nuggetLead"
+      },
+      "aspects": {
+        "metallum": 1
+      },
+      "condition": "foundLeadIngot"
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "ingotLead"
+      },
+      "aspects": {
+        "metallum": 3,
+        "ordo": 1
+      },
+      "condition": "foundLeadIngot"
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dustLead"
+      },
+      "aspects": {
+        "metallum": 2,
+        "perditio": 1,
+        "ordo": 1
+      },
+      "condition": "foundLeadIngot"
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "oreLead"
+      },
+      "aspects": {
+        "metallum": 3,
+        "perditio": 1,
+        "ordo": 1
+      },
+      "condition": "foundLeadIngot"
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemnugget",
+        "meta": 20
+      },
+      "aspects": {
+        "ordo": 3,
+        "metallum": 5,
+        "terra": 1
+      },
+      "condition": "foundLeadIngot"
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:bedrock",
+        "meta": 0,
+        "srgField": "field_150357_h"
+      },
+      "aspects": {
+        "vacuos": 16,
+        "perditio": 16,
+        "terra": 16,
+        "tenebrae": 16
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:dirt",
+        "meta": 32767,
+        "srgField": "field_150346_d"
+      },
+      "aspects": {
+        "terra": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:dirt",
+        "meta": 2,
+        "srgField": "field_150346_d"
+      },
+      "aspects": {
+        "terra": 1,
+        "herba": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:farmland",
+        "meta": 32767,
+        "srgField": "field_150458_ak"
+      },
+      "aspects": {
+        "terra": 1,
+        "meto": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:sand",
+        "meta": 32767,
+        "srgField": "field_150354_m"
+      },
+      "aspects": {
+        "terra": 1,
+        "perditio": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:grass",
+        "meta": 0,
+        "srgField": "field_150349_c"
+      },
+      "aspects": {
+        "terra": 1,
+        "herba": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:clay_ball",
+        "meta": 32767,
+        "srgField": "field_151119_aD"
+      },
+      "aspects": {
+        "aqua": 1,
+        "terra": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:end_stone",
+        "meta": 0,
+        "srgField": "field_150377_bs"
+      },
+      "aspects": {
+        "terra": 1,
+        "tenebrae": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:gravel",
+        "meta": 0,
+        "srgField": "field_150351_n"
+      },
+      "aspects": {
+        "terra": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:mycelium",
+        "meta": 0,
+        "srgField": "field_150391_bh"
+      },
+      "aspects": {
+        "terra": 1,
+        "herba": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:clay",
+        "meta": 32767,
+        "srgField": "field_150435_aG"
+      },
+      "aspects": {
+        "terra": 3,
+        "aqua": 3
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:hardened_clay",
+        "meta": 32767,
+        "srgField": "field_150405_ch"
+      },
+      "aspects": {
+        "terra": 4,
+        "ignis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:stained_hardened_clay",
+        "meta": 32767,
+        "srgField": "field_150406_ce"
+      },
+      "aspects": {
+        "terra": 3,
+        "ignis": 1,
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:brick",
+        "meta": 32767,
+        "srgField": "field_151118_aC"
+      },
+      "aspects": {
+        "terra": 1,
+        "ignis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:netherbrick",
+        "meta": 32767,
+        "srgField": "field_151130_bT"
+      },
+      "aspects": {
+        "ignis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:soul_sand",
+        "meta": 32767,
+        "srgField": "field_150425_aM"
+      },
+      "aspects": {
+        "terra": 1,
+        "vinculum": 1,
+        "spiritus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:netherrack",
+        "meta": 32767,
+        "srgField": "field_150424_aL"
+      },
+      "aspects": {
+        "terra": 2,
+        "ignis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:nether_brick",
+        "meta": 0,
+        "srgField": "field_150385_bj"
+      },
+      "aspects": {
+        "terra": 2,
+        "ignis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:glass",
+        "meta": 32767,
+        "srgField": "field_150359_w"
+      },
+      "aspects": {
+        "vitreus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:stained_glass",
+        "meta": 32767,
+        "srgField": "field_150399_cn"
+      },
+      "aspects": {
+        "vitreus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:mossy_cobblestone",
+        "meta": 32767,
+        "srgField": "field_150341_Y"
+      },
+      "aspects": {
+        "terra": 1,
+        "herba": 1,
+        "praecantatio": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:obsidian",
+        "meta": 32767,
+        "srgField": "field_150343_Z"
+      },
+      "aspects": {
+        "terra": 2,
+        "ignis": 2,
+        "tenebrae": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:monster_egg",
+        "meta": 32767,
+        "srgField": "field_150418_aU"
+      },
+      "aspects": {
+        "terra": 2,
+        "bestia": 1,
+        "vinculum": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:stonebrick",
+        "meta": 32767,
+        "srgField": "field_150417_aV"
+      },
+      "aspects": {
+        "terra": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:stonebrick",
+        "meta": 1,
+        "srgField": "field_150417_aV"
+      },
+      "aspects": {
+        "terra": 1,
+        "herba": 1
+      },
+      "inherits": {
+        "id": "minecraft:stonebrick",
+        "meta": 0
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:stonebrick",
+        "meta": 2,
+        "srgField": "field_150417_aV"
+      },
+      "aspects": {
+        "terra": 1,
+        "perditio": 1
+      },
+      "inherits": {
+        "id": "minecraft:stonebrick",
+        "meta": 0
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:stonebrick",
+        "meta": 3,
+        "srgField": "field_150417_aV"
+      },
+      "aspects": {
+        "terra": 1,
+        "ordo": 1
+      },
+      "inherits": {
+        "id": "minecraft:stonebrick",
+        "meta": 0
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:sandstone",
+        "meta": 32767,
+        "srgField": "field_150322_A"
+      },
+      "aspects": {},
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:sandstone",
+        "meta": 1,
+        "srgField": "field_150322_A"
+      },
+      "aspects": {
+        "praecantatio": 1
+      },
+      "inherits": {
+        "id": "minecraft:sandstone",
+        "meta": 0
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:sandstone",
+        "meta": 2,
+        "srgField": "field_150322_A"
+      },
+      "aspects": {
+        "ordo": 1
+      },
+      "inherits": {
+        "id": "minecraft:sandstone",
+        "meta": 0
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:tallgrass",
+        "meta": 32767,
+        "srgField": "field_150329_H"
+      },
+      "aspects": {
+        "herba": 1,
+        "aer": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:double_plant",
+        "meta": 32767,
+        "srgField": "field_150398_cm"
+      },
+      "aspects": {
+        "herba": 1,
+        "aer": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:waterlily",
+        "meta": 32767,
+        "srgField": "field_150392_bi"
+      },
+      "aspects": {
+        "herba": 2,
+        "aqua": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:deadbush",
+        "meta": 32767,
+        "srgField": "field_150330_I"
+      },
+      "aspects": {
+        "herba": 1,
+        "perditio": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:vine",
+        "meta": 32767,
+        "srgField": "field_150395_bd"
+      },
+      "aspects": {
+        "herba": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:wheat_seeds",
+        "meta": 32767,
+        "srgField": "field_151014_N"
+      },
+      "aspects": {
+        "herba": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:melon_seeds",
+        "meta": 32767,
+        "srgField": "field_151081_bc"
+      },
+      "aspects": {
+        "herba": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:pumpkin_seeds",
+        "meta": 32767,
+        "srgField": "field_151080_bb"
+      },
+      "aspects": {
+        "herba": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:melon",
+        "meta": 32767,
+        "srgField": "field_151127_ba"
+      },
+      "aspects": {
+        "fames": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:nether_wart",
+        "meta": 0,
+        "srgField": "field_151075_bm"
+      },
+      "aspects": {
+        "herba": 1,
+        "praecantatio": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:red_flower",
+        "meta": 32767,
+        "srgField": "field_150328_O"
+      },
+      "aspects": {
+        "herba": 1,
+        "victus": 1,
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:yellow_flower",
+        "meta": 32767,
+        "srgField": "field_150327_N"
+      },
+      "aspects": {
+        "herba": 1,
+        "victus": 1,
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:cactus",
+        "meta": 0,
+        "srgField": "field_150434_aF"
+      },
+      "aspects": {
+        "herba": 3,
+        "aqua": 1,
+        "perditio": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:brown_mushroom",
+        "meta": 0,
+        "srgField": "field_150338_P"
+      },
+      "aspects": {
+        "herba": 1,
+        "tenebrae": 1,
+        "terra": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:red_mushroom",
+        "meta": 0,
+        "srgField": "field_150337_Q"
+      },
+      "aspects": {
+        "herba": 1,
+        "tenebrae": 1,
+        "ignis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:brown_mushroom_block",
+        "meta": 32767,
+        "srgField": "field_150420_aW"
+      },
+      "aspects": {
+        "herba": 2,
+        "tenebrae": 1,
+        "terra": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:red_mushroom_block",
+        "meta": 32767,
+        "srgField": "field_150419_aX"
+      },
+      "aspects": {
+        "herba": 2,
+        "tenebrae": 1,
+        "ignis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:reeds",
+        "meta": 0,
+        "srgField": "field_151120_aE"
+      },
+      "aspects": {
+        "herba": 1,
+        "aqua": 1,
+        "aer": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:wheat",
+        "meta": 0,
+        "srgField": "field_151015_O"
+      },
+      "aspects": {
+        "messis": 2,
+        "fames": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:apple",
+        "meta": 0,
+        "srgField": "field_151034_e"
+      },
+      "aspects": {
+        "messis": 2,
+        "fames": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:carrot",
+        "meta": 0,
+        "srgField": "field_151172_bF"
+      },
+      "aspects": {
+        "messis": 1,
+        "fames": 1,
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:potato",
+        "meta": 0,
+        "srgField": "field_151174_bG"
+      },
+      "aspects": {
+        "messis": 1,
+        "fames": 1,
+        "terra": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:baked_potato",
+        "meta": 0,
+        "srgField": "field_151168_bH"
+      },
+      "aspects": {
+        "messis": 1,
+        "fames": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:poisonous_potato",
+        "meta": 0,
+        "srgField": "field_151170_bI"
+      },
+      "aspects": {
+        "messis": 1,
+        "venenum": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:pumpkin",
+        "meta": 32767,
+        "srgField": "field_150423_aK"
+      },
+      "aspects": {
+        "messis": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:melon_block",
+        "meta": 32767,
+        "srgField": "field_150440_ba"
+      },
+      "aspects": {
+        "messis": 2
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:name_tag",
+        "meta": 32767,
+        "srgField": "field_151057_cb"
+      },
+      "aspects": {
+        "cognitio": 2,
+        "bestia": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:iron_horse_armor",
+        "meta": 32767,
+        "srgField": "field_151138_bX"
+      },
+      "aspects": {
+        "tutamen": 2,
+        "bestia": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:golden_horse_armor",
+        "meta": 32767,
+        "srgField": "field_151136_bY"
+      },
+      "aspects": {
+        "tutamen": 4,
+        "bestia": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:diamond_horse_armor",
+        "meta": 32767,
+        "srgField": "field_151125_bZ"
+      },
+      "aspects": {
+        "tutamen": 6,
+        "bestia": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:fire",
+        "meta": 32767,
+        "srgField": "field_150480_ab"
+      },
+      "aspects": {
+        "ignis": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:water",
+        "meta": 32767,
+        "srgField": "field_150355_j"
+      },
+      "aspects": {
+        "aqua": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:lava",
+        "meta": 32767,
+        "srgField": "field_150353_l"
+      },
+      "aspects": {
+        "ignis": 3,
+        "terra": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:ice",
+        "meta": 32767,
+        "srgField": "field_150432_aD"
+      },
+      "aspects": {
+        "gelum": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:packed_ice",
+        "meta": 32767,
+        "srgField": "field_150403_cj"
+      },
+      "aspects": {
+        "gelum": 3,
+        "terra": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:snowball",
+        "meta": 32767,
+        "srgField": "field_151126_ay"
+      },
+      "aspects": {
+        "gelum": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:cookie",
+        "meta": 32767,
+        "srgField": "field_151106_aX"
+      },
+      "aspects": {
+        "fames": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:potionitem",
+        "meta": 0,
+        "srgField": "field_151068_bn"
+      },
+      "aspects": {
+        "aqua": 1,
+        "vitreus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:torch",
+        "meta": 32767,
+        "srgField": "field_150478_aa"
+      },
+      "aspects": {
+        "lux": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:web",
+        "meta": 32767,
+        "srgField": "field_150321_G"
+      },
+      "aspects": {
+        "vinculum": 2,
+        "pannus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:flint",
+        "meta": 32767,
+        "srgField": "field_151145_ak"
+      },
+      "aspects": {
+        "terra": 1,
+        "instrumentum": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:string",
+        "meta": 32767,
+        "srgField": "field_151007_F"
+      },
+      "aspects": {
+        "bestia": 1,
+        "pannus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:slime_ball",
+        "meta": 0,
+        "srgField": "field_151123_aH"
+      },
+      "aspects": {
+        "limus": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:leather",
+        "meta": 32767,
+        "srgField": "field_151116_aA"
+      },
+      "aspects": {
+        "pannus": 2,
+        "bestia": 1,
+        "tutamen": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:rotten_flesh",
+        "meta": 32767,
+        "srgField": "field_151078_bh"
+      },
+      "aspects": {
+        "humanus": 1,
+        "corpus": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:feather",
+        "meta": 32767,
+        "srgField": "field_151008_G"
+      },
+      "aspects": {
+        "volatus": 2,
+        "aer": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:bone",
+        "meta": 32767,
+        "srgField": "field_151103_aS"
+      },
+      "aspects": {
+        "mortuus": 2,
+        "corpus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:egg",
+        "meta": 32767,
+        "srgField": "field_151110_aK"
+      },
+      "aspects": {
+        "limus": 1,
+        "victus": 1,
+        "bestia": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:spider_eye",
+        "meta": 32767,
+        "srgField": "field_151070_bp"
+      },
+      "aspects": {
+        "sensus": 2,
+        "bestia": 2,
+        "venenum": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:gunpowder",
+        "meta": 32767,
+        "srgField": "field_151016_H"
+      },
+      "aspects": {
+        "ignis": 4,
+        "perditio": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:wool",
+        "meta": 32767,
+        "srgField": "field_150325_L"
+      },
+      "aspects": {
+        "pannus": 4,
+        "fabrico": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:fish",
+        "meta": 32767,
+        "srgField": "field_151115_aP"
+      },
+      "aspects": {
+        "corpus": 3,
+        "victus": 1,
+        "aqua": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:cooked_fish",
+        "meta": 32767,
+        "srgField": "field_151101_aQ"
+      },
+      "aspects": {
+        "fabrico": 1,
+        "corpus": 4,
+        "fames": 3
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:chicken",
+        "meta": 32767,
+        "srgField": "field_151076_bf"
+      },
+      "aspects": {
+        "corpus": 3,
+        "victus": 2,
+        "bestia": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:cooked_chicken",
+        "meta": 32767,
+        "srgField": "field_151077_bg"
+      },
+      "aspects": {
+        "fabrico": 1,
+        "corpus": 4,
+        "fames": 3
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:porkchop",
+        "meta": 32767,
+        "srgField": "field_151147_al"
+      },
+      "aspects": {
+        "corpus": 3,
+        "victus": 1,
+        "bestia": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:cooked_porkchop",
+        "meta": 32767,
+        "srgField": "field_151157_am"
+      },
+      "aspects": {
+        "fabrico": 1,
+        "corpus": 3,
+        "fames": 3
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:beef",
+        "meta": 32767,
+        "srgField": "field_151082_bd"
+      },
+      "aspects": {
+        "corpus": 4,
+        "victus": 2,
+        "bestia": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:cooked_beef",
+        "meta": 32767,
+        "srgField": "field_151083_be"
+      },
+      "aspects": {
+        "fabrico": 1,
+        "corpus": 4,
+        "fames": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:blaze_rod",
+        "meta": 32767,
+        "srgField": "field_151072_bj"
+      },
+      "aspects": {
+        "ignis": 4,
+        "praecantatio": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:saddle",
+        "meta": 32767,
+        "srgField": "field_151141_av"
+      },
+      "aspects": {
+        "bestia": 2,
+        "pannus": 3,
+        "iter": 3
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:ender_pearl",
+        "meta": 32767,
+        "srgField": "field_151079_bi"
+      },
+      "aspects": {
+        "alienis": 4,
+        "praecantatio": 2,
+        "iter": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:ghast_tear",
+        "meta": 32767,
+        "srgField": "field_151073_bk"
+      },
+      "aspects": {
+        "aqua": 1,
+        "exanimis": 4,
+        "spiritus": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:skull",
+        "meta": 0,
+        "srgField": "field_151144_bL"
+      },
+      "aspects": {
+        "mortuus": 4,
+        "spiritus": 4,
+        "exanimis": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:skull",
+        "meta": 1,
+        "srgField": "field_151144_bL"
+      },
+      "aspects": {
+        "mortuus": 4,
+        "spiritus": 4,
+        "exanimis": 4,
+        "venenum": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:skull",
+        "meta": 2,
+        "srgField": "field_151144_bL"
+      },
+      "aspects": {
+        "mortuus": 4,
+        "spiritus": 4,
+        "corpus": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:skull",
+        "meta": 3,
+        "srgField": "field_151144_bL"
+      },
+      "aspects": {
+        "mortuus": 4,
+        "spiritus": 4,
+        "humanus": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:skull",
+        "meta": 4,
+        "srgField": "field_151144_bL"
+      },
+      "aspects": {
+        "mortuus": 4,
+        "spiritus": 4,
+        "perditio": 2,
+        "ignis": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:record_11",
+        "meta": 0,
+        "srgField": "field_151086_cn"
+      },
+      "aspects": {
+        "sensus": 4,
+        "aer": 4,
+        "lucrum": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:record_13",
+        "meta": 0,
+        "srgField": "field_151096_cd"
+      },
+      "aspects": {
+        "sensus": 4,
+        "aer": 4,
+        "aqua": 4,
+        "lucrum": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:record_cat",
+        "meta": 0,
+        "srgField": "field_151093_ce"
+      },
+      "aspects": {
+        "sensus": 4,
+        "aer": 4,
+        "bestia": 4,
+        "lucrum": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:record_chirp",
+        "meta": 0,
+        "srgField": "field_151091_cg"
+      },
+      "aspects": {
+        "sensus": 4,
+        "aer": 4,
+        "terra": 4,
+        "lucrum": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:record_far",
+        "meta": 0,
+        "srgField": "field_151092_ch"
+      },
+      "aspects": {
+        "sensus": 4,
+        "aer": 4,
+        "alienis": 4,
+        "lucrum": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:record_mall",
+        "meta": 0,
+        "srgField": "field_151089_ci"
+      },
+      "aspects": {
+        "sensus": 4,
+        "aer": 4,
+        "humanus": 4,
+        "lucrum": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:record_mellohi",
+        "meta": 0,
+        "srgField": "field_151090_cj"
+      },
+      "aspects": {
+        "sensus": 4,
+        "aer": 4,
+        "fabrico": 4,
+        "lucrum": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:record_stal",
+        "meta": 0,
+        "srgField": "field_151087_ck"
+      },
+      "aspects": {
+        "sensus": 4,
+        "aer": 4,
+        "tenebrae": 4,
+        "lucrum": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:record_strad",
+        "meta": 0,
+        "srgField": "field_151088_cl"
+      },
+      "aspects": {
+        "sensus": 4,
+        "aer": 4,
+        "machina": 4,
+        "lucrum": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:record_ward",
+        "meta": 0,
+        "srgField": "field_151085_cm"
+      },
+      "aspects": {
+        "sensus": 4,
+        "aer": 4,
+        "praecantatio": 4,
+        "lucrum": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:record_blocks",
+        "meta": 0,
+        "srgField": "field_151094_cf"
+      },
+      "aspects": {
+        "sensus": 4,
+        "aer": 4,
+        "instrumentum": 4,
+        "lucrum": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:record_wait",
+        "meta": 0,
+        "srgField": "field_151084_co"
+      },
+      "aspects": {
+        "sensus": 4,
+        "aer": 4,
+        "vinculum": 4,
+        "lucrum": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:nether_star",
+        "meta": 0,
+        "srgField": "field_151156_bN"
+      },
+      "aspects": {
+        "alienis": 8,
+        "praecantatio": 8,
+        "ordo": 8,
+        "lux": 8
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:chainmail_helmet",
+        "meta": 32767,
+        "srgField": "field_151020_U"
+      },
+      "aspects": {
+        "metallum": 8
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:chainmail_chestplate",
+        "meta": 32767,
+        "srgField": "field_151023_V"
+      },
+      "aspects": {
+        "metallum": 12
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:chainmail_leggings",
+        "meta": 32767,
+        "srgField": "field_151022_W"
+      },
+      "aspects": {
+        "metallum": 11
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:chainmail_boots",
+        "meta": 32767,
+        "srgField": "field_151029_X"
+      },
+      "aspects": {
+        "metallum": 7
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:paper",
+        "meta": 0,
+        "srgField": "field_151121_aF"
+      },
+      "aspects": {
+        "cognitio": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:book",
+        "meta": 0,
+        "srgField": "field_151122_aG"
+      },
+      "aspects": {
+        "cognitio": 3
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:enchanted_book",
+        "meta": 0,
+        "srgField": "field_151134_bR"
+      },
+      "aspects": {
+        "cognitio": 3
+      },
+      "complex": true,
+      "inherits": {
+        "id": "minecraft:book",
+        "meta": 0
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:bookshelf",
+        "meta": 0,
+        "srgField": "field_150342_X"
+      },
+      "aspects": {
+        "cognitio": 8
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:dragon_egg",
+        "meta": 0,
+        "srgField": "field_150380_bt"
+      },
+      "aspects": {
+        "alienis": 8,
+        "bestia": 8,
+        "praecantatio": 8
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:portal",
+        "meta": 32767,
+        "srgField": "field_150427_aO"
+      },
+      "aspects": {
+        "ignis": 4,
+        "iter": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:end_portal",
+        "meta": 32767,
+        "srgField": "field_150384_bq"
+      },
+      "aspects": {
+        "alienis": 4,
+        "iter": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:end_portal_frame",
+        "meta": 32767,
+        "srgField": "field_150378_br"
+      },
+      "aspects": {
+        "alienis": 4,
+        "machina": 4,
+        "iter": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:mob_spawner",
+        "meta": 32767,
+        "srgField": "field_150474_ac"
+      },
+      "aspects": {
+        "bestia": 4,
+        "iter": 4,
+        "exanimis": 4,
+        "praecantatio": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:ender_eye",
+        "meta": 0,
+        "srgField": "field_151061_bv"
+      },
+      "aspects": {
+        "sensus": 4
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:arrow",
+        "meta": 0,
+        "srgField": "field_151032_g"
+      },
+      "aspects": {
+        "telum": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:glass_bottle",
+        "meta": 0,
+        "srgField": "field_151069_bo"
+      },
+      "aspects": {
+        "vacuos": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:chest",
+        "meta": 32767,
+        "srgField": "field_150486_ae"
+      },
+      "aspects": {
+        "vacuos": 4
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:golden_apple",
+        "meta": 0,
+        "srgField": "field_151153_ao"
+      },
+      "aspects": {
+        "praecantatio": 2,
+        "sano": 4
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:golden_apple",
+        "meta": 1,
+        "srgField": "field_151153_ao"
+      },
+      "aspects": {
+        "praecantatio": 4,
+        "sano": 8
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:bowl",
+        "meta": 0,
+        "srgField": "field_151054_z"
+      },
+      "aspects": {
+        "vacuos": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:mushroom_stew",
+        "meta": 0,
+        "srgField": "field_151009_A"
+      },
+      "aspects": {
+        "fames": 4
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:minecart",
+        "meta": 0,
+        "srgField": "field_151143_au"
+      },
+      "aspects": {
+        "machina": 2,
+        "iter": 4
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:iron_door",
+        "meta": 0,
+        "srgField": "field_151139_aw"
+      },
+      "aspects": {
+        "machina": 2,
+        "motus": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:wooden_door",
+        "meta": 0,
+        "srgField": "field_151135_aq"
+      },
+      "aspects": {
+        "machina": 1,
+        "motus": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:boat",
+        "meta": 0,
+        "srgField": "field_151124_az"
+      },
+      "aspects": {
+        "aqua": 4,
+        "iter": 4
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:flint_and_steel",
+        "meta": 32767,
+        "srgField": "field_151033_d"
+      },
+      "aspects": {
+        "ignis": 4
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:fishing_rod",
+        "meta": 32767,
+        "srgField": "field_151112_aM"
+      },
+      "aspects": {
+        "aqua": 1,
+        "instrumentum": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:bucket",
+        "meta": 0,
+        "srgField": "field_151133_ar"
+      },
+      "aspects": {
+        "metallum": 8,
+        "vacuos": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:water_bucket",
+        "meta": 0,
+        "srgField": "field_151131_as"
+      },
+      "aspects": {
+        "metallum": 8,
+        "vacuos": 1,
+        "aqua": 4
+      },
+      "inherits": {
+        "id": "minecraft:bucket",
+        "meta": 0
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:lava_bucket",
+        "meta": 0,
+        "srgField": "field_151129_at"
+      },
+      "aspects": {
+        "metallum": 8,
+        "vacuos": 1,
+        "ignis": 4,
+        "terra": 1
+      },
+      "inherits": {
+        "id": "minecraft:bucket",
+        "meta": 0
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:milk_bucket",
+        "meta": 0,
+        "srgField": "field_151117_aB"
+      },
+      "aspects": {
+        "metallum": 8,
+        "vacuos": 1,
+        "fames": 2,
+        "sano": 2,
+        "aqua": 2
+      },
+      "inherits": {
+        "id": "minecraft:bucket",
+        "meta": 0
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:cake",
+        "meta": 0,
+        "srgField": "field_151105_aU"
+      },
+      "aspects": {
+        "aqua": 4,
+        "fames": 4,
+        "victus": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:brewing_stand",
+        "meta": 0,
+        "srgField": "field_151067_bt"
+      },
+      "aspects": {
+        "fabrico": 2,
+        "aqua": 2
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:stone_button",
+        "meta": 0,
+        "srgField": "field_150430_aB"
+      },
+      "aspects": {
+        "machina": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:rail",
+        "meta": 32767,
+        "srgField": "field_150448_aq"
+      },
+      "aspects": {
+        "metallum": 1,
+        "iter": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:detector_rail",
+        "meta": 32767,
+        "srgField": "field_150319_E"
+      },
+      "aspects": {
+        "machina": 1,
+        "sensus": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:golden_rail",
+        "meta": 32767,
+        "srgField": "field_150318_D"
+      },
+      "aspects": {
+        "machina": 1,
+        "potentia": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:activator_rail",
+        "meta": 32767,
+        "srgField": "field_150408_cc"
+      },
+      "aspects": {
+        "machina": 2
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:fence_gate",
+        "meta": 32767,
+        "srgField": "field_150396_be"
+      },
+      "aspects": {
+        "machina": 1,
+        "iter": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:wooden_pressure_plate",
+        "meta": 32767,
+        "srgField": "field_150452_aw"
+      },
+      "aspects": {
+        "machina": 1,
+        "sensus": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:stone_pressure_plate",
+        "meta": 32767,
+        "srgField": "field_150456_au"
+      },
+      "aspects": {
+        "machina": 1,
+        "sensus": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:light_weighted_pressure_plate",
+        "meta": 32767,
+        "srgField": "field_150445_bS"
+      },
+      "aspects": {
+        "machina": 1,
+        "sensus": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:heavy_weighted_pressure_plate",
+        "meta": 32767,
+        "srgField": "field_150443_bT"
+      },
+      "aspects": {
+        "machina": 1,
+        "sensus": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:lever",
+        "meta": 32767,
+        "srgField": "field_150442_at"
+      },
+      "aspects": {
+        "machina": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:redstone_torch",
+        "meta": 32767,
+        "srgField": "field_150429_aA"
+      },
+      "aspects": {
+        "machina": 2
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:piston",
+        "meta": 32767,
+        "srgField": "field_150331_J"
+      },
+      "aspects": {
+        "machina": 2,
+        "motus": 4
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:sticky_piston",
+        "meta": 32767,
+        "srgField": "field_150320_F"
+      },
+      "aspects": {
+        "machina": 2,
+        "motus": 4
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:jukebox",
+        "meta": 0,
+        "srgField": "field_150421_aI"
+      },
+      "aspects": {
+        "sensus": 4,
+        "machina": 2,
+        "aer": 4
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:noteblock",
+        "meta": 0,
+        "srgField": "field_150323_B"
+      },
+      "aspects": {
+        "sensus": 4,
+        "machina": 1,
+        "aer": 4
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:trapdoor",
+        "meta": 32767,
+        "srgField": "field_150415_aT"
+      },
+      "aspects": {
+        "motus": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:lit_furnace",
+        "meta": 32767,
+        "srgField": "field_150470_am"
+      },
+      "aspects": {
+        "ignis": 4
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:furnace",
+        "meta": 32767,
+        "srgField": "field_150460_al"
+      },
+      "aspects": {
+        "ignis": 2
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:enchanting_table",
+        "meta": 0,
+        "srgField": "field_150381_bn"
+      },
+      "aspects": {
+        "praecantatio": 8,
+        "fabrico": 4
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:crafting_table",
+        "meta": 0,
+        "srgField": "field_150462_ai"
+      },
+      "aspects": {
+        "fabrico": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:clock",
+        "meta": 0,
+        "srgField": "field_151113_aN"
+      },
+      "aspects": {
+        "machina": 2
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:anvil",
+        "meta": 0,
+        "srgField": "field_150467_bQ"
+      },
+      "aspects": {
+        "metallum": 64,
+        "fabrico": 2,
+        "instrumentum": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:anvil",
+        "meta": 1,
+        "srgField": "field_150467_bQ"
+      },
+      "aspects": {
+        "metallum": 64,
+        "fabrico": 2,
+        "instrumentum": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:anvil",
+        "meta": 2,
+        "srgField": "field_150467_bQ"
+      },
+      "aspects": {
+        "metallum": 64,
+        "fabrico": 2,
+        "instrumentum": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:beacon",
+        "meta": 0,
+        "srgField": "field_150461_bJ"
+      },
+      "aspects": {
+        "auram": 2,
+        "praecantatio": 2,
+        "permutatio": 2
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:wooden_button",
+        "meta": 32767,
+        "srgField": "field_150471_bO"
+      },
+      "aspects": {
+        "machina": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:carrot_on_a_stick",
+        "meta": 32767,
+        "srgField": "field_151146_bM"
+      },
+      "aspects": {
+        "iter": 4
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:flower_pot",
+        "meta": 0,
+        "srgField": "field_151162_bE"
+      },
+      "aspects": {
+        "vacuos": 1,
+        "herba": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:golden_carrot",
+        "meta": 0,
+        "srgField": "field_151150_bK"
+      },
+      "aspects": {
+        "sensus": 2
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:ender_chest",
+        "meta": 32767,
+        "srgField": "field_150477_bB"
+      },
+      "aspects": {
+        "permutatio": 2,
+        "iter": 2,
+        "vacuos": 4
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:hopper",
+        "meta": 32767,
+        "srgField": "field_150438_bZ"
+      },
+      "aspects": {
+        "machina": 1,
+        "permutatio": 1,
+        "vacuos": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:dropper",
+        "meta": 32767,
+        "srgField": "field_150409_cd"
+      },
+      "aspects": {
+        "machina": 1,
+        "permutatio": 1,
+        "vacuos": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:dispenser",
+        "meta": 32767,
+        "srgField": "field_150367_z"
+      },
+      "aspects": {
+        "machina": 1,
+        "permutatio": 1,
+        "vacuos": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:tripwire_hook",
+        "meta": 32767,
+        "srgField": "field_150479_bC"
+      },
+      "aspects": {
+        "sensus": 1,
+        "machina": 1,
+        "vinculum": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:daylight_detector",
+        "meta": 32767,
+        "srgField": "field_150453_bW"
+      },
+      "aspects": {
+        "sensus": 2,
+        "lux": 3,
+        "machina": 3
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blocktable",
+        "meta": 0
+      },
+      "aspects": {
+        "instrumentum": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blocktable",
+        "meta": 15
+      },
+      "aspects": {
+        "instrumentum": 1,
+        "fabrico": 4
+      },
+      "inherits": {
+        "id": "thaumcraft:blocktable",
+        "meta": 0
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blocktable",
+        "meta": 2
+      },
+      "aspects": {
+        "instrumentum": 1,
+        "cognitio": 4
+      },
+      "inherits": {
+        "id": "thaumcraft:blocktable",
+        "meta": 0
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemnugget",
+        "meta": 16
+      },
+      "aspects": {
+        "ordo": 1,
+        "metallum": 6,
+        "terra": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemnugget",
+        "meta": 31
+      },
+      "aspects": {
+        "ordo": 1,
+        "metallum": 4,
+        "terra": 1,
+        "lucrum": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemnugget",
+        "meta": 21
+      },
+      "aspects": {
+        "ordo": 1,
+        "metallum": 4,
+        "terra": 1,
+        "permutatio": 4,
+        "venenum": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemnugget",
+        "meta": 5
+      },
+      "aspects": {
+        "metallum": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemnugget",
+        "meta": 6
+      },
+      "aspects": {
+        "metallum": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcustomore",
+        "meta": 0
+      },
+      "aspects": {
+        "terra": 1,
+        "metallum": 2,
+        "permutatio": 2,
+        "venenum": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcustomore",
+        "meta": 7
+      },
+      "aspects": {
+        "terra": 1,
+        "vinculum": 3,
+        "vitreus": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcustomore",
+        "meta": 1
+      },
+      "aspects": {
+        "terra": 1,
+        "aer": 3,
+        "vitreus": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcustomore",
+        "meta": 2
+      },
+      "aspects": {
+        "terra": 1,
+        "ignis": 3,
+        "vitreus": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcustomore",
+        "meta": 3
+      },
+      "aspects": {
+        "terra": 1,
+        "aqua": 3,
+        "vitreus": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcustomore",
+        "meta": 4
+      },
+      "aspects": {
+        "terra": 4,
+        "vitreus": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcustomore",
+        "meta": 5
+      },
+      "aspects": {
+        "terra": 1,
+        "ordo": 3,
+        "vitreus": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcustomore",
+        "meta": 6
+      },
+      "aspects": {
+        "terra": 1,
+        "perditio": 3,
+        "vitreus": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blocktaint",
+        "meta": 0
+      },
+      "aspects": {
+        "arbor": 1,
+        "vitium": 3
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blocktaint",
+        "meta": 1
+      },
+      "aspects": {
+        "terra": 1,
+        "vitium": 3
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blocktaintfibres",
+        "meta": 0
+      },
+      "aspects": {
+        "victus": 1,
+        "vitium": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blocktaintfibres",
+        "meta": 1
+      },
+      "aspects": {
+        "herba": 1,
+        "vitium": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blocktaintfibres",
+        "meta": 2
+      },
+      "aspects": {
+        "herba": 1,
+        "vitium": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blocktaintfibres",
+        "meta": 3
+      },
+      "aspects": {
+        "bestia": 1,
+        "herba": 1,
+        "vitium": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blocktaintfibres",
+        "meta": 4
+      },
+      "aspects": {
+        "bestia": 1,
+        "herba": 1,
+        "vitium": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcosmeticsolid",
+        "meta": 0
+      },
+      "aspects": {
+        "terra": 4,
+        "tenebrae": 2,
+        "alienis": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockmagicallog",
+        "meta": 0
+      },
+      "aspects": {
+        "arbor": 3,
+        "praecantatio": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockmagicallog",
+        "meta": 1
+      },
+      "aspects": {
+        "arbor": 3,
+        "praecantatio": 1,
+        "ordo": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockmagicalleaves",
+        "meta": 0
+      },
+      "aspects": {
+        "herba": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockmagicalleaves",
+        "meta": 1
+      },
+      "aspects": {
+        "herba": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcustomplant",
+        "meta": 0
+      },
+      "aspects": {
+        "herba": 2,
+        "arbor": 1,
+        "praecantatio": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcustomplant",
+        "meta": 1
+      },
+      "aspects": {
+        "herba": 2,
+        "arbor": 1,
+        "praecantatio": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcustomplant",
+        "meta": 2
+      },
+      "aspects": {
+        "herba": 2,
+        "permutatio": 2,
+        "praecantatio": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcustomplant",
+        "meta": 3
+      },
+      "aspects": {
+        "herba": 2,
+        "ignis": 2,
+        "praecantatio": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcustomplant",
+        "meta": 5
+      },
+      "aspects": {
+        "herba": 2,
+        "venenum": 1,
+        "praecantatio": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcosmeticsolid",
+        "meta": 6
+      },
+      "aspects": {
+        "terra": 1,
+        "praecantatio": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcosmeticsolid",
+        "meta": 7
+      },
+      "aspects": {
+        "terra": 1,
+        "praecantatio": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemresource",
+        "meta": 3
+      },
+      "aspects": {
+        "metallum": 3,
+        "venenum": 1,
+        "permutatio": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemzombiebrain",
+        "meta": 0
+      },
+      "aspects": {
+        "corpus": 2,
+        "cognitio": 4,
+        "exanimis": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemresource",
+        "meta": 6
+      },
+      "aspects": {
+        "vinculum": 2,
+        "vitreus": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemresource",
+        "meta": 9
+      },
+      "aspects": {
+        "cognitio": 8
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemresource",
+        "meta": 11
+      },
+      "aspects": {
+        "vitium": 3,
+        "limus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemresource",
+        "meta": 12
+      },
+      "aspects": {
+        "vitium": 2,
+        "lucrum": 1,
+        "fames": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemresource",
+        "meta": 18
+      },
+      "aspects": {
+        "lucrum": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemlootbag",
+        "meta": 0
+      },
+      "aspects": {
+        "lucrum": 8
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemlootbag",
+        "meta": 1
+      },
+      "aspects": {
+        "lucrum": 16
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemlootbag",
+        "meta": 2
+      },
+      "aspects": {
+        "lucrum": 32
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemnuggetbeef",
+        "meta": 32767
+      },
+      "aspects": {
+        "fames": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemnuggetchicken",
+        "meta": 32767
+      },
+      "aspects": {
+        "fames": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemnuggetpork",
+        "meta": 32767
+      },
+      "aspects": {
+        "fames": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemnuggetfish",
+        "meta": 32767
+      },
+      "aspects": {
+        "fames": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:triplemeattreat",
+        "meta": 32767
+      },
+      "aspects": {
+        "sano": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemshard",
+        "meta": 0
+      },
+      "aspects": {
+        "praecantatio": 1,
+        "aer": 2,
+        "vitreus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemshard",
+        "meta": 1
+      },
+      "aspects": {
+        "praecantatio": 1,
+        "ignis": 2,
+        "vitreus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemshard",
+        "meta": 2
+      },
+      "aspects": {
+        "praecantatio": 1,
+        "aqua": 2,
+        "vitreus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemshard",
+        "meta": 3
+      },
+      "aspects": {
+        "praecantatio": 1,
+        "terra": 2,
+        "vitreus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemshard",
+        "meta": 4
+      },
+      "aspects": {
+        "praecantatio": 1,
+        "ordo": 2,
+        "vitreus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemshard",
+        "meta": 5
+      },
+      "aspects": {
+        "praecantatio": 1,
+        "perditio": 2,
+        "vitreus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemresource",
+        "meta": 14
+      },
+      "aspects": {
+        "praecantatio": 2
+      },
+      "inherits": {
+        "id": "thaumcraft:itemshard",
+        "meta": 6
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockmetaldevice",
+        "meta": 0
+      },
+      "aspects": {
+        "fabrico": 4,
+        "praecantatio": 4
+      },
+      "inherits": {
+        "id": "minecraft:cauldron",
+        "meta": 32767
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcandle",
+        "meta": 0
+      },
+      "aspects": {
+        "lux": 2,
+        "corpus": 1,
+        "praecantatio": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockairy",
+        "meta": 2
+      },
+      "aspects": {
+        "lux": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockairy",
+        "meta": 3
+      },
+      "aspects": {
+        "lux": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemthaumonomicon",
+        "meta": 32767
+      },
+      "aspects": {
+        "cognitio": 8,
+        "praecantatio": 2
+      },
+      "inherits": {
+        "id": "minecraft:bookshelf",
+        "meta": 0
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockalchemyfurnace",
+        "meta": 32767
+      },
+      "aspects": {
+        "praecantatio": 8,
+        "aqua": 8,
+        "fabrico": 8
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemessence",
+        "meta": 0
+      },
+      "aspects": {
+        "vacuos": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemessence",
+        "meta": 1
+      },
+      "aspects": {}
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemwispessence",
+        "meta": 0
+      },
+      "aspects": {
+        "auram": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemcrystalessence",
+        "meta": 0
+      },
+      "aspects": {}
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:primalarrow",
+        "meta": 0
+      },
+      "aspects": {
+        "telum": 1
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemgoggles",
+        "meta": 32767
+      },
+      "aspects": {
+        "sensus": 4
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockwoodendevice",
+        "meta": 1
+      },
+      "aspects": {
+        "sensus": 4
+      },
+      "complex": true
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itembaubleblanks",
+        "meta": 3
+      },
+      "aspects": {
+        "praecantatio": 5
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:focuspech",
+        "meta": 0
+      },
+      "aspects": {
+        "praecantatio": 5,
+        "venenum": 5,
+        "perditio": 5,
+        "alienis": 5,
+        "telum": 5
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemchestplatecultistplate",
+        "meta": 32767
+      },
+      "aspects": {
+        "metallum": 5,
+        "alienis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemchestplatecultistrobe",
+        "meta": 32767
+      },
+      "aspects": {
+        "metallum": 3,
+        "pannus": 2,
+        "alienis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemchestplatecultistleaderplate",
+        "meta": 32767
+      },
+      "aspects": {
+        "metallum": 5,
+        "alienis": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemleggingscultistplate",
+        "meta": 32767
+      },
+      "aspects": {
+        "metallum": 5,
+        "alienis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemleggingscultistleaderplate",
+        "meta": 32767
+      },
+      "aspects": {
+        "metallum": 5,
+        "alienis": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemleggingscultistrobe",
+        "meta": 32767
+      },
+      "aspects": {
+        "metallum": 3,
+        "pannus": 2,
+        "alienis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemhelmetcultistplate",
+        "meta": 32767
+      },
+      "aspects": {
+        "metallum": 5,
+        "alienis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemhelmetcultistleaderplate",
+        "meta": 32767
+      },
+      "aspects": {
+        "metallum": 5,
+        "alienis": 2
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemhelmetcultistrobe",
+        "meta": 32767
+      },
+      "aspects": {
+        "metallum": 3,
+        "pannus": 2,
+        "alienis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itembootscultist",
+        "meta": 32767
+      },
+      "aspects": {
+        "metallum": 4,
+        "alienis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockwoodendevice",
+        "meta": 8
+      },
+      "aspects": {
+        "alienis": 1,
+        "arbor": 2,
+        "pannus": 3
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemeldritchobject",
+        "meta": 0
+      },
+      "aspects": {
+        "alienis": 5,
+        "auram": 3,
+        "praecantatio": 3,
+        "sensus": 3,
+        "spiritus": 3
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemeldritchobject",
+        "meta": 1
+      },
+      "aspects": {
+        "cognitio": 5,
+        "praecantatio": 3,
+        "alienis": 3,
+        "spiritus": 3
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemeldritchobject",
+        "meta": 2
+      },
+      "aspects": {
+        "vinculum": 4,
+        "cognitio": 4,
+        "machina": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:itemeldritchobject",
+        "meta": 3
+      },
+      "aspects": {
+        "aer": 16,
+        "terra": 16,
+        "ignis": 16,
+        "aqua": 16,
+        "ordo": 16,
+        "perditio": 16
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockeldritch",
+        "meta": 32767
+      },
+      "aspects": {
+        "vacuos": 8,
+        "alienis": 8,
+        "sensus": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockportaleldritch",
+        "meta": 0
+      },
+      "aspects": {
+        "vacuos": 8,
+        "alienis": 8,
+        "iter": 8
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockeldritch",
+        "meta": 3
+      },
+      "aspects": {
+        "vacuos": 4,
+        "alienis": 4
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockeldritch",
+        "meta": 4
+      },
+      "aspects": {
+        "lux": 1,
+        "terra": 1,
+        "alienis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockeldritch",
+        "meta": 5
+      },
+      "aspects": {
+        "cognitio": 2,
+        "terra": 1,
+        "alienis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockeldritch",
+        "meta": 6
+      },
+      "aspects": {
+        "metallum": 2,
+        "machina": 2,
+        "alienis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcosmeticsolid",
+        "meta": 11
+      },
+      "aspects": {
+        "terra": 1,
+        "alienis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "thaumcraft:blockcosmeticsolid",
+        "meta": 12
+      },
+      "aspects": {
+        "terra": 1,
+        "alienis": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dyeBlack"
+      },
+      "aspects": {
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dyeRed"
+      },
+      "aspects": {
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dyeGreen"
+      },
+      "aspects": {
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dyeBrown"
+      },
+      "aspects": {
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dyeBlue"
+      },
+      "aspects": {
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dyePurple"
+      },
+      "aspects": {
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dyeCyan"
+      },
+      "aspects": {
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dyeLightGray"
+      },
+      "aspects": {
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dyeGray"
+      },
+      "aspects": {
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dyePink"
+      },
+      "aspects": {
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dyeLime"
+      },
+      "aspects": {
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dyeYellow"
+      },
+      "aspects": {
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dyeLightBlue"
+      },
+      "aspects": {
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dyeMagenta"
+      },
+      "aspects": {
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dyeOrange"
+      },
+      "aspects": {
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "oredict",
+        "name": "dyeWhite"
+      },
+      "aspects": {
+        "sensus": 1
+      }
+    },
+    {
+      "target": {
+        "kind": "item",
+        "id": "minecraft:potionitem",
+        "meta": 32767,
+        "srgField": "field_151068_bn"
+      },
+      "aspects": {
+        "aqua": 1,
+        "vitreus": 1
+      },
+      "inherits": {
+        "id": "minecraft:potionitem",
+        "meta": 0
+      },
+      "note": "collapses the original per-PotionHelper-meta registrations (every valid meta inherited the base potion tags)"
+    }
+  ],
+  "entityTags": [
+    {
+      "entity": "minecraft:zombie",
+      "originalName": "Zombie",
+      "aspects": {
+        "exanimis": 2,
+        "humanus": 1,
+        "terra": 1
+      }
+    },
+    {
+      "entity": "minecraft:giant",
+      "originalName": "Giant",
+      "aspects": {
+        "exanimis": 4,
+        "humanus": 3,
+        "terra": 3
+      }
+    },
+    {
+      "entity": "minecraft:skeleton",
+      "originalName": "Skeleton",
+      "aspects": {
+        "exanimis": 3,
+        "humanus": 1,
+        "terra": 1
+      }
+    },
+    {
+      "entity": "minecraft:skeleton",
+      "originalName": "Skeleton",
+      "aspects": {
+        "exanimis": 4,
+        "humanus": 1,
+        "ignis": 2
+      },
+      "condition": {
+        "nbt": "SkeletonType",
+        "type": "byte",
+        "value": 1
+      }
+    },
+    {
+      "entity": "minecraft:creeper",
+      "originalName": "Creeper",
+      "aspects": {
+        "herba": 2,
+        "ignis": 2
+      }
+    },
+    {
+      "entity": "minecraft:creeper",
+      "originalName": "Creeper",
+      "aspects": {
+        "herba": 3,
+        "ignis": 3,
+        "potentia": 3
+      },
+      "condition": {
+        "nbt": "powered",
+        "type": "byte",
+        "value": 1
+      }
+    },
+    {
+      "entity": "minecraft:horse",
+      "originalName": "EntityHorse",
+      "aspects": {
+        "bestia": 4,
+        "terra": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "minecraft:pig",
+      "originalName": "Pig",
+      "aspects": {
+        "bestia": 2,
+        "terra": 2
+      }
+    },
+    {
+      "entity": "minecraft:experience_orb",
+      "originalName": "XPOrb",
+      "aspects": {
+        "cognitio": 5
+      }
+    },
+    {
+      "entity": "minecraft:sheep",
+      "originalName": "Sheep",
+      "aspects": {
+        "bestia": 2,
+        "terra": 2
+      }
+    },
+    {
+      "entity": "minecraft:cow",
+      "originalName": "Cow",
+      "aspects": {
+        "bestia": 3,
+        "terra": 3
+      }
+    },
+    {
+      "entity": "minecraft:mooshroom",
+      "originalName": "MushroomCow",
+      "aspects": {
+        "bestia": 3,
+        "herba": 1,
+        "terra": 2
+      }
+    },
+    {
+      "entity": "minecraft:snow_golem",
+      "originalName": "SnowMan",
+      "aspects": {
+        "gelum": 3,
+        "aqua": 1
+      }
+    },
+    {
+      "entity": "minecraft:ocelot",
+      "originalName": "Ozelot",
+      "aspects": {
+        "bestia": 3,
+        "perditio": 3
+      }
+    },
+    {
+      "entity": "minecraft:chicken",
+      "originalName": "Chicken",
+      "aspects": {
+        "bestia": 2,
+        "volatus": 2,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "minecraft:squid",
+      "originalName": "Squid",
+      "aspects": {
+        "bestia": 2,
+        "aqua": 2
+      }
+    },
+    {
+      "entity": "minecraft:wolf",
+      "originalName": "Wolf",
+      "aspects": {
+        "bestia": 3,
+        "terra": 3
+      }
+    },
+    {
+      "entity": "minecraft:bat",
+      "originalName": "Bat",
+      "aspects": {
+        "bestia": 1,
+        "volatus": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "minecraft:boat",
+      "originalName": "Boat",
+      "aspects": {
+        "machina": 2,
+        "aqua": 2
+      }
+    },
+    {
+      "entity": "minecraft:spider",
+      "originalName": "Spider",
+      "aspects": {
+        "bestia": 3,
+        "perditio": 2
+      }
+    },
+    {
+      "entity": "minecraft:slime",
+      "originalName": "Slime",
+      "aspects": {
+        "limus": 2,
+        "aqua": 2
+      }
+    },
+    {
+      "entity": "minecraft:ghast",
+      "originalName": "Ghast",
+      "aspects": {
+        "exanimis": 3,
+        "ignis": 2
+      }
+    },
+    {
+      "entity": "minecraft:zombified_piglin",
+      "originalName": "PigZombie",
+      "aspects": {
+        "exanimis": 4,
+        "ignis": 2
+      }
+    },
+    {
+      "entity": "minecraft:enderman",
+      "originalName": "Enderman",
+      "aspects": {
+        "alienis": 4,
+        "iter": 2,
+        "aer": 2
+      }
+    },
+    {
+      "entity": "minecraft:cave_spider",
+      "originalName": "CaveSpider",
+      "aspects": {
+        "bestia": 2,
+        "venenum": 2,
+        "terra": 1
+      }
+    },
+    {
+      "entity": "minecraft:silverfish",
+      "originalName": "Silverfish",
+      "aspects": {
+        "bestia": 1,
+        "terra": 1
+      }
+    },
+    {
+      "entity": "minecraft:blaze",
+      "originalName": "Blaze",
+      "aspects": {
+        "alienis": 4,
+        "ignis": 1
+      }
+    },
+    {
+      "entity": "minecraft:magma_cube",
+      "originalName": "LavaSlime",
+      "aspects": {
+        "limus": 3,
+        "ignis": 2
+      }
+    },
+    {
+      "entity": "minecraft:ender_dragon",
+      "originalName": "EnderDragon",
+      "aspects": {
+        "alienis": 20,
+        "bestia": 20,
+        "perditio": 20
+      }
+    },
+    {
+      "entity": "minecraft:wither",
+      "originalName": "WitherBoss",
+      "aspects": {
+        "exanimis": 20,
+        "perditio": 20,
+        "ignis": 15
+      }
+    },
+    {
+      "entity": "minecraft:witch",
+      "originalName": "Witch",
+      "aspects": {
+        "humanus": 3,
+        "praecantatio": 2,
+        "ignis": 1
+      }
+    },
+    {
+      "entity": "minecraft:villager",
+      "originalName": "Villager",
+      "aspects": {
+        "humanus": 3,
+        "aer": 2
+      }
+    },
+    {
+      "entity": "minecraft:iron_golem",
+      "originalName": "VillagerGolem",
+      "aspects": {
+        "metallum": 4,
+        "terra": 3
+      }
+    },
+    {
+      "entity": "minecraft:minecart",
+      "originalName": "MinecartRideable",
+      "aspects": {
+        "machina": 3,
+        "aer": 2
+      }
+    },
+    {
+      "entity": "minecraft:chest_minecart",
+      "originalName": "MinecartChest",
+      "aspects": {
+        "machina": 3,
+        "aer": 1,
+        "vacuos": 1
+      }
+    },
+    {
+      "entity": "minecraft:furnace_minecart",
+      "originalName": "MinecartFurnace",
+      "aspects": {
+        "machina": 3,
+        "aer": 1,
+        "ignis": 1
+      }
+    },
+    {
+      "entity": "minecraft:tnt_minecart",
+      "originalName": "MinecartTNT",
+      "aspects": {
+        "machina": 3,
+        "aer": 1,
+        "ignis": 1
+      }
+    },
+    {
+      "entity": "minecraft:hopper_minecart",
+      "originalName": "MinecartHopper",
+      "aspects": {
+        "machina": 3,
+        "aer": 1,
+        "permutatio": 1
+      }
+    },
+    {
+      "entity": "minecraft:spawner_minecart",
+      "originalName": "MinecartSpawner",
+      "aspects": {
+        "machina": 3,
+        "aer": 1,
+        "praecantatio": 1
+      }
+    },
+    {
+      "entity": "minecraft:end_crystal",
+      "originalName": "EnderCrystal",
+      "aspects": {
+        "alienis": 3,
+        "praecantatio": 3,
+        "sano": 3
+      }
+    },
+    {
+      "entity": "minecraft:item_frame",
+      "originalName": "ItemFrame",
+      "aspects": {
+        "sensus": 3,
+        "pannus": 1
+      }
+    },
+    {
+      "entity": "minecraft:painting",
+      "originalName": "Painting",
+      "aspects": {
+        "sensus": 5,
+        "pannus": 3
+      }
+    },
+    {
+      "entity": "thaumcraft:primalorb",
+      "originalName": "Thaumcraft.PrimalOrb",
+      "aspects": {
+        "aer": 5,
+        "perditio": 10,
+        "praecantatio": 10,
+        "potentia": 10
+      }
+    },
+    {
+      "entity": "thaumcraft:firebat",
+      "originalName": "Thaumcraft.Firebat",
+      "aspects": {
+        "bestia": 2,
+        "volatus": 1,
+        "ignis": 2
+      }
+    },
+    {
+      "entity": "thaumcraft:pech",
+      "originalName": "Thaumcraft.Pech",
+      "aspects": {
+        "humanus": 2,
+        "praecantatio": 2,
+        "permutatio": 2,
+        "lucrum": 2
+      },
+      "condition": {
+        "nbt": "PechType",
+        "type": "byte",
+        "value": 0
+      }
+    },
+    {
+      "entity": "thaumcraft:pech",
+      "originalName": "Thaumcraft.Pech",
+      "aspects": {
+        "humanus": 2,
+        "praecantatio": 2,
+        "permutatio": 2,
+        "telum": 2
+      },
+      "condition": {
+        "nbt": "PechType",
+        "type": "byte",
+        "value": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:pech",
+      "originalName": "Thaumcraft.Pech",
+      "aspects": {
+        "humanus": 2,
+        "praecantatio": 4,
+        "permutatio": 2
+      },
+      "condition": {
+        "nbt": "PechType",
+        "type": "byte",
+        "value": 2
+      }
+    },
+    {
+      "entity": "thaumcraft:thaumslime",
+      "originalName": "Thaumcraft.ThaumSlime",
+      "aspects": {
+        "limus": 2,
+        "praecantatio": 1,
+        "aqua": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:brainyzombie",
+      "originalName": "Thaumcraft.BrainyZombie",
+      "aspects": {
+        "exanimis": 3,
+        "humanus": 1,
+        "cognitio": 1,
+        "terra": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:giantbrainyzombie",
+      "originalName": "Thaumcraft.GiantBrainyZombie",
+      "aspects": {
+        "exanimis": 4,
+        "humanus": 2,
+        "cognitio": 1,
+        "terra": 2
+      }
+    },
+    {
+      "entity": "thaumcraft:taintacle",
+      "originalName": "Thaumcraft.Taintacle",
+      "aspects": {
+        "vitium": 3,
+        "aqua": 2
+      }
+    },
+    {
+      "entity": "thaumcraft:taintacletiny",
+      "originalName": "Thaumcraft.TaintacleTiny",
+      "aspects": {
+        "vitium": 1,
+        "aqua": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:taintspider",
+      "originalName": "Thaumcraft.TaintSpider",
+      "aspects": {
+        "vitium": 1,
+        "terra": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:taintspore",
+      "originalName": "Thaumcraft.TaintSpore",
+      "aspects": {
+        "vitium": 2,
+        "aer": 2
+      }
+    },
+    {
+      "entity": "thaumcraft:taintswarmer",
+      "originalName": "Thaumcraft.TaintSwarmer",
+      "aspects": {
+        "vitium": 2,
+        "aer": 2
+      }
+    },
+    {
+      "entity": "thaumcraft:taintswarm",
+      "originalName": "Thaumcraft.TaintSwarm",
+      "aspects": {
+        "vitium": 3,
+        "aer": 3
+      }
+    },
+    {
+      "entity": "thaumcraft:taintedpig",
+      "originalName": "Thaumcraft.TaintedPig",
+      "aspects": {
+        "vitium": 2,
+        "terra": 2
+      }
+    },
+    {
+      "entity": "thaumcraft:taintedsheep",
+      "originalName": "Thaumcraft.TaintedSheep",
+      "aspects": {
+        "vitium": 2,
+        "terra": 2
+      }
+    },
+    {
+      "entity": "thaumcraft:taintedcow",
+      "originalName": "Thaumcraft.TaintedCow",
+      "aspects": {
+        "vitium": 3,
+        "terra": 3
+      }
+    },
+    {
+      "entity": "thaumcraft:taintedchicken",
+      "originalName": "Thaumcraft.TaintedChicken",
+      "aspects": {
+        "vitium": 2,
+        "volatus": 2,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:taintedvillager",
+      "originalName": "Thaumcraft.TaintedVillager",
+      "aspects": {
+        "vitium": 3,
+        "aer": 2
+      }
+    },
+    {
+      "entity": "thaumcraft:taintedcreeper",
+      "originalName": "Thaumcraft.TaintedCreeper",
+      "aspects": {
+        "vitium": 2,
+        "ignis": 2
+      }
+    },
+    {
+      "entity": "thaumcraft:mindspider",
+      "originalName": "Thaumcraft.MindSpider",
+      "aspects": {
+        "vitium": 2,
+        "ignis": 2
+      }
+    },
+    {
+      "entity": "thaumcraft:eldritchguardian",
+      "originalName": "Thaumcraft.EldritchGuardian",
+      "aspects": {
+        "alienis": 4,
+        "mortuus": 2,
+        "exanimis": 4
+      }
+    },
+    {
+      "entity": "thaumcraft:eldritchorb",
+      "originalName": "Thaumcraft.EldritchOrb",
+      "aspects": {
+        "alienis": 2,
+        "mortuus": 2
+      }
+    },
+    {
+      "entity": "thaumcraft:cultistknight",
+      "originalName": "Thaumcraft.CultistKnight",
+      "aspects": {
+        "alienis": 1,
+        "humanus": 2,
+        "perditio": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:cultistcleric",
+      "originalName": "Thaumcraft.CultistCleric",
+      "aspects": {
+        "alienis": 1,
+        "humanus": 2,
+        "perditio": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:golem",
+      "originalName": "Thaumcraft.Golem",
+      "aspects": {
+        "aer": 2,
+        "terra": 2,
+        "praecantatio": 2
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "aer"
+      },
+      "aspects": {
+        "aer": 3,
+        "praecantatio": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "terra"
+      },
+      "aspects": {
+        "terra": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "ignis"
+      },
+      "aspects": {
+        "ignis": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "aqua"
+      },
+      "aspects": {
+        "aqua": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "ordo"
+      },
+      "aspects": {
+        "ordo": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "perditio"
+      },
+      "aspects": {
+        "perditio": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "vacuos"
+      },
+      "aspects": {
+        "vacuos": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "lux"
+      },
+      "aspects": {
+        "lux": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "tempestas"
+      },
+      "aspects": {
+        "tempestas": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "motus"
+      },
+      "aspects": {
+        "motus": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "gelum"
+      },
+      "aspects": {
+        "gelum": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "vitreus"
+      },
+      "aspects": {
+        "vitreus": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "victus"
+      },
+      "aspects": {
+        "victus": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "venenum"
+      },
+      "aspects": {
+        "venenum": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "potentia"
+      },
+      "aspects": {
+        "potentia": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "permutatio"
+      },
+      "aspects": {
+        "permutatio": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "metallum"
+      },
+      "aspects": {
+        "metallum": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "mortuus"
+      },
+      "aspects": {
+        "mortuus": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "volatus"
+      },
+      "aspects": {
+        "volatus": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "tenebrae"
+      },
+      "aspects": {
+        "tenebrae": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "spiritus"
+      },
+      "aspects": {
+        "spiritus": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "sano"
+      },
+      "aspects": {
+        "sano": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "iter"
+      },
+      "aspects": {
+        "iter": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "alienis"
+      },
+      "aspects": {
+        "alienis": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "praecantatio"
+      },
+      "aspects": {
+        "praecantatio": 3,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "auram"
+      },
+      "aspects": {
+        "auram": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "vitium"
+      },
+      "aspects": {
+        "vitium": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "limus"
+      },
+      "aspects": {
+        "limus": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "herba"
+      },
+      "aspects": {
+        "herba": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "arbor"
+      },
+      "aspects": {
+        "arbor": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "bestia"
+      },
+      "aspects": {
+        "bestia": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "corpus"
+      },
+      "aspects": {
+        "corpus": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "exanimis"
+      },
+      "aspects": {
+        "exanimis": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "cognitio"
+      },
+      "aspects": {
+        "cognitio": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "sensus"
+      },
+      "aspects": {
+        "sensus": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "humanus"
+      },
+      "aspects": {
+        "humanus": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "messis"
+      },
+      "aspects": {
+        "messis": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "perfodio"
+      },
+      "aspects": {
+        "perfodio": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "instrumentum"
+      },
+      "aspects": {
+        "instrumentum": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "meto"
+      },
+      "aspects": {
+        "meto": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "telum"
+      },
+      "aspects": {
+        "telum": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "tutamen"
+      },
+      "aspects": {
+        "tutamen": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "fames"
+      },
+      "aspects": {
+        "fames": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "lucrum"
+      },
+      "aspects": {
+        "lucrum": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "fabrico"
+      },
+      "aspects": {
+        "fabrico": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "pannus"
+      },
+      "aspects": {
+        "pannus": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "machina"
+      },
+      "aspects": {
+        "machina": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    },
+    {
+      "entity": "thaumcraft:wisp",
+      "originalName": "Thaumcraft.Wisp",
+      "condition": {
+        "nbt": "Type",
+        "type": "string",
+        "value": "vinculum"
+      },
+      "aspects": {
+        "vinculum": 2,
+        "praecantatio": 1,
+        "aer": 1
+      }
+    }
+  ]
+}

@@ -59,6 +59,11 @@ public final class ModRegistration {
         ModMobEffects.MOB_EFFECTS.register(modEventBus);
         ModParticles.PARTICLE_TYPES.register(modEventBus);
         ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
+
+        // Modded registries (TC-M4-01): the aspect registry is created via
+        // NewRegistryEvent and its 48 holders attach here, same constructor-
+        // time rule as the chain above (docs/aspects.md).
+        ModAspects.register(modEventBus);
     }
 
     private ModRegistration() {
