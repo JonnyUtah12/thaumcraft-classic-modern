@@ -2,6 +2,7 @@ package com.jonnyutah12.thaumcraftclassic;
 
 import com.jonnyutah12.thaumcraftclassic.config.TcConfig;
 import com.jonnyutah12.thaumcraftclassic.gametest.ConfigParityGameTest;
+import com.jonnyutah12.thaumcraftclassic.gametest.FluxGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ModNetworkGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ModSmokeGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.PersistenceGameTest;
@@ -81,5 +82,6 @@ public final class ThaumcraftClassic {
         event.register(SoundRegistryGameTest.class);
         event.register(ResearchProgressionGameTest.class);
         event.register(VisCoreGameTest.class);
+        event.register(FluxGameTest.class);
     }
 }

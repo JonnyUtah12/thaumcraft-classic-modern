@@ -16,7 +16,7 @@ without test evidence linked in the Kanban task.
 | Research | Full original graph, prerequisites, unlock triggers, persistence | IT (graph 1:1 + progression/triggers/points/warp server-authoritative; 87 unit + 18 game tests, TC-M3-01/02; Thaumonomicon GUI is TC-M3-03) |
 | Thaumonomicon | Pages, minigames, navigation, text | NI |
 | Vis / aura / nodes | Generation, capacity, depletion, wand interaction, persistence | NI |
-| Flux / taint | Spread, transformation, biome effects | NI |
+| Flux / taint | Spread, transformation, biome effects | PARTIAL (flux core IT: per-chunk flux state, generation from magic use, original-derived decay/diffusion, effect thresholds pinned — 44 unit + 3 game tests, TC-M5-03; taint transformation/biome effects NI, TC-M5-04) |
 | Arcane crafting | Workbench mechanics, vis costs, research gating | NI |
 | Infusion | Pedestals, costs, instability, effects | NI |
 | Alchemy | Crucible/table state machines, recipes | NI |

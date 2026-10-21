@@ -32,7 +32,7 @@ evidence). Task ids are Kanban ids on the board.
 | Essentia transport | tube network | TC-M4-07 (t_2047bca5) | NOT STARTED |
 | Aura + nodes | common/world, api/nodes | TC-M5-01 (t_71def828) | NOT STARTED |
 | Node behavior | WorldMagicData tick | TC-M5-02 (t_d00335ab) | NOT STARTED |
-| Flux | WorldMagicData flux | TC-M5-03 (t_c476f104) | NOT STARTED |
+| Flux | WorldMagicData flux | TC-M5-03 (t_c476f104) | DONE (docs/architecture/flux.md) |
 | Taint | common/taint | TC-M5-04 (t_66c37e97) | NOT STARTED |
 | World gen (ores) | worldgen handlers | TC-M5-05 (t_de33def3) | NOT STARTED |
 | Wands (rods/caps) | items/wands | TC-M6-01 (t_aaab7bef) | NOT STARTED |
