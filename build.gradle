@@ -113,6 +113,9 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.tomlj:tomlj:1.1.1'
+    // TC-M8-01: the Curios adapter unit test compiles against the Curios API
+    // (compileOnly for main; tests need it on their own compile classpath).
+    testImplementation "top.theillusivec4.curios:curios-neoforge:${curios_version}"
     // Versionless: with neoForge.unitTest the Minecraft dependency platform pins
     // gson strictly (2.10.1 for 1.21.1); an explicit version would conflict.
     testImplementation 'com.google.code.gson:gson'
@@ -247,6 +250,12 @@ tasks.named('test', Test).configure {
             file('docs/config-reference.md').absolutePath
     systemProperty 'tc.contentMappingFile',
             file('docs/content-mapping.csv').absolutePath
+    // TC-M8-01 accessory layer guards: bytecode isolation (no core class may
+    // reference Curios types) + Curios data-file/slot-model consistency.
+    systemProperty 'tc.mainClassesDir',
+            sourceSets.main.java.classesDirectory.get().asFile.absolutePath
+    systemProperty 'tc.modDataDir',
+            file('src/main/resources/data').absolutePath
     systemProperty 'tc.researchDataDir',
             file('src/main/resources/data/thaumcraft/research').absolutePath
     systemProperty 'tc.contentInventoryFile',

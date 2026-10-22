@@ -35,3 +35,29 @@ jobs:
       # loading (no tests ever run), so assert the summary line explicitly.
       - name: Assert game tests ran and passed
         run: grep -q "required tests passed" run/logs/latest.log
+
+  # TC-M8-01 (D-005): the accessory layer must behave identically with and
+  # without Curios on the runtime classpath. -Ptc.noCurios drops Curios from
+  # localRuntime, so the game tests run against the built-in fallback
+  # provider (AccessoryGameTest branches on the active provider).
+  game-test-no-curios:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Game tests without Curios
+        run: ./gradlew -Ptc.noCurios runGameTestServer
+        timeout-minutes: 20
+
+      - name: Assert game tests ran and passed
+        run: grep -q "required tests passed" run/logs/latest.log

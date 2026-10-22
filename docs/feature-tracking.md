@@ -47,7 +47,7 @@ evidence). Task ids are Kanban ids on the board.
 | Entity renderers | renderers/entity | TC-M7-03 (t_6c2e5f60) | NOT STARTED |
 | GUI parity | client/gui | TC-M7-04 (t_52cdd02c) | NOT STARTED |
 | Sounds | sounds assets | TC-M7-05 (t_32cd081b) | NOT STARTED |
-| Accessory layer | Baubles semantics | TC-M8-01 (t_76c2874f) | NOT STARTED |
+| Accessory layer | Baubles semantics | TC-M8-01 (t_76c2874f) | DONE (docs/architecture/accessories.md) |
 | Baubles items | items/baubles | TC-M8-02 (t_0ca9e33b) | NOT STARTED |
 | ATM10 startup | disposable instance | TC-M9-01 (t_bd0c30d2) | NOT STARTED |
 | ATM10 gameplay | disposable instance | TC-M9-02 (t_95c84692) | NOT STARTED |

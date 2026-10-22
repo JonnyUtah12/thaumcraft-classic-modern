@@ -1,7 +1,10 @@
 package com.jonnyutah12.thaumcraftclassic;
 
+import com.jonnyutah12.thaumcraftclassic.accessory.AccessoryAttachments;
+import com.jonnyutah12.thaumcraftclassic.accessory.AccessoryService;
 import com.jonnyutah12.thaumcraftclassic.config.TcConfig;
 import com.jonnyutah12.thaumcraftclassic.gametest.AuraNodeGameTest;
+import com.jonnyutah12.thaumcraftclassic.gametest.AccessoryGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ConfigParityGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.FluxGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ModNetworkGameTest;
@@ -59,6 +62,15 @@ public final class ThaumcraftClassic {
         // @EventBusSubscriber. See docs/architecture/persistence.md.
         ModAttachments.ATTACHMENT_TYPES.register(modEventBus);
 
+        // TC-M8-01 accessory layer (D-005): the fallback provider's player
+        // attachment, then one-time provider selection — Curios 9.5.1 bridge
+        // when Curios is loaded, built-in fallback otherwise. The bridge
+        // classes are only class-loaded on the Curios branch (bytecode guard:
+        // CuriosBridgeIsolationTest); Curios slot types are data-driven
+        // (data/curios/curios/slots). See docs/architecture/accessories.md.
+        AccessoryAttachments.ATTACHMENT_TYPES.register(modEventBus);
+        AccessoryService.init(modEventBus);
+
         // TC-M7-05 sound-event registry: the 66 original TC sound events
         // (definitions + oggs arrive via the D-004 asset overlay; the id set
         // is pinned here and guarded by SoundRegistryParityTest/GameTest).
@@ -76,6 +88,7 @@ public final class ThaumcraftClassic {
 
     private static void registerGameTests(final RegisterGameTestsEvent event) {
         event.register(ModSmokeGameTest.class);
+        event.register(AccessoryGameTest.class);
         event.register(ConfigParityGameTest.class);
         event.register(ModNetworkGameTest.class);
         event.register(RegistrationGameTest.class);

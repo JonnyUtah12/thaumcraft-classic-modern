@@ -1,0 +1,4 @@
+{
+  "entities": ["minecraft:player"],
+  "slots": ["thaumcraft.ring", "thaumcraft.amulet", "thaumcraft.belt", "thaumcraft.charm"]
+}

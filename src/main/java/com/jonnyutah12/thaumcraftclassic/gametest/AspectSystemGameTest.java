@@ -142,12 +142,16 @@ public final class AspectSystemGameTest {
                 "a cow must scan as BEAST 3 + EARTH 3");
 
         // ...and the player special case: MAN 4 plus three aspects seeded from
-        // the name hash (total vis 16).
+        // the name hash (total vis 16). The seeded draws may include HUMANUS
+        // itself, which merges into the base MAN 4 (TC4 AspectList.add
+        // semantics — observed as humanus=8 when a draw hits it), so the
+        // stable invariants are MAN >= 4 and total vis exactly 16 for any
+        // random name. (A fixed-name assertion would only pin one draw.)
         final ServerPlayer player = freshPlayer(helper);
         final AspectList self = EssentiaTags.getEntityAspects(player);
-        helper.assertTrue(self != null && self.getAmount(Aspect.getAspect("humanus")) == 4
+        helper.assertTrue(self != null && self.getAmount(Aspect.getAspect("humanus")) >= 4
                         && self.visSize() == 16,
-                "a player must scan as MAN 4 + three seeded aspects (vis 16), got " + self);
+                "a player must scan as MAN >= 4 + three seeded aspects (vis 16 total), got " + self);
         helper.succeed();
     }
 

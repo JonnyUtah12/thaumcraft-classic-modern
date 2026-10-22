@@ -11,6 +11,11 @@
    progression, persistence across save/reload. Run by
    `./gradlew runGameTestServer`; CI asserts the "required tests passed"
    line explicitly (a green exit with zero tests is a failure).
+   Dual-configuration matrix (TC-M8-01): the accessory suite runs under both
+   provider backends — default (Curios on the runtime classpath) and
+   `-Ptc.noCurios` (built-in fallback; separate CI job
+   `game-test-no-curios`). `AccessoryGameTest` branches on the active
+   provider; the shared contract must hold identically.
    Client-dist boot (payload registration and dist-safe handlers must also
    construct on the client) is smoke-tested manually with
    `xvfb-run ./gradlew runClient`: require the mod init line and
