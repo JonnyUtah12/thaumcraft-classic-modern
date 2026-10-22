@@ -21,11 +21,22 @@ Original content ids are preserved as far as the platform permits
 
 ## Status
 
-**Early — foundation.** The project is tracked on the Hermes Kanban board
-`thaumcraft-classic-port`; the authoritative feature-by-feature parity
-report is [`docs/compatibility-matrix.md`](docs/compatibility-matrix.md) and
-[`docs/feature-tracking.md`](docs/feature-tracking.md). Do not expect
-playable Thaumcraft content until the matrix says so.
+**Mid-port — core magic systems implemented; not yet playable.** The
+server-side systems are in and tested against the original: the frozen
+registration/id contract, configuration and networking payloads, world +
+player persistence substrate, the full aspect system (48 aspects, original
+essentia tables, combination and discovery rules), research semantics over
+the complete 201-entry graph (no book GUI yet), vis pools + visnet +
+cost rules, aura and wild-node world data, the flux system, and the
+accessory provider layer (Curios bridge + built-in fallback). The content
+catalog (blocks/items/machines), wands and foci, alchemy/infusion/
+essentia devices, entities, GUIs, structures, and taint are not
+implemented yet, so there is no playable Thaumcraft content in a shipped
+JAR. The authoritative feature-by-feature parity report is
+[`docs/compatibility-matrix.md`](docs/compatibility-matrix.md) and
+[`docs/feature-tracking.md`](docs/feature-tracking.md); the latest full
+regression pass is recorded in `docs/regression-report-*.md`. The project
+is tracked on the Hermes Kanban board `thaumcraft-classic-port`.
 
 ## Requirements
 
