@@ -30,7 +30,7 @@ evidence). Task ids are Kanban ids on the board.
 | Alchemy/crucible | TileCrucible* | TC-M4-05 (t_cdece7cd) | NOT STARTED |
 | Essentia storage | TileSmelter*, jars | TC-M4-06 (t_e9d23e1c) | NOT STARTED |
 | Essentia transport | tube network | TC-M4-07 (t_2047bca5) | NOT STARTED |
-| Aura + nodes | common/world, api/nodes | TC-M5-01 (t_71def828) | NOT STARTED |
+| Aura + nodes | common/world, api/nodes | TC-M5-01 (t_71def828) | DONE (docs/architecture/aura-nodes.md) |
 | Node behavior | WorldMagicData tick | TC-M5-02 (t_d00335ab) | NOT STARTED |
 | Flux | WorldMagicData flux | TC-M5-03 (t_c476f104) | DONE (docs/architecture/flux.md) |
 | Taint | common/taint | TC-M5-04 (t_66c37e97) | NOT STARTED |

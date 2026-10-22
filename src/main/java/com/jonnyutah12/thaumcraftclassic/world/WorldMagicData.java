@@ -71,6 +71,7 @@ public final class WorldMagicData extends SavedData {
     static final String TAG_TAINT = "taint";
     static final String TAG_NODES = "nodes";
     static final String TAG_TYPE = "type";
+    static final String TAG_MODIFIER = "modifier";
     static final String TAG_INTENSITY = "intensity";
     static final String TAG_ASPECTS = "aspects";
     static final String TAG_KEY = "key";
@@ -142,8 +143,9 @@ public final class WorldMagicData extends SavedData {
                             continue;
                         }
                         final String type = node.contains(TAG_TYPE, Tag.TAG_STRING) ? node.getString(TAG_TYPE) : Node.DEFAULT_TYPE;
+                        final String modifier = node.contains(TAG_MODIFIER, Tag.TAG_STRING) ? node.getString(TAG_MODIFIER) : null;
                         magic.nodes.add(new Node(node.getInt(TAG_X), node.getInt(TAG_Y), node.getInt(TAG_Z),
-                                type, node.getInt(TAG_INTENSITY), readAspects(node, TAG_ASPECTS)));
+                                type, modifier, node.getInt(TAG_INTENSITY), readAspects(node, TAG_ASPECTS)));
                     }
                 }
             }
@@ -218,6 +220,9 @@ public final class WorldMagicData extends SavedData {
                         nodeTag.putInt(TAG_Y, node.y());
                         nodeTag.putInt(TAG_Z, node.z());
                         nodeTag.putString(TAG_TYPE, node.type());
+                        if (node.modifier() != null) {
+                            nodeTag.putString(TAG_MODIFIER, node.modifier());
+                        }
                         nodeTag.putInt(TAG_INTENSITY, node.intensity());
                         if (!node.aspects().isEmpty()) {
                             nodeTag.put(TAG_ASPECTS, writeAspects(node.aspects()));
@@ -362,17 +367,33 @@ public final class WorldMagicData extends SavedData {
         return removed;
     }
 
-    /** A vis node record. Positions are block coordinates within the level. */
-    public record Node(int x, int y, int z, String type, int intensity, Map<String, Integer> aspects) {
+    /**
+     * A vis node record. Positions are block coordinates within the level.
+     * {@code type}/{@code modifier} are the short ids of {@code nodes.NodeType} /
+     * {@code nodes.NodeModifier}; {@code modifier} is null when the node has none
+     * (TC-M5-01).
+     */
+    public record Node(int x, int y, int z, String type, String modifier, int intensity, Map<String, Integer> aspects) {
         public static final String DEFAULT_TYPE = "normal";
 
         public Node {
             type = type == null ? DEFAULT_TYPE : type;
+            modifier = modifier == null || modifier.isEmpty() ? null : modifier;
             aspects = aspects == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(aspects));
         }
 
+        public Node(final int x, final int y, final int z, final String type, final String modifier,
+                final int intensity) {
+            this(x, y, z, type, modifier, intensity, Map.of());
+        }
+
+        public Node(final int x, final int y, final int z, final String type, final int intensity,
+                final Map<String, Integer> aspects) {
+            this(x, y, z, type, null, intensity, aspects);
+        }
+
         public Node(final int x, final int y, final int z, final String type, final int intensity) {
-            this(x, y, z, type, intensity, Map.of());
+            this(x, y, z, type, null, intensity, Map.of());
         }
     }
 

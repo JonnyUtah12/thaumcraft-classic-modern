@@ -998,15 +998,15 @@ Thaumcraft:biome.BiomeGenMagicalForest,thaumcraft:biome.biomegenmagicalforest,bi
 Thaumcraft:biome.BiomeGenEerie,thaumcraft:biome.biomegeneerie,biome,BiomeGenEerie,not_started,not_tested,,default_id=194 config_key=eerie_biome_id
 Thaumcraft:biome.BiomeGenEldritch,thaumcraft:biome.biomegeneldritch,biome,BiomeGenEldritch,not_started,not_tested,,default_id=195 config_key=eldritch_biome_id
 Thaumcraft:dimension.-42,thaumcraft:dimension.-42,dimension,Outer Lands,not_started,not_tested,,WorldProviderOuter; DimensionManager.registerProviderType/registerDimension; default id -42 (outer_lands_dim)
-Thaumcraft:nodetype.NORMAL,thaumcraft:nodetype.normal,node_type,NORMAL,not_started,not_tested,,api/nodes/NodeType enum
-Thaumcraft:nodetype.UNSTABLE,thaumcraft:nodetype.unstable,node_type,UNSTABLE,not_started,not_tested,,api/nodes/NodeType enum
-Thaumcraft:nodetype.DARK,thaumcraft:nodetype.dark,node_type,DARK,not_started,not_tested,,api/nodes/NodeType enum
-Thaumcraft:nodetype.TAINTED,thaumcraft:nodetype.tainted,node_type,TAINTED,not_started,not_tested,,api/nodes/NodeType enum
-Thaumcraft:nodetype.HUNGRY,thaumcraft:nodetype.hungry,node_type,HUNGRY,not_started,not_tested,,api/nodes/NodeType enum
-Thaumcraft:nodetype.PURE,thaumcraft:nodetype.pure,node_type,PURE,not_started,not_tested,,api/nodes/NodeType enum
-Thaumcraft:nodemodifier.BRIGHT,thaumcraft:nodemodifier.bright,node_modifier,BRIGHT,not_started,not_tested,,api/nodes/NodeModifier enum
-Thaumcraft:nodemodifier.PALE,thaumcraft:nodemodifier.pale,node_modifier,PALE,not_started,not_tested,,api/nodes/NodeModifier enum
-Thaumcraft:nodemodifier.FADING,thaumcraft:nodemodifier.fading,node_modifier,FADING,not_started,not_tested,,api/nodes/NodeModifier enum
+Thaumcraft:nodetype.NORMAL,thaumcraft:nodetype.normal,node_type,NORMAL,done,tested,,api/nodes/NodeType enum
+Thaumcraft:nodetype.UNSTABLE,thaumcraft:nodetype.unstable,node_type,UNSTABLE,done,tested,,api/nodes/NodeType enum
+Thaumcraft:nodetype.DARK,thaumcraft:nodetype.dark,node_type,DARK,done,tested,,api/nodes/NodeType enum
+Thaumcraft:nodetype.TAINTED,thaumcraft:nodetype.tainted,node_type,TAINTED,done,tested,,api/nodes/NodeType enum
+Thaumcraft:nodetype.HUNGRY,thaumcraft:nodetype.hungry,node_type,HUNGRY,done,tested,,api/nodes/NodeType enum
+Thaumcraft:nodetype.PURE,thaumcraft:nodetype.pure,node_type,PURE,done,tested,,api/nodes/NodeType enum
+Thaumcraft:nodemodifier.BRIGHT,thaumcraft:nodemodifier.bright,node_modifier,BRIGHT,done,tested,,api/nodes/NodeModifier enum
+Thaumcraft:nodemodifier.PALE,thaumcraft:nodemodifier.pale,node_modifier,PALE,done,tested,,api/nodes/NodeModifier enum
+Thaumcraft:nodemodifier.FADING,thaumcraft:nodemodifier.fading,node_modifier,FADING,done,tested,,api/nodes/NodeModifier enum
 Thaumcraft:worldgen.silverwood_trees,thaumcraft:worldgen.silverwood_trees,worldgen_feature,Silverwood trees,not_started,not_tested,,impl=WorldGenSilverwoodTrees via generateVegetation config=genTrees / regenTrees
 Thaumcraft:worldgen.greatwood_trees,thaumcraft:worldgen.greatwood_trees,worldgen_feature,Greatwood trees,not_started,not_tested,,impl=WorldGenGreatwoodTrees via generateVegetation config=genTrees / regenTrees
 Thaumcraft:worldgen.shimmerleaf_flowers,thaumcraft:worldgen.shimmerleaf_flowers,worldgen_feature,Shimmerleaf / flowers,not_started,not_tested,,impl=WorldGenCustomFlowers (blockCustomPlant meta 3) config=genTrees
