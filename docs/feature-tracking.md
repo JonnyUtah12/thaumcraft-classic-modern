@@ -51,5 +51,5 @@ evidence). Task ids are Kanban ids on the board.
 | Baubles items | items/baubles | TC-M8-02 (t_0ca9e33b) | NOT STARTED |
 | ATM10 startup | disposable instance | TC-M9-01 (t_bd0c30d2) | NOT STARTED |
 | ATM10 gameplay | disposable instance | TC-M9-02 (t_95c84692) | NOT STARTED |
-| Regression | all suites | TC-M10-01 (t_fa8b23a7) | NOT STARTED |
-| Release | release gate | TC-M10-02 (t_596882c9) | NOT STARTED |
+| Regression | all suites | TC-M10-01 (t_fa8b23a7) | DONE (docs/regression-report-2026-10-22.md) |
+| Release | release gate | TC-M10-02 (t_596882c9) | DONE (v0.1.0-alpha.1) |

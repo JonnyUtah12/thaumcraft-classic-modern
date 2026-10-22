@@ -7,6 +7,14 @@ Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
 ## [Unreleased]
 
+## [0.1.0-alpha.1] - 2026-10-22
+
+First pre-release. Deliberately a pre-release, not 0.1.0: most gameplay
+systems (arcane crafting, infusion, alchemy, essentia devices, wands and
+foci, the content catalog, entities, GUIs, taint) are still not
+implemented — see Known limitations below and
+docs/compatibility-matrix.md for the authoritative status.
+
 ### Added
 - Accessory provider layer (TC-M8-01): provider SPI (equip/unequip/
   worn-tick/validate) over the original Baubles slot semantics —
