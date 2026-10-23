@@ -104,6 +104,20 @@ public final class BiomeAura {
         TAINT_BIOMES.add(biome);
     }
 
+    /** True once a taint biome is registered — TC-M5-02 node painting gate. */
+    public static boolean hasTaintBiome() {
+        return !TAINT_BIOMES.isEmpty();
+    }
+
+    /**
+     * The taint biome to paint (TC-M5-02: the original had exactly one
+     * {@code ThaumcraftWorldGenerator.biomeTaint}; with several registered the
+     * first wins). Null when none is registered.
+     */
+    public static ResourceKey<Biome> firstTaintBiome() {
+        return TAINT_BIOMES.isEmpty() ? null : TAINT_BIOMES.iterator().next();
+    }
+
     public static boolean isTaintBiome(final Holder<Biome> biome) {
         return biome.unwrapKey().map(TAINT_BIOMES::contains).orElse(false);
     }

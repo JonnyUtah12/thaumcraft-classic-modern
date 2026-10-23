@@ -92,7 +92,7 @@ Thaumcraft:blockAlchemyFurnace,thaumcraft:blockalchemyfurnace,block,Advanced Alc
 Thaumcraft:blockJar,thaumcraft:blockjar,block,Warded Jar / Brain in a Jar / Node in a Jar / Void Jar,not_started,not_tested,id case change only (D-001),class=BlockJar item_class=BlockJarItem
 Thaumcraft:blockCandle,thaumcraft:blockcandle,block,White Tallow Candle / Orange Tallow Candle / Magenta Tallow Candle / Light Blue Tallow Candle / Yellow Tallow Candle / Lime Tallow Candle / Pink Tallow Candle / Gray Tallow Candle / Light Gray Tallow Candle / Cyan Tallow Candle / Purple Tallow Candle / Blue Tallow Candle / Brown Tallow Candle / Green Tallow Candle / Red Tallow Candle / Black Tallow Candle,not_started,not_tested,id case change only (D-001),class=BlockCandle item_class=BlockCandleItem
 Thaumcraft:blockEldritch,thaumcraft:blockeldritch,block,Eldritch Altar / Eldritch Obelisk / Eldritch Obelisk / Eldritch Capstone / Glowing Crusted Stone / Glyphed Stone / Ancient Doorway / Ancient Locking Mechanism / Crusted Opening / Runed Stone,not_started,not_tested,id case change only (D-001),class=BlockEldritch item_class=BlockEldritchItem
-Thaumcraft:blockAiry,thaumcraft:blockairy,block,Aura Node / Nitor / Glimmer of Light / Glimmer of Light / Warding Aura / Energized Aura Node / Static Field / Sapping Field / Impassable,not_started,not_tested,id case change only (D-001),class=BlockAiry item_class=BlockAiryItem
+Thaumcraft:blockAiry,thaumcraft:blockairy,block,Aura Node / Nitor / Glimmer of Light / Glimmer of Light / Warding Aura / Energized Aura Node / Static Field / Sapping Field / Impassable,not_started,not_tested,id case change only (D-001),class=BlockAiry item_class=BlockAiryItem (vis-node host has no port-side block: TC-M5-02 nodes are record-driven per docs/architecture/node-behavior.md; nitor/ward/etc. hosts pending their cards)
 Thaumcraft:blockManaPod,thaumcraft:blockmanapod,block,,not_started,not_tested,id case change only (D-001),class=BlockManaPod item_class=-
 Thaumcraft:blockArcaneFurnace,thaumcraft:blockarcanefurnace,block,Infernal Furnace,not_started,not_tested,id case change only (D-001),class=BlockArcaneFurnace item_class=-
 Thaumcraft:blockWarded,thaumcraft:blockwarded,block,,not_started,not_tested,id case change only (D-001),class=BlockWarded item_class=-
@@ -138,7 +138,7 @@ Thaumcraft:TileArcaneLampFertility,thaumcraft:tilearcanelampfertility,tile_entit
 Thaumcraft:TileOwned,thaumcraft:tileowned,tile_entity,TileOwned,not_started,not_tested,,class=TileOwned
 Thaumcraft:TileLifter,thaumcraft:tilelifter,tile_entity,TileLifter,not_started,not_tested,,class=TileLifter
 Thaumcraft:TileNitor,thaumcraft:tilenitor,tile_entity,TileNitor,not_started,not_tested,,class=TileNitor
-Thaumcraft:TileNode,thaumcraft:tilenode,tile_entity,TileNode,not_started,not_tested,,class=TileNode
+Thaumcraft:TileNode,thaumcraft:tilenode,tile_entity,TileNode,done,tested,,class=TileNode (behaviour engine = nodes/NodeRuntime + world/NodeTickDriver; no BE)
 Thaumcraft:TileCrystal,thaumcraft:tilecrystal,tile_entity,TileCrystal,not_started,not_tested,,class=TileCrystal
 Thaumcraft:TileEldritchCrystal,thaumcraft:tileeldritchcrystal,tile_entity,TileEldritchCrystal,not_started,not_tested,,class=TileEldritchCrystal
 Thaumcraft:TileMirror,thaumcraft:tilemirror,tile_entity,TileMirror,not_started,not_tested,,class=TileMirror

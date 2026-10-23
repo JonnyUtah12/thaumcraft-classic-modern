@@ -74,6 +74,8 @@ public final class WorldMagicData extends SavedData {
     static final String TAG_MODIFIER = "modifier";
     static final String TAG_INTENSITY = "intensity";
     static final String TAG_ASPECTS = "aspects";
+    static final String TAG_ASPECTS_BASE = "aspectsBase";
+    static final String TAG_LAST_ACTIVE = "lastActive";
     static final String TAG_KEY = "key";
     static final String TAG_AMOUNT = "amount";
 
@@ -144,8 +146,17 @@ public final class WorldMagicData extends SavedData {
                         }
                         final String type = node.contains(TAG_TYPE, Tag.TAG_STRING) ? node.getString(TAG_TYPE) : Node.DEFAULT_TYPE;
                         final String modifier = node.contains(TAG_MODIFIER, Tag.TAG_STRING) ? node.getString(TAG_MODIFIER) : null;
+                        // TC-M5-02: aspectsBase absent = null = "same as aspects" at read time
+                        // (original setAspects copy, TileNode L171-174); lastActive absent = 0.
+                        final Map<String, Integer> aspectsBase = node.contains(TAG_ASPECTS_BASE, Tag.TAG_LIST)
+                                ? readAspects(node, TAG_ASPECTS_BASE)
+                                : null;
+                        final long lastActive = node.contains(TAG_LAST_ACTIVE, Tag.TAG_ANY_NUMERIC)
+                                ? node.getLong(TAG_LAST_ACTIVE)
+                                : 0L;
                         magic.nodes.add(new Node(node.getInt(TAG_X), node.getInt(TAG_Y), node.getInt(TAG_Z),
-                                type, modifier, node.getInt(TAG_INTENSITY), readAspects(node, TAG_ASPECTS)));
+                                type, modifier, node.getInt(TAG_INTENSITY), readAspects(node, TAG_ASPECTS),
+                                aspectsBase, lastActive));
                     }
                 }
             }
@@ -226,6 +237,14 @@ public final class WorldMagicData extends SavedData {
                         nodeTag.putInt(TAG_INTENSITY, node.intensity());
                         if (!node.aspects().isEmpty()) {
                             nodeTag.put(TAG_ASPECTS, writeAspects(node.aspects()));
+                        }
+                        // TC-M5-02: only written once the node diverges from its generated
+                        // state; absent = "same as aspects" at read time (TileNode L171-174).
+                        if (node.aspectsBase() != null) {
+                            nodeTag.put(TAG_ASPECTS_BASE, writeAspects(node.aspectsBase()));
+                        }
+                        if (node.lastActive() != 0L) {
+                            nodeTag.putLong(TAG_LAST_ACTIVE, node.lastActive());
                         }
                         nodes.add(nodeTag);
                     }
@@ -368,32 +387,71 @@ public final class WorldMagicData extends SavedData {
     }
 
     /**
+     * Replaces the node record at the given position in place (TC-M5-02: the node
+     * behaviour engine writes its runtime state back through this mutator — the
+     * original persisted the equivalent through {@code TileNode.markDirty()}).
+     * Returns false when no node exists at that position.
+     */
+    public boolean replaceNode(final ChunkPos pos, final int x, final int y, final int z,
+            final Node replacement) {
+        final ChunkMagic magic = chunks.get(pos);
+        if (magic == null) {
+            return false;
+        }
+        for (int i = 0; i < magic.nodes.size(); i++) {
+            final Node node = magic.nodes.get(i);
+            if (node.x() == x && node.y() == y && node.z() == z) {
+                magic.nodes.set(i, replacement);
+                setDirty();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * A vis node record. Positions are block coordinates within the level.
      * {@code type}/{@code modifier} are the short ids of {@code nodes.NodeType} /
      * {@code nodes.NodeModifier}; {@code modifier} is null when the node has none
      * (TC-M5-01).
+     *
+     * <p>TC-M5-02 adds the two fields the original {@code TileNode} persists that
+     * M5-01 left out: {@code aspectsBase} — the per-aspect vis base the node
+     * regenerates against and degrades through (TileNode L52, L233-245) — and
+     * {@code lastActive} — the offline catch-up anchor (TileNode L60, L285-289).
+     * A null {@code aspectsBase} means "same as {@code aspects}" at read time,
+     * matching the original {@code setAspects} copy (TileNode L171-174); that is
+     * exactly what generation produces, so generation stays untouched.
      */
-    public record Node(int x, int y, int z, String type, String modifier, int intensity, Map<String, Integer> aspects) {
+    public record Node(int x, int y, int z, String type, String modifier, int intensity,
+            Map<String, Integer> aspects, Map<String, Integer> aspectsBase, long lastActive) {
         public static final String DEFAULT_TYPE = "normal";
 
         public Node {
             type = type == null ? DEFAULT_TYPE : type;
             modifier = modifier == null || modifier.isEmpty() ? null : modifier;
             aspects = aspects == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(aspects));
+            aspectsBase = aspectsBase == null ? null
+                    : Collections.unmodifiableMap(new LinkedHashMap<>(aspectsBase));
         }
 
         public Node(final int x, final int y, final int z, final String type, final String modifier,
                 final int intensity) {
-            this(x, y, z, type, modifier, intensity, Map.of());
+            this(x, y, z, type, modifier, intensity, Map.of(), null, 0L);
         }
 
         public Node(final int x, final int y, final int z, final String type, final int intensity,
                 final Map<String, Integer> aspects) {
-            this(x, y, z, type, null, intensity, aspects);
+            this(x, y, z, type, null, intensity, aspects, null, 0L);
         }
 
         public Node(final int x, final int y, final int z, final String type, final int intensity) {
-            this(x, y, z, type, null, intensity, Map.of());
+            this(x, y, z, type, null, intensity, Map.of(), null, 0L);
+        }
+
+        public Node(final int x, final int y, final int z, final String type, final String modifier,
+                final int intensity, final Map<String, Integer> aspects) {
+            this(x, y, z, type, modifier, intensity, aspects, null, 0L);
         }
     }
 

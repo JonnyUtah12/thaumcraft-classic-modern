@@ -9,6 +9,7 @@ import com.jonnyutah12.thaumcraftclassic.gametest.ConfigParityGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.FluxGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ModNetworkGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ModSmokeGameTest;
+import com.jonnyutah12.thaumcraftclassic.gametest.NodeBehaviorGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.PersistenceGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.RegistrationGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ResearchProgressionGameTest;
@@ -107,5 +108,6 @@ public final class ThaumcraftClassic {
         event.register(AuraNodeGameTest.class);
         event.register(WorldGenGameTest.class);
         event.register(FluxGameTest.class);
+        event.register(NodeBehaviorGameTest.class);
     }
 }
