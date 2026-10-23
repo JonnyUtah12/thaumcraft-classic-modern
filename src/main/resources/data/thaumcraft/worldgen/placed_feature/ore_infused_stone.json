@@ -1,0 +1,22 @@
+{
+  "feature": "thaumcraft:ore_infused_stone",
+  "placement": [
+    {
+      "type": "thaumcraft:config_gate",
+      "option": "World_Generation.generate_infused_stone"
+    },
+    {
+      "type": "minecraft:count",
+      "count": 8
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "thaumcraft:surface_capped_uniform",
+      "min": 0,
+      "floor": 5,
+      "surface_offset": -5
+    }
+  ]
+}

@@ -14,10 +14,12 @@ import com.jonnyutah12.thaumcraftclassic.gametest.RegistrationGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ResearchProgressionGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.SoundRegistryGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.VisCoreGameTest;
+import com.jonnyutah12.thaumcraftclassic.gametest.WorldGenGameTest;
 import com.jonnyutah12.thaumcraftclassic.network.ModNetwork;
 import com.jonnyutah12.thaumcraftclassic.player.ModAttachments;
 import com.jonnyutah12.thaumcraftclassic.registration.ModRegistration;
 import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
+import com.jonnyutah12.thaumcraftclassic.worldgen.ModWorldgen;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -76,6 +78,12 @@ public final class ThaumcraftClassic {
         // is pinned here and guarded by SoundRegistryParityTest/GameTest).
         ModSounds.register(modEventBus);
 
+        // TC-M5-05 worldgen: the TC ore feature type + placement-modifier
+        // types backing data/thaumcraft/worldgen + the biome modifier
+        // (docs/architecture/worldgen.md). Independent of the block/item
+        // chain; same constructor-time rule as ModSounds/ModAttachments.
+        ModWorldgen.init(modEventBus);
+
         // Networking payloads register on both dists before any connection
         // can be accepted (docs/architecture/networking.md).
         modEventBus.addListener(ModNetwork::register);
@@ -97,6 +105,7 @@ public final class ThaumcraftClassic {
         event.register(ResearchProgressionGameTest.class);
         event.register(VisCoreGameTest.class);
         event.register(AuraNodeGameTest.class);
+        event.register(WorldGenGameTest.class);
         event.register(FluxGameTest.class);
     }
 }

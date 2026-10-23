@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "variant=0": { "model": "thaumcraft:block/blockcustomore_cinnabar" },
+    "variant=1": { "model": "thaumcraft:block/blockcustomore_infused" },
+    "variant=2": { "model": "thaumcraft:block/blockcustomore_infused" },
+    "variant=3": { "model": "thaumcraft:block/blockcustomore_infused" },
+    "variant=4": { "model": "thaumcraft:block/blockcustomore_infused" },
+    "variant=5": { "model": "thaumcraft:block/blockcustomore_infused" },
+    "variant=6": { "model": "thaumcraft:block/blockcustomore_infused" },
+    "variant=7": { "model": "thaumcraft:block/blockcustomore_amber" }
+  }
+}

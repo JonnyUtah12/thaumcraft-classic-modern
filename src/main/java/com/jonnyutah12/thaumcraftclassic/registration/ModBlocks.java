@@ -1,6 +1,8 @@
 package com.jonnyutah12.thaumcraftclassic.registration;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockCustomOre;
+import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
@@ -15,6 +17,15 @@ public final class ModBlocks {
 
     public static final DeferredRegister.Blocks BLOCKS =
             DeferredRegister.createBlocks(ThaumcraftClassic.MOD_ID);
+
+    /**
+     * TC ore block (TC-M5-05 worldgen prerequisite): cinnabar / infused stone
+     * variants 1-6 / amber via the {@code variant} property. See
+     * {@link BlockCustomOre} for the metadata-to-property mapping and the
+     * drop-table scope note.
+     */
+    public static final DeferredBlock<BlockCustomOre> BLOCK_CUSTOM_ORE =
+            BLOCKS.register("blockcustomore", BlockCustomOre::new);
 
     private ModBlocks() {
     }

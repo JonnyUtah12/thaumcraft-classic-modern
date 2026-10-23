@@ -34,7 +34,7 @@ evidence). Task ids are Kanban ids on the board.
 | Node behavior | WorldMagicData tick | TC-M5-02 (t_d00335ab) | NOT STARTED |
 | Flux | WorldMagicData flux | TC-M5-03 (t_c476f104) | DONE (docs/architecture/flux.md) |
 | Taint | common/taint | TC-M5-04 (t_66c37e97) | NOT STARTED |
-| World gen (ores) | worldgen handlers | TC-M5-05 (t_de33def3) | NOT STARTED |
+| World gen (ores) | worldgen handlers | TC-M5-05 (t_de33def3) | DONE (docs/architecture/worldgen.md; structure generators split to TC-M5-05b) |
 | Wands (rods/caps) | items/wands | TC-M6-01 (t_aaab7bef) | NOT STARTED |
 | Foci + casting | focus classes | TC-M6-02 (t_ae471793) | NOT STARTED |
 | Focus behaviors/combos | projectile classes | TC-M6-03 (t_a0113d55) | NOT STARTED |

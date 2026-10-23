@@ -1,6 +1,9 @@
 package com.jonnyutah12.thaumcraftclassic.registration;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockCustomOreItem;
+import net.minecraft.world.item.Item;
+import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
@@ -16,6 +19,13 @@ public final class ModItems {
 
     public static final DeferredRegister.Items ITEMS =
             DeferredRegister.createItems(ThaumcraftClassic.MOD_ID);
+
+    /** Block item for {@link ModBlocks#BLOCK_CUSTOM_ORE} (TC-M5-05); the
+     *  original registered the block item under the block id, which 1.21.1
+     *  does the same way. */
+    public static final DeferredItem<BlockCustomOreItem> BLOCK_CUSTOM_ORE_ITEM =
+            ITEMS.register("blockcustomore",
+                    () -> new BlockCustomOreItem(ModBlocks.BLOCK_CUSTOM_ORE.get(), new Item.Properties()));
 
     private ModItems() {
     }

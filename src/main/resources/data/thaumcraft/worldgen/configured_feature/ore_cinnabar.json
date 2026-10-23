@@ -1,0 +1,13 @@
+{
+  "type": "thaumcraft:tc_ore",
+  "config": {
+    "rocks": [
+      { "predicate_type": "minecraft:block_match", "block": "minecraft:stone" },
+      { "predicate_type": "minecraft:block_match", "block": "minecraft:deepslate" }
+    ],
+    "states": [
+      { "Name": "thaumcraft:blockcustomore", "Properties": { "variant": "0" } }
+    ],
+    "size": 1
+  }
+}
