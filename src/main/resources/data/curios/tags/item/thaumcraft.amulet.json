@@ -1,5 +1,5 @@
 {
   "values": [
-    "thaumcraft:test_probe_amulet"
+    { "id": "thaumcraft:test_probe_amulet", "required": false }
   ]
 }

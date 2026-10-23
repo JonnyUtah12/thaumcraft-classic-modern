@@ -8,7 +8,7 @@ import java.util.List;
  * decompiled ConfigResearch.java; upstream source file name
  * thaumcraft/common/lib/research/Research.java).
  *
- * <p>Data comes from {@code data/thaumcraft/research/entries.json},
+ * <p>Data comes from {@code data/thaumcraft/research_graph/entries.json},
  * extracted mechanically by scripts/extract_research_graph.py; method and
  * caveats in docs/research-graph-notes.md. Field semantics mirror the
  * original API exactly:</p>

@@ -4,8 +4,13 @@ The complete original research graph — 6 categories and 201 research
 entries with pages, triggers, prerequisites, warp and flags — is shipped as
 data, not code:
 
-- `src/main/resources/data/thaumcraft/research/categories.json`
-- `src/main/resources/data/thaumcraft/research/entries.json`
+- `src/main/resources/data/thaumcraft/research_graph/categories.json`
+- `src/main/resources/data/thaumcraft/research_graph/entries.json`
+
+(The directory is `research_graph`, not `research`: Astral Sorcery in ATM10
+globs `data/*/research/*.json` in every namespace and errored on our
+aggregates when they lived there — TC-M9-01 finding; the `research/` path
+is also kept free for a future `thaumcraft:research` datapack registry.)
 
 `ResearchGraphLoader` parses them into `ResearchGraph` (lookup registry over
 `ResearchCategoryData` / `ResearchEntryData` / `ResearchPageData`). The

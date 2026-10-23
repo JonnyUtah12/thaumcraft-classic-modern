@@ -7,6 +7,17 @@ Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
 ## [Unreleased]
 
+### Fixed
+- ATM10 startup battery (TC-M9-01): the aggregate research graph files moved
+  from `data/thaumcraft/research/` to `data/thaumcraft/research_graph/` —
+  Astral Sorcery globs `data/<ns>/research/*.json` across every namespace
+  and logged parse errors over our aggregates on every ATM10 startup; the
+  old path is also reserved for a future `thaumcraft:research` datapack
+  registry. Curios item tags (`curios:thaumcraft.ring/.amulet`) now mark
+  their test-probe entries `"required": false`: the probe items are only
+  registered under the gametest property, so the shipped tags failed
+  vanilla tag validation in production startup.
+
 ## [0.1.0-alpha.1] - 2026-10-22
 
 First pre-release. Deliberately a pre-release, not 0.1.0: most gameplay
@@ -63,7 +74,7 @@ docs/compatibility-matrix.md for the authoritative status.
 - Research graph data foundation (TC-M3-01): the complete original research
   graph — 6 categories and 201 entries with pages, triggers, prerequisites,
   warp and flags — mechanically extracted from the decompiled original into
-  `data/thaumcraft/research/{categories,entries}.json`
+  `data/thaumcraft/research_graph/{categories,entries}.json`
   (`scripts/extract_research_graph.py`), with a Minecraft-free model,
   loader and registry (`research/ResearchGraph*`) and tests proving the
   extraction matches the TC-M0-04 inventory entry-for-entry, the lang

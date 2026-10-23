@@ -4,8 +4,8 @@
 TC-M3-01. Reads the decompiled original (kept outside the repository at
 ../reference/decompiled, see docs/licensing-and-attribution.md) and writes:
 
-  src/main/resources/data/thaumcraft/research/categories.json
-  src/main/resources/data/thaumcraft/research/entries.json
+  src/main/resources/data/thaumcraft/research_graph/categories.json
+  src/main/resources/data/thaumcraft/research_graph/entries.json
 
 Method and decisions: docs/research-graph-notes.md. The parser is a
 brace/paren-balanced scanner over the decompiled ConfigResearch.java (the
@@ -31,7 +31,7 @@ SRC_ASPECTS = REF / "decompiled" / "thaumcraft" / "thaumcraft" / "api" / "aspect
 MCP_FIELDS = REF / "mcp-mappings" / "fields_1.7.10_mcp_stable_11.csv"
 LANG = REF / "assets" / "thaumcraft" / "lang" / "en_US.lang"
 
-OUT_DIR = REPO / "src" / "main" / "resources" / "data" / "thaumcraft" / "research"
+OUT_DIR = REPO / "src" / "main" / "resources" / "data" / "thaumcraft" / "research_graph"
 
 SOURCE_NOTE = (
     "decompiled thaumcraft/common/config/ConfigResearch.java (Thaumcraft "

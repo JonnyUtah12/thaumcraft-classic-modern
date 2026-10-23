@@ -257,7 +257,7 @@ tasks.named('test', Test).configure {
     systemProperty 'tc.modDataDir',
             file('src/main/resources/data').absolutePath
     systemProperty 'tc.researchDataDir',
-            file('src/main/resources/data/thaumcraft/research').absolutePath
+            file('src/main/resources/data/thaumcraft/research_graph').absolutePath
     systemProperty 'tc.contentInventoryFile',
             file('docs/original-content-inventory.md').absolutePath
     systemProperty 'tc.balanceValuesFile',

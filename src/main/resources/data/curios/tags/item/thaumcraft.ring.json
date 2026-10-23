@@ -1,6 +1,6 @@
 {
   "values": [
-    "thaumcraft:test_probe_ring",
-    "thaumcraft:test_probe_veto_ring"
+    { "id": "thaumcraft:test_probe_ring", "required": false },
+    { "id": "thaumcraft:test_probe_veto_ring", "required": false }
   ]
 }
