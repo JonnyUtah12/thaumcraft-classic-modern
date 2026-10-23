@@ -5,6 +5,7 @@ import com.jonnyutah12.thaumcraftclassic.accessory.AccessoryService;
 import com.jonnyutah12.thaumcraftclassic.config.TcConfig;
 import com.jonnyutah12.thaumcraftclassic.gametest.AuraNodeGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.AccessoryGameTest;
+import com.jonnyutah12.thaumcraftclassic.gametest.BaubleGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ConfigParityGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.FluxGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ModNetworkGameTest;
@@ -98,6 +99,7 @@ public final class ThaumcraftClassic {
     private static void registerGameTests(final RegisterGameTestsEvent event) {
         event.register(ModSmokeGameTest.class);
         event.register(AccessoryGameTest.class);
+        event.register(BaubleGameTest.class);
         event.register(ConfigParityGameTest.class);
         event.register(ModNetworkGameTest.class);
         event.register(RegistrationGameTest.class);

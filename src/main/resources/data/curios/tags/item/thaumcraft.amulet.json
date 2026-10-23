@@ -1,5 +1,8 @@
 {
   "values": [
-    { "id": "thaumcraft:test_probe_amulet", "required": false }
+    { "id": "thaumcraft:test_probe_amulet", "required": false },
+    "thaumcraft:itemamuletrunic",
+    "thaumcraft:itemamuletvis",
+    "thaumcraft:itembaubleblanks"
   ]
 }

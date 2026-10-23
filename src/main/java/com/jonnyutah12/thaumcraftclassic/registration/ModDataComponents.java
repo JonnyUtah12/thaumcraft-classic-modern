@@ -4,8 +4,10 @@ import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.aspect.EssentiaContainer;
 import com.jonnyutah12.thaumcraftclassic.wands.VisPool;
 import com.mojang.serialization.Codec;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -52,6 +54,34 @@ public final class ModDataComponents {
                     () -> DataComponentType.<VisPool>builder()
                             .persistent(VisPool.CODEC)
                             .networkSynchronized(VisPool.STREAM_CODEC)
+                            .build());
+
+    /**
+     * Original damage value of a multi-meta item (TC-M6-04a convention,
+     * first used by ItemResource; TC-M8-02 baubles carry their original metas
+     * the same way). 1.21.1 has no damage-value variants, so the meta travels
+     * on the stack; {@code new_id} stays one registered object per
+     * content-mapping.csv row (docs/architecture/registration.md).
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> ITEM_META =
+            DATA_COMPONENT_TYPES.register("item_meta",
+                    () -> DataComponentType.<Integer>builder()
+                            .persistent(Codec.intRange(0, 63))
+                            .networkSynchronized(ByteBufCodecs.VAR_INT)
+                            .build());
+
+    /**
+     * Runic hardening bonus (TC-M8-02): the original's {@code "RS.HARDEN"}
+     * ItemStack NBT int read by {@code EventHandlerRunic.getFinalCharge}
+     * ({@code common/lib/events/EventHandlerRunic.java:347-350}); written by
+     * the Runic Augmentation flow (TC-M6-07), summed into runic shield
+     * capacity by {@code RunicShielding.finalCharge}.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> RUNIC_HARDENING =
+            DATA_COMPONENT_TYPES.register("runic_hardening",
+                    () -> DataComponentType.<Integer>builder()
+                            .persistent(Codec.INT)
+                            .networkSynchronized(ByteBufCodecs.VAR_INT)
                             .build());
 
     private ModDataComponents() {

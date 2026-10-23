@@ -1,3 +1,7 @@
 {
-  "values": []
+  "values": [
+    "thaumcraft:itemgirdlerunic",
+    "thaumcraft:itemgirdlehover",
+    "thaumcraft:itembaubleblanks"
+  ]
 }

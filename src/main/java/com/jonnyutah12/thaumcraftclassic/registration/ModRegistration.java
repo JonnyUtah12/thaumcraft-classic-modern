@@ -1,5 +1,6 @@
 package com.jonnyutah12.thaumcraftclassic.registration;
 
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
 import net.neoforged.bus.api.IEventBus;
 
 /**
@@ -50,6 +51,10 @@ public final class ModRegistration {
         if (Boolean.getBoolean(TEST_PROBE_PROPERTY)) {
             TestProbeContent.init();
         }
+
+        // Feature content holders (append-only): each registers into the
+        // shared ModItems holder; class-init trigger only, no new bus wiring.
+        CatalogBaubles.init(); // TC-M8-02 bauble items
 
         ModDataComponents.DATA_COMPONENT_TYPES.register(modEventBus);
         ModBlocks.BLOCKS.register(modEventBus);
