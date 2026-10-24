@@ -1,6 +1,7 @@
 package com.jonnyutah12.thaumcraftclassic.registration;
 
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
 import net.neoforged.bus.api.IEventBus;
 
 /**
@@ -64,6 +65,14 @@ public final class ModRegistration {
         ModMobEffects.MOB_EFFECTS.register(modEventBus);
         ModParticles.PARTICLE_TYPES.register(modEventBus);
         ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
+
+        // Catalog cards (TC-M6-04 split, docs/catalog-triage.md rule 3): each
+        // card owns one holder class under registration/catalog/ with its own
+        // DeferredRegisters and appends exactly one wiring line here.
+        // TC-M6-04a: resource/shard/nugget mega-items, food (meat nuggets,
+        // triple meat treat, mana bean), wisp/crystal essences, mana pod
+        // block + tile entity.
+        CatalogResources.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

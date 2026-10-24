@@ -58,9 +58,10 @@ Translation to the other status sets used in this repo:
 | Wands (rods/caps/staffs) | 24 wand components | INVESTIGATED | TC-M6-01 (VisContainerItem/WandVis seam in e48c4fb) | seam only | — | dispatch TC-M6-01 |
 | Foci + casting | focus classes | INVESTIGATED | TC-M6-02 | none | — | dispatch TC-M6-02 |
 | Focus behaviors/combos | projectile classes | INVESTIGATED | TC-M6-03 | none | — | dispatch TC-M6-03 |
-| Blocks (catalog) | 45 blocks | IN PROGRESS | t_12f350af parent triage (97f87a6); 04a–f WIP | none (uncommitted) | — | salvage, re-dispatch 04a–f |
-| Items (catalog) | 108 items | IN PROGRESS | t_12f350af parent triage; 04a/04e WIP | none (uncommitted) | — | salvage, re-dispatch |
-| Tile entities | 73 tiles | IN PROGRESS | WIP tiles/ across M4/M6 | none (uncommitted) | — | salvage per subsystem |
+| Blocks (catalog) | 45 blocks | IN PROGRESS | t_12f350af parent triage (97f87a6); 04b–f WIP (04a integrated — see Catalog resources slice row) | mana-pod block probes on 04a (game) | — | salvage, re-dispatch 04b–f |
+| Items (catalog) | 108 items | IN PROGRESS | t_12f350af parent triage; 04e WIP (04a integrated — see Catalog resources slice row) | 04a slice VERIFIED (see row below) | — | salvage, re-dispatch 04e |
+| Tile entities | 73 tiles | IN PROGRESS | WIP tiles/ across M4/M6 (04a mana-pod tile integrated) | mana-pod tile probes on 04a (game) | — | salvage per subsystem |
+| Catalog — resources/food slice (TC-M6-04a) | 43 content-mapping rows (1 block, 1 tile entity, 11 items incl. 41 metas, 26 oredict tags, 4 recipes) | VERIFIED | t_49d6b3cd (this commit; replaces t_cc2524ea) | 1 unit (26-row oredict tag guard) + 3 game probes (meta save round-trips/name-keys/stack limit, CSV-contract tag resolution, mana-pod growth + aspect-seeded bean drops); full suite 299 unit + 62/62 game green | D-001 id case; meta precision via data_component | remaining rows on TC-M6-04b–f |
 | Enchantments (Haste, Repair) | 2 registered, 3 dead-code | IN PROGRESS | t_a8f8a37c (WIP: enchantment/, data) | none (uncommitted) | BD-07 | salvage, re-dispatch TC-M6-05 |
 | Potions / effects | 9 effects | IN PROGRESS | t_a8f8a37c (WIP: potions/) | none (uncommitted) | — | salvage, re-dispatch |
 | Entities + AI + spawn | 50 entities, 29 eggs, 5 spawns | INVESTIGATED | TC-M6-06 | none | — | dispatch TC-M6-06 |

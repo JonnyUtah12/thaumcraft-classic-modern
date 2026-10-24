@@ -48,7 +48,7 @@ Statuses (DONE only with test evidence):
 | Foci + casting | focus classes | TC-M6-02 (t_ae471793) | NOT STARTED |
 | Focus behaviors/combos | projectile classes | TC-M6-03 (t_a0113d55) | NOT STARTED |
 | Block/item catalog | content-mapping.csv | TC-M6-04 (t_12f350af) | DONE (parent triage 97f87a6; a–f below) |
-| — catalog: resources/food | content-mapping.csv | TC-M6-04a (t_cc2524ea) | BLOCKED; PARTIAL WIP (items/, tiles/, blocks/ uncommitted) |
+| — catalog: resources/food | content-mapping.csv | TC-M6-04a (t_49d6b3cd; replaces t_cc2524ea) | DONE (this commit; items/ tiles/ blocks/ integrated; CatalogOredictTagsTest 26-row oredict tag guard + CatalogResourcesGameTest 3 probes — meta save round-trips + per-meta name keys + primal-charm stack limit, oredict tags resolve from the CSV contract, mana-pod growth + aspect-seeded bean drops vs the block loot table; full unit suite green, runGameTestServer 62/62) |
 | — catalog: decorative blocks | content-mapping.csv | TC-M6-04b (t_dbfabad9) | BLOCKED; PARTIAL WIP (blocks/ uncommitted) |
 | — catalog: device blocks/machines | content-mapping.csv | TC-M6-04c (t_dc6fe98a) | BLOCKED; PARTIAL WIP (blocks/, tiles/ uncommitted) |
 | — catalog: furniture/storage/display | content-mapping.csv | TC-M6-04d (t_a2a41d5b) | BLOCKED; PARTIAL WIP (registration/catalog/ uncommitted) |
