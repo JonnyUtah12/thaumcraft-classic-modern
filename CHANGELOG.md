@@ -18,6 +18,72 @@ Minecraft 1.21.1 / NeoForge 21.1.259 targets.
   registered under the gametest property, so the shipped tags failed
   vanilla tag validation in production startup.
 
+## [0.1.0-alpha.2] - 2026-10-24
+
+Second pre-release. Still deliberately a pre-release, and still not playable
+end-to-end: the interaction layer (wands, foci, arcane crafting, infusion,
+alchemy, essentia devices, taint, enchantments, armor, entities, GUIs,
+Thaumonomicon, particles, models) is not implemented. Per-system status:
+`docs/FEATURE_MATRIX.md`; deviations: `docs/BEHAVIORAL_DEVIATIONS.md`.
+
+**Artifact policy:** the jar attached to this release is **code-only** — it
+contains no original Thaumcraft textures or sounds. Original assets are All
+Rights Reserved (no license grant) and are never redistributed. Local builds
+overlay the user's own extracted assets into the output JAR (see
+`docs/porting-decisions.md` D-004); a code-only jar is markedly smaller,
+which is the signal the overlay did not apply.
+
+### Added
+- **Ore world generation** (TC-M5-05, `d1d7d5f`): cinnabar, amber and
+  infused stone at the original counts and bands, via the
+  `thaumcraft:tc_ore` feature type and a biome modifier. **Corrects the
+  alpha.1 notes**, which stated ore world generation was implemented but
+  not integrated and therefore absent from that JAR — it is present from
+  this release onward.
+- **World generation — structures** (TC-M5-05b, `d4acdb3`): totems,
+  shrine-mound structure table, eldritch rings and hilltop stones, with
+  `StructureParityTest` replaying the original `setBlock` sequence and roll
+  frequencies.
+- **Eldritch realm — maze cells, first slice** (TC-M6-04f, `f252c58`):
+  `MazeGenerator`, outer-lands cell/cell-location model and
+  `MazeGeneratorTest`. Catalog items and `damage_type` for this slice remain
+  unsalvaged (tracked as TC-M6-04f-s).
+- **Content catalog slices** (TC-M6-04a/04b, `9c29cfc`, `ea694a9`):
+  resource items, shards, nuggets and food (incl. mana pod); decorative and
+  cosmetic blocks.
+- **Baubles-slot items + runic shielding** (TC-M8-02, `e48c4fb`): six
+  original accessories (apprentice rings, runic ring/amulet/girdle, vis
+  amulet, hover girdle) with original metas and costs, and the
+  `RunicShielding` pool ported term-for-term from `EventHandlerRunic`
+  (charge, hardening, recharge ordering, kinetic push, regeneration,
+  emergency, starvation/drowning/void/wither exclusions).
+- **Section-19 fidelity tracking** (`bf45efc`, `d89319d`):
+  `docs/FEATURE_MATRIX.md` (per-system status with evidence and honest
+  denominators), `docs/BEHAVIORAL_DEVIATIONS.md` (BD-01…BD-14 with cause,
+  impact, alternatives and next steps), and
+  `scripts/build_feature_matrix.py` generating the machine-readable
+  `docs/feature-matrix.csv`.
+
+### Fixed
+- ATM10 startup battery (TC-M9-01): the aggregate research graph files moved
+  from `data/thaumcraft/research/` to `data/thaumcraft/research_graph/` —
+  Astral Sorcery globs `data/<ns>/research/*.json` across every namespace
+  and logged parse errors over our aggregates on every ATM10 startup; the
+  old path is also reserved for a future `thaumcraft:research` datapack
+  registry. Curios item tags (`curios:thaumcraft.ring/.amulet`) now mark
+  their test-probe entries `"required": false`: the probe items are only
+  registered under the gametest property, so the shipped tags failed
+  vanilla tag validation in production startup.
+
+### Verification
+- 299 unit tests (1 skipped), 0 failures; **65** required game tests passed
+  in `runGameTestServer`; `./gradlew build` green locally and on CI at this
+  tag. (The alpha.1 notes quoted 216 unit / 39 game tests — those counts are
+  superseded.)
+- Testing note: structures and ores generate in **new chunks** only — load a
+  pre-alpha.2 world and they will not appear. Use a fresh world or explore
+  ungenerated terrain.
+
 ## [0.1.0-alpha.1] - 2026-10-22
 
 First pre-release. Deliberately a pre-release, not 0.1.0: most gameplay
