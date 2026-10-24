@@ -44,7 +44,7 @@ Translation to the other status sets used in this repo:
 | Node behavior (tick/modifiers) | 6 types × modifiers | VERIFIED | t_d00335ab → 47281ea | tick/persistence (unit + game) | — | — |
 | Flux (decay/diffusion/thresholds) | flux model | VERIFIED | t_c476f104 → 8395621 | unit + game | — | — |
 | Taint (spread, biome effects) | taint system | IN PROGRESS | t_66c37e97 (WIP: taint/) | none (uncommitted) | BD-14 | salvage, re-dispatch TC-M5-04 |
-| Worldgen — ores (cinnabar/amber/infused) | 16 worldgen features (ores subset) | IMPLEMENTED (CI status to confirm) | t_833087c1 → d1d7d5f | local green; confirm integration in `main` + CI | BD-12 | confirm CI green, else integrate |
+| Worldgen — ores (cinnabar/amber/infused) | 16 worldgen features (ores subset) | TESTED | t_833087c1 → d1d7d5f | integrated on `main`; CI run 39886807032 green | BD-12 (resolved) | structure/biome worldgen still open (M5-05b) |
 | Worldgen — structures (totem/mound/eldritch/hilltop) | 16 worldgen features (structures) | IN PROGRESS | t_7c49bfdc (WIP: worldgen/Structure*, TotemGen) | none (uncommitted) | — | salvage, re-dispatch TC-M5-05b |
 | Arcane workbench | RecipeArcaneWorkbench | IN PROGRESS | t_81c79f33 (WIP: menus/, recipes/, arcane-recipe-inventory.json) | none (uncommitted) | BD-14 | salvage, re-dispatch TC-M4-03 |
 | Infusion altar | TileInfusion* | IN PROGRESS | t_30961958 (WIP: extract_infusion_recipes.py, tiles/) | none (uncommitted) | BD-14 | salvage, re-dispatch TC-M4-04 |
@@ -89,8 +89,7 @@ uncommitted WIP as VERIFIED.
   aspects, research graph, research progression, vis, aura+nodes, node
   behavior, flux, accessory layer, baubles items, sounds, registration,
   config, build foundation, ATM10 startup.
-- **TESTED (partial substrate)**: **2** — persistence, networking.
-- **IMPLEMENTED, integration to confirm**: **1** — worldgen ores (BD-12).
+- **TESTED (partial substrate)**: **3** — persistence, networking, worldgen ores.
 - **IN PROGRESS (WIP, uncommitted, unverified)**: **12** — minigames,
   taint, structures, workbench, infusion, crucible, essentia storage,
   blocks, items, tile entities, enchantments/potions, recipes.

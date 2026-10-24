@@ -9,7 +9,8 @@ and what remains to eliminate it.
 
 Status vocabulary: **UNAVOIDABLE** (target platform cannot express the
 original), **TEMPORARY** (a tracked task exists to close it), **ACCEPTED**
-(decision recorded in `porting-decisions.md`).
+(decision recorded in `porting-decisions.md`), **RESOLVED** (was a
+deviation, now matches the original).
 
 | # | System | Original behavior | Current behavior | Cause | Gameplay impact | Alternatives investigated | Why exact preservation failed | Temporary/Unavoidable | Next steps |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -24,7 +25,7 @@ original), **TEMPORARY** (a tracked task exists to close it), **ACCEPTED**
 | BD-09 | sounds.json | 1.7.10 semantics (unnamespaced event keys, unprefixed file refs) | Rewritten at pipeline level: file refs prefixed `thaumcraft:`, event keys kept unnamespaced | 1.21.1 sound registry rules | None (66 events 1:1, play sites rewired) | — | Platform constraint | UNAVOIDABLE | None (TC-M7-05, fa569b7) |
 | BD-10 | Research hidden-parent quirk | Empty-list prerequisite quirk in original | Reproduced | Original behavior | Preserved exactly | — | — | N/A (preserved) | None (TC-M3-02) |
 | BD-11 | Persistence codecs | Original strict NBT | Lenient codecs + copyOnDeath + S2C sync | 1.21.1 attachment substrate | Preserved; lenient decode tolerates partial data | Strict codecs | Platform convention | UNAVOIDABLE | None (TC-M2-02) |
-| BD-12 | Ore world-gen | Original frequencies | Implemented but NOT YET INTEGRATED into main (TC-M5-05) | Integration pending | None once integrated | — | — | TEMPORARY | Integrate TC-M5-05 (t_833087c1 → d1d7d5f precedent) |
+| BD-12 | Ore world-gen | Original ore frequencies | Same frequencies via `thaumcraft:tc_ore` feature + biome modifier | Platform convention (data-driven worldgen feature) | None | — | — (preserved) | **RESOLVED** | Integrated on `main` as d1d7d5f; CI run 39886807032 green. No longer a deviation. |
 | BD-13 | Thaumonomicon GUI | Original pages/minigames/navigation | Not implemented | Not yet ported | Missing feature | — | — | TEMPORARY | TC-M3-03/04 (t_38e57cb0, t_4ebb83af) |
 | BD-14 | Interaction layer (workbench/infusion/crucible/essentia/taint/enchantments/armor/entities/foci/M7 visuals) | Original mechanics | Not implemented (WIP on shared tree, uncommitted) | Not yet ported | Missing features | — | — | TEMPORARY | Salvage card t_8aea81b5; re-dispatch BLOCKED cards |
 

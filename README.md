@@ -79,6 +79,8 @@ the user's primary instance. See `docs/testing.md`.
 | `docs/porting-decisions.md` | Every adaptation, with fidelity impact |
 | `docs/compatibility-matrix.md` | Feature-by-feature parity status |
 | `docs/feature-tracking.md` | Feature → Kanban task mapping |
+| `docs/FEATURE_MATRIX.md` | Section-19 fidelity scorecard: per-system status + evidence |
+| `docs/BEHAVIORAL_DEVIATIONS.md` | Every known deviation from the original (BD-01…) |
 | `docs/content-mapping.csv` | Original id → new id → status |
 | `docs/kanban-workflow.md` | Board layout and workflow rules |
 | `docs/licensing-and-attribution.md` | License findings and policy |
