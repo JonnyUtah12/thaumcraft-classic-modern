@@ -52,6 +52,13 @@ public final class AuraNodeChunkGen {
         // Class-loaded by the @EventBusSubscriber scan at mod construction —
         // the right moment to join the chunk pipeline.
         MagicChunkHooks.registerChunkGenHook(AuraNodeChunkGen::generateChunk);
+        // Registration order == execution order in MagicChunkHooks.HOOKS, so the
+        // TC-M5-05b structure pass must be touched here: its totem gate reads the
+        // aura nodes this pass just created. Touching the class (not merely
+        // naming it) is what runs its static initializer; the structure pass is
+        // not itself an EventBusSubscriber, since the fml scan rejects annotated
+        // classes without a @SubscribeEvent method.
+        StructureChunkGen.ensureHookRegistered();
     }
 
     private AuraNodeChunkGen() {
