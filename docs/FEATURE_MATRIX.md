@@ -1,0 +1,116 @@
+# FEATURE MATRIX — behavioral fidelity scorecard
+
+Section-19 mandated tracker. Status vocabulary (strict, not
+interchangeable): **NOT INVESTIGATED / INVESTIGATED / IN PROGRESS /
+IMPLEMENTED / TESTED / VERIFIED / BLOCKED / DOCUMENTED DEVIATION**.
+
+Translation to the other status sets used in this repo:
+
+| This file | `compatibility-matrix.md` | `feature-tracking.md` |
+| --- | --- | --- |
+| VERIFIED | IT | DONE |
+| TESTED | IU | DONE |
+| IMPLEMENTED | PARTIAL | (n/a) |
+| IN PROGRESS | PARTIAL | BLOCKED (WIP on disk) |
+| INVESTIGATED | NI | NOT STARTED |
+| BLOCKED | BL | BLOCKED |
+| DOCUMENTED DEVIATION | AD | (see BD rows) |
+
+- **VERIFIED** = substantive implementation + passing tests + observable
+  behavior compared against the original JAR (4.2.3.5, decompiled).
+- **TESTED** = implementation + passing defined tests, behavioral
+  comparison not yet recorded.
+- **IMPLEMENTED** = substantive code exists; correctness unproven.
+- **IN PROGRESS** = WIP present (uncommitted shared-tree) and unverified.
+- **INVESTIGATED** = behavior documented, no port yet.
+- Counts are the **discovered totals** from
+  `docs/original-content-inventory.md` (mechanically derived from the
+  decompiled tree). A status at system granularity does not claim every
+  listed member of that category is done — the counts column is the
+  denominator; the status is the verified/implemented portion.
+- Evidence = Kanban card → commit on `main` (board
+  `thaumcraft-classic-port`). A row is VERIFIED only with a commit +
+  test evidence. Deviations link to `docs/BEHAVIORAL_DEVIATIONS.md` (BD-nn).
+
+| System | Discovered (from inventory) | Status | Evidence (card → commit) | Test status | Deviation | Next action |
+| --- | --- | --- | --- | --- | --- | --- |
+| Aspects + combinations + essentia | 48 aspects; 287 item / 56 oredict / 116 entity essentia rows | VERIFIED | t_0cc0a0ca → 5ce3dee | 4 unit + 5 game (1:1 vs Aspect.java, TC4 combo/reduce/cull + discovery) | none | — |
+| Research graph (data) | 6 categories, 201 entries | VERIFIED | t_eef90e8c → 6a96dee/721e5b9/6201ef5 | 87 unit + 18 game (graph 1:1 vs ConfigResearch) | BD-05 | — |
+| Research progression/triggers/points | 201 entries, triggers, warp | VERIFIED | t_25f6eeb2 → de193f3/79c49ba | server-authoritative; hidden-parent quirk reproduced | BD-10 | — |
+| Thaumonomicon GUI | 17 GUI ids (pages, nav) | BLOCKED | t_38e57cb0 (gave up 150/150) | none | BD-13 | re-dispatch TC-M3-03 in worktree |
+| Research minigames | note puzzle set | IN PROGRESS | t_4ebb83af (WIP: research/NotePuzzle, HexUtils, ResearchNoteData) | none (uncommitted) | BD-13 | salvage → t_8aea81b5, re-dispatch |
+| Vis core (pool, costs, visnet) | visnet model, cost chain | VERIFIED | t_d7272167 → 3314f7f | 44 unit + game (centi-vis all-or-nothing, selection quirks) | BD-08 | — |
+| Aura + nodes | 6 node types, 3 modifiers, 31-row biome aura | VERIFIED | t_71def828 → aaca66c | seeded wild-node gen, biome behavior (unit + game) | — | — |
+| Node behavior (tick/modifiers) | 6 types × modifiers | VERIFIED | t_d00335ab → 47281ea | tick/persistence (unit + game) | — | — |
+| Flux (decay/diffusion/thresholds) | flux model | VERIFIED | t_c476f104 → 8395621 | unit + game | — | — |
+| Taint (spread, biome effects) | taint system | IN PROGRESS | t_66c37e97 (WIP: taint/) | none (uncommitted) | BD-14 | salvage, re-dispatch TC-M5-04 |
+| Worldgen — ores (cinnabar/amber/infused) | 16 worldgen features (ores subset) | IMPLEMENTED (CI status to confirm) | t_833087c1 → d1d7d5f | local green; confirm integration in `main` + CI | BD-12 | confirm CI green, else integrate |
+| Worldgen — structures (totem/mound/eldritch/hilltop) | 16 worldgen features (structures) | IN PROGRESS | t_7c49bfdc (WIP: worldgen/Structure*, TotemGen) | none (uncommitted) | — | salvage, re-dispatch TC-M5-05b |
+| Arcane workbench | RecipeArcaneWorkbench | IN PROGRESS | t_81c79f33 (WIP: menus/, recipes/, arcane-recipe-inventory.json) | none (uncommitted) | BD-14 | salvage, re-dispatch TC-M4-03 |
+| Infusion altar | TileInfusion* | IN PROGRESS | t_30961958 (WIP: extract_infusion_recipes.py, tiles/) | none (uncommitted) | BD-14 | salvage, re-dispatch TC-M4-04 |
+| Crucible / alchemy | TileCrucible* | IN PROGRESS | t_cdece7cd (WIP: crucible-recipe-inventory.json, tiles/) | none (uncommitted) | BD-14 | salvage, re-dispatch TC-M4-05 |
+| Essentia storage (smelter, jars) | TileSmelter*, jars | IN PROGRESS | t_e9d23e1c (WIP: tiles/) | none (uncommitted) | BD-14 | salvage, re-dispatch TC-M4-06 |
+| Essentia transport (tube network) | tube net | INVESTIGATED | TC-M4-07 (not started) | none | — | dispatch TC-M4-07 |
+| Wands (rods/caps/staffs) | 24 wand components | INVESTIGATED | TC-M6-01 (VisContainerItem/WandVis seam in e48c4fb) | seam only | — | dispatch TC-M6-01 |
+| Foci + casting | focus classes | INVESTIGATED | TC-M6-02 | none | — | dispatch TC-M6-02 |
+| Focus behaviors/combos | projectile classes | INVESTIGATED | TC-M6-03 | none | — | dispatch TC-M6-03 |
+| Blocks (catalog) | 45 blocks | IN PROGRESS | t_12f350af parent triage (97f87a6); 04a–f WIP | none (uncommitted) | — | salvage, re-dispatch 04a–f |
+| Items (catalog) | 108 items | IN PROGRESS | t_12f350af parent triage; 04a/04e WIP | none (uncommitted) | — | salvage, re-dispatch |
+| Tile entities | 73 tiles | IN PROGRESS | WIP tiles/ across M4/M6 | none (uncommitted) | — | salvage per subsystem |
+| Enchantments (Haste, Repair) | 2 registered, 3 dead-code | IN PROGRESS | t_a8f8a37c (WIP: enchantment/, data) | none (uncommitted) | BD-07 | salvage, re-dispatch TC-M6-05 |
+| Potions / effects | 9 effects | IN PROGRESS | t_a8f8a37c (WIP: potions/) | none (uncommitted) | — | salvage, re-dispatch |
+| Entities + AI + spawn | 50 entities, 29 eggs, 5 spawns | INVESTIGATED | TC-M6-06 | none | — | dispatch TC-M6-06 |
+| Armor / equipment | items/armor set | INVESTIGATED | TC-M6-07 (runic shield VERIFIED in e48c4fb; armor items not done) | shield mechanics verified | — | dispatch TC-M6-07 |
+| Accessory layer (Baubles semantics) | RING×2/AMULET/BELT/CHARM | VERIFIED | t_76c2874f → c44b219 | Curios + no-Curios both green | BD-06 | — |
+| Baubles items (focuspouch etc.) | items/baubles set | VERIFIED | t_0ca9e33b → e48c4fb | accessory + runic tests | — | — |
+| Sounds | 66 sound events | VERIFIED | t_32cd081b → 283a810 | 66 events 1:1, play-site map, game guard | BD-02, BD-09 | wire remaining play sites (M7) |
+| Registration + id stability | full registry | VERIFIED | t_749e3134 → dc91fe4 | id-contract unit + game | BD-01, BD-02, BD-03 | — |
+| Persistence substrate | world + player state | TESTED (PARTIAL) | t_0083a616 → 5ead7f1 | 17 unit + 3 game (lenient codecs, copyOnDeath, S2C) | BD-11 | full-state coverage follows features |
+| Networking substrate | 37 payloads | TESTED (PARTIAL) | t_cbc91aec → 7fdcd0a | 37 payloads 1:1, both-dist | — | per-feature sync follows features |
+| Configuration | 62 options | VERIFIED (with deviation) | t_c87a23bc → 0674bcb | 53/62 ported, clamps at read | BD-07 | — |
+| Models / textures / item+block models | 1107 asset files (models subset) | INVESTIGATED | TC-M7-01; asset inventory + local overlay (D-004) | overlay present, playback guarded | — | dispatch TC-M7-01 |
+| Particles / beams / fx | client/fx set | INVESTIGATED | TC-M7-02 | none | — | dispatch TC-M7-02 |
+| Entity renderers | renderers/entity set | INVESTIGATED | TC-M7-03 | none | — | dispatch TC-M7-03 |
+| GUI parity (non-research) | client/gui set | INVESTIGATED | TC-M7-04 | none | — | dispatch TC-M7-04 |
+| Build / load foundation | — | VERIFIED | t_e81a4a3b → 8058029/575c1b6 | 5 unit + smoke gametest, CI | — | — |
+| ATM10 startup | 496/470 mods | VERIFIED (startup only) | t_bd0c30d2 → f86a444/ff962ed | load in disposable instance | — | — |
+| ATM10 gameplay | representative loops | NOT INVESTIGATED | TC-M9-02 (gated on TC-M6-03) | none | — | gated; dispatch after M6 |
+| Recipes (all types) | 279 recipes, 42 oredict, 11 wand triggers | IN PROGRESS | recipe inventories (arcane/crucible) WIP; extraction scripts | extraction present, in-game matching none | — | integrate per crafting system |
+| Fluids | 4 fluids | INVESTIGATED | content-mapping | none | — | dispatch with catalog |
+| Biomes / dimension (Outer Lands) | 4 biomes, 1 dim (-42) | INVESTIGATED | eldritch realm WIP (world/outerlands, damage_type) | none (uncommitted) | — | salvage (04f), dispatch |
+
+## Fidelity scorecard (system granularity — honest denominators)
+
+Counts are systems, not items; the Discovered column above is the
+authoritative content-level denominator. No number here counts
+uncommitted WIP as VERIFIED.
+
+- **VERIFIED** (impl + tests + original-behavior comparison): **14** —
+  aspects, research graph, research progression, vis, aura+nodes, node
+  behavior, flux, accessory layer, baubles items, sounds, registration,
+  config, build foundation, ATM10 startup.
+- **TESTED (partial substrate)**: **2** — persistence, networking.
+- **IMPLEMENTED, integration to confirm**: **1** — worldgen ores (BD-12).
+- **IN PROGRESS (WIP, uncommitted, unverified)**: **12** — minigames,
+  taint, structures, workbench, infusion, crucible, essentia storage,
+  blocks, items, tile entities, enchantments/potions, recipes.
+- **INVESTIGATED, not ported**: **13** — essentia transport, wands, foci,
+  focus behaviors, entities+AI, armor/equipment, models, particles,
+  renderers, GUI parity, fluids, biomes/dimension, ATM10 gameplay.
+- **BLOCKED (worker gave up, needs re-dispatch)**: **1** — Thaumonomicon GUI.
+- **DOCUMENTED DEVIATIONS**: 14 rows in `BEHAVIORAL_DEVIATIONS.md`.
+
+**Honest summary:** the data/infrastructure layer (aspects, research
+logic, vis, aura/flux/nodes, registration, config, accessories, sounds,
+persistence/networking substrates) is VERIFIED. The interaction layer
+(every crafting system, essentia, taint, foci/wands, armor, entities,
+Thaumonomicon UI, full visuals, structures, fluids, dimension) is NOT
+VERIFIED. This is **Gate 2 (functional alpha)**, not Gate 3. The
+v0.1.0-alpha.1 pre-release states this.
+
+## Kanban enforcement
+
+Every IN PROGRESS row is covered by the salvage card `t_8aea81b5` + the
+BLOCKED/re-dispatch rows in `feature-tracking.md`. No row may move to
+VERIFIED without a commit on `main` + test evidence recorded on its card;
+compilation ≠ tested, startup ≠ verified.

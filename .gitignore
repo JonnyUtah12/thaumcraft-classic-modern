@@ -28,5 +28,9 @@ repo/
 local.properties
 *.env
 
+### Local research artifacts (D-004: ARR assets/decompiled sources stay local) ###
+reference/
+.worktrees/
+
 ### OS ###
 .DS_Store
