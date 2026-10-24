@@ -1,0 +1,143 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "WandRodPrimalStaff",
+  "research": "ROD_primal_staff",
+  "instability": 8,
+  "aspects": [
+    {
+      "aspect": "aer",
+      "constant": "AIR",
+      "amount": 32
+    },
+    {
+      "aspect": "ignis",
+      "constant": "FIRE",
+      "amount": 32
+    },
+    {
+      "aspect": "aqua",
+      "constant": "WATER",
+      "amount": 32
+    },
+    {
+      "aspect": "terra",
+      "constant": "EARTH",
+      "amount": 32
+    },
+    {
+      "aspect": "ordo",
+      "constant": "ORDER",
+      "amount": 32
+    },
+    {
+      "aspect": "perditio",
+      "constant": "ENTROPY",
+      "amount": 32
+    },
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 64
+    }
+  ],
+  "input": {
+    "neoforge:components": {
+      "items": [
+        "thaumcraft:wandrod"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 2
+      }
+    }
+  },
+  "components": [
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 15
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:wandrod"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 1
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:wandrod"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 3
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:wandrod"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 4
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 15
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:wandrod"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 5
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:wandrod"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 6
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:wandrod"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 7
+        }
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:wandrod",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 100
+    }
+  }
+}

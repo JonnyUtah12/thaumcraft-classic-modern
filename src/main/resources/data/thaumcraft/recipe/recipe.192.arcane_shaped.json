@@ -1,0 +1,74 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "ADVALCHEMYFURNACE",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 10
+    },
+    {
+      "aspect": "ordo",
+      "amount": 30
+    },
+    {
+      "aspect": "terra",
+      "amount": 10
+    }
+  ],
+  "pattern": [
+    "VAV",
+    "APA",
+    "VAV"
+  ],
+  "key": {
+    "A": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockmetaldevice",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "9"
+          }
+        }
+      }
+    },
+    "V": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemresource",
+        "components": {
+          "thaumcraft:item_meta": 16
+        }
+      }
+    },
+    "P": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemeldritchobject",
+        "components": {
+          "thaumcraft:item_meta": 3
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockmetaldevice",
+    "count": 4,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "3"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockmetaldevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemeldritchobject"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "CRUCIBLE",
+  "research": "CRUCIBLE",
+  "catalyst": {
+    "neoforge:components": {
+      "items": "thaumcraft:itemshard",
+      "components": {
+        "thaumcraft:item_meta": 5
+      }
+    }
+  },
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 2
+    },
+    {
+      "aspect": "ignis",
+      "amount": 2
+    },
+    {
+      "aspect": "aqua",
+      "amount": 2
+    },
+    {
+      "aspect": "terra",
+      "amount": 2
+    },
+    {
+      "aspect": "ordo",
+      "amount": 2
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemshard",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 6
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

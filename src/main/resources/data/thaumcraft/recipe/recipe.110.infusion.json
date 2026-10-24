@@ -1,0 +1,92 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "PrimalCrusher",
+  "research": "PRIMALCRUSHER",
+  "instability": 6,
+  "aspects": [
+    {
+      "aspect": "perfodio",
+      "constant": "MINE",
+      "amount": 24
+    },
+    {
+      "aspect": "instrumentum",
+      "constant": "TOOL",
+      "amount": 24
+    },
+    {
+      "aspect": "perditio",
+      "constant": "ENTROPY",
+      "amount": 16
+    },
+    {
+      "aspect": "vacuos",
+      "constant": "VOID",
+      "amount": 16
+    },
+    {
+      "aspect": "telum",
+      "constant": "WEAPON",
+      "amount": 16
+    },
+    {
+      "aspect": "alienis",
+      "constant": "ELDRITCH",
+      "amount": 16
+    },
+    {
+      "aspect": "lucrum",
+      "constant": "GREED",
+      "amount": 16
+    }
+  ],
+  "input": {
+    "neoforge:components": {
+      "items": [
+        "thaumcraft:itemeldritchobject"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 3
+      }
+    }
+  },
+  "components": [
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 15
+        }
+      }
+    },
+    {
+      "item": "thaumcraft:itempickvoid"
+    },
+    {
+      "item": "thaumcraft:itemshovelvoid"
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 15
+        }
+      }
+    },
+    {
+      "item": "thaumcraft:itempickaxeelemental"
+    },
+    {
+      "item": "thaumcraft:itemshovelelemental"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemprimalcrusher",
+    "count": 1
+  }
+}

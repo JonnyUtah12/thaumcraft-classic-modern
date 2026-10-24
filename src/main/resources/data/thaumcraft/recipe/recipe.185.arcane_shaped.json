@@ -1,0 +1,55 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "DISTILESSENTIA",
+  "aspects": [
+    {
+      "aspect": "ignis",
+      "amount": 5
+    },
+    {
+      "aspect": "aqua",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    "SCS",
+    "SFS",
+    "SSS"
+  ],
+  "key": {
+    "C": {
+      "item": "thaumcraft:blockmetaldevice"
+    },
+    "F": {
+      "item": "minecraft:furnace"
+    },
+    "S": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockcosmeticsolid",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "6"
+          }
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockstonedevice",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcosmeticsolid"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockmetaldevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockstonedevice"
+    }
+  ]
+}

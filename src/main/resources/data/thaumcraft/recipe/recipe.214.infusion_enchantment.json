@@ -1,0 +1,40 @@
+{
+  "type": "thaumcraft:infusion_enchantment",
+  "original_key": "InfEnch11",
+  "research": "INFUSIONENCHANTMENT",
+  "enchantment": "minecraft:knockback",
+  "instability": 1,
+  "aspects": [
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 4
+    },
+    {
+      "aspect": "telum",
+      "constant": "WEAPON",
+      "amount": 3
+    },
+    {
+      "aspect": "motus",
+      "constant": "MOTION",
+      "amount": 3
+    }
+  ],
+  "components": [
+    {
+      "item": "minecraft:piston"
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 14
+        }
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py."
+}

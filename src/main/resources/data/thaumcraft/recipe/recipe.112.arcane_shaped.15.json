@@ -1,0 +1,46 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "BANNERS",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 5
+    },
+    {
+      "aspect": "terra",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    "WS",
+    "WS",
+    "WB"
+  ],
+  "key": {
+    "W": {
+      "item": "minecraft:black_wool"
+    },
+    "S": {
+      "tag": "thaumcraft:oredict.stickwood"
+    },
+    "B": {
+      "tag": "thaumcraft:oredict.slabwood"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockwoodendevice",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "8"
+      },
+      "thaumcraft:banner_color": 15
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockwoodendevice"
+    }
+  ]
+}

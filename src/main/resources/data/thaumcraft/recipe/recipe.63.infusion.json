@@ -1,0 +1,62 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "WandPed",
+  "research": "WANDPED",
+  "instability": 3,
+  "aspects": [
+    {
+      "aspect": "auram",
+      "constant": "AURA",
+      "amount": 10
+    },
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 15
+    },
+    {
+      "aspect": "permutatio",
+      "constant": "EXCHANGE",
+      "amount": 15
+    }
+  ],
+  "input": {
+    "neoforge:components": {
+      "items": [
+        "thaumcraft:blockstonedevice"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 1
+      }
+    }
+  },
+  "components": [
+    {
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "item": "minecraft:diamond"
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 15
+        }
+      }
+    },
+    {
+      "item": "minecraft:diamond"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:blockstonedevice",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 5
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "CENTRIFUGE",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 5
+    },
+    {
+      "aspect": "ordo",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    "PVP",
+    "T T",
+    "PRP"
+  ],
+  "key": {
+    "T": {
+      "item": "thaumcraft:blocktube"
+    },
+    "V": {
+      "neoforge:components": {
+        "items": "thaumcraft:blocktube",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "1"
+          }
+        }
+      }
+    },
+    "R": {
+      "neoforge:components": {
+        "items": "thaumcraft:blocktube",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "5"
+          }
+        }
+      }
+    },
+    "P": {
+      "item": "thaumcraft:itemessence"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blocktube",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "4"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blocktube"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemessence"
+    }
+  ]
+}

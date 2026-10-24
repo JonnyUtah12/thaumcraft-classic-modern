@@ -1,0 +1,51 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "VISPOWER",
+  "aspects": [
+    {
+      "aspect": "ignis",
+      "amount": 8
+    },
+    {
+      "aspect": "ordo",
+      "amount": 8
+    }
+  ],
+  "pattern": [
+    " I ",
+    "ISI",
+    " I "
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "S": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemshard",
+        "components": {
+          "thaumcraft:item_meta": 6
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockmetaldevice",
+    "count": 2,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "14"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockmetaldevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

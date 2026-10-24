@@ -1,0 +1,79 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "DISTILESSENTIA",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 5
+    },
+    {
+      "aspect": "ordo",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    "VTF",
+    "TWT",
+    "FTV"
+  ],
+  "key": {
+    "W": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockwoodendevice",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "6"
+          }
+        }
+      }
+    },
+    "V": {
+      "neoforge:components": {
+        "items": "thaumcraft:blocktube",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "1"
+          }
+        }
+      }
+    },
+    "T": {
+      "item": "thaumcraft:blocktube"
+    },
+    "F": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemresource",
+        "components": {
+          "thaumcraft:item_meta": 8
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockmetaldevice",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "9"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockmetaldevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blocktube"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockwoodendevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

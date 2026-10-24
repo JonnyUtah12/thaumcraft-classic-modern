@@ -1,0 +1,70 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "FOCUSTRADE",
+  "aspects": [
+    {
+      "aspect": "ordo",
+      "amount": 15
+    },
+    {
+      "aspect": "perditio",
+      "amount": 15
+    },
+    {
+      "aspect": "terra",
+      "amount": 10
+    }
+  ],
+  "pattern": [
+    "CQE",
+    "Q#Q",
+    "CQE"
+  ],
+  "key": {
+    "#": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemresource",
+        "components": {
+          "thaumcraft:item_meta": 3
+        }
+      }
+    },
+    "Q": {
+      "item": "minecraft:quartz"
+    },
+    "C": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemshard",
+        "components": {
+          "thaumcraft:item_meta": 6
+        }
+      }
+    },
+    "E": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemshard",
+        "components": {
+          "thaumcraft:item_meta": 6
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:focustrade",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:focustrade"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

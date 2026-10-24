@@ -1,0 +1,40 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "TUBES",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 5
+    },
+    {
+      "aspect": "aer",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    "I I",
+    "INI",
+    " S "
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "N": {
+      "item": "minecraft:quartz"
+    },
+    "S": {
+      "tag": "thaumcraft:oredict.stickwood"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:itemresonator",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresonator"
+    }
+  ]
+}

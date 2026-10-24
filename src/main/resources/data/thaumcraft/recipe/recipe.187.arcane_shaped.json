@@ -1,0 +1,47 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "BELLOWS",
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 10
+    },
+    {
+      "aspect": "ordo",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    "WW ",
+    "LCI",
+    "WW "
+  ],
+  "key": {
+    "W": {
+      "tag": "thaumcraft:oredict.plankwood"
+    },
+    "C": {
+      "item": "thaumcraft:itemshard"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "L": {
+      "item": "minecraft:leather"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockwoodendevice",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockwoodendevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

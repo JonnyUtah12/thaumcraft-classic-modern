@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "K"
+  ],
+  "key": {
+    "K": {
+      "item": "thaumcraft:blockcosmeticopaque"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:itemresource",
+    "count": 4,
+    "components": {
+      "thaumcraft:item_meta": 6
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcosmeticopaque"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "formatVersion": 1,
+  "source": "decompiled thaumcraft/common/config/ConfigResearch.java (Thaumcraft 4.2.3.5; upstream source file name: thaumcraft/common/lib/research/Research.java). Extracted mechanically by scripts/extract_research_graph.py.",
+  "categories": [
+    {
+      "key": "BASICS",
+      "order": 0,
+      "icon": "thaumcraft:textures/items/thaumonomiconcheat.png",
+      "background": "thaumcraft:textures/gui/gui_researchback.png",
+      "nameKey": "tc.research_category.BASICS",
+      "nameEnUs": "Basic Information"
+    },
+    {
+      "key": "THAUMATURGY",
+      "order": 1,
+      "icon": "thaumcraft:textures/misc/r_thaumaturgy.png",
+      "background": "thaumcraft:textures/gui/gui_researchback.png",
+      "nameKey": "tc.research_category.THAUMATURGY",
+      "nameEnUs": "Thaumaturgy"
+    },
+    {
+      "key": "ALCHEMY",
+      "order": 2,
+      "icon": "thaumcraft:textures/misc/r_crucible.png",
+      "background": "thaumcraft:textures/gui/gui_researchback.png",
+      "nameKey": "tc.research_category.ALCHEMY",
+      "nameEnUs": "Alchemy"
+    },
+    {
+      "key": "ARTIFICE",
+      "order": 3,
+      "icon": "thaumcraft:textures/misc/r_artifice.png",
+      "background": "thaumcraft:textures/gui/gui_researchback.png",
+      "nameKey": "tc.research_category.ARTIFICE",
+      "nameEnUs": "Artifice"
+    },
+    {
+      "key": "GOLEMANCY",
+      "order": 4,
+      "icon": "thaumcraft:textures/misc/r_golemancy.png",
+      "background": "thaumcraft:textures/gui/gui_researchback.png",
+      "nameKey": "tc.research_category.GOLEMANCY",
+      "nameEnUs": "Golemancy"
+    },
+    {
+      "key": "ELDRITCH",
+      "order": 5,
+      "icon": "thaumcraft:textures/misc/r_eldritch.png",
+      "background": "thaumcraft:textures/gui/gui_researchbackeldritch.png",
+      "nameKey": "tc.research_category.ELDRITCH",
+      "nameEnUs": "Eldritch"
+    }
+  ]
+}

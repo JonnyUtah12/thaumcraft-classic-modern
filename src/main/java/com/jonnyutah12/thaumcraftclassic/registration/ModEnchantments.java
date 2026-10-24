@@ -31,6 +31,23 @@ public final class ModEnchantments {
                 ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, path));
     }
 
+    /**
+     * Thaumcraft:ench_haste (TC-M6-05). Boots-only speed bonus applied per
+     * tick by {@code enchantment/EnchantmentBehaviours} (original
+     * {@code EventHandlerEntity.updateSpeed}); JSON payload
+     * data/thaumcraft/enchantment/ench_haste.json.
+     */
+    public static final ResourceKey<Enchantment> ENCHANTMENT_HASTE = id("ench_haste");
+
+    /**
+     * Thaumcraft:ench_repair (TC-M6-05). Mends IRepairable items for vis
+     * every 40 ticks (original {@code EventHandlerEntity.doRepair}); JSON
+     * payload data/thaumcraft/enchantment/ench_repair.json. The original's
+     * canCombine exclusion of Unbreaking is carried by the
+     * {@code #thaumcraft:exclusive_set/repair} enchantment tag.
+     */
+    public static final ResourceKey<Enchantment> ENCHANTMENT_REPAIR = id("ench_repair");
+
     private ModEnchantments() {
     }
 }

@@ -1,0 +1,70 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "FocusHellbat",
+  "research": "FOCUSHELLBAT",
+  "instability": 3,
+  "aspects": [
+    {
+      "aspect": "ignis",
+      "constant": "FIRE",
+      "amount": 25
+    },
+    {
+      "aspect": "aer",
+      "constant": "AIR",
+      "amount": 15
+    },
+    {
+      "aspect": "bestia",
+      "constant": "BEAST",
+      "amount": 15
+    },
+    {
+      "aspect": "perditio",
+      "constant": "ENTROPY",
+      "amount": 25
+    }
+  ],
+  "input": {
+    "item": "minecraft:magma_cream"
+  },
+  "components": [
+    {
+      "item": "minecraft:quartz"
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemshard"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 1
+        }
+      }
+    },
+    {
+      "item": "minecraft:quartz"
+    },
+    {
+      "item": "thaumcraft:itemshard"
+    },
+    {
+      "item": "minecraft:quartz"
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemshard"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 5
+        }
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:focushellbat",
+    "count": 1
+  }
+}

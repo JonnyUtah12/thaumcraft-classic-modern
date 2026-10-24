@@ -170,7 +170,7 @@ public final class WandVis {
     // ---------------------------------------------------------------- helpers
 
     /** Immutable "set one aspect's charge" — the original's {@code storeVis}. */
-    public static VisPool withVis(final VisPool pool, final Aspect aspect, final int centiVis) {
+    private static VisPool withVis(final VisPool pool, final Aspect aspect, final int centiVis) {
         final Map<String, Integer> next = new LinkedHashMap<>(pool.centiVis());
         next.put(aspect.getTag(), centiVis);
         return new VisPool(next);

@@ -1,0 +1,46 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "INFUSION",
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    "SSS",
+    " S ",
+    "SSS"
+  ],
+  "key": {
+    "S": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockcosmeticsolid",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "6"
+          }
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockstonedevice",
+    "count": 2,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "1"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcosmeticsolid"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockstonedevice"
+    }
+  ]
+}

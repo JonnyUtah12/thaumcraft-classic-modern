@@ -1,0 +1,77 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "EssentiaReservoir",
+  "research": "ESSENTIARESERVOIR",
+  "instability": 6,
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "constant": "WATER",
+      "amount": 8
+    },
+    {
+      "aspect": "vacuos",
+      "constant": "VOID",
+      "amount": 8
+    },
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 8
+    },
+    {
+      "aspect": "permutatio",
+      "constant": "EXCHANGE",
+      "amount": 8
+    }
+  ],
+  "input": {
+    "neoforge:components": {
+      "items": [
+        "thaumcraft:blocktube"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 4
+      }
+    }
+  },
+  "components": [
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 16
+        }
+      }
+    },
+    {
+      "item": "thaumcraft:blockjar"
+    },
+    {
+      "item": "thaumcraft:blockjar"
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 16
+        }
+      }
+    },
+    {
+      "item": "thaumcraft:blockjar"
+    },
+    {
+      "item": "thaumcraft:blockjar"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:blockessentiareservoir",
+    "count": 1
+  }
+}

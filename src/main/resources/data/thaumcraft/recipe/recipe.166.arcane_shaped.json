@@ -1,0 +1,60 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "GOGGLES",
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 5
+    },
+    {
+      "aspect": "ignis",
+      "amount": 5
+    },
+    {
+      "aspect": "aqua",
+      "amount": 5
+    },
+    {
+      "aspect": "terra",
+      "amount": 5
+    },
+    {
+      "aspect": "perditio",
+      "amount": 3
+    },
+    {
+      "aspect": "ordo",
+      "amount": 3
+    }
+  ],
+  "pattern": [
+    "LGL",
+    "L L",
+    "TGT"
+  ],
+  "key": {
+    "T": {
+      "item": "thaumcraft:itemthaumometer"
+    },
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "L": {
+      "item": "minecraft:leather"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:itemgoggles",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgoggles"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemthaumometer"
+    }
+  ]
+}

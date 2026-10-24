@@ -1,0 +1,50 @@
+{
+  "type": "thaumcraft:infusion_enchantment",
+  "original_key": "InfEnch10",
+  "research": "INFUSIONENCHANTMENT",
+  "enchantment": "minecraft:baneOfArthropods",
+  "instability": 2,
+  "aspects": [
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 4
+    },
+    {
+      "aspect": "telum",
+      "constant": "WEAPON",
+      "amount": 4
+    },
+    {
+      "aspect": "bestia",
+      "constant": "BEAST",
+      "amount": 4
+    }
+  ],
+  "components": [
+    {
+      "item": "minecraft:iron_sword"
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 6
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 14
+        }
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py."
+}

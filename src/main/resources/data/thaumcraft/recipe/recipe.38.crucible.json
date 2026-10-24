@@ -1,0 +1,35 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "GOLEMIRON",
+  "research": "GOLEMIRON",
+  "catalyst": {
+    "item": "minecraft:iron_block"
+  },
+  "aspects": [
+    {
+      "aspect": "humanus",
+      "amount": 4
+    },
+    {
+      "aspect": "motus",
+      "amount": 4
+    },
+    {
+      "aspect": "spiritus",
+      "amount": 4
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemgolemplacer",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 6
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgolemplacer"
+    }
+  ]
+}

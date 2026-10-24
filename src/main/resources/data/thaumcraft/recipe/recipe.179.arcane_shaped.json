@@ -1,0 +1,38 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "TINYGLASSES",
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 4
+    },
+    {
+      "aspect": "aqua",
+      "amount": 4
+    }
+  ],
+  "pattern": [
+    "GIG"
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:itemgolemdecoration",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 1
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgolemdecoration"
+    }
+  ]
+}

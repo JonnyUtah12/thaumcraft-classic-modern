@@ -1,0 +1,27 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "CAP_silver",
+  "aspects": [],
+  "pattern": [
+    "NNN",
+    "N N"
+  ],
+  "key": {
+    "N": {
+      "tag": "thaumcraft:oredict.nuggetsilver"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:wandcap",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 5
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcap"
+    }
+  ]
+}

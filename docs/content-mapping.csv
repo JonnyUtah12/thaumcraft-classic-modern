@@ -93,7 +93,7 @@ Thaumcraft:blockJar,thaumcraft:blockjar,block,Warded Jar / Brain in a Jar / Node
 Thaumcraft:blockCandle,thaumcraft:blockcandle,block,White Tallow Candle / Orange Tallow Candle / Magenta Tallow Candle / Light Blue Tallow Candle / Yellow Tallow Candle / Lime Tallow Candle / Pink Tallow Candle / Gray Tallow Candle / Light Gray Tallow Candle / Cyan Tallow Candle / Purple Tallow Candle / Blue Tallow Candle / Brown Tallow Candle / Green Tallow Candle / Red Tallow Candle / Black Tallow Candle,not_started,not_tested,id case change only (D-001),class=BlockCandle item_class=BlockCandleItem
 Thaumcraft:blockEldritch,thaumcraft:blockeldritch,block,Eldritch Altar / Eldritch Obelisk / Eldritch Obelisk / Eldritch Capstone / Glowing Crusted Stone / Glyphed Stone / Ancient Doorway / Ancient Locking Mechanism / Crusted Opening / Runed Stone,not_started,not_tested,id case change only (D-001),class=BlockEldritch item_class=BlockEldritchItem
 Thaumcraft:blockAiry,thaumcraft:blockairy,block,Aura Node / Nitor / Glimmer of Light / Glimmer of Light / Warding Aura / Energized Aura Node / Static Field / Sapping Field / Impassable,not_started,not_tested,id case change only (D-001),class=BlockAiry item_class=BlockAiryItem (vis-node host has no port-side block: TC-M5-02 nodes are record-driven per docs/architecture/node-behavior.md; nitor/ward/etc. hosts pending their cards)
-Thaumcraft:blockManaPod,thaumcraft:blockmanapod,block,,not_started,not_tested,id case change only (D-001),class=BlockManaPod item_class=-
+Thaumcraft:blockManaPod,thaumcraft:blockmanapod,block,,done,tested,id case change only (D-001),class=BlockManaPod item_class=-
 Thaumcraft:blockArcaneFurnace,thaumcraft:blockarcanefurnace,block,Infernal Furnace,not_started,not_tested,id case change only (D-001),class=BlockArcaneFurnace item_class=-
 Thaumcraft:blockWarded,thaumcraft:blockwarded,block,,not_started,not_tested,id case change only (D-001),class=BlockWarded item_class=-
 Thaumcraft:blockHole,thaumcraft:blockhole,block,Empty Space,not_started,not_tested,id case change only (D-001),class=BlockHole item_class=-
@@ -172,7 +172,7 @@ Thaumcraft:TileVisRelay,thaumcraft:tilevisrelay,tile_entity,TileVisRelay,not_sta
 Thaumcraft:TileNodeEnergized,thaumcraft:tilenodeenergized,tile_entity,TileNodeEnergized,not_started,not_tested,,class=TileNodeEnergized
 Thaumcraft:TileNodeConverter,thaumcraft:tilenodeconverter,tile_entity,TileNodeConverter,not_started,not_tested,,class=TileNodeConverter
 Thaumcraft:TileMagicWorkbenchCharger,thaumcraft:tilemagicworkbenchcharger,tile_entity,TileMagicWorkbenchCharger,not_started,not_tested,,class=TileMagicWorkbenchCharger
-Thaumcraft:TileManaPod,thaumcraft:tilemanapod,tile_entity,TileManaPod,not_started,not_tested,,class=TileManaPod
+Thaumcraft:TileManaPod,thaumcraft:tilemanapod,tile_entity,TileManaPod,done,tested,,class=TileManaPod
 Thaumcraft:TileSpa,thaumcraft:tilespa,tile_entity,TileSpa,not_started,not_tested,,class=TileSpa
 Thaumcraft:TileEldritchAltar,thaumcraft:tileeldritchaltar,tile_entity,TileEldritchAltar,not_started,not_tested,,class=TileEldritchAltar
 Thaumcraft:TileEldritchObelisk,thaumcraft:tileeldritchobelisk,tile_entity,TileEldritchObelisk,not_started,not_tested,,class=TileEldritchObelisk
@@ -202,10 +202,10 @@ Thaumcraft:FocusPech,thaumcraft:focuspech,item,Wand Focus: Pech's Curse,not_star
 Thaumcraft:FocusWarding,thaumcraft:focuswarding,item,Wand Focus: Warding,not_started,not_tested,id case change only (D-001),class=ItemFocusWarding
 Thaumcraft:FocusPrimal,thaumcraft:focusprimal,item,Wand Focus: Primal,not_started,not_tested,id case change only (D-001),class=ItemFocusPrimal
 Thaumcraft:ItemEssence,thaumcraft:itemessence,item,Glass Phial / Phial of Essentia,not_started,not_tested,id case change only (D-001),class=ItemEssence
-Thaumcraft:ItemManaBean,thaumcraft:itemmanabean,item,Mana Bean,not_started,not_tested,id case change only (D-001),class=ItemManaBean
-Thaumcraft:ItemWispEssence,thaumcraft:itemwispessence,item,Ethereal Essence,not_started,not_tested,id case change only (D-001),class=ItemWispEssence
-Thaumcraft:ItemResource,thaumcraft:itemresource,item,Alumentum / Nitor / Thaumium Ingot / Quicksilver / Magic Tallow / Zombie Brain (defunct) / Amber / Enchanted Fabric / Vis Filter / Knowledge Fragment / Mirrored Glass / Tainted Goo / Taint Tendril / Jar Label / Salis Mundus / Primal Charm / Void metal Ingot / Void Seed / Gold Coin,not_started,not_tested,id case change only (D-001),class=ItemResource
-Thaumcraft:ItemShard,thaumcraft:itemshard,item,Air Shard / Fire Shard / Water Shard / Earth Shard / Order Shard / Entropy Shard / Balanced Shard,not_started,not_tested,id case change only (D-001),class=ItemShard
+Thaumcraft:ItemManaBean,thaumcraft:itemmanabean,item,Mana Bean,done,tested,id case change only (D-001),class=ItemManaBean
+Thaumcraft:ItemWispEssence,thaumcraft:itemwispessence,item,Ethereal Essence,done,tested,id case change only (D-001),class=ItemWispEssence
+Thaumcraft:ItemResource,thaumcraft:itemresource,item,Alumentum / Nitor / Thaumium Ingot / Quicksilver / Magic Tallow / Zombie Brain (defunct) / Amber / Enchanted Fabric / Vis Filter / Knowledge Fragment / Mirrored Glass / Tainted Goo / Taint Tendril / Jar Label / Salis Mundus / Primal Charm / Void metal Ingot / Void Seed / Gold Coin,done,tested,id case change only (D-001),class=ItemResource
+Thaumcraft:ItemShard,thaumcraft:itemshard,item,Air Shard / Fire Shard / Water Shard / Earth Shard / Order Shard / Entropy Shard / Balanced Shard,done,tested,id case change only (D-001),class=ItemShard
 Thaumcraft:ItemResearchNotes,thaumcraft:itemresearchnotes,item,Research Notes,not_started,not_tested,id case change only (D-001),class=ItemResearchNotes
 Thaumcraft:ItemInkwell,thaumcraft:iteminkwell,item,Scribing Tools,not_started,not_tested,id case change only (D-001),class=ItemInkwell
 Thaumcraft:ItemThaumonomicon,thaumcraft:itemthaumonomicon,item,Thaumonomicon,not_started,not_tested,id case change only (D-001),class=ItemThaumonomicon
@@ -221,13 +221,13 @@ Thaumcraft:ItemAxeThaumium,thaumcraft:itemaxethaumium,item,Thaumium Axe,not_star
 Thaumcraft:ItemSwordThaumium,thaumcraft:itemswordthaumium,item,Thaumium Sword,not_started,not_tested,id case change only (D-001),class=ItemThaumiumSword
 Thaumcraft:ItemHoeThaumium,thaumcraft:itemhoethaumium,item,Thaumium Hoe,not_started,not_tested,id case change only (D-001),class=ItemThaumiumHoe
 Thaumcraft:ItemArcaneDoor,thaumcraft:itemarcanedoor,item,Arcane Door,not_started,not_tested,id case change only (D-001),class=ItemArcaneDoor
-Thaumcraft:ItemNugget,thaumcraft:itemnugget,item,Iron Nugget / Copper Nugget / Tin Nugget / Silver Nugget / Lead Nugget / Quicksilver Drop / Thaumium Nugget / Void metal Nugget / Native Iron Cluster / Native Copper Cluster / Native Tin Cluster / Native Silver Cluster / Native Lead Cluster / Native Cinnabar Cluster / Native Gold Cluster,not_started,not_tested,id case change only (D-001),class=ItemNugget
+Thaumcraft:ItemNugget,thaumcraft:itemnugget,item,Iron Nugget / Copper Nugget / Tin Nugget / Silver Nugget / Lead Nugget / Quicksilver Drop / Thaumium Nugget / Void metal Nugget / Native Iron Cluster / Native Copper Cluster / Native Tin Cluster / Native Silver Cluster / Native Lead Cluster / Native Cinnabar Cluster / Native Gold Cluster,done,tested,id case change only (D-001),class=ItemNugget
 Thaumcraft:BootsTraveller,thaumcraft:bootstraveller,item,Boots of the Traveler,not_started,not_tested,id case change only (D-001),class=ItemBootsTraveller
-Thaumcraft:ItemNuggetChicken,thaumcraft:itemnuggetchicken,item,Chicken Nugget,not_started,not_tested,id case change only (D-001),class=ItemNuggetEdible
-Thaumcraft:ItemNuggetBeef,thaumcraft:itemnuggetbeef,item,Beef Nugget,not_started,not_tested,id case change only (D-001),class=ItemNuggetEdible
-Thaumcraft:ItemNuggetPork,thaumcraft:itemnuggetpork,item,Pork Nugget,not_started,not_tested,id case change only (D-001),class=ItemNuggetEdible
-Thaumcraft:ItemNuggetFish,thaumcraft:itemnuggetfish,item,Fish Nugget,not_started,not_tested,id case change only (D-001),class=ItemNuggetEdible
-Thaumcraft:TripleMeatTreat,thaumcraft:triplemeattreat,item,Triple Meat Treat,not_started,not_tested,id case change only (D-001),class=ItemTripleMeatTreat
+Thaumcraft:ItemNuggetChicken,thaumcraft:itemnuggetchicken,item,Chicken Nugget,done,tested,id case change only (D-001),class=ItemNuggetEdible
+Thaumcraft:ItemNuggetBeef,thaumcraft:itemnuggetbeef,item,Beef Nugget,done,tested,id case change only (D-001),class=ItemNuggetEdible
+Thaumcraft:ItemNuggetPork,thaumcraft:itemnuggetpork,item,Pork Nugget,done,tested,id case change only (D-001),class=ItemNuggetEdible
+Thaumcraft:ItemNuggetFish,thaumcraft:itemnuggetfish,item,Fish Nugget,done,tested,id case change only (D-001),class=ItemNuggetEdible
+Thaumcraft:TripleMeatTreat,thaumcraft:triplemeattreat,item,Triple Meat Treat,done,tested,id case change only (D-001),class=ItemTripleMeatTreat
 Thaumcraft:ItemSwordElemental,thaumcraft:itemswordelemental,item,Sword of the Zephyr,not_started,not_tested,id case change only (D-001),class=ItemElementalSword
 Thaumcraft:ItemShovelElemental,thaumcraft:itemshovelelemental,item,Shovel of the Earthmover,not_started,not_tested,id case change only (D-001),class=ItemElementalShovel
 Thaumcraft:ItemPickaxeElemental,thaumcraft:itempickaxeelemental,item,Pickaxe of the Core,not_started,not_tested,id case change only (D-001),class=ItemElementalPickaxe
@@ -250,16 +250,16 @@ Thaumcraft:ItemGolemDecoration,thaumcraft:itemgolemdecoration,item,Accessory,not
 Thaumcraft:ItemBowBone,thaumcraft:itembowbone,item,Bow of Bone,not_started,not_tested,id case change only (D-001),class=ItemBowBone
 Thaumcraft:PrimalArrow,thaumcraft:primalarrow,item,Air Arrow / Fire Arrow / Water Arrow / Earth Arrow / Order Arrow / Entropy Arrow,not_started,not_tested,id case change only (D-001),class=ItemPrimalArrow
 Thaumcraft:ItemResonator,thaumcraft:itemresonator,item,Essentia Resonator,not_started,not_tested,id case change only (D-001),class=ItemResonator
-Thaumcraft:ItemBaubleBlanks,thaumcraft:itembaubleblanks,item,Mundane Amulet / Mundane Ring / Mundane Belt / Apprentices Ring of %TYPE,done,tested,id case change only (D-001),class=ItemBaubleBlanks
-Thaumcraft:ItemAmuletRunic,thaumcraft:itemamuletrunic,item,Amulet of Runic Shielding / Amulet of Emergency Shielding,done,tested,id case change only (D-001),class=ItemAmuletRunic
-Thaumcraft:ItemRingRunic,thaumcraft:itemringrunic,item,Ring of Protection / Ring of Runic Shielding / Charged Ring of Shielding / Revitalizing Ring of Shielding,done,tested,id case change only (D-001),class=ItemRingRunic
-Thaumcraft:ItemGirdleRunic,thaumcraft:itemgirdlerunic,item,Girdle of Runic Shielding / Kinetic Girdle of Shielding,done,tested,id case change only (D-001),class=ItemGirdleRunic
-Thaumcraft:ItemAmuletVis,thaumcraft:itemamuletvis,item,Vis Stone / Amulet of Vis Storage,done,tested,id case change only (D-001),class=ItemAmuletVis
-Thaumcraft:ItemGirdleHover,thaumcraft:itemgirdlehover,item,Thaumostatic Girdle,done,tested,id case change only (D-001),class=ItemGirdleHover
+Thaumcraft:ItemBaubleBlanks,thaumcraft:itembaubleblanks,item,Mundane Amulet / Mundane Ring / Mundane Belt / Apprentices Ring of %TYPE,not_started,not_tested,id case change only (D-001),class=ItemBaubleBlanks
+Thaumcraft:ItemAmuletRunic,thaumcraft:itemamuletrunic,item,Amulet of Runic Shielding / Amulet of Emergency Shielding,not_started,not_tested,id case change only (D-001),class=ItemAmuletRunic
+Thaumcraft:ItemRingRunic,thaumcraft:itemringrunic,item,Ring of Protection / Ring of Runic Shielding / Charged Ring of Shielding / Revitalizing Ring of Shielding,not_started,not_tested,id case change only (D-001),class=ItemRingRunic
+Thaumcraft:ItemGirdleRunic,thaumcraft:itemgirdlerunic,item,Girdle of Runic Shielding / Kinetic Girdle of Shielding,not_started,not_tested,id case change only (D-001),class=ItemGirdleRunic
+Thaumcraft:ItemAmuletVis,thaumcraft:itemamuletvis,item,Vis Stone / Amulet of Vis Storage,not_started,not_tested,id case change only (D-001),class=ItemAmuletVis
+Thaumcraft:ItemGirdleHover,thaumcraft:itemgirdlehover,item,Thaumostatic Girdle,not_started,not_tested,id case change only (D-001),class=ItemGirdleHover
 Thaumcraft:ItemSpawnerEgg,thaumcraft:itemspawneregg,item,,not_started,not_tested,id case change only (D-001),class=ItemSpawnerEgg
 Thaumcraft:ItemZombieBrain,thaumcraft:itemzombiebrain,item,Zombie Brain,not_started,not_tested,id case change only (D-001),class=ItemZombieBrain
 Thaumcraft:ItemBathSalts,thaumcraft:itembathsalts,item,Purifying Bath Salts,not_started,not_tested,id case change only (D-001),class=ItemBathSalts
-Thaumcraft:ItemCrystalEssence,thaumcraft:itemcrystalessence,item,Crystallized Essence,not_started,not_tested,id case change only (D-001),class=ItemCrystalEssence
+Thaumcraft:ItemCrystalEssence,thaumcraft:itemcrystalessence,item,Crystallized Essence,done,tested,id case change only (D-001),class=ItemCrystalEssence
 Thaumcraft:ItemBucketDeath,thaumcraft:itembucketdeath,item,Bucket of Liquid Death,not_started,not_tested,id case change only (D-001),class=ItemBucketDeath
 Thaumcraft:ItemBucketPure,thaumcraft:itembucketpure,item,Bucket of Purifying Fluid,not_started,not_tested,id case change only (D-001),class=ItemBucketPure
 Thaumcraft:ItemHelmetFortress,thaumcraft:itemhelmetfortress,item,Thaumium Fortress Helm,not_started,not_tested,id case change only (D-001),class=ItemFortressArmor
@@ -874,9 +874,9 @@ Thaumcraft:recipe.260.crafting_shaped,thaumcraft:recipe.260.crafting_shaped,reci
 Thaumcraft:recipe.261.crafting_shaped,thaumcraft:recipe.261.crafting_shaped,recipe,"blockCosmeticSlabWood, 6, 0",not_started,not_tested,,type=crafting_shaped research=-
 Thaumcraft:recipe.262.crafting_shaped,thaumcraft:recipe.262.crafting_shaped,recipe,"blockCosmeticSlabWood, 6, 1",not_started,not_tested,,type=crafting_shaped research=-
 Thaumcraft:recipe.263.crafting_shaped,thaumcraft:recipe.263.crafting_shaped,recipe,"blockTaint, 1, 2",not_started,not_tested,,type=crafting_shaped research=-
-Thaumcraft:recipe.264.crafting_shaped,thaumcraft:recipe.264.crafting_shaped,recipe,"ItemResource, 9, 2",not_started,not_tested,,type=crafting_shaped research=-
+Thaumcraft:recipe.264.crafting_shaped,thaumcraft:recipe.264.crafting_shaped,recipe,"ItemResource, 9, 2",done,tested,input meta not expressible until TC-M6-04b variant model; gated with neoforge:item_exists,type=crafting_shaped research=-
 Thaumcraft:recipe.265.crafting_shaped,thaumcraft:recipe.265.crafting_shaped,recipe,"blockCosmeticSolid, 1, 5",not_started,not_tested,,type=crafting_shaped research=-
-Thaumcraft:recipe.266.crafting_shaped,thaumcraft:recipe.266.crafting_shaped,recipe,"ItemResource, 9, 4",not_started,not_tested,,type=crafting_shaped research=-
+Thaumcraft:recipe.266.crafting_shaped,thaumcraft:recipe.266.crafting_shaped,recipe,"ItemResource, 9, 4",done,tested,input meta not expressible until TC-M6-04b variant model; gated with neoforge:item_exists,type=crafting_shaped research=-
 Thaumcraft:recipe.267.crafting_shaped,thaumcraft:recipe.267.crafting_shaped,recipe,"blockMetalDevice, 1, 5",not_started,not_tested,,type=crafting_shaped research=-
 Thaumcraft:recipe.268.crafting_shaped,thaumcraft:recipe.268.crafting_shaped,recipe,"ItemEssence, 8, 0",not_started,not_tested,,type=crafting_shaped research=-
 Thaumcraft:recipe.269.crafting_shaped,thaumcraft:recipe.269.crafting_shaped,recipe,"blockCandle, 3, 0",not_started,not_tested,,type=crafting_shaped research=-
@@ -884,8 +884,8 @@ Thaumcraft:recipe.270.crafting_shapeless,thaumcraft:recipe.270.crafting_shapeles
 Thaumcraft:recipe.271.crafting_shaped,thaumcraft:recipe.271.crafting_shaped,recipe,"blockCosmeticOpaque, 1, 0",not_started,not_tested,,type=crafting_shaped research=-
 Thaumcraft:recipe.272.crafting_shaped,thaumcraft:recipe.272.crafting_shaped,recipe,"blockCosmeticOpaque, 4, 1",not_started,not_tested,,type=crafting_shaped research=-
 Thaumcraft:recipe.273.crafting_shaped,thaumcraft:recipe.273.crafting_shaped,recipe,"blockCosmeticSolid, 4, 1",not_started,not_tested,,type=crafting_shaped research=-
-Thaumcraft:recipe.274.crafting_shaped,thaumcraft:recipe.274.crafting_shaped,recipe,"ItemResource, 4, 6",not_started,not_tested,,type=crafting_shaped research=-
-Thaumcraft:recipe.275.crafting_shaped,thaumcraft:recipe.275.crafting_shaped,recipe,"ItemResource, 4, 6",not_started,not_tested,,type=crafting_shaped research=-
+Thaumcraft:recipe.274.crafting_shaped,thaumcraft:recipe.274.crafting_shaped,recipe,"ItemResource, 4, 6",done,tested,input meta not expressible until TC-M6-04b variant model; gated with neoforge:item_exists,type=crafting_shaped research=-
+Thaumcraft:recipe.275.crafting_shaped,thaumcraft:recipe.275.crafting_shaped,recipe,"ItemResource, 4, 6",done,tested,input meta not expressible until TC-M6-04b variant model; gated with neoforge:item_exists,type=crafting_shaped research=-
 Thaumcraft:recipe.276.crafting_special,thaumcraft:recipe.276.crafting_special,recipe,RecipesRobeArmorDyes,not_started,not_tested,,type=crafting_special research=-
 Thaumcraft:recipe.277.crafting_special,thaumcraft:recipe.277.crafting_special,recipe,RecipesVoidRobeArmorDyes,not_started,not_tested,,type=crafting_special research=-
 Thaumcraft:recipe.278.smelting,thaumcraft:recipe.278.smelting,recipe,"blockMagicalLog, Items.field_151044_h, 1, 1), 0.5F",not_started,not_tested,,type=smelting research=-
@@ -1030,33 +1030,33 @@ Thaumcraft:oredict.oreInfusedWater,thaumcraft:oredict.oreinfusedwater,oredict,or
 Thaumcraft:oredict.oreInfusedEarth,thaumcraft:oredict.oreinfusedearth,oredict,oreInfusedEarth,not_started,not_tested,,"stack=blockCustomOre, 1, 4)"
 Thaumcraft:oredict.oreInfusedOrder,thaumcraft:oredict.oreinfusedorder,oredict,oreInfusedOrder,not_started,not_tested,,"stack=blockCustomOre, 1, 5)"
 Thaumcraft:oredict.oreInfusedEntropy,thaumcraft:oredict.oreinfusedentropy,oredict,oreInfusedEntropy,not_started,not_tested,,"stack=blockCustomOre, 1, 6)"
-Thaumcraft:oredict.shardAir,thaumcraft:oredict.shardair,oredict,shardAir,not_started,not_tested,,"stack=ItemShard, 1, 0)"
-Thaumcraft:oredict.shardFire,thaumcraft:oredict.shardfire,oredict,shardFire,not_started,not_tested,,"stack=ItemShard, 1, 1)"
-Thaumcraft:oredict.shardWater,thaumcraft:oredict.shardwater,oredict,shardWater,not_started,not_tested,,"stack=ItemShard, 1, 2)"
-Thaumcraft:oredict.shardEarth,thaumcraft:oredict.shardearth,oredict,shardEarth,not_started,not_tested,,"stack=ItemShard, 1, 3)"
-Thaumcraft:oredict.shardOrder,thaumcraft:oredict.shardorder,oredict,shardOrder,not_started,not_tested,,"stack=ItemShard, 1, 4)"
-Thaumcraft:oredict.shardEntropy,thaumcraft:oredict.shardentropy,oredict,shardEntropy,not_started,not_tested,,"stack=ItemShard, 1, 5)"
+Thaumcraft:oredict.shardAir,thaumcraft:oredict.shardair,oredict,shardAir,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemShard, 1, 0)"
+Thaumcraft:oredict.shardFire,thaumcraft:oredict.shardfire,oredict,shardFire,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemShard, 1, 1)"
+Thaumcraft:oredict.shardWater,thaumcraft:oredict.shardwater,oredict,shardWater,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemShard, 1, 2)"
+Thaumcraft:oredict.shardEarth,thaumcraft:oredict.shardearth,oredict,shardEarth,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemShard, 1, 3)"
+Thaumcraft:oredict.shardOrder,thaumcraft:oredict.shardorder,oredict,shardOrder,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemShard, 1, 4)"
+Thaumcraft:oredict.shardEntropy,thaumcraft:oredict.shardentropy,oredict,shardEntropy,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemShard, 1, 5)"
 Thaumcraft:oredict.oreAmber,thaumcraft:oredict.oreamber,oredict,oreAmber,not_started,not_tested,,"stack=blockCustomOre, 1, 7)"
-Thaumcraft:oredict.quicksilver,thaumcraft:oredict.quicksilver,oredict,quicksilver,not_started,not_tested,,"stack=ItemResource, 1, 3)"
-Thaumcraft:oredict.gemAmber,thaumcraft:oredict.gemamber,oredict,gemAmber,not_started,not_tested,,"stack=ItemResource, 1, 6)"
-Thaumcraft:oredict.nuggetIron,thaumcraft:oredict.nuggetiron,oredict,nuggetIron,not_started,not_tested,,"stack=ItemNugget, 1, 0)"
-Thaumcraft:oredict.nuggetCopper,thaumcraft:oredict.nuggetcopper,oredict,nuggetCopper,not_started,not_tested,,"stack=ItemNugget, 1, 1)"
-Thaumcraft:oredict.nuggetTin,thaumcraft:oredict.nuggettin,oredict,nuggetTin,not_started,not_tested,,"stack=ItemNugget, 1, 2)"
-Thaumcraft:oredict.nuggetSilver,thaumcraft:oredict.nuggetsilver,oredict,nuggetSilver,not_started,not_tested,,"stack=ItemNugget, 1, 3)"
-Thaumcraft:oredict.nuggetLead,thaumcraft:oredict.nuggetlead,oredict,nuggetLead,not_started,not_tested,,"stack=ItemNugget, 1, 4)"
-Thaumcraft:oredict.nuggetThaumium,thaumcraft:oredict.nuggetthaumium,oredict,nuggetThaumium,not_started,not_tested,,"stack=ItemNugget, 1, 6)"
-Thaumcraft:oredict.nuggetVoid,thaumcraft:oredict.nuggetvoid,oredict,nuggetVoid,not_started,not_tested,,"stack=ItemNugget, 1, 7)"
-Thaumcraft:oredict.nuggetQuicksilver,thaumcraft:oredict.nuggetquicksilver,oredict,nuggetQuicksilver,not_started,not_tested,,"stack=ItemResource, 1, 3)"
-Thaumcraft:oredict.nuggetGold,thaumcraft:oredict.nuggetgold,oredict,nuggetGold,not_started,not_tested,,"stack=ItemResource, 1, 18)"
-Thaumcraft:oredict.ingotThaumium,thaumcraft:oredict.ingotthaumium,oredict,ingotThaumium,not_started,not_tested,,"stack=ItemResource, 1, 2)"
-Thaumcraft:oredict.ingotVoid,thaumcraft:oredict.ingotvoid,oredict,ingotVoid,not_started,not_tested,,"stack=ItemResource, 1, 16)"
-Thaumcraft:oredict.clusterIron,thaumcraft:oredict.clusteriron,oredict,clusterIron,not_started,not_tested,,"stack=ItemNugget, 1, 16)"
-Thaumcraft:oredict.clusterCopper,thaumcraft:oredict.clustercopper,oredict,clusterCopper,not_started,not_tested,,"stack=ItemNugget, 1, 17)"
-Thaumcraft:oredict.clusterTin,thaumcraft:oredict.clustertin,oredict,clusterTin,not_started,not_tested,,"stack=ItemNugget, 1, 18)"
-Thaumcraft:oredict.clusterSilver,thaumcraft:oredict.clustersilver,oredict,clusterSilver,not_started,not_tested,,"stack=ItemNugget, 1, 19)"
-Thaumcraft:oredict.clusterLead,thaumcraft:oredict.clusterlead,oredict,clusterLead,not_started,not_tested,,"stack=ItemNugget, 1, 20)"
-Thaumcraft:oredict.clusterCinnabar,thaumcraft:oredict.clustercinnabar,oredict,clusterCinnabar,not_started,not_tested,,"stack=ItemNugget, 1, 21)"
-Thaumcraft:oredict.clusterGold,thaumcraft:oredict.clustergold,oredict,clusterGold,not_started,not_tested,,"stack=ItemNugget, 1, 31)"
+Thaumcraft:oredict.quicksilver,thaumcraft:oredict.quicksilver,oredict,quicksilver,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemResource, 1, 3)"
+Thaumcraft:oredict.gemAmber,thaumcraft:oredict.gemamber,oredict,gemAmber,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemResource, 1, 6)"
+Thaumcraft:oredict.nuggetIron,thaumcraft:oredict.nuggetiron,oredict,nuggetIron,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemNugget, 1, 0)"
+Thaumcraft:oredict.nuggetCopper,thaumcraft:oredict.nuggetcopper,oredict,nuggetCopper,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemNugget, 1, 1)"
+Thaumcraft:oredict.nuggetTin,thaumcraft:oredict.nuggettin,oredict,nuggetTin,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemNugget, 1, 2)"
+Thaumcraft:oredict.nuggetSilver,thaumcraft:oredict.nuggetsilver,oredict,nuggetSilver,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemNugget, 1, 3)"
+Thaumcraft:oredict.nuggetLead,thaumcraft:oredict.nuggetlead,oredict,nuggetLead,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemNugget, 1, 4)"
+Thaumcraft:oredict.nuggetThaumium,thaumcraft:oredict.nuggetthaumium,oredict,nuggetThaumium,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemNugget, 1, 6)"
+Thaumcraft:oredict.nuggetVoid,thaumcraft:oredict.nuggetvoid,oredict,nuggetVoid,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemNugget, 1, 7)"
+Thaumcraft:oredict.nuggetQuicksilver,thaumcraft:oredict.nuggetquicksilver,oredict,nuggetQuicksilver,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemResource, 1, 3)"
+Thaumcraft:oredict.nuggetGold,thaumcraft:oredict.nuggetgold,oredict,nuggetGold,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemResource, 1, 18)"
+Thaumcraft:oredict.ingotThaumium,thaumcraft:oredict.ingotthaumium,oredict,ingotThaumium,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemResource, 1, 2)"
+Thaumcraft:oredict.ingotVoid,thaumcraft:oredict.ingotvoid,oredict,ingotVoid,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemResource, 1, 16)"
+Thaumcraft:oredict.clusterIron,thaumcraft:oredict.clusteriron,oredict,clusterIron,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemNugget, 1, 16)"
+Thaumcraft:oredict.clusterCopper,thaumcraft:oredict.clustercopper,oredict,clusterCopper,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemNugget, 1, 17)"
+Thaumcraft:oredict.clusterTin,thaumcraft:oredict.clustertin,oredict,clusterTin,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemNugget, 1, 18)"
+Thaumcraft:oredict.clusterSilver,thaumcraft:oredict.clustersilver,oredict,clusterSilver,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemNugget, 1, 19)"
+Thaumcraft:oredict.clusterLead,thaumcraft:oredict.clusterlead,oredict,clusterLead,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemNugget, 1, 20)"
+Thaumcraft:oredict.clusterCinnabar,thaumcraft:oredict.clustercinnabar,oredict,clusterCinnabar,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemNugget, 1, 21)"
+Thaumcraft:oredict.clusterGold,thaumcraft:oredict.clustergold,oredict,clusterGold,done,tested,item-level tag; meta precision via data_component ingredients (docs/architecture/registration.md),"stack=ItemNugget, 1, 31)"
 Thaumcraft:oredict.logWood,thaumcraft:oredict.logwood,oredict,logWood,not_started,not_tested,,"stack=blockMagicalLog, 1, 0)"
 Thaumcraft:oredict.logWood,thaumcraft:oredict.logwood,oredict,logWood,not_started,not_tested,,"stack=blockMagicalLog, 1, 1)"
 Thaumcraft:oredict.plankWood,thaumcraft:oredict.plankwood,oredict,plankWood,not_started,not_tested,,"stack=blockWoodenDevice, 1, 6)"

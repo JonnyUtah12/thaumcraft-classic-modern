@@ -1,0 +1,22 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "ALCHEMICALMANUFACTURE",
+  "research": "ALCHEMICALMANUFACTURE",
+  "catalyst": {
+    "item": "minecraft:snow"
+  },
+  "aspects": [
+    {
+      "aspect": "ordo",
+      "amount": 1
+    },
+    {
+      "aspect": "gelum",
+      "amount": 1
+    }
+  ],
+  "result": {
+    "id": "minecraft:ice",
+    "count": 1
+  }
+}

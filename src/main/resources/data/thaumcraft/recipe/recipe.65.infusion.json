@@ -1,0 +1,86 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "NodeStabilizerAdv",
+  "research": "NODESTABILIZERADV",
+  "instability": 10,
+  "aspects": [
+    {
+      "aspect": "auram",
+      "constant": "AURA",
+      "amount": 32
+    },
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 16
+    },
+    {
+      "aspect": "ordo",
+      "constant": "ORDER",
+      "amount": 16
+    },
+    {
+      "aspect": "potentia",
+      "constant": "ENERGY",
+      "amount": 16
+    }
+  ],
+  "input": {
+    "neoforge:components": {
+      "items": [
+        "thaumcraft:blockstonedevice"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 9
+      }
+    }
+  },
+  "components": [
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 1
+        }
+      }
+    },
+    {
+      "item": "minecraft:redstone_block"
+    },
+    {
+      "item": "thaumcraft:itemresource"
+    },
+    {
+      "item": "minecraft:redstone_block"
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 1
+        }
+      }
+    },
+    {
+      "item": "minecraft:redstone_block"
+    },
+    {
+      "item": "thaumcraft:itemresource"
+    },
+    {
+      "item": "minecraft:redstone_block"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:blockstonedevice",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 10
+    }
+  }
+}

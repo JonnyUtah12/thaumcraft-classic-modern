@@ -1,0 +1,53 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "FOCUSFROST",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 10
+    },
+    {
+      "aspect": "ordo",
+      "amount": 10
+    },
+    {
+      "aspect": "perditio",
+      "amount": 10
+    }
+  ],
+  "pattern": [
+    "CQC",
+    "Q#Q",
+    "CQC"
+  ],
+  "key": {
+    "#": {
+      "item": "minecraft:diamond"
+    },
+    "Q": {
+      "item": "minecraft:quartz"
+    },
+    "C": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemshard",
+        "components": {
+          "thaumcraft:item_meta": 2
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:focusfrost",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:focusfrost"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

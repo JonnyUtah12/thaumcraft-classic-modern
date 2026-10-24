@@ -1,0 +1,22 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "ALCHEMICALDUPLICATION",
+  "research": "ALCHEMICALDUPLICATION",
+  "catalyst": {
+    "item": "minecraft:glowstone_dust"
+  },
+  "aspects": [
+    {
+      "aspect": "lux",
+      "amount": 3
+    },
+    {
+      "aspect": "sensus",
+      "amount": 1
+    }
+  ],
+  "result": {
+    "id": "minecraft:glowstone_dust",
+    "count": 2
+  }
+}

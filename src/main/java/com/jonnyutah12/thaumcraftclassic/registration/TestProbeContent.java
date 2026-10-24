@@ -94,6 +94,46 @@ public final class TestProbeContent {
         }
     }
 
+    /**
+     * TC-M6-05: damageable probe implementing the Repair enchantment's item
+     * contracts (IRepairable marker + IVisContainerItem vis payment). The
+     * gametest supplies the object-tag cost directly, since the shipped
+     * essentia tables contain no damageable items until TC-M6-01.
+     */
+    public static final DeferredItem<ProbeRepairableVis> PROBE_REPAIRABLE =
+            ModItems.ITEMS.register("test_probe_repairable",
+                    () -> new ProbeRepairableVis(new Item.Properties().stacksTo(1).durability(32)));
+
+    public static class ProbeRepairableVis extends Item
+            implements com.jonnyutah12.thaumcraftclassic.api.IRepairable,
+                       com.jonnyutah12.thaumcraftclassic.wands.IVisContainerItem {
+
+        public ProbeRepairableVis(final Properties properties) {
+            super(properties);
+        }
+
+        @Override
+        public com.jonnyutah12.thaumcraftclassic.aspect.AspectList getAspectsWithRoom(final ItemStack stack) {
+            return new com.jonnyutah12.thaumcraftclassic.aspect.AspectList();
+        }
+
+        @Override
+        public void addVis(final ItemStack stack,
+                           final com.jonnyutah12.thaumcraftclassic.aspect.Aspect aspect,
+                           final int amount, final boolean doUpdate) {
+        }
+
+        @Override
+        public String getCapTag(final ItemStack stack) {
+            return "probe";
+        }
+
+        @Override
+        public String getRodTag(final ItemStack stack) {
+            return "probe";
+        }
+    }
+
     /** Forces class initialization (entry registration) from {@link ModRegistration}. */
     static void init() {
     }

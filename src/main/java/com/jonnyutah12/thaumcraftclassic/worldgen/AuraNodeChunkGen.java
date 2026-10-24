@@ -54,6 +54,16 @@ public final class AuraNodeChunkGen {
         MagicChunkHooks.registerChunkGenHook(AuraNodeChunkGen::generateChunk);
     }
 
+    /**
+     * Forces this class (and its hook registration) to initialize. The
+     * TC-M5-05b structure pass calls this from its own static initializer so
+     * the node pass always runs first in {@code MagicChunkHooks.HOOKS} — its
+     * totem gate reads the nodes this pass creates.
+     */
+    public static void ensureHookRegistered() {
+        // no-op: touching the class is the point (static init registers).
+    }
+
     private AuraNodeChunkGen() {
     }
 

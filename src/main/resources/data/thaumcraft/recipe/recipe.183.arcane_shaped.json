@@ -1,0 +1,37 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "TINYHAMMER",
+  "aspects": [
+    {
+      "aspect": "terra",
+      "amount": 4
+    },
+    {
+      "aspect": "ignis",
+      "amount": 4
+    }
+  ],
+  "pattern": [
+    "III",
+    "III",
+    " I "
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:itemgolemdecoration",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 7
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgolemdecoration"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "CoreSorting",
+  "research": "CORESORTING",
+  "instability": 3,
+  "aspects": [
+    {
+      "aspect": "vacuos",
+      "constant": "VOID",
+      "amount": 16
+    },
+    {
+      "aspect": "permutatio",
+      "constant": "EXCHANGE",
+      "amount": 16
+    },
+    {
+      "aspect": "fames",
+      "constant": "HUNGER",
+      "amount": 16
+    },
+    {
+      "aspect": "lucrum",
+      "constant": "GREED",
+      "amount": 16
+    }
+  ],
+  "input": {
+    "item": "thaumcraft:itemzombiebrain"
+  },
+  "components": [
+    {
+      "item": "thaumcraft:itemgolemcore"
+    },
+    {
+      "item": "minecraft:comparator"
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemgolemcore"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 1
+        }
+      }
+    },
+    {
+      "item": "minecraft:paper"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemgolemcore",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 10
+    }
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "HoverGirdle",
+  "research": "HOVERGIRDLE",
+  "instability": 8,
+  "aspects": [
+    {
+      "aspect": "volatus",
+      "constant": "FLIGHT",
+      "amount": 16
+    },
+    {
+      "aspect": "potentia",
+      "constant": "ENERGY",
+      "amount": 32
+    },
+    {
+      "aspect": "aer",
+      "constant": "AIR",
+      "amount": 32
+    },
+    {
+      "aspect": "iter",
+      "constant": "TRAVEL",
+      "amount": 16
+    }
+  ],
+  "input": {
+    "neoforge:components": {
+      "items": [
+        "thaumcraft:itembaubleblanks"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 2
+      }
+    }
+  },
+  "components": [
+    {
+      "item": "thaumcraft:itemshard"
+    },
+    {
+      "item": "minecraft:feather"
+    },
+    {
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemshard"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 3
+        }
+      }
+    },
+    {
+      "item": "minecraft:feather"
+    },
+    {
+      "item": "minecraft:gold_ingot"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemgirdlehover",
+    "count": 1
+  }
+}

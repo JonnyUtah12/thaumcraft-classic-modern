@@ -1,0 +1,48 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "AdvancedGolem",
+  "research": "ADVANCEDGOLEM",
+  "instability": 3,
+  "aspects": [
+    {
+      "aspect": "cognitio",
+      "constant": "MIND",
+      "amount": 8
+    },
+    {
+      "aspect": "sensus",
+      "constant": "SENSES",
+      "amount": 8
+    },
+    {
+      "aspect": "victus",
+      "constant": "LIFE",
+      "amount": 8
+    }
+  ],
+  "input": {
+    "item": "thaumcraft:itemgolemplacer"
+  },
+  "components": [
+    {
+      "item": "minecraft:redstone"
+    },
+    {
+      "item": "minecraft:glowstone_dust"
+    },
+    {
+      "item": "minecraft:gunpowder"
+    },
+    {
+      "item": "thaumcraft:blockjar"
+    },
+    {
+      "item": "thaumcraft:itemzombiebrain"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output_tag": {
+    "label": "advanced",
+    "value": 1
+  }
+}

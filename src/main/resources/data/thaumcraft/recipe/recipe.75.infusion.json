@@ -1,0 +1,111 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "RunicRingHealing",
+  "research": "RUNICHEALING",
+  "instability": 6,
+  "aspects": [
+    {
+      "aspect": "tutamen",
+      "constant": "ARMOR",
+      "amount": 16
+    },
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 16
+    },
+    {
+      "aspect": "aqua",
+      "constant": "WATER",
+      "amount": 32
+    },
+    {
+      "aspect": "sano",
+      "constant": "HEAL",
+      "amount": 32
+    }
+  ],
+  "input": {
+    "neoforge:components": {
+      "items": [
+        "thaumcraft:itemringrunic"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 1
+      }
+    }
+  },
+  "components": [
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemshard"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 6
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemshard"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 2
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemshard"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 2
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "minecraft:potion"
+        ],
+        "components": {
+          "minecraft:potion_contents": {
+            "potion": "minecraft:long_regeneration"
+          }
+        }
+      },
+      "_known_difference": "original: extended+\"cured\" regeneration; the cured flag has no modern equivalent"
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemshard"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 2
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemshard"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 2
+        }
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemringrunic",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 3
+    }
+  }
+}

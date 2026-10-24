@@ -1,0 +1,36 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "WARDEDARCANA",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 5
+    },
+    {
+      "aspect": "ordo",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    "NNI",
+    "N  "
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "N": {
+      "tag": "thaumcraft:oredict.nuggetiron"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:arcanedoorkey",
+    "count": 2
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:arcanedoorkey"
+    }
+  ]
+}

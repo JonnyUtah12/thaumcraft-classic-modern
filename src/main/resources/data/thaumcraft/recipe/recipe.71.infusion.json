@@ -1,0 +1,86 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "RunicAmulet",
+  "research": "RUNICARMOR",
+  "instability": 4,
+  "aspects": [
+    {
+      "aspect": "tutamen",
+      "constant": "ARMOR",
+      "amount": 20
+    },
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 35
+    },
+    {
+      "aspect": "potentia",
+      "constant": "ENERGY",
+      "amount": 35
+    }
+  ],
+  "input": {
+    "item": "thaumcraft:itembaubleblanks"
+  },
+  "components": [
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 15
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 6
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 7
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 1
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 1
+        }
+      }
+    },
+    {
+      "item": "thaumcraft:iteminkwell"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemamuletrunic",
+    "count": 1
+  }
+}

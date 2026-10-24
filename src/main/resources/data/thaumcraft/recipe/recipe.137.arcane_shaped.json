@@ -1,0 +1,33 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "DISTILESSENTIA",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 1
+    }
+  ],
+  "pattern": [
+    "GWG",
+    "G G",
+    "GGG"
+  ],
+  "key": {
+    "W": {
+      "tag": "thaumcraft:oredict.slabwood"
+    },
+    "G": {
+      "item": "minecraft:glass_pane"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockjar",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockjar"
+    }
+  ]
+}

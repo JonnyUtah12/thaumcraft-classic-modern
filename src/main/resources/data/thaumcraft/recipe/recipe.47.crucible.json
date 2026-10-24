@@ -1,0 +1,45 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "BATHSALTS",
+  "research": "BATHSALTS",
+  "catalyst": {
+    "neoforge:components": {
+      "items": "thaumcraft:itemresource",
+      "components": {
+        "thaumcraft:item_meta": 14
+      }
+    }
+  },
+  "aspects": [
+    {
+      "aspect": "cognitio",
+      "amount": 6
+    },
+    {
+      "aspect": "auram",
+      "amount": 6
+    },
+    {
+      "aspect": "ordo",
+      "amount": 6
+    },
+    {
+      "aspect": "sano",
+      "amount": 6
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itembathsalts",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itembathsalts"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

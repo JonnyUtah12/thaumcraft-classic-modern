@@ -1,0 +1,40 @@
+{
+  "type": "thaumcraft:infusion_enchantment",
+  "original_key": "InfEnch14",
+  "research": "INFUSIONENCHANTMENT",
+  "enchantment": "minecraft:efficiency",
+  "instability": 2,
+  "aspects": [
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 4
+    },
+    {
+      "aspect": "instrumentum",
+      "constant": "TOOL",
+      "amount": 4
+    },
+    {
+      "aspect": "ordo",
+      "constant": "ORDER",
+      "amount": 4
+    }
+  ],
+  "components": [
+    {
+      "item": "minecraft:iron_pickaxe"
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 14
+        }
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py."
+}

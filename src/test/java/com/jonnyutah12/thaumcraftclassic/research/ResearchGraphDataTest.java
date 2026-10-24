@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * TC-M3-01 acceptance: the extracted research graph
- * (data/thaumcraft/research_graph/) must match the TC-M0-04 inventory
+ * (data/thaumcraft/research/) must match the TC-M0-04 inventory
  * (docs/original-content-inventory.md section 8) entry for entry, and the
  * graph must satisfy the structural invariants of the original: acyclic
  * prerequisites, every reference resolving, every page lang key present in

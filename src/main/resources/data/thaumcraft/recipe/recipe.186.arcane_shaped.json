@@ -1,0 +1,71 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "DISTILESSENTIA",
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 5
+    },
+    {
+      "aspect": "aqua",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    "FIG",
+    "IBI",
+    "I I"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "B": {
+      "item": "minecraft:bucket"
+    },
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "F": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemresource",
+        "components": {
+          "thaumcraft:item_meta": 8
+        }
+      }
+    },
+    "L": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockmagicalleaves",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "1"
+          }
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockmetaldevice",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "1"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockmagicalleaves"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockmetaldevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

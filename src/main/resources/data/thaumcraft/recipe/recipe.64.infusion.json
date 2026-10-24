@@ -1,0 +1,116 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "WandPedFocus",
+  "research": "WANDPEDFOC",
+  "instability": 4,
+  "aspects": [
+    {
+      "aspect": "ordo",
+      "constant": "ORDER",
+      "amount": 10
+    },
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 15
+    },
+    {
+      "aspect": "permutatio",
+      "constant": "EXCHANGE",
+      "amount": 10
+    }
+  ],
+  "input": {
+    "item": "minecraft:comparator"
+  },
+  "components": [
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemshard"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 3
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 8
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemshard"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 3
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 8
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemshard"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 3
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 8
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemshard"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 3
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 8
+        }
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:blockstonedevice",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 8
+    }
+  }
+}

@@ -354,7 +354,7 @@ public final class ResearchManager {
      * {@code addStickyWarpToPlayer}: add to the chosen counter, sync it, notify the
      * change, and set the eldritch counter to the new warp total.
      */
-    static void applyWarp(final ServerPlayer player, final int amount, final int kind) {
+    public static void applyWarp(final ServerPlayer player, final int amount, final int kind) {
         PlayerWarpData warp = player.getData(ModAttachments.PLAYER_WARP);
         if (kind == SyncWarpPayload.WARP_PERMANENT) {
             warp = warp.addWarpPerm(amount);

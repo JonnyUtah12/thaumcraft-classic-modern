@@ -1,0 +1,49 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "FOCUSFIRE",
+  "aspects": [
+    {
+      "aspect": "ignis",
+      "amount": 20
+    },
+    {
+      "aspect": "perditio",
+      "amount": 10
+    }
+  ],
+  "pattern": [
+    "CQC",
+    "Q#Q",
+    "CQC"
+  ],
+  "key": {
+    "#": {
+      "item": "minecraft:fire_charge"
+    },
+    "Q": {
+      "item": "minecraft:quartz"
+    },
+    "C": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemshard",
+        "components": {
+          "thaumcraft:item_meta": 1
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:focusfire",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:focusfire"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

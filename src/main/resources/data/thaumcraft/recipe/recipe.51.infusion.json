@@ -1,0 +1,88 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "WandCapVoid",
+  "research": "CAP_void",
+  "instability": 8,
+  "aspects": [
+    {
+      "aspect": "potentia",
+      "constant": "ENERGY",
+      "amount": 18
+    },
+    {
+      "aspect": "vacuos",
+      "constant": "VOID",
+      "amount": 18
+    },
+    {
+      "aspect": "alienis",
+      "constant": "ELDRITCH",
+      "amount": 18
+    },
+    {
+      "aspect": "auram",
+      "constant": "AURA",
+      "amount": 18
+    }
+  ],
+  "input": {
+    "neoforge:components": {
+      "items": [
+        "thaumcraft:wandcap"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 8
+      }
+    }
+  },
+  "components": [
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 14
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 14
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 14
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 14
+        }
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:wandcap",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 7
+    }
+  }
+}

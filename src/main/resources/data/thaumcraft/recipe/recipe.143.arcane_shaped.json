@@ -1,0 +1,27 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "CAP_void",
+  "aspects": [],
+  "pattern": [
+    "NNN",
+    "N N"
+  ],
+  "key": {
+    "N": {
+      "tag": "thaumcraft:oredict.nuggetvoid"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:wandcap",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 8
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcap"
+    }
+  ]
+}

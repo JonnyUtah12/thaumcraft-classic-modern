@@ -5,7 +5,7 @@ package com.jonnyutah12.thaumcraftclassic.research;
  * (registered via {@code ResearchCategories.registerCategory} in the
  * decompiled ConfigResearch.java; see docs/research-graph-notes.md).
  *
- * <p>Data comes from {@code data/thaumcraft/research_graph/categories.json},
+ * <p>Data comes from {@code data/thaumcraft/research/categories.json},
  * extracted mechanically by scripts/extract_research_graph.py. The
  * {@code nameEnUs} value is the original en_US.lang string kept verbatim
  * as All Rights Reserved quotation (docs/licensing-and-attribution.md);

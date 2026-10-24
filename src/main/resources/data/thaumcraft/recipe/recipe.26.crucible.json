@@ -1,0 +1,36 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "TRANSTIN",
+  "research": "TRANSTIN",
+  "catalyst": {
+    "neoforge:components": {
+      "items": "thaumcraft:itemnugget",
+      "components": {
+        "thaumcraft:item_meta": 2
+      }
+    }
+  },
+  "aspects": [
+    {
+      "aspect": "metallum",
+      "amount": 2
+    },
+    {
+      "aspect": "vitreus",
+      "amount": 1
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemnugget",
+    "count": 3,
+    "components": {
+      "thaumcraft:item_meta": 2
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemnugget"
+    }
+  ]
+}

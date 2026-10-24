@@ -1,0 +1,46 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "GOLEMTALLOW",
+  "research": "GOLEMTALLOW",
+  "catalyst": {
+    "neoforge:components": {
+      "items": "thaumcraft:blockcosmeticsolid",
+      "components": {
+        "minecraft:block_state": {
+          "variant": "5"
+        }
+      }
+    }
+  },
+  "aspects": [
+    {
+      "aspect": "humanus",
+      "amount": 8
+    },
+    {
+      "aspect": "motus",
+      "amount": 8
+    },
+    {
+      "aspect": "spiritus",
+      "amount": 8
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemgolemplacer",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 2
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcosmeticsolid"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgolemplacer"
+    }
+  ]
+}

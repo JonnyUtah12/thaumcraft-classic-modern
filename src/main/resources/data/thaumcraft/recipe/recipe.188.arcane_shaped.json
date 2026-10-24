@@ -1,0 +1,52 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "TUBES",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 5
+    },
+    {
+      "aspect": "ordo",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    " Q ",
+    "IGI",
+    " B "
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "B": {
+      "item": "minecraft:gold_nugget"
+    },
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "Q": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemnugget",
+        "components": {
+          "thaumcraft:item_meta": 5
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blocktube",
+    "count": 8
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blocktube"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemnugget"
+    }
+  ]
+}

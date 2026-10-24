@@ -1,0 +1,58 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "MaskGrinningDevil",
+  "research": "MASKGRINNINGDEVIL",
+  "instability": 8,
+  "aspects": [
+    {
+      "aspect": "cognitio",
+      "constant": "MIND",
+      "amount": 64
+    },
+    {
+      "aspect": "sano",
+      "constant": "HEAL",
+      "amount": 64
+    },
+    {
+      "aspect": "tutamen",
+      "constant": "ARMOR",
+      "amount": 16
+    }
+  ],
+  "input": {
+    "item": "thaumcraft:itemhelmetfortress"
+  },
+  "components": [
+    {
+      "item": "minecraft:dye"
+    },
+    {
+      "item": "minecraft:iron_ingot"
+    },
+    {
+      "item": "minecraft:leather"
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:blockcustomplant"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 2
+        }
+      }
+    },
+    {
+      "item": "thaumcraft:itemzombiebrain"
+    },
+    {
+      "item": "minecraft:iron_ingot"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output_tag": {
+    "label": "mask",
+    "value": 0
+  }
+}

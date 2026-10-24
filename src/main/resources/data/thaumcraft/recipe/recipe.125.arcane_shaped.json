@@ -1,0 +1,62 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "GOLEMFETTER",
+  "aspects": [
+    {
+      "aspect": "terra",
+      "amount": 5
+    },
+    {
+      "aspect": "ordo",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    "SSS",
+    "IRI",
+    "BBB"
+  ],
+  "key": {
+    "S": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockcosmeticsolid",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "6"
+          }
+        }
+      }
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "B": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockcosmeticsolid",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "7"
+          }
+        }
+      }
+    },
+    "R": {
+      "item": "minecraft:redstone_block"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockcosmeticsolid",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "9"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcosmeticsolid"
+    }
+  ]
+}

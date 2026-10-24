@@ -1,0 +1,63 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "WARDEDARCANA",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 20
+    },
+    {
+      "aspect": "ordo",
+      "amount": 10
+    },
+    {
+      "aspect": "terra",
+      "amount": 10
+    },
+    {
+      "aspect": "ignis",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    "TDT",
+    "DBD",
+    "TDT"
+  ],
+  "key": {
+    "T": {
+      "tag": "thaumcraft:oredict.ingotthaumium"
+    },
+    "B": {
+      "item": "thaumcraft:itemzombiebrain"
+    },
+    "D": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockwoodendevice",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "6"
+          }
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:itemarcanedoor",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockwoodendevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemarcanedoor"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemzombiebrain"
+    }
+  ]
+}

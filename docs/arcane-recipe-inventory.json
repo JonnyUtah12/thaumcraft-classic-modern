@@ -1,0 +1,309 @@
+{
+  "source": "decompiled thaumcraft/common/config/ConfigRecipes.java initializeArcaneRecipes (Thaumcraft 4.2.3.5); extracted mechanically by scripts/extract_arcane_recipes.py",
+  "inventoryRows": 89,
+  "instances": 109,
+  "rows": {
+    "recipe.112.arcane_shaped": [
+      "recipe.112.arcane_shaped.0",
+      "recipe.112.arcane_shaped.1",
+      "recipe.112.arcane_shaped.2",
+      "recipe.112.arcane_shaped.3",
+      "recipe.112.arcane_shaped.4",
+      "recipe.112.arcane_shaped.5",
+      "recipe.112.arcane_shaped.6",
+      "recipe.112.arcane_shaped.7",
+      "recipe.112.arcane_shaped.8",
+      "recipe.112.arcane_shaped.9",
+      "recipe.112.arcane_shaped.10",
+      "recipe.112.arcane_shaped.11",
+      "recipe.112.arcane_shaped.12",
+      "recipe.112.arcane_shaped.13",
+      "recipe.112.arcane_shaped.14",
+      "recipe.112.arcane_shaped.15"
+    ],
+    "recipe.113.arcane_shaped": [
+      "recipe.113.arcane_shaped"
+    ],
+    "recipe.114.arcane_shaped": [
+      "recipe.114.arcane_shaped"
+    ],
+    "recipe.115.arcane_shaped": [
+      "recipe.115.arcane_shaped"
+    ],
+    "recipe.116.arcane_shaped": [
+      "recipe.116.arcane_shaped"
+    ],
+    "recipe.117.arcane_shaped": [
+      "recipe.117.arcane_shaped"
+    ],
+    "recipe.118.arcane_shaped": [
+      "recipe.118.arcane_shaped"
+    ],
+    "recipe.119.arcane_shaped": [
+      "recipe.119.arcane_shaped"
+    ],
+    "recipe.120.arcane_shaped": [
+      "recipe.120.arcane_shaped"
+    ],
+    "recipe.121.arcane_shaped": [
+      "recipe.121.arcane_shaped"
+    ],
+    "recipe.122.arcane_shaped": [
+      "recipe.122.arcane_shaped"
+    ],
+    "recipe.123.arcane_shaped": [
+      "recipe.123.arcane_shaped"
+    ],
+    "recipe.124.arcane_shaped": [
+      "recipe.124.arcane_shaped"
+    ],
+    "recipe.125.arcane_shaped": [
+      "recipe.125.arcane_shaped"
+    ],
+    "recipe.126.arcane_shaped": [
+      "recipe.126.arcane_shaped"
+    ],
+    "recipe.127.arcane_shaped": [
+      "recipe.127.arcane_shaped"
+    ],
+    "recipe.128.arcane_shaped": [
+      "recipe.128.arcane_shaped"
+    ],
+    "recipe.129.arcane_shaped": [
+      "recipe.129.arcane_shaped"
+    ],
+    "recipe.130.arcane_shaped": [
+      "recipe.130.arcane_shaped"
+    ],
+    "recipe.131.arcane_shaped": [
+      "recipe.131.arcane_shaped"
+    ],
+    "recipe.132.arcane_shaped": [
+      "recipe.132.arcane_shaped"
+    ],
+    "recipe.133.arcane_shaped": [
+      "recipe.133.arcane_shaped"
+    ],
+    "recipe.134.arcane_shaped": [
+      "recipe.134.arcane_shaped.0",
+      "recipe.134.arcane_shaped.1",
+      "recipe.134.arcane_shaped.2",
+      "recipe.134.arcane_shaped.3",
+      "recipe.134.arcane_shaped.4",
+      "recipe.134.arcane_shaped.5"
+    ],
+    "recipe.135.arcane_shaped": [
+      "recipe.135.arcane_shaped"
+    ],
+    "recipe.136.arcane_shaped": [
+      "recipe.136.arcane_shaped"
+    ],
+    "recipe.137.arcane_shaped": [
+      "recipe.137.arcane_shaped"
+    ],
+    "recipe.138.arcane_shaped": [
+      "recipe.138.arcane_shaped"
+    ],
+    "recipe.139.arcane_shaped": [
+      "recipe.139.arcane_shaped"
+    ],
+    "recipe.140.arcane_shaped": [
+      "recipe.140.arcane_shaped"
+    ],
+    "recipe.141.arcane_shaped": [
+      "recipe.141.arcane_shaped"
+    ],
+    "recipe.142.arcane_shaped": [
+      "recipe.142.arcane_shaped"
+    ],
+    "recipe.143.arcane_shaped": [
+      "recipe.143.arcane_shaped"
+    ],
+    "recipe.144.arcane_shaped": [
+      "recipe.144.arcane_shaped"
+    ],
+    "recipe.145.arcane_shaped": [
+      "recipe.145.arcane_shaped"
+    ],
+    "recipe.146.arcane_shaped": [
+      "recipe.146.arcane_shaped"
+    ],
+    "recipe.147.arcane_shaped": [
+      "recipe.147.arcane_shaped"
+    ],
+    "recipe.148.arcane_shaped": [
+      "recipe.148.arcane_shaped"
+    ],
+    "recipe.149.arcane_shaped": [
+      "recipe.149.arcane_shaped"
+    ],
+    "recipe.150.arcane_shaped": [
+      "recipe.150.arcane_shaped"
+    ],
+    "recipe.151.arcane_shaped": [
+      "recipe.151.arcane_shaped"
+    ],
+    "recipe.152.arcane_shaped": [
+      "recipe.152.arcane_shaped"
+    ],
+    "recipe.153.arcane_shaped": [
+      "recipe.153.arcane_shaped"
+    ],
+    "recipe.154.arcane_shaped": [
+      "recipe.154.arcane_shaped"
+    ],
+    "recipe.155.arcane_shaped": [
+      "recipe.155.arcane_shaped"
+    ],
+    "recipe.156.arcane_shaped": [
+      "recipe.156.arcane_shaped"
+    ],
+    "recipe.157.arcane_shaped": [
+      "recipe.157.arcane_shaped"
+    ],
+    "recipe.158.arcane_shaped": [
+      "recipe.158.arcane_shaped"
+    ],
+    "recipe.159.arcane_shaped": [
+      "recipe.159.arcane_shaped"
+    ],
+    "recipe.160.arcane_shaped": [
+      "recipe.160.arcane_shaped"
+    ],
+    "recipe.161.arcane_shaped": [
+      "recipe.161.arcane_shaped"
+    ],
+    "recipe.162.arcane_shaped": [
+      "recipe.162.arcane_shaped"
+    ],
+    "recipe.163.arcane_shaped": [
+      "recipe.163.arcane_shaped"
+    ],
+    "recipe.164.arcane_shaped": [
+      "recipe.164.arcane_shaped"
+    ],
+    "recipe.165.arcane_shaped": [
+      "recipe.165.arcane_shaped"
+    ],
+    "recipe.166.arcane_shaped": [
+      "recipe.166.arcane_shaped"
+    ],
+    "recipe.167.arcane_shaped": [
+      "recipe.167.arcane_shaped"
+    ],
+    "recipe.168.arcane_shaped": [
+      "recipe.168.arcane_shaped"
+    ],
+    "recipe.169.arcane_shaped": [
+      "recipe.169.arcane_shaped"
+    ],
+    "recipe.170.arcane_shaped": [
+      "recipe.170.arcane_shaped"
+    ],
+    "recipe.171.arcane_shaped": [
+      "recipe.171.arcane_shaped"
+    ],
+    "recipe.172.arcane_shaped": [
+      "recipe.172.arcane_shaped"
+    ],
+    "recipe.173.arcane_shaped": [
+      "recipe.173.arcane_shaped"
+    ],
+    "recipe.174.arcane_shaped": [
+      "recipe.174.arcane_shaped"
+    ],
+    "recipe.175.arcane_shaped": [
+      "recipe.175.arcane_shaped"
+    ],
+    "recipe.176.arcane_shaped": [
+      "recipe.176.arcane_shaped"
+    ],
+    "recipe.177.arcane_shaped": [
+      "recipe.177.arcane_shaped"
+    ],
+    "recipe.178.arcane_shaped": [
+      "recipe.178.arcane_shaped"
+    ],
+    "recipe.179.arcane_shaped": [
+      "recipe.179.arcane_shaped"
+    ],
+    "recipe.180.arcane_shaped": [
+      "recipe.180.arcane_shaped"
+    ],
+    "recipe.181.arcane_shaped": [
+      "recipe.181.arcane_shaped"
+    ],
+    "recipe.182.arcane_shaped": [
+      "recipe.182.arcane_shaped"
+    ],
+    "recipe.183.arcane_shaped": [
+      "recipe.183.arcane_shaped"
+    ],
+    "recipe.184.arcane_shaped": [
+      "recipe.184.arcane_shaped"
+    ],
+    "recipe.185.arcane_shaped": [
+      "recipe.185.arcane_shaped"
+    ],
+    "recipe.186.arcane_shaped": [
+      "recipe.186.arcane_shaped"
+    ],
+    "recipe.187.arcane_shaped": [
+      "recipe.187.arcane_shaped"
+    ],
+    "recipe.188.arcane_shaped": [
+      "recipe.188.arcane_shaped"
+    ],
+    "recipe.189.arcane_shaped": [
+      "recipe.189.arcane_shaped"
+    ],
+    "recipe.190.arcane_shaped": [
+      "recipe.190.arcane_shaped"
+    ],
+    "recipe.191.arcane_shaped": [
+      "recipe.191.arcane_shaped"
+    ],
+    "recipe.192.arcane_shaped": [
+      "recipe.192.arcane_shaped"
+    ],
+    "recipe.193.arcane_shaped": [
+      "recipe.193.arcane_shaped"
+    ],
+    "recipe.194.arcane_shaped": [
+      "recipe.194.arcane_shaped"
+    ],
+    "recipe.195.arcane_shaped": [
+      "recipe.195.arcane_shaped"
+    ],
+    "recipe.196.arcane_shapeless": [
+      "recipe.196.arcane_shapeless"
+    ],
+    "recipe.197.arcane_shapeless": [
+      "recipe.197.arcane_shapeless"
+    ],
+    "recipe.198.arcane_shapeless": [
+      "recipe.198.arcane_shapeless"
+    ],
+    "recipe.199.arcane_shapeless": [
+      "recipe.199.arcane_shapeless"
+    ],
+    "recipe.200.arcane_shapeless": [
+      "recipe.200.arcane_shapeless"
+    ]
+  },
+  "oredictTags": [
+    "thaumcraft:oredict.dyeblue",
+    "thaumcraft:oredict.gememerald",
+    "thaumcraft:oredict.ingotiron",
+    "thaumcraft:oredict.ingotthaumium",
+    "thaumcraft:oredict.nuggetcopper",
+    "thaumcraft:oredict.nuggetiron",
+    "thaumcraft:oredict.nuggetsilver",
+    "thaumcraft:oredict.nuggetthaumium",
+    "thaumcraft:oredict.nuggetvoid",
+    "thaumcraft:oredict.plankwood",
+    "thaumcraft:oredict.slabwood",
+    "thaumcraft:oredict.stickwood",
+    "thaumcraft:oredict.stone"
+  ]
+}

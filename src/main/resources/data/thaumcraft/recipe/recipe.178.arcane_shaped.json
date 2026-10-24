@@ -1,0 +1,39 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "TINYBOWTIE",
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 4
+    },
+    {
+      "aspect": "ordo",
+      "amount": 4
+    }
+  ],
+  "pattern": [
+    "CSC",
+    "C C"
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:black_wool"
+    },
+    "S": {
+      "item": "minecraft:string"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:itemgolemdecoration",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 2
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgolemdecoration"
+    }
+  ]
+}

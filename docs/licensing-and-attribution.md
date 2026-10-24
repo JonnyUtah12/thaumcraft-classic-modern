@@ -24,7 +24,7 @@ Investigated 2026-10-17 (this project) and 2026-10-16 (sibling project
 
 ## Decision: original research lang strings (TC-M3-01, 2026-10-18)
 
-The extracted research graph (`data/thaumcraft/research_graph/*.json`) embeds the
+The extracted research graph (`data/thaumcraft/research/*.json`) embeds the
 original `tc.research_name.*` / `tc.research_text.*` /
 `tc.research_page.*` strings **verbatim**, as short All Rights Reserved
 quotation from the unlicensed artifact. Decision and rationale:

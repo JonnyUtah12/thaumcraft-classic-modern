@@ -1,0 +1,71 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "VISPOWER",
+  "aspects": [
+    {
+      "aspect": "ignis",
+      "amount": 32
+    },
+    {
+      "aspect": "aer",
+      "amount": 32
+    },
+    {
+      "aspect": "perditio",
+      "amount": 32
+    }
+  ],
+  "pattern": [
+    "RCR",
+    "ISI",
+    "RAR"
+  ],
+  "key": {
+    "S": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockstonedevice",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "9"
+          }
+        }
+      }
+    },
+    "C": {
+      "item": "minecraft:comparator"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone_block"
+    },
+    "A": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemresource",
+        "components": {
+          "thaumcraft:item_meta": 1
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockstonedevice",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "11"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockstonedevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

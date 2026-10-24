@@ -1,0 +1,56 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "ENCHFABRIC",
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 1
+    },
+    {
+      "aspect": "terra",
+      "amount": 1
+    },
+    {
+      "aspect": "ignis",
+      "amount": 1
+    },
+    {
+      "aspect": "aqua",
+      "amount": 1
+    },
+    {
+      "aspect": "ordo",
+      "amount": 1
+    },
+    {
+      "aspect": "perditio",
+      "amount": 1
+    }
+  ],
+  "pattern": [
+    " S ",
+    "SCS",
+    " S "
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:string"
+    },
+    "C": {
+      "item": "minecraft:white_wool"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:itemresource",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 7
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

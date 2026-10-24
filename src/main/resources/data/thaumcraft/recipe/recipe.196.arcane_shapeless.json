@@ -1,0 +1,40 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "BASICARTIFACE",
+  "aspects": [
+    {
+      "aspect": "ignis",
+      "amount": 10
+    },
+    {
+      "aspect": "terra",
+      "amount": 10
+    }
+  ],
+  "ingredients": [
+    {
+      "neoforge:components": {
+        "items": "thaumcraft:itemresource",
+        "components": {
+          "thaumcraft:item_meta": 3
+        }
+      }
+    },
+    {
+      "item": "minecraft:glass_pane"
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemresource",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 10
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

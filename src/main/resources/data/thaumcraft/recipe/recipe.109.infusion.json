@@ -1,0 +1,78 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "SinStone",
+  "research": "SINSTONE",
+  "instability": 5,
+  "aspects": [
+    {
+      "aspect": "sensus",
+      "constant": "SENSES",
+      "amount": 8
+    },
+    {
+      "aspect": "tenebrae",
+      "constant": "DARKNESS",
+      "amount": 8
+    },
+    {
+      "aspect": "alienis",
+      "constant": "ELDRITCH",
+      "amount": 8
+    },
+    {
+      "aspect": "auram",
+      "constant": "AURA",
+      "amount": 8
+    }
+  ],
+  "input": {
+    "item": "minecraft:flint"
+  },
+  "components": [
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 1
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemshard"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 4
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 9
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemshard"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 5
+        }
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemcompassstone",
+    "count": 1
+  }
+}

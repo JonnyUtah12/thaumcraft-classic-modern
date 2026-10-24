@@ -1,0 +1,68 @@
+{
+  "type": "minecraft:block",
+  "_comment": "Original BlockManaPod.getDrops: nothing below age 2; exactly one bean at ages 2-6; at age 7 a second bean with 67% chance (original: count=2 iff rand.nextFloat()>0.33). The bean carries the pod's aspect, defaulting to PLANT (herba): set_components seeds the default, copy_components from the block entity overrides it.",
+  "pools": [
+    {
+      "rolls": 1.0,
+      "conditions": [
+        {
+          "condition": "minecraft:inverted",
+          "term": {
+            "condition": "minecraft:any_of",
+            "terms": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "thaumcraft:blockmanapod",
+                "properties": { "age": "0" }
+              },
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "thaumcraft:blockmanapod",
+                "properties": { "age": "1" }
+              }
+            ]
+          }
+        }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "thaumcraft:essentia_container": { "herba": 1 } }
+        },
+        {
+          "function": "minecraft:copy_components",
+          "source": "block_entity",
+          "include": ["thaumcraft:essentia_container"]
+        }
+      ],
+      "entries": [
+        { "type": "minecraft:item", "name": "thaumcraft:itemmanabean" }
+      ]
+    },
+    {
+      "rolls": 1.0,
+      "conditions": [
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "thaumcraft:blockmanapod",
+          "properties": { "age": "7" }
+        },
+        { "condition": "minecraft:random_chance", "chance": 0.67 }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "thaumcraft:essentia_container": { "herba": 1 } }
+        },
+        {
+          "function": "minecraft:copy_components",
+          "source": "block_entity",
+          "include": ["thaumcraft:essentia_container"]
+        }
+      ],
+      "entries": [
+        { "type": "minecraft:item", "name": "thaumcraft:itemmanabean" }
+      ]
+    }
+  ]
+}

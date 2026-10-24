@@ -2,9 +2,9 @@ package com.jonnyutah12.thaumcraftclassic.registration;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.aspect.EssentiaContainer;
+import com.jonnyutah12.thaumcraftclassic.research.ResearchNoteData;
 import com.jonnyutah12.thaumcraftclassic.wands.VisPool;
 import com.mojang.serialization.Codec;
-import io.netty.buffer.ByteBuf;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -27,17 +27,49 @@ public final class ModDataComponents {
             DeferredRegister.create(Registries.DATA_COMPONENT_TYPE, ThaumcraftClassic.MOD_ID);
 
     /**
-     * Essentia contents of a stack (TC-M4-01): replaces the original
-     * {@code IEssentiaContainerItem} ItemStack NBT key "Aspects" with a typed
-     * component. Persistent (the original wrote it to stack NBT) and synced
-     * for the aspect-tinted rendering the original read client-side
-     * (docs/aspects.md).
+     * Original ItemStack damage-value metadata for the multi-meta item
+     * families ItemResource / ItemShard / ItemNugget (TC-M6-04a). 1.21.1
+     * items have no damage-value variants, so the original meta travels on
+     * the stack in this component; the family items default it to 0
+     * ({@code Item.Properties#component}). Per-meta display names and
+     * variant-level ore-dictionary membership key off this value — see the
+     * oredict section of docs/architecture/registration.md. Multi-meta
+     * BLOCK items instead use the vanilla {@code minecraft:block_state}
+     * component (VariantAwareBlockItem).
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> ITEM_META =
+            DATA_COMPONENT_TYPES.register("item_meta",
+                    () -> DataComponentType.<Integer>builder()
+                            .persistent(Codec.intRange(0, 63))
+                            .networkSynchronized(ByteBufCodecs.VAR_INT)
+                            .build());
+
+    /**
+     * Essentia carried by a stack (TC-M6-04a): replaces the original's
+     * {@code "Aspects"} ItemStack NBT subcompound (IEssentiaContainerItem).
+     * Synced to the client for the aspect-tinted item colour the original
+     * read from the same NBT.
      */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<EssentiaContainer>> ESSENTIA_CONTAINER =
             DATA_COMPONENT_TYPES.register("essentia_container",
                     () -> DataComponentType.<EssentiaContainer>builder()
                             .persistent(EssentiaContainer.CODEC)
                             .networkSynchronized(EssentiaContainer.STREAM_CODEC)
+                            .build());
+
+    /**
+     * Research note state carried by a research-notes stack (TC-M3-04):
+     * replaces the original's {@code key}/{@code color}/{@code complete}/
+     * {@code copies}/{@code hexgrid} ItemStack NBT written by
+     * {@code ResearchManager.writeNote}. The codec reproduces the original
+     * tag layout exactly (see {@code ResearchNoteData}); the component is
+     * network-synced because the research-table GUI renders the grid from it.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<ResearchNoteData>> RESEARCH_NOTE =
+            DATA_COMPONENT_TYPES.register("research_note",
+                    () -> DataComponentType.<ResearchNoteData>builder()
+                            .persistent(ResearchNoteData.CODEC)
+                            .networkSynchronized(ResearchNoteData.STREAM_CODEC)
                             .build());
 
     /**
@@ -54,34 +86,6 @@ public final class ModDataComponents {
                     () -> DataComponentType.<VisPool>builder()
                             .persistent(VisPool.CODEC)
                             .networkSynchronized(VisPool.STREAM_CODEC)
-                            .build());
-
-    /**
-     * Original damage value of a multi-meta item (TC-M6-04a convention,
-     * first used by ItemResource; TC-M8-02 baubles carry their original metas
-     * the same way). 1.21.1 has no damage-value variants, so the meta travels
-     * on the stack; {@code new_id} stays one registered object per
-     * content-mapping.csv row (docs/architecture/registration.md).
-     */
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> ITEM_META =
-            DATA_COMPONENT_TYPES.register("item_meta",
-                    () -> DataComponentType.<Integer>builder()
-                            .persistent(Codec.intRange(0, 63))
-                            .networkSynchronized(ByteBufCodecs.VAR_INT)
-                            .build());
-
-    /**
-     * Runic hardening bonus (TC-M8-02): the original's {@code "RS.HARDEN"}
-     * ItemStack NBT int read by {@code EventHandlerRunic.getFinalCharge}
-     * ({@code common/lib/events/EventHandlerRunic.java:347-350}); written by
-     * the Runic Augmentation flow (TC-M6-07), summed into runic shield
-     * capacity by {@code RunicShielding.finalCharge}.
-     */
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> RUNIC_HARDENING =
-            DATA_COMPONENT_TYPES.register("runic_hardening",
-                    () -> DataComponentType.<Integer>builder()
-                            .persistent(Codec.INT)
-                            .networkSynchronized(ByteBufCodecs.VAR_INT)
                             .build());
 
     private ModDataComponents() {

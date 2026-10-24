@@ -1,0 +1,45 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "JARVOID",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 5
+    },
+    {
+      "aspect": "perditio",
+      "amount": 15
+    }
+  ],
+  "pattern": [
+    "O",
+    "J",
+    "P"
+  ],
+  "key": {
+    "O": {
+      "item": "minecraft:obsidian"
+    },
+    "P": {
+      "item": "minecraft:blaze_powder"
+    },
+    "J": {
+      "item": "thaumcraft:blockjar"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockjar",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "3"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockjar"
+    }
+  ]
+}

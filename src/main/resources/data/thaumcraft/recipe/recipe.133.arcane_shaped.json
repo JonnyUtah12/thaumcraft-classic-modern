@@ -1,0 +1,49 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "BONEBOW",
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 16
+    },
+    {
+      "aspect": "perditio",
+      "amount": 32
+    }
+  ],
+  "pattern": [
+    "SB ",
+    "SEB",
+    "SB "
+  ],
+  "key": {
+    "E": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemshard",
+        "components": {
+          "thaumcraft:item_meta": 5
+        }
+      }
+    },
+    "B": {
+      "item": "minecraft:bone"
+    },
+    "S": {
+      "item": "minecraft:string"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:itembowbone",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itembowbone"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

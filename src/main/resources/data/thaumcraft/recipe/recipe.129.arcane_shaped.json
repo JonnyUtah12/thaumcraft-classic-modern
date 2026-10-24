@@ -1,0 +1,70 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "ARCANESPA",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 16
+    },
+    {
+      "aspect": "ordo",
+      "amount": 8
+    },
+    {
+      "aspect": "terra",
+      "amount": 4
+    }
+  ],
+  "pattern": [
+    "QIQ",
+    "SJS",
+    "SPS"
+  ],
+  "key": {
+    "P": {
+      "item": "minecraft:piston"
+    },
+    "J": {
+      "item": "thaumcraft:blockjar"
+    },
+    "S": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockcosmeticsolid",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "6"
+          }
+        }
+      }
+    },
+    "Q": {
+      "item": "minecraft:quartz_block"
+    },
+    "I": {
+      "item": "minecraft:iron_bars"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockstonedevice",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "12"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcosmeticsolid"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockjar"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockstonedevice"
+    }
+  ]
+}

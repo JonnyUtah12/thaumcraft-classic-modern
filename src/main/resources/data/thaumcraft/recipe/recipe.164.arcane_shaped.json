@@ -1,0 +1,39 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "ENCHFABRIC",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    "III",
+    "I I",
+    "I I"
+  ],
+  "key": {
+    "I": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemresource",
+        "components": {
+          "thaumcraft:item_meta": 7
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:itemleggingsrobe",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemleggingsrobe"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

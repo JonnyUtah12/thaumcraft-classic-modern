@@ -1,0 +1,31 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "PUREGOLD",
+  "research": "PUREGOLD",
+  "catalyst": {
+    "tag": "thaumcraft:oredict.oregold"
+  },
+  "aspects": [
+    {
+      "aspect": "metallum",
+      "amount": 1
+    },
+    {
+      "aspect": "ordo",
+      "amount": 1
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemnugget",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 31
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemnugget"
+    }
+  ]
+}

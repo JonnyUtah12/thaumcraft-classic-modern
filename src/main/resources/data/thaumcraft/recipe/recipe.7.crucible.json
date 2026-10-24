@@ -1,0 +1,22 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "ALCHEMICALDUPLICATION",
+  "research": "ALCHEMICALDUPLICATION",
+  "catalyst": {
+    "item": "minecraft:gunpowder"
+  },
+  "aspects": [
+    {
+      "aspect": "ignis",
+      "amount": 4
+    },
+    {
+      "aspect": "perditio",
+      "amount": 4
+    }
+  ],
+  "result": {
+    "id": "minecraft:gunpowder",
+    "count": 2
+  }
+}

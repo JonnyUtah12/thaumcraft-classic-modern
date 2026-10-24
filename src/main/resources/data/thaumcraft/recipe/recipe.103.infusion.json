@@ -1,0 +1,39 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "HelmGoggles",
+  "research": "HELMGOGGLES",
+  "instability": 5,
+  "aspects": [
+    {
+      "aspect": "sensus",
+      "constant": "SENSES",
+      "amount": 32
+    },
+    {
+      "aspect": "auram",
+      "constant": "AURA",
+      "amount": 16
+    },
+    {
+      "aspect": "tutamen",
+      "constant": "ARMOR",
+      "amount": 16
+    }
+  ],
+  "input": {
+    "item": "thaumcraft:itemhelmetfortress"
+  },
+  "components": [
+    {
+      "item": "minecraft:slime_ball"
+    },
+    {
+      "item": "thaumcraft:itemgoggles"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output_tag": {
+    "label": "goggles",
+    "value": 1
+  }
+}

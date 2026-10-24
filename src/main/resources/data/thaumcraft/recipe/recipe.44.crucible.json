@@ -1,0 +1,36 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "COREGUARD",
+  "research": "COREGUARD",
+  "catalyst": {
+    "neoforge:components": {
+      "items": "thaumcraft:itemgolemcore",
+      "components": {
+        "thaumcraft:item_meta": 100
+      }
+    }
+  },
+  "aspects": [
+    {
+      "aspect": "telum",
+      "amount": 5
+    },
+    {
+      "aspect": "vinculum",
+      "amount": 5
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemgolemcore",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 4
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgolemcore"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "TUBEFILTER",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 5
+    },
+    {
+      "aspect": "ordo",
+      "amount": 16
+    }
+  ],
+  "ingredients": [
+    {
+      "item": "thaumcraft:blocktube"
+    },
+    {
+      "neoforge:components": {
+        "items": "thaumcraft:itemresource",
+        "components": {
+          "thaumcraft:item_meta": 8
+        }
+      }
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:blocktube",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "3"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blocktube"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

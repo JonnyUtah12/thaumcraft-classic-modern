@@ -1,0 +1,69 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "ARCANELAMP",
+  "aspects": [
+    {
+      "aspect": "ignis",
+      "amount": 8
+    },
+    {
+      "aspect": "aer",
+      "amount": 8
+    },
+    {
+      "aspect": "aqua",
+      "amount": 4
+    },
+    {
+      "aspect": "perditio",
+      "amount": 4
+    }
+  ],
+  "pattern": [
+    " S ",
+    "IAI",
+    " N "
+  ],
+  "key": {
+    "A": {
+      "item": "thaumcraft:blockcosmeticopaque"
+    },
+    "S": {
+      "item": "minecraft:daylight_detector"
+    },
+    "N": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemresource",
+        "components": {
+          "thaumcraft:item_meta": 1
+        }
+      }
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockmetaldevice",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "7"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcosmeticopaque"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockmetaldevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

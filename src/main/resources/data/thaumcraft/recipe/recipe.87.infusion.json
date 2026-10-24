@@ -1,0 +1,60 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "BootsTraveller",
+  "research": "BOOTSTRAVELLER",
+  "instability": 1,
+  "aspects": [
+    {
+      "aspect": "volatus",
+      "constant": "FLIGHT",
+      "amount": 25
+    },
+    {
+      "aspect": "iter",
+      "constant": "TRAVEL",
+      "amount": 25
+    }
+  ],
+  "input": {
+    "item": "minecraft:leather_boots"
+  },
+  "components": [
+    {
+      "item": "thaumcraft:itemshard"
+    },
+    {
+      "item": "thaumcraft:itemshard"
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 7
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemresource"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 7
+        }
+      }
+    },
+    {
+      "item": "minecraft:feather"
+    },
+    {
+      "item": "minecraft:fish"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:bootstraveller",
+    "count": 1
+  }
+}

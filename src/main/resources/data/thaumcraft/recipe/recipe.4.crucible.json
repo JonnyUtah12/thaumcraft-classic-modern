@@ -1,0 +1,32 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "VOIDMETAL",
+  "research": "VOIDMETAL",
+  "catalyst": {
+    "neoforge:components": {
+      "items": "thaumcraft:itemresource",
+      "components": {
+        "thaumcraft:item_meta": 17
+      }
+    }
+  },
+  "aspects": [
+    {
+      "aspect": "metallum",
+      "amount": 8
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemresource",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 16
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

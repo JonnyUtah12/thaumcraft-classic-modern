@@ -1,0 +1,49 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "COREGATHER",
+  "aspects": [
+    {
+      "aspect": "ordo",
+      "amount": 5
+    },
+    {
+      "aspect": "ignis",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    " C ",
+    "CNC",
+    " C "
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:brick"
+    },
+    "N": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemresource",
+        "components": {
+          "thaumcraft:item_meta": 1
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:itemgolemcore",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 100
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgolemcore"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

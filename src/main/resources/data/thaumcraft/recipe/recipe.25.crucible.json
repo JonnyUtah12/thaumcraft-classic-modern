@@ -1,0 +1,36 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "TRANSCOPPER",
+  "research": "TRANSCOPPER",
+  "catalyst": {
+    "neoforge:components": {
+      "items": "thaumcraft:itemnugget",
+      "components": {
+        "thaumcraft:item_meta": 1
+      }
+    }
+  },
+  "aspects": [
+    {
+      "aspect": "metallum",
+      "amount": 2
+    },
+    {
+      "aspect": "permutatio",
+      "amount": 1
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemnugget",
+    "count": 3,
+    "components": {
+      "thaumcraft:item_meta": 1
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemnugget"
+    }
+  ]
+}

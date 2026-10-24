@@ -1,0 +1,35 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "TINYARMOR",
+  "aspects": [
+    {
+      "aspect": "terra",
+      "amount": 8
+    }
+  ],
+  "pattern": [
+    "I I",
+    "IAI"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "A": {
+      "item": "minecraft:iron_chestplate"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:itemgolemdecoration",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 6
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgolemdecoration"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "ARCANEEAR",
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 10
+    },
+    {
+      "aspect": "ordo",
+      "amount": 10
+    }
+  ],
+  "pattern": [
+    "GIG",
+    "GBG",
+    "WRW"
+  ],
+  "key": {
+    "W": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockwoodendevice",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "6"
+          }
+        }
+      }
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "B": {
+      "item": "thaumcraft:itemzombiebrain"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockwoodendevice",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "1"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockwoodendevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemzombiebrain"
+    }
+  ]
+}

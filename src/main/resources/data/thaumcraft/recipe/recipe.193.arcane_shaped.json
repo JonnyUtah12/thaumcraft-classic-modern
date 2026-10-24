@@ -1,0 +1,70 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "CENTRIFUGE",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 5
+    },
+    {
+      "aspect": "ordo",
+      "amount": 5
+    },
+    {
+      "aspect": "perditio",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    " T ",
+    "ACP",
+    " T "
+  ],
+  "key": {
+    "T": {
+      "item": "thaumcraft:blocktube"
+    },
+    "P": {
+      "item": "minecraft:piston"
+    },
+    "A": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockmetaldevice",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "1"
+          }
+        }
+      }
+    },
+    "C": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockmetaldevice",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "9"
+          }
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blocktube",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "2"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockmetaldevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blocktube"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "ALCHEMICALDUPLICATION",
+  "research": "ALCHEMICALDUPLICATION",
+  "catalyst": {
+    "item": "minecraft:ink_sac"
+  },
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 2
+    },
+    {
+      "aspect": "sensus",
+      "amount": 2
+    }
+  ],
+  "result": {
+    "id": "minecraft:ink_sac",
+    "count": 2
+  }
+}

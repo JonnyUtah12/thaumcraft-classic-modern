@@ -1,0 +1,22 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "ALCHEMICALMANUFACTURE",
+  "research": "ALCHEMICALMANUFACTURE",
+  "catalyst": {
+    "item": "minecraft:string"
+  },
+  "aspects": [
+    {
+      "aspect": "vinculum",
+      "amount": 2
+    },
+    {
+      "aspect": "pannus",
+      "amount": 2
+    }
+  ],
+  "result": {
+    "id": "minecraft:web",
+    "count": 1
+  }
+}

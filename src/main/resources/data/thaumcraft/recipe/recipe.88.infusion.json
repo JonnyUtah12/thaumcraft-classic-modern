@@ -1,0 +1,55 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "CoreAlchemy",
+  "research": "COREALCHEMY",
+  "instability": 2,
+  "aspects": [
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 15
+    },
+    {
+      "aspect": "aqua",
+      "constant": "WATER",
+      "amount": 15
+    },
+    {
+      "aspect": "motus",
+      "constant": "MOTION",
+      "amount": 15
+    }
+  ],
+  "input": {
+    "neoforge:components": {
+      "items": [
+        "thaumcraft:itemgolemcore"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 5
+      }
+    }
+  },
+  "components": [
+    {
+      "item": "thaumcraft:blockjar"
+    },
+    {
+      "item": "minecraft:potionitem"
+    },
+    {
+      "item": "minecraft:potionitem"
+    },
+    {
+      "item": "minecraft:potionitem"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemgolemcore",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 6
+    }
+  }
+}

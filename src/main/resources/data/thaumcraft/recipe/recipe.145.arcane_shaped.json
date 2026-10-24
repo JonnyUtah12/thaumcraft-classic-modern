@@ -1,0 +1,40 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "ROD_greatwood_staff",
+  "aspects": [],
+  "pattern": [
+    "  S",
+    " G ",
+    "G  "
+  ],
+  "key": {
+    "S": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemresource",
+        "components": {
+          "thaumcraft:item_meta": 15
+        }
+      }
+    },
+    "G": {
+      "item": "thaumcraft:wandrod"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:wandrod",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 50
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandrod"
+    }
+  ]
+}

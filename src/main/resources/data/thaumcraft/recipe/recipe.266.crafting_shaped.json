@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "K"
+  ],
+  "key": {
+    "K": {
+      "item": "thaumcraft:blockcosmeticsolid"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:itemresource",
+    "count": 9,
+    "components": {
+      "thaumcraft:item_meta": 4
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcosmeticsolid"
+    }
+  ]
+}

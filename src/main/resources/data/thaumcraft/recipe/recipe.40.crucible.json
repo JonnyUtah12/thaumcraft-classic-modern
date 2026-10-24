@@ -1,0 +1,36 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "COREGATHER",
+  "research": "COREGATHER",
+  "catalyst": {
+    "neoforge:components": {
+      "items": "thaumcraft:itemgolemcore",
+      "components": {
+        "thaumcraft:item_meta": 100
+      }
+    }
+  },
+  "aspects": [
+    {
+      "aspect": "lucrum",
+      "amount": 5
+    },
+    {
+      "aspect": "terra",
+      "amount": 5
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemgolemcore",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 2
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgolemcore"
+    }
+  ]
+}

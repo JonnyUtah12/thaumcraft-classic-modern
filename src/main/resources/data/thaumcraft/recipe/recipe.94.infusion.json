@@ -1,0 +1,71 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "TravelTrunk",
+  "research": "TRAVELTRUNK",
+  "instability": 3,
+  "aspects": [
+    {
+      "aspect": "motus",
+      "constant": "MOTION",
+      "amount": 4
+    },
+    {
+      "aspect": "spiritus",
+      "constant": "SOUL",
+      "amount": 4
+    },
+    {
+      "aspect": "iter",
+      "constant": "TRAVEL",
+      "amount": 4
+    },
+    {
+      "aspect": "vacuos",
+      "constant": "VOID",
+      "amount": 16
+    }
+  ],
+  "input": {
+    "item": "thaumcraft:blockchesthungry"
+  },
+  "components": [
+    {
+      "item": "minecraft:iron_ingot"
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:blockwoodendevice"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 6
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:itemgolemplacer"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 1
+        }
+      }
+    },
+    {
+      "neoforge:components": {
+        "items": [
+          "thaumcraft:blockwoodendevice"
+        ],
+        "components": {
+          "thaumcraft:item_meta": 6
+        }
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:trunkspawner",
+    "count": 1
+  }
+}

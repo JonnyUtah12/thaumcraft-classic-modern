@@ -1,0 +1,72 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "WARDEDARCANA",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 20
+    },
+    {
+      "aspect": "ordo",
+      "amount": 10
+    },
+    {
+      "aspect": "ignis",
+      "amount": 5
+    },
+    {
+      "aspect": "terra",
+      "amount": 10
+    }
+  ],
+  "pattern": [
+    " B ",
+    "TDT"
+  ],
+  "key": {
+    "T": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemresource",
+        "components": {
+          "thaumcraft:item_meta": 2
+        }
+      }
+    },
+    "B": {
+      "item": "thaumcraft:itemzombiebrain"
+    },
+    "D": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockwoodendevice",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "6"
+          }
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockwoodendevice",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "2"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockwoodendevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemzombiebrain"
+    }
+  ]
+}
