@@ -31,6 +31,10 @@ Translation to the other status sets used in this repo:
 - Evidence = Kanban card → commit on `main` (board
   `thaumcraft-classic-port`). A row is VERIFIED only with a commit +
   test evidence. Deviations link to `docs/BEHAVIORAL_DEVIATIONS.md` (BD-nn).
+- Machine-readable derivative: `docs/feature-matrix.csv`, generated from this
+  table joined with `docs/content-mapping.csv` by
+  `python3 scripts/build_feature_matrix.py`. Edit the table, then regenerate —
+  never hand-edit the CSV.
 
 | System | Discovered (from inventory) | Status | Evidence (card → commit) | Test status | Deviation | Next action |
 | --- | --- | --- | --- | --- | --- | --- |
