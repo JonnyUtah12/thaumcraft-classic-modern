@@ -43,7 +43,7 @@ Statuses (DONE only with test evidence):
 | Flux | WorldMagicData flux | TC-M5-03 (t_c476f104) | DONE (8395621; docs/architecture/flux.md) |
 | Taint | common/taint | TC-M5-04 (t_66c37e97) | BLOCKED; PARTIAL WIP (taint/ uncommitted) |
 | World gen (ores) | worldgen handlers | TC-M5-05 (t_de33def3) | DONE (d1d7d5f; docs/architecture/worldgen.md) |
-| World gen (structures) | totems, mounds, eldritch rings, hilltop stones | TC-M5-05b (t_7c49bfdc) | BLOCKED; PARTIAL WIP (worldgen/Structure*.java, TotemGen, WorldGen*Gen.java, scripts/extract_mound_structure.py uncommitted) |
+| World gen (structures) | totems, mounds, eldritch rings, hilltop stones | TC-M5-05b (t_7c49bfdc) | DONE (d4acdb3; StructureParityTest replays original setBlock sequence + roll frequencies; full unit suite green, runGameTestServer 59/59) |
 | Wands (rods/caps) | items/wands | TC-M6-01 (t_aaab7bef) | NOT STARTED (VisContainerItem/WandVis seam landed with TC-M8-02, e48c4fb) |
 | Foci + casting | focus classes | TC-M6-02 (t_ae471793) | NOT STARTED |
 | Focus behaviors/combos | projectile classes | TC-M6-03 (t_a0113d55) | NOT STARTED |
@@ -53,7 +53,7 @@ Statuses (DONE only with test evidence):
 | — catalog: device blocks/machines | content-mapping.csv | TC-M6-04c (t_dc6fe98a) | BLOCKED; PARTIAL WIP (blocks/, tiles/ uncommitted) |
 | — catalog: furniture/storage/display | content-mapping.csv | TC-M6-04d (t_a2a41d5b) | BLOCKED; PARTIAL WIP (registration/catalog/ uncommitted) |
 | — catalog: trinkets/tools/loot | content-mapping.csv | TC-M6-04e (t_bba23f51) | BLOCKED; PARTIAL WIP (loot/, data/thaumcraft/loot_table/, gametest/CatalogTrinketsLootGameTest.java uncommitted) |
-| — catalog: eldritch realm | content-mapping.csv | TC-M6-04f (t_146ef5b3) | BLOCKED; PARTIAL WIP (world/outerlands/, data/thaumcraft/damage_type/ uncommitted) |
+| — catalog: eldritch realm | content-mapping.csv | TC-M6-04f (t_146ef5b3) | PARTIAL (f252c58 integrates world/outerlands maze cells + MazeGeneratorTest; catalog items + data/thaumcraft/damage_type still WIP in wip-salvage) |
 | Enchantments/potions | lib/enchantment, api/potions | TC-M6-05 (t_a8f8a37c) | BLOCKED; PARTIAL WIP (enchantment/, potions/, data/thaumcraft/enchantment/, gametest/EnchantmentPotionGameTest.java uncommitted) |
 | Entities/AI | common/entities (125 classes) | TC-M6-06 (t_cd287131) | NOT STARTED (entities/ dir exists on shared tree, uncommitted, unverified) |
 | Armor/equipment | items/armor | TC-M6-07 (t_1ba6e428) | BLOCKED (runic shielding mechanics landed early with TC-M8-02, e48c4fb; armor items themselves not done) |
