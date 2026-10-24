@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:block",
+  "_comment": "Original BlockCosmeticWoodSlab quantityFromDrops: a single (bottom/top) slab drops itself once; a merged double slab drops two single slabs of the same variant (greatwood 0 / silverwood 1). The block_state component carries the original's type/variant values so the drop re-places as a single slab (D-001: original meta values verbatim). The vanilla slab type property matches by value name (bottom/top/double); the ported variant is an as-number integer property.",
+  "pools": [
+    { "rolls": 1.0,
+      "conditions": [ { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockcosmeticslabwood", "properties": { "variant": "0", "type": "bottom" } } ],
+      "functions": [ { "function": "minecraft:set_components", "components": { "minecraft:block_state": { "variant": "0", "type": "bottom" } } } ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockcosmeticslabwood" } ] },
+    { "rolls": 1.0,
+      "conditions": [ { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockcosmeticslabwood", "properties": { "variant": "0", "type": "top" } } ],
+      "functions": [ { "function": "minecraft:set_components", "components": { "minecraft:block_state": { "variant": "0", "type": "top" } } } ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockcosmeticslabwood" } ] },
+    { "rolls": 2.0,
+      "conditions": [ { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockcosmeticslabwood", "properties": { "variant": "0", "type": "double" } } ],
+      "functions": [ { "function": "minecraft:set_components", "components": { "minecraft:block_state": { "variant": "0", "type": "bottom" } } } ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockcosmeticslabwood" } ] },
+    { "rolls": 1.0,
+      "conditions": [ { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockcosmeticslabwood", "properties": { "variant": "1", "type": "bottom" } } ],
+      "functions": [ { "function": "minecraft:set_components", "components": { "minecraft:block_state": { "variant": "1", "type": "bottom" } } } ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockcosmeticslabwood" } ] },
+    { "rolls": 1.0,
+      "conditions": [ { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockcosmeticslabwood", "properties": { "variant": "1", "type": "top" } } ],
+      "functions": [ { "function": "minecraft:set_components", "components": { "minecraft:block_state": { "variant": "1", "type": "top" } } } ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockcosmeticslabwood" } ] },
+    { "rolls": 2.0,
+      "conditions": [ { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockcosmeticslabwood", "properties": { "variant": "1", "type": "double" } } ],
+      "functions": [ { "function": "minecraft:set_components", "components": { "minecraft:block_state": { "variant": "1", "type": "bottom" } } } ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockcosmeticslabwood" } ] }
+  ]
+}

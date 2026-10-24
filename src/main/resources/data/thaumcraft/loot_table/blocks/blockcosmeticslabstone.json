@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:block",
+  "_comment": "Original BlockCosmeticStoneSlab dropped one slab of its own material (arcane 0 / ancient 1), quantity 1 — the table exists so the variant survives the drop (the block_state component carries the original type/variant values, D-001); the merged double form yields two singles like the vanilla slab pair.",
+  "pools": [
+    { "rolls": 1.0,
+      "conditions": [ { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockcosmeticslabstone", "properties": { "variant": "0", "type": "bottom" } } ],
+      "functions": [ { "function": "minecraft:set_components", "components": { "minecraft:block_state": { "variant": "0", "type": "bottom" } } } ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockcosmeticslabstone" } ] },
+    { "rolls": 1.0,
+      "conditions": [ { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockcosmeticslabstone", "properties": { "variant": "0", "type": "top" } } ],
+      "functions": [ { "function": "minecraft:set_components", "components": { "minecraft:block_state": { "variant": "0", "type": "top" } } } ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockcosmeticslabstone" } ] },
+    { "rolls": 2.0,
+      "conditions": [ { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockcosmeticslabstone", "properties": { "variant": "0", "type": "double" } } ],
+      "functions": [ { "function": "minecraft:set_components", "components": { "minecraft:block_state": { "variant": "0", "type": "bottom" } } } ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockcosmeticslabstone" } ] },
+    { "rolls": 1.0,
+      "conditions": [ { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockcosmeticslabstone", "properties": { "variant": "1", "type": "bottom" } } ],
+      "functions": [ { "function": "minecraft:set_components", "components": { "minecraft:block_state": { "variant": "1", "type": "bottom" } } } ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockcosmeticslabstone" } ] },
+    { "rolls": 1.0,
+      "conditions": [ { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockcosmeticslabstone", "properties": { "variant": "1", "type": "top" } } ],
+      "functions": [ { "function": "minecraft:set_components", "components": { "minecraft:block_state": { "variant": "1", "type": "top" } } } ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockcosmeticslabstone" } ] },
+    { "rolls": 2.0,
+      "conditions": [ { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockcosmeticslabstone", "properties": { "variant": "1", "type": "double" } } ],
+      "functions": [ { "function": "minecraft:set_components", "components": { "minecraft:block_state": { "variant": "1", "type": "bottom" } } } ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockcosmeticslabstone" } ] }
+  ]
+}

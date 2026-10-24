@@ -1,6 +1,7 @@
 package com.jonnyutah12.thaumcraftclassic.registration;
 
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
 import net.neoforged.bus.api.IEventBus;
 
@@ -73,6 +74,12 @@ public final class ModRegistration {
         // triple meat treat, mana bean), wisp/crystal essences, mana pod
         // block + tile entity.
         CatalogResources.init(modEventBus);
+
+        // TC-M6-04b: decorative/cosmetic blocks — blockCosmeticOpaque /
+        // blockCosmeticSolid / blockCrystal (+ TileCrystal), the four cosmetic
+        // stairs, the wood/stone slabs (plus their legacy double-slab ids), the
+        // tallow candle, and their variant-carrying block items.
+        CatalogDecorativeBlocks.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-
