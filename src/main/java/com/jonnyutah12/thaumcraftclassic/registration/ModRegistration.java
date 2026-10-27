@@ -2,6 +2,7 @@ package com.jonnyutah12.thaumcraftclassic.registration;
 
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
 import net.neoforged.bus.api.IEventBus;
 
@@ -80,6 +81,13 @@ public final class ModRegistration {
         // stairs, the wood/stone slabs (plus their legacy double-slab ids), the
         // tallow candle, and their variant-carrying block items.
         CatalogDecorativeBlocks.init(modEventBus);
+
+        // TC-M6-04c-s: the shared multi-variant device blocks (blockStoneDevice /
+        // blockMetalDevice / blockWoodenDevice / blockAiry) with their block items,
+        // this card's standalone device tiles (bellows, sensor, arcane pressure
+        // plate, bore + bore base, arcane lamps, nitor, the shared ownership base)
+        // and the (block, variant) -> tile suppliers for those metas.
+        CatalogDevices.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-
