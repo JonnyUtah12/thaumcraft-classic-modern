@@ -116,3 +116,83 @@ original's read-time value clamps (golem/runic/node options) are
 reproduced at read time, not by rewriting the file, exactly like the
 original. Fidelity impact: none for gameplay options; the nine id options
 were plumbing for 1.7.10's id-based registries.
+
+## D-011 — Rejected orchestrator directives (target-fact errors + an unsound guardrail)
+
+Recorded so future sessions do not re-propose them. Each item was checked
+against the repository, not against recollection.
+
+1. **"Forge 1.20.1 / Modern Forge Connect Loader (MFCL)" as the target.**
+   Rejected: factually wrong. `gradle.properties` pins
+   `minecraft_version=1.21.1`, `minecraft_version_range=[1.21.1]`,
+   `neo_version=21.1.259`; the loader is NeoForge, verified against the
+   user's ATM10 8.3 instance. There is no Forge, no 1.20.1, and no such
+   component as "MFCL" in any recorded decision (D-001…D-010). Acting on
+   it would fail `compileJava` and void the verified green state.
+
+2. **Mixin injections as a verification subject.** Rejected: this project
+   ships **zero** Mixins. Introducing injection points would be a design
+   change requiring its own record, not a guardrail step. "Builds cleanly
+   without mixin crashes" is also not this project's acceptance standard —
+   the standard is 65 required game tests plus per-card test evidence.
+
+3. **"Legacy aspect registrations `Antiquitas`, `Modernitas`, `Echo`".**
+   Rejected: not Thaumcraft 4.2.3.5 aspects. The verified set is 48
+   definitions at 1:1 parity with the decompiled `Aspect.java`
+   (TC-M4-01 → `5ce3dee`). A task to "validate compatibility" of these
+   would invent gameplay — forbidden by the preservation brief — and would
+   corrupt the combination graph, since they have no original rules to port.
+
+4. **A generative "calibrated probability" gate (Jev) over worker actions,
+   wired to blocking.** Rejected as unsound here on two independent grounds.
+   (a) Two of its three gates have empty subject domains (see 2 and 3), so
+   they can only ever pass — that is false confidence, not a guardrail.
+   (b) Scoring a model's own proposal with that same model measures
+   agreement, not correctness. Every defect found during this port was found
+   by deterministic checks whose output could not be predicted in advance
+   (two JARs compared byte-for-byte and found identical; `link` returning
+   rc=0 while parents stayed empty; an unlink pass that silently ran zero
+   unlinks; a ledger reading 1028 `not_started`). A flag-and-block gate
+   would also reintroduce the block-storm failure mode that stalled this
+   board for three days (see D-012).
+
+**What is used instead** — deterministic and free: `compileJava` / `build`
+exit codes; `runGameTestServer` asserting "required tests passed"; CI green
+on the pushed SHA; `git merge-base --is-ancestor` before claiming a commit
+is on main; `git status` for tracked worktree deletions; the feature-matrix
+generator exiting non-zero on an unparseable table; and the verified-instance
+check before any ATM10 install.
+
+**Fidelity impact:** none. This record changes no game behaviour; it exists
+to prevent the loss of verified state.
+
+## D-012 — Chain concurrency: serial integration, and the stall hazard it creates
+
+The re-dispatch lane (the `-s` cards, created after 16 original cards hit the
+150/150 iteration ceiling) is a **strictly serial** chain: each card's parent
+is the previous card, so exactly one integration runs against `main` at a
+time. The reason is this project's dominant historical failure: parallel
+workers sharing one tree — and, in worktrees, concurrently merging to `main`
+— repeatedly broke `compileJava` for each other, collided on untracked WIP,
+and once produced a poisoned index with staged deletions of live code.
+
+Observed cost, 2026-10-24 → 2026-10-27. The chain head `t_49883b51`
+exhausted its iteration budget twice, `gave_up`, and sat `blocked`. Because
+every downstream card is gated on the head, the dispatcher had **nothing
+ready to spawn** for three days: `gateway.log` shows no dispatcher spawn for
+`thaumcraft-classic-port` between 10-25 02:19 and 10-27 18:26, and
+`git rev-list --count 378e8c6..origin/main` was **0** — three days of zero
+commits while the board looked merely "running". Nothing escalates a
+long-blocked chain head; it waits for a human to notice.
+
+Consequences adopted:
+
+- A blocked chain head is an **incident, not a resting state**. Re-dispatch
+  it, or split it, rather than letting it sit.
+- Every integration card carries `--max-runtime` (currently 2h). A **second**
+  iteration-exhaustion on the same card forces a split into smaller cards —
+  never a whole re-run at the same scope.
+- A stall longer than a few hours, with a blocked/idle head and no new commits,
+  should raise an alert rather than depend on someone checking by hand.
+
+**Fidelity impact:** none (process only).
