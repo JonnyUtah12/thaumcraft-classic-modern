@@ -5,6 +5,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
 import net.neoforged.bus.api.IEventBus;
@@ -119,6 +120,15 @@ public final class ModRegistration {
         // payment routed through TC-M4-02's cost chain. The GUI (gui_arcane_workbench)
         // stays on TC-M7-04.
         CatalogArcaneWorkbench.init(modEventBus);
+
+        // TC-M4-04-s: infusion altar core — the runic matrix + infusion pillar
+        // block entities hosted on blockStoneDevice (its variants 1-4, the
+        // arcane pedestal / matrix / two pillar orientations), the (block,
+        // variant) -> tile bindings, and the recipe type + serializer pair the
+        // 87 data files under data/thaumcraft/recipe/ resolve through. The
+        // matrix's client-side particles/runes stay on TC-M7-01 and the essentia
+        // jar that feeds it on TC-M4-06.
+        CatalogInfusion.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

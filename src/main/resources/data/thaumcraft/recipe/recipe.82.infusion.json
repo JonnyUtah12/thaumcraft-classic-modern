@@ -1,0 +1,74 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "ElementalAxe",
+  "research": "ELEMENTALAXE",
+  "instability": 1,
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "constant": "WATER",
+      "amount": 16
+    },
+    {
+      "aspect": "arbor",
+      "constant": "TREE",
+      "amount": 8
+    }
+  ],
+  "input": {
+    "item": "thaumcraft:itemaxethaumium"
+  },
+  "components": [
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 2
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 2
+      }
+    },
+    {
+      "item": "minecraft:diamond"
+    },
+    {
+      "item": "thaumcraft:blockmagicallog"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemaxeelemental",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemaxethaumium"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:diamond"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockmagicallog"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemaxeelemental"
+    }
+  ]
+}

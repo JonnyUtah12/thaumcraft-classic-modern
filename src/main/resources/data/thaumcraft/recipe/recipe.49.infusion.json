@@ -1,0 +1,72 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "WandCapSilver",
+  "research": "CAP_silver",
+  "instability": 4,
+  "aspects": [
+    {
+      "aspect": "potentia",
+      "constant": "ENERGY",
+      "amount": 8
+    },
+    {
+      "aspect": "auram",
+      "constant": "AURA",
+      "amount": 4
+    }
+  ],
+  "input": {
+    "type": "neoforge:components",
+    "items": [
+      "thaumcraft:wandcap"
+    ],
+    "components": {
+      "thaumcraft:item_meta": 5
+    }
+  },
+  "components": [
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 14
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 14
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:wandcap",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 4
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:not",
+      "value": {
+        "type": "neoforge:tag_empty",
+        "tag": "c:ingots/silver"
+      }
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcap"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

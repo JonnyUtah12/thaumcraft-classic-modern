@@ -1,0 +1,114 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "ArcaneBore",
+  "research": "ARCANEBORE",
+  "instability": 4,
+  "aspects": [
+    {
+      "aspect": "potentia",
+      "constant": "ENERGY",
+      "amount": 16
+    },
+    {
+      "aspect": "perfodio",
+      "constant": "MINE",
+      "amount": 32
+    },
+    {
+      "aspect": "machina",
+      "constant": "MECHANISM",
+      "amount": 32
+    },
+    {
+      "aspect": "vacuos",
+      "constant": "VOID",
+      "amount": 16
+    },
+    {
+      "aspect": "motus",
+      "constant": "MOTION",
+      "amount": 16
+    }
+  ],
+  "input": {
+    "item": "minecraft:piston"
+  },
+  "components": [
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blockwoodendevice"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 6
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blockwoodendevice"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 6
+      }
+    },
+    {
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "item": "minecraft:diamond_pickaxe"
+    },
+    {
+      "item": "minecraft:diamond_shovel"
+    },
+    {
+      "item": "thaumcraft:itemshard"
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 3
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:blockwoodendevice",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 5
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:piston"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockwoodendevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:diamond_pickaxe"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:diamond_shovel"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

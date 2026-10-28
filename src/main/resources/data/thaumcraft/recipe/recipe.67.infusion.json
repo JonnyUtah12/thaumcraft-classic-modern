@@ -1,0 +1,74 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "AdvancedGolem",
+  "research": "ADVANCEDGOLEM",
+  "instability": 3,
+  "aspects": [
+    {
+      "aspect": "cognitio",
+      "constant": "MIND",
+      "amount": 8
+    },
+    {
+      "aspect": "sensus",
+      "constant": "SENSES",
+      "amount": 8
+    },
+    {
+      "aspect": "victus",
+      "constant": "LIFE",
+      "amount": 8
+    }
+  ],
+  "input": {
+    "item": "thaumcraft:itemgolemplacer"
+  },
+  "components": [
+    {
+      "item": "minecraft:redstone"
+    },
+    {
+      "item": "minecraft:glowstone_dust"
+    },
+    {
+      "item": "minecraft:gunpowder"
+    },
+    {
+      "item": "thaumcraft:blockjar"
+    },
+    {
+      "item": "thaumcraft:itemzombiebrain"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output_tag": {
+    "label": "advanced",
+    "value": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgolemplacer"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:redstone"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:glowstone_dust"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:gunpowder"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockjar"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemzombiebrain"
+    }
+  ]
+}

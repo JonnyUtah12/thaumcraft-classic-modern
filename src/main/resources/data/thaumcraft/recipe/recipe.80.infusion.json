@@ -1,0 +1,59 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "MirrorHand",
+  "research": "MIRRORHAND",
+  "instability": 5,
+  "aspects": [
+    {
+      "aspect": "instrumentum",
+      "constant": "TOOL",
+      "amount": 16
+    },
+    {
+      "aspect": "iter",
+      "constant": "TRAVEL",
+      "amount": 16
+    }
+  ],
+  "input": {
+    "item": "thaumcraft:blockmirror"
+  },
+  "components": [
+    {
+      "item": "minecraft:stick"
+    },
+    {
+      "item": "minecraft:compass"
+    },
+    {
+      "item": "minecraft:map"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:handmirror",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockmirror"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:stick"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:compass"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:map"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:handmirror"
+    }
+  ]
+}

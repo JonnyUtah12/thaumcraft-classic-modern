@@ -1,0 +1,113 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "VisAmulet",
+  "research": "VISAMULET",
+  "instability": 6,
+  "aspects": [
+    {
+      "aspect": "auram",
+      "constant": "AURA",
+      "amount": 24
+    },
+    {
+      "aspect": "potentia",
+      "constant": "ENERGY",
+      "amount": 64
+    },
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 64
+    },
+    {
+      "aspect": "vacuos",
+      "constant": "VOID",
+      "amount": 24
+    }
+  ],
+  "input": {
+    "item": "thaumcraft:itembaubleblanks"
+  },
+  "components": [
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 15
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blockcrystal"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 6
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blockcrystal"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 6
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 15
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blockcrystal"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 6
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blockcrystal"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 6
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemamuletvis",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 1
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itembaubleblanks"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcrystal"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemamuletvis"
+    }
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "VoidRobeLegs",
+  "research": "ARMORVOIDFORTRESS",
+  "instability": 6,
+  "aspects": [
+    {
+      "aspect": "metallum",
+      "constant": "METAL",
+      "amount": 20
+    },
+    {
+      "aspect": "tutamen",
+      "constant": "ARMOR",
+      "amount": 20
+    },
+    {
+      "aspect": "pannus",
+      "constant": "CLOTH",
+      "amount": 20
+    },
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 16
+    },
+    {
+      "aspect": "alienis",
+      "constant": "ELDRITCH",
+      "amount": 16
+    },
+    {
+      "aspect": "vacuos",
+      "constant": "VOID",
+      "amount": 20
+    }
+  ],
+  "input": {
+    "item": "thaumcraft:itemleggingsvoid"
+  },
+  "components": [
+    {
+      "item": "thaumcraft:itemleggingsrobe"
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 16
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 2
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 14
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 7
+      }
+    },
+    {
+      "item": "minecraft:leather"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemleggingsvoidfortress",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemleggingsvoid"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemleggingsrobe"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:leather"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemleggingsvoidfortress"
+    }
+  ]
+}

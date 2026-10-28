@@ -1,0 +1,114 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "RunicGirdle",
+  "research": "RUNICARMOR",
+  "instability": 4,
+  "aspects": [
+    {
+      "aspect": "tutamen",
+      "constant": "ARMOR",
+      "amount": 30
+    },
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 50
+    },
+    {
+      "aspect": "potentia",
+      "constant": "ENERGY",
+      "amount": 50
+    }
+  ],
+  "input": {
+    "type": "neoforge:components",
+    "items": [
+      "thaumcraft:itembaubleblanks"
+    ],
+    "components": {
+      "thaumcraft:item_meta": 2
+    }
+  },
+  "components": [
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 15
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 6
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 7
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 1
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 1
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 1
+      }
+    },
+    {
+      "item": "thaumcraft:iteminkwell"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemgirdlerunic",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itembaubleblanks"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:iteminkwell"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgirdlerunic"
+    }
+  ]
+}

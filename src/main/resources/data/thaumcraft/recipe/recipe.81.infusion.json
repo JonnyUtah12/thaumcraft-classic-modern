@@ -1,0 +1,72 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "MirrorEssentia",
+  "research": "MIRRORESSENTIA",
+  "instability": 2,
+  "aspects": [
+    {
+      "aspect": "iter",
+      "constant": "TRAVEL",
+      "amount": 8
+    },
+    {
+      "aspect": "aqua",
+      "constant": "WATER",
+      "amount": 8
+    },
+    {
+      "aspect": "permutatio",
+      "constant": "EXCHANGE",
+      "amount": 8
+    }
+  ],
+  "input": {
+    "type": "neoforge:components",
+    "items": [
+      "thaumcraft:itemresource"
+    ],
+    "components": {
+      "thaumcraft:item_meta": 10
+    }
+  },
+  "components": [
+    {
+      "item": "minecraft:iron_ingot"
+    },
+    {
+      "item": "minecraft:iron_ingot"
+    },
+    {
+      "item": "minecraft:iron_ingot"
+    },
+    {
+      "item": "minecraft:ender_pearl"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:blockmirror",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 6
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockmirror"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:iron_ingot"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:ender_pearl"
+    }
+  ]
+}

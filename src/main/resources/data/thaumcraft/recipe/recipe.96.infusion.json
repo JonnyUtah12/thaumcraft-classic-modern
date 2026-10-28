@@ -1,0 +1,94 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "LampFertility",
+  "research": "LAMPFERTILITY",
+  "instability": 4,
+  "aspects": [
+    {
+      "aspect": "bestia",
+      "constant": "BEAST",
+      "amount": 16
+    },
+    {
+      "aspect": "victus",
+      "constant": "LIFE",
+      "amount": 16
+    },
+    {
+      "aspect": "lux",
+      "constant": "LIGHT",
+      "amount": 8
+    }
+  ],
+  "input": {
+    "type": "neoforge:components",
+    "items": [
+      "thaumcraft:blockmetaldevice"
+    ],
+    "components": {
+      "thaumcraft:item_meta": 7
+    }
+  },
+  "components": [
+    {
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "item": "minecraft:wheat"
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 1
+      }
+    },
+    {
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "item": "minecraft:carrot"
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 1
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:blockmetaldevice",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 13
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockmetaldevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:wheat"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:carrot"
+    }
+  ]
+}

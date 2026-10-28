@@ -1,0 +1,119 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "VoidRobeHelm",
+  "research": "ARMORVOIDFORTRESS",
+  "instability": 6,
+  "aspects": [
+    {
+      "aspect": "metallum",
+      "constant": "METAL",
+      "amount": 16
+    },
+    {
+      "aspect": "sensus",
+      "constant": "SENSES",
+      "amount": 16
+    },
+    {
+      "aspect": "tutamen",
+      "constant": "ARMOR",
+      "amount": 16
+    },
+    {
+      "aspect": "pannus",
+      "constant": "CLOTH",
+      "amount": 16
+    },
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 16
+    },
+    {
+      "aspect": "alienis",
+      "constant": "ELDRITCH",
+      "amount": 16
+    },
+    {
+      "aspect": "vacuos",
+      "constant": "VOID",
+      "amount": 16
+    }
+  ],
+  "input": {
+    "item": "thaumcraft:itemhelmetvoid"
+  },
+  "components": [
+    {
+      "item": "thaumcraft:itemgoggles"
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 7
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 7
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 14
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 7
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 7
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemhelmetvoidfortress",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemhelmetvoid"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgoggles"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemhelmetvoidfortress"
+    }
+  ]
+}

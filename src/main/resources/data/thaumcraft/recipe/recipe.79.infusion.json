@@ -1,0 +1,69 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "Mirror",
+  "research": "MIRROR",
+  "instability": 1,
+  "aspects": [
+    {
+      "aspect": "iter",
+      "constant": "TRAVEL",
+      "amount": 8
+    },
+    {
+      "aspect": "tenebrae",
+      "constant": "DARKNESS",
+      "amount": 8
+    },
+    {
+      "aspect": "permutatio",
+      "constant": "EXCHANGE",
+      "amount": 8
+    }
+  ],
+  "input": {
+    "type": "neoforge:components",
+    "items": [
+      "thaumcraft:itemresource"
+    ],
+    "components": {
+      "thaumcraft:item_meta": 10
+    }
+  },
+  "components": [
+    {
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "item": "minecraft:ender_pearl"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:blockmirror",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockmirror"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:ender_pearl"
+    }
+  ]
+}

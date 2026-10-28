@@ -1,0 +1,120 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "FocusWarding",
+  "research": "FOCUSWARDING",
+  "instability": 4,
+  "aspects": [
+    {
+      "aspect": "terra",
+      "constant": "EARTH",
+      "amount": 25
+    },
+    {
+      "aspect": "tutamen",
+      "constant": "ARMOR",
+      "amount": 25
+    },
+    {
+      "aspect": "ordo",
+      "constant": "ORDER",
+      "amount": 25
+    },
+    {
+      "aspect": "cognitio",
+      "constant": "MIND",
+      "amount": 10
+    }
+  ],
+  "input": {
+    "item": "minecraft:nether_star"
+  },
+  "components": [
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 3
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 3
+      }
+    },
+    {
+      "item": "minecraft:quartz"
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 4
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 3
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 3
+      }
+    },
+    {
+      "item": "minecraft:quartz"
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 4
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:focuswarding",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:nether_star"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:quartz"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:focuswarding"
+    }
+  ]
+}

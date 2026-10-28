@@ -1,0 +1,82 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "ThaumiumFortressHelm",
+  "research": "ARMORFORTRESS",
+  "instability": 3,
+  "aspects": [
+    {
+      "aspect": "metallum",
+      "constant": "METAL",
+      "amount": 24
+    },
+    {
+      "aspect": "tutamen",
+      "constant": "ARMOR",
+      "amount": 16
+    },
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 16
+    }
+  ],
+  "input": {
+    "item": "thaumcraft:itemhelmetthaumium"
+  },
+  "components": [
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 2
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 2
+      }
+    },
+    {
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "item": "minecraft:emerald"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemhelmetfortress",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemhelmetthaumium"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:emerald"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemhelmetfortress"
+    }
+  ]
+}

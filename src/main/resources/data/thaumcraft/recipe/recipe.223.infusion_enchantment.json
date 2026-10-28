@@ -1,0 +1,56 @@
+{
+  "type": "thaumcraft:infusion_enchantment",
+  "original_key": "InfEnch20",
+  "research": "INFUSIONENCHANTMENT",
+  "enchantment": "minecraft:flame",
+  "instability": 3,
+  "aspects": [
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 4
+    },
+    {
+      "aspect": "telum",
+      "constant": "WEAPON",
+      "amount": 4
+    },
+    {
+      "aspect": "ignis",
+      "constant": "FIRE",
+      "amount": 8
+    }
+  ],
+  "components": [
+    {
+      "item": "minecraft:bow"
+    },
+    {
+      "item": "minecraft:blaze_powder"
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 14
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:bow"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:blaze_powder"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

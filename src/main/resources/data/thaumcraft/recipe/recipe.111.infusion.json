@@ -1,0 +1,68 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "EldritchEye",
+  "research": "OCULUS",
+  "instability": 5,
+  "aspects": [
+    {
+      "aspect": "alienis",
+      "constant": "ELDRITCH",
+      "amount": 64
+    },
+    {
+      "aspect": "vacuos",
+      "constant": "VOID",
+      "amount": 16
+    },
+    {
+      "aspect": "tenebrae",
+      "constant": "DARKNESS",
+      "amount": 16
+    },
+    {
+      "aspect": "iter",
+      "constant": "TRAVEL",
+      "amount": 16
+    }
+  ],
+  "input": {
+    "item": "minecraft:ender_eye"
+  },
+  "components": [
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 17
+      }
+    },
+    {
+      "item": "minecraft:gold_ingot"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemeldritchobject",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:ender_eye"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemeldritchobject"
+    }
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "RunicAmuletEmergency",
+  "research": "RUNICEMERGENCY",
+  "instability": 7,
+  "aspects": [
+    {
+      "aspect": "tutamen",
+      "constant": "ARMOR",
+      "amount": 20
+    },
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 35
+    },
+    {
+      "aspect": "terra",
+      "constant": "EARTH",
+      "amount": 32
+    },
+    {
+      "aspect": "vacuos",
+      "constant": "VOID",
+      "amount": 32
+    }
+  ],
+  "input": {
+    "item": "thaumcraft:itemamuletrunic"
+  },
+  "components": [
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 6
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 3
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 3
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "minecraft:potion"
+      ],
+      "components": {
+        "minecraft:potion_contents": {
+          "potion": "minecraft:strong_poison"
+        }
+      },
+      "_known_difference": "original: extended+upgraded poison; modern has no strong+long poison"
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 3
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 3
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemamuletrunic",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 1
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemamuletrunic"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:potion"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "type": "thaumcraft:infusion_enchantment",
+  "original_key": "InfEnchRepair",
+  "research": "INFUSIONENCHANTMENT",
+  "enchantment": "thaumcraft:ench_repair",
+  "instability": 4,
+  "aspects": [
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 8
+    },
+    {
+      "aspect": "fabrico",
+      "constant": "CRAFT",
+      "amount": 10
+    },
+    {
+      "aspect": "ordo",
+      "constant": "ORDER",
+      "amount": 10
+    }
+  ],
+  "components": [
+    {
+      "item": "minecraft:anvil"
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 14
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:anvil"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

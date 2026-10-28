@@ -145,8 +145,8 @@ Thaumcraft:TileMirror,thaumcraft:tilemirror,tile_entity,TileMirror,done,tested,,
 Thaumcraft:TileMirrorEssentia,thaumcraft:tilemirroressentia,tile_entity,TileMirrorEssentia,done,tested,,class=TileMirrorEssentia
 Thaumcraft:TilePedestal,thaumcraft:tilepedestal,tile_entity,TilePedestal,done,tested,,class=TilePedestal
 Thaumcraft:TileWandPedestal,thaumcraft:tilewandpedestal,tile_entity,TileWandPedestal,done,tested,,class=TileWandPedestal
-Thaumcraft:TileInfusionStone,thaumcraft:tileinfusionstone,tile_entity,TileInfusionMatrix,not_started,not_tested,,class=TileInfusionMatrix
-Thaumcraft:TileInfusionPillar,thaumcraft:tileinfusionpillar,tile_entity,TileInfusionPillar,not_started,not_tested,,class=TileInfusionPillar
+Thaumcraft:TileInfusionStone,thaumcraft:tileinfusionstone,tile_entity,TileInfusionMatrix,done,tested,,class=TileInfusionMatrix
+Thaumcraft:TileInfusionPillar,thaumcraft:tileinfusionpillar,tile_entity,TileInfusionPillar,done,tested,,class=TileInfusionPillar
 Thaumcraft:TileAlchemyFurnace,thaumcraft:tilealchemyfurnace,tile_entity,TileAlchemyFurnace,not_started,not_tested,,class=TileAlchemyFurnace
 Thaumcraft:TileAlchemyFurnaceAdvanced,thaumcraft:tilealchemyfurnaceadvanced,tile_entity,TileAlchemyFurnaceAdvanced,not_started,not_tested,,class=TileAlchemyFurnaceAdvanced
 Thaumcraft:TileAlchemyFurnaceAdvancedNozzle,thaumcraft:tilealchemyfurnaceadvancednozzle,tile_entity,TileAlchemyFurnaceAdvancedNozzle,not_started,not_tested,,class=TileAlchemyFurnaceAdvancedNozzle
@@ -673,25 +673,25 @@ Thaumcraft:recipe.59.infusion,thaumcraft:recipe.59.infusion,recipe,"WandRod, 1, 
 Thaumcraft:recipe.60.infusion,thaumcraft:recipe.60.infusion,recipe,FocusHellbat,not_started,not_tested,,type=infusion research=FOCUSHELLBAT
 Thaumcraft:recipe.61.infusion,thaumcraft:recipe.61.infusion,recipe,FocusPortableHole,not_started,not_tested,,type=infusion research=FOCUSPORTABLEHOLE
 Thaumcraft:recipe.62.infusion,thaumcraft:recipe.62.infusion,recipe,FocusWarding,not_started,not_tested,,type=infusion research=FOCUSWARDING
-Thaumcraft:recipe.63.infusion,thaumcraft:recipe.63.infusion,recipe,"blockStoneDevice, 1, 5",not_started,not_tested,,type=infusion research=WANDPED
-Thaumcraft:recipe.64.infusion,thaumcraft:recipe.64.infusion,recipe,"blockStoneDevice, 1, 8",not_started,not_tested,,type=infusion research=WANDPEDFOC
-Thaumcraft:recipe.65.infusion,thaumcraft:recipe.65.infusion,recipe,"blockStoneDevice, 1, 10",not_started,not_tested,,type=infusion research=NODESTABILIZERADV
+Thaumcraft:recipe.63.infusion,thaumcraft:recipe.63.infusion,recipe,"blockStoneDevice, 1, 5",done,tested,,type=infusion research=WANDPED
+Thaumcraft:recipe.64.infusion,thaumcraft:recipe.64.infusion,recipe,"blockStoneDevice, 1, 8",done,tested,,type=infusion research=WANDPEDFOC
+Thaumcraft:recipe.65.infusion,thaumcraft:recipe.65.infusion,recipe,"blockStoneDevice, 1, 10",done,tested,,type=infusion research=NODESTABILIZERADV
 Thaumcraft:recipe.66.infusion,thaumcraft:recipe.66.infusion,recipe,"blockJar, 1, 1",not_started,not_tested,,type=infusion research=JARBRAIN
 Thaumcraft:recipe.67.infusion,thaumcraft:recipe.67.infusion,recipe,"ItemGolemPlacer, 1, 32767",not_started,not_tested,,type=infusion research=ADVANCEDGOLEM
 Thaumcraft:recipe.68.infusion,thaumcraft:recipe.68.infusion,recipe,HoverHarness,not_started,not_tested,,type=infusion research=HOVERHARNESS
-Thaumcraft:recipe.69.infusion,thaumcraft:recipe.69.infusion,recipe,ItemGirdleHover,not_started,not_tested,,type=infusion research=HOVERGIRDLE
-Thaumcraft:recipe.70.infusion,thaumcraft:recipe.70.infusion,recipe,"ItemAmuletVis, 1, 1",not_started,not_tested,,type=infusion research=VISAMULET
+Thaumcraft:recipe.69.infusion,thaumcraft:recipe.69.infusion,recipe,ItemGirdleHover,done,tested,,type=infusion research=HOVERGIRDLE
+Thaumcraft:recipe.70.infusion,thaumcraft:recipe.70.infusion,recipe,"ItemAmuletVis, 1, 1",done,tested,,type=infusion research=VISAMULET
 Thaumcraft:recipe.71.infusion,thaumcraft:recipe.71.infusion,recipe,"ItemAmuletRunic, 1, 0",not_started,not_tested,,type=infusion research=RUNICARMOR
-Thaumcraft:recipe.72.infusion,thaumcraft:recipe.72.infusion,recipe,"ItemAmuletRunic, 1, 1",not_started,not_tested,,type=infusion research=RUNICEMERGENCY
+Thaumcraft:recipe.72.infusion,thaumcraft:recipe.72.infusion,recipe,"ItemAmuletRunic, 1, 1",done,tested,,type=infusion research=RUNICEMERGENCY
 Thaumcraft:recipe.73.infusion,thaumcraft:recipe.73.infusion,recipe,"ItemRingRunic, 1, 1",not_started,not_tested,,type=infusion research=RUNICARMOR
-Thaumcraft:recipe.74.infusion,thaumcraft:recipe.74.infusion,recipe,"ItemRingRunic, 1, 2",not_started,not_tested,,type=infusion research=RUNICCHARGED
-Thaumcraft:recipe.75.infusion,thaumcraft:recipe.75.infusion,recipe,"ItemRingRunic, 1, 3",not_started,not_tested,,type=infusion research=RUNICHEALING
+Thaumcraft:recipe.74.infusion,thaumcraft:recipe.74.infusion,recipe,"ItemRingRunic, 1, 2",done,tested,,type=infusion research=RUNICCHARGED
+Thaumcraft:recipe.75.infusion,thaumcraft:recipe.75.infusion,recipe,"ItemRingRunic, 1, 3",done,tested,,type=infusion research=RUNICHEALING
 Thaumcraft:recipe.76.infusion,thaumcraft:recipe.76.infusion,recipe,"ItemGirdleRunic, 1, 0",not_started,not_tested,,type=infusion research=RUNICARMOR
-Thaumcraft:recipe.77.infusion,thaumcraft:recipe.77.infusion,recipe,"ItemGirdleRunic, 1, 1",not_started,not_tested,,type=infusion research=RUNICKINETIC
-Thaumcraft:recipe.78.infusion,thaumcraft:recipe.78.infusion,recipe,"ItemGirdleRunic, 1, 1",not_started,not_tested,,type=infusion research=RUNICKINETIC
-Thaumcraft:recipe.79.infusion,thaumcraft:recipe.79.infusion,recipe,"blockMirror, 1, 0",not_started,not_tested,,type=infusion research=MIRROR
-Thaumcraft:recipe.80.infusion,thaumcraft:recipe.80.infusion,recipe,HandMirror,not_started,not_tested,,type=infusion research=MIRRORHAND
-Thaumcraft:recipe.81.infusion,thaumcraft:recipe.81.infusion,recipe,"blockMirror, 1, 6",not_started,not_tested,,type=infusion research=MIRRORESSENTIA
+Thaumcraft:recipe.77.infusion,thaumcraft:recipe.77.infusion,recipe,"ItemGirdleRunic, 1, 1",done,tested,,type=infusion research=RUNICKINETIC
+Thaumcraft:recipe.78.infusion,thaumcraft:recipe.78.infusion,recipe,"ItemGirdleRunic, 1, 1",done,tested,,type=infusion research=RUNICKINETIC
+Thaumcraft:recipe.79.infusion,thaumcraft:recipe.79.infusion,recipe,"blockMirror, 1, 0",done,tested,,type=infusion research=MIRROR
+Thaumcraft:recipe.80.infusion,thaumcraft:recipe.80.infusion,recipe,HandMirror,done,tested,,type=infusion research=MIRRORHAND
+Thaumcraft:recipe.81.infusion,thaumcraft:recipe.81.infusion,recipe,"blockMirror, 1, 6",done,tested,,type=infusion research=MIRRORESSENTIA
 Thaumcraft:recipe.82.infusion,thaumcraft:recipe.82.infusion,recipe,ItemAxeElemental,not_started,not_tested,,type=infusion research=ELEMENTALAXE
 Thaumcraft:recipe.83.infusion,thaumcraft:recipe.83.infusion,recipe,ItemPickaxeElemental,not_started,not_tested,,type=infusion research=ELEMENTALPICK
 Thaumcraft:recipe.84.infusion,thaumcraft:recipe.84.infusion,recipe,ItemSwordElemental,not_started,not_tested,,type=infusion research=ELEMENTALSWORD
@@ -703,10 +703,10 @@ Thaumcraft:recipe.89.infusion,thaumcraft:recipe.89.infusion,recipe,"ItemGolemCor
 Thaumcraft:recipe.90.infusion,thaumcraft:recipe.90.infusion,recipe,"ItemGolemCore, 1, 7",not_started,not_tested,,type=infusion research=CORELUMBER
 Thaumcraft:recipe.91.infusion,thaumcraft:recipe.91.infusion,recipe,"ItemGolemCore, 1, 11",not_started,not_tested,,type=infusion research=COREFISHING
 Thaumcraft:recipe.92.infusion,thaumcraft:recipe.92.infusion,recipe,"ItemGolemCore, 1, 8",not_started,not_tested,,type=infusion research=COREUSE
-Thaumcraft:recipe.93.infusion,thaumcraft:recipe.93.infusion,recipe,"blockWoodenDevice, 1, 5",not_started,not_tested,,type=infusion research=ARCANEBORE
+Thaumcraft:recipe.93.infusion,thaumcraft:recipe.93.infusion,recipe,"blockWoodenDevice, 1, 5",done,tested,,type=infusion research=ARCANEBORE
 Thaumcraft:recipe.94.infusion,thaumcraft:recipe.94.infusion,recipe,TrunkSpawner,not_started,not_tested,,type=infusion research=TRAVELTRUNK
-Thaumcraft:recipe.95.infusion,thaumcraft:recipe.95.infusion,recipe,"blockMetalDevice, 1, 8",not_started,not_tested,,type=infusion research=LAMPGROWTH
-Thaumcraft:recipe.96.infusion,thaumcraft:recipe.96.infusion,recipe,"blockMetalDevice, 1, 13",not_started,not_tested,,type=infusion research=LAMPFERTILITY
+Thaumcraft:recipe.95.infusion,thaumcraft:recipe.95.infusion,recipe,"blockMetalDevice, 1, 8",done,tested,,type=infusion research=LAMPGROWTH
+Thaumcraft:recipe.96.infusion,thaumcraft:recipe.96.infusion,recipe,"blockMetalDevice, 1, 13",done,tested,,type=infusion research=LAMPFERTILITY
 Thaumcraft:recipe.97.infusion,thaumcraft:recipe.97.infusion,recipe,ItemHelmetFortress,not_started,not_tested,,type=infusion research=ARMORFORTRESS
 Thaumcraft:recipe.98.infusion,thaumcraft:recipe.98.infusion,recipe,ItemChestplateFortress,not_started,not_tested,,type=infusion research=ARMORFORTRESS
 Thaumcraft:recipe.99.infusion,thaumcraft:recipe.99.infusion,recipe,ItemLeggingsFortress,not_started,not_tested,,type=infusion research=ARMORFORTRESS
@@ -719,7 +719,7 @@ Thaumcraft:recipe.105.infusion,thaumcraft:recipe.105.infusion,recipe,"ItemHelmet
 Thaumcraft:recipe.106.infusion,thaumcraft:recipe.106.infusion,recipe,"ItemHelmetFortress, 1, 32767",not_started,not_tested,,type=infusion research=MASKSIPPINGFIEND
 Thaumcraft:recipe.107.infusion,thaumcraft:recipe.107.infusion,recipe,ItemSanityChecker,not_started,not_tested,,type=infusion research=SANITYCHECK
 Thaumcraft:recipe.108.infusion,thaumcraft:recipe.108.infusion,recipe,blockEssentiaReservoir,not_started,not_tested,,type=infusion research=ESSENTIARESERVOIR
-Thaumcraft:recipe.109.infusion,thaumcraft:recipe.109.infusion,recipe,ItemCompassStone,not_started,not_tested,,type=infusion research=SINSTONE
+Thaumcraft:recipe.109.infusion,thaumcraft:recipe.109.infusion,recipe,ItemCompassStone,done,tested,,type=infusion research=SINSTONE
 Thaumcraft:recipe.110.infusion,thaumcraft:recipe.110.infusion,recipe,ItemPrimalCrusher,not_started,not_tested,,type=infusion research=PRIMALCRUSHER
 Thaumcraft:recipe.111.infusion,thaumcraft:recipe.111.infusion,recipe,ItemEldritchObject,not_started,not_tested,,type=infusion research=OCULUS
 Thaumcraft:recipe.112.arcane_shaped,thaumcraft:recipe.112.arcane_shaped,recipe,"Blocks.field_150325_L, 1, a",not_started,not_tested,,type=arcane_shaped research=BANNERS
@@ -813,28 +813,28 @@ Thaumcraft:recipe.199.arcane_shapeless,thaumcraft:recipe.199.arcane_shapeless,re
 Thaumcraft:recipe.200.arcane_shapeless,thaumcraft:recipe.200.arcane_shapeless,recipe,"blockTube, 1, 6",done,tested,,type=arcane_shapeless research=TUBEFILTER
 Thaumcraft:recipe.201.infusion_enchantment,thaumcraft:recipe.201.infusion_enchantment,recipe,Enchantment.field_77331_b[ThaumcraftApi.enchantRepair],not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
 Thaumcraft:recipe.202.infusion_enchantment,thaumcraft:recipe.202.infusion_enchantment,recipe,Enchantment.field_77331_b[ThaumcraftApi.enchantHaste],not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.203.infusion_enchantment,thaumcraft:recipe.203.infusion_enchantment,recipe,Enchantment.field_77332_c,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.204.infusion_enchantment,thaumcraft:recipe.204.infusion_enchantment,recipe,Enchantment.field_77329_d,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.205.infusion_enchantment,thaumcraft:recipe.205.infusion_enchantment,recipe,Enchantment.field_77327_f,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.206.infusion_enchantment,thaumcraft:recipe.206.infusion_enchantment,recipe,Enchantment.field_77328_g,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.207.infusion_enchantment,thaumcraft:recipe.207.infusion_enchantment,recipe,Enchantment.field_77330_e,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.208.infusion_enchantment,thaumcraft:recipe.208.infusion_enchantment,recipe,Enchantment.field_77340_h,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.209.infusion_enchantment,thaumcraft:recipe.209.infusion_enchantment,recipe,Enchantment.field_77341_i,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.210.infusion_enchantment,thaumcraft:recipe.210.infusion_enchantment,recipe,Enchantment.field_92091_k,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.211.infusion_enchantment,thaumcraft:recipe.211.infusion_enchantment,recipe,Enchantment.field_77338_j,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.212.infusion_enchantment,thaumcraft:recipe.212.infusion_enchantment,recipe,Enchantment.field_77339_k,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.213.infusion_enchantment,thaumcraft:recipe.213.infusion_enchantment,recipe,Enchantment.field_77336_l,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.214.infusion_enchantment,thaumcraft:recipe.214.infusion_enchantment,recipe,Enchantment.field_77337_m,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.215.infusion_enchantment,thaumcraft:recipe.215.infusion_enchantment,recipe,Enchantment.field_77334_n,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.216.infusion_enchantment,thaumcraft:recipe.216.infusion_enchantment,recipe,Enchantment.field_77335_o,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.217.infusion_enchantment,thaumcraft:recipe.217.infusion_enchantment,recipe,Enchantment.field_77349_p,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.218.infusion_enchantment,thaumcraft:recipe.218.infusion_enchantment,recipe,Enchantment.field_77348_q,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.219.infusion_enchantment,thaumcraft:recipe.219.infusion_enchantment,recipe,Enchantment.field_77347_r,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.220.infusion_enchantment,thaumcraft:recipe.220.infusion_enchantment,recipe,Enchantment.field_77346_s,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.221.infusion_enchantment,thaumcraft:recipe.221.infusion_enchantment,recipe,Enchantment.field_77345_t,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.222.infusion_enchantment,thaumcraft:recipe.222.infusion_enchantment,recipe,Enchantment.field_77344_u,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.223.infusion_enchantment,thaumcraft:recipe.223.infusion_enchantment,recipe,Enchantment.field_77343_v,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.224.infusion_enchantment,thaumcraft:recipe.224.infusion_enchantment,recipe,Enchantment.field_77342_w,not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.203.infusion_enchantment,thaumcraft:recipe.203.infusion_enchantment,recipe,Enchantment.field_77332_c,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.204.infusion_enchantment,thaumcraft:recipe.204.infusion_enchantment,recipe,Enchantment.field_77329_d,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.205.infusion_enchantment,thaumcraft:recipe.205.infusion_enchantment,recipe,Enchantment.field_77327_f,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.206.infusion_enchantment,thaumcraft:recipe.206.infusion_enchantment,recipe,Enchantment.field_77328_g,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.207.infusion_enchantment,thaumcraft:recipe.207.infusion_enchantment,recipe,Enchantment.field_77330_e,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.208.infusion_enchantment,thaumcraft:recipe.208.infusion_enchantment,recipe,Enchantment.field_77340_h,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.209.infusion_enchantment,thaumcraft:recipe.209.infusion_enchantment,recipe,Enchantment.field_77341_i,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.210.infusion_enchantment,thaumcraft:recipe.210.infusion_enchantment,recipe,Enchantment.field_92091_k,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.211.infusion_enchantment,thaumcraft:recipe.211.infusion_enchantment,recipe,Enchantment.field_77338_j,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.212.infusion_enchantment,thaumcraft:recipe.212.infusion_enchantment,recipe,Enchantment.field_77339_k,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.213.infusion_enchantment,thaumcraft:recipe.213.infusion_enchantment,recipe,Enchantment.field_77336_l,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.214.infusion_enchantment,thaumcraft:recipe.214.infusion_enchantment,recipe,Enchantment.field_77337_m,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.215.infusion_enchantment,thaumcraft:recipe.215.infusion_enchantment,recipe,Enchantment.field_77334_n,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.216.infusion_enchantment,thaumcraft:recipe.216.infusion_enchantment,recipe,Enchantment.field_77335_o,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.217.infusion_enchantment,thaumcraft:recipe.217.infusion_enchantment,recipe,Enchantment.field_77349_p,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.218.infusion_enchantment,thaumcraft:recipe.218.infusion_enchantment,recipe,Enchantment.field_77348_q,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.219.infusion_enchantment,thaumcraft:recipe.219.infusion_enchantment,recipe,Enchantment.field_77347_r,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.220.infusion_enchantment,thaumcraft:recipe.220.infusion_enchantment,recipe,Enchantment.field_77346_s,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.221.infusion_enchantment,thaumcraft:recipe.221.infusion_enchantment,recipe,Enchantment.field_77345_t,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.222.infusion_enchantment,thaumcraft:recipe.222.infusion_enchantment,recipe,Enchantment.field_77344_u,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.223.infusion_enchantment,thaumcraft:recipe.223.infusion_enchantment,recipe,Enchantment.field_77343_v,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.224.infusion_enchantment,thaumcraft:recipe.224.infusion_enchantment,recipe,Enchantment.field_77342_w,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
 Thaumcraft:recipe.225.smelting_bonus,thaumcraft:recipe.225.smelting_bonus,recipe,"Items.field_151074_bl, 0, 0)",not_started,not_tested,,type=smelting_bonus research=-
 Thaumcraft:recipe.226.smelting_bonus,thaumcraft:recipe.226.smelting_bonus,recipe,"ItemNugget, 0, 0)",not_started,not_tested,,type=smelting_bonus research=-
 Thaumcraft:recipe.227.smelting_bonus,thaumcraft:recipe.227.smelting_bonus,recipe,"ItemNugget, 0, 5)",not_started,not_tested,,type=smelting_bonus research=-

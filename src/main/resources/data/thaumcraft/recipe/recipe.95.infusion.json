@@ -1,0 +1,90 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "LampGrowth",
+  "research": "LAMPGROWTH",
+  "instability": 4,
+  "aspects": [
+    {
+      "aspect": "herba",
+      "constant": "PLANT",
+      "amount": 16
+    },
+    {
+      "aspect": "lux",
+      "constant": "LIGHT",
+      "amount": 8
+    },
+    {
+      "aspect": "victus",
+      "constant": "LIFE",
+      "amount": 16
+    }
+  ],
+  "input": {
+    "type": "neoforge:components",
+    "items": [
+      "thaumcraft:blockmetaldevice"
+    ],
+    "components": {
+      "thaumcraft:item_meta": 7
+    }
+  },
+  "components": [
+    {
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "item": "minecraft:bone_meal"
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 3
+      }
+    },
+    {
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "item": "minecraft:bone_meal"
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 3
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:blockmetaldevice",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 8
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockmetaldevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:bone_meal"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

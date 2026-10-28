@@ -1,0 +1,79 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "ElementalHoe",
+  "research": "ELEMENTALHOE",
+  "instability": 1,
+  "aspects": [
+    {
+      "aspect": "meto",
+      "constant": "HARVEST",
+      "amount": 8
+    },
+    {
+      "aspect": "herba",
+      "constant": "PLANT",
+      "amount": 8
+    },
+    {
+      "aspect": "terra",
+      "constant": "EARTH",
+      "amount": 8
+    }
+  ],
+  "input": {
+    "item": "thaumcraft:itemhoethaumium"
+  },
+  "components": [
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 4
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 5
+      }
+    },
+    {
+      "item": "minecraft:diamond"
+    },
+    {
+      "item": "thaumcraft:blockmagicallog"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemhoeelemental",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemhoethaumium"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:diamond"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockmagicallog"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemhoeelemental"
+    }
+  ]
+}

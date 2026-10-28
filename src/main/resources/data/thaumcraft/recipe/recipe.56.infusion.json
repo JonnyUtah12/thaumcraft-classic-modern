@@ -1,0 +1,68 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "WandRodBlaze",
+  "research": "ROD_blaze",
+  "instability": 3,
+  "aspects": [
+    {
+      "aspect": "ignis",
+      "constant": "FIRE",
+      "amount": 12
+    },
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 6
+    },
+    {
+      "aspect": "bestia",
+      "constant": "BEAST",
+      "amount": 6
+    }
+  ],
+  "input": {
+    "item": "minecraft:blaze_rod"
+  },
+  "components": [
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 6
+      }
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 1
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:wandrod",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 6
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:blaze_rod"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandrod"
+    }
+  ]
+}

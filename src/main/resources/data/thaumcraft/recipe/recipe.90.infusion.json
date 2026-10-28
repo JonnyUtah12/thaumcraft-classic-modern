@@ -1,0 +1,68 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "CoreLumber",
+  "research": "CORELUMBER",
+  "instability": 2,
+  "aspects": [
+    {
+      "aspect": "instrumentum",
+      "constant": "TOOL",
+      "amount": 16
+    },
+    {
+      "aspect": "arbor",
+      "constant": "TREE",
+      "amount": 16
+    },
+    {
+      "aspect": "meto",
+      "constant": "HARVEST",
+      "amount": 16
+    }
+  ],
+  "input": {
+    "type": "neoforge:components",
+    "items": [
+      "thaumcraft:itemgolemcore"
+    ],
+    "components": {
+      "thaumcraft:item_meta": 3
+    }
+  },
+  "components": [
+    {
+      "item": "thaumcraft:itemaxeelemental"
+    },
+    {
+      "item": "minecraft:iron_axe"
+    },
+    {
+      "item": "minecraft:iron_axe"
+    },
+    {
+      "item": "minecraft:iron_axe"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemgolemcore",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 7
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgolemcore"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemaxeelemental"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:iron_axe"
+    }
+  ]
+}

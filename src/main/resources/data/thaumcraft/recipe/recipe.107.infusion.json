@@ -1,0 +1,70 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "SanityCheck",
+  "research": "SANITYCHECK",
+  "instability": 4,
+  "aspects": [
+    {
+      "aspect": "cognitio",
+      "constant": "MIND",
+      "amount": 24
+    },
+    {
+      "aspect": "sensus",
+      "constant": "SENSES",
+      "amount": 24
+    },
+    {
+      "aspect": "alienis",
+      "constant": "ELDRITCH",
+      "amount": 8
+    }
+  ],
+  "input": {
+    "item": "thaumcraft:itemthaumometer"
+  },
+  "components": [
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 10
+      }
+    },
+    {
+      "item": "thaumcraft:itemzombiebrain"
+    },
+    {
+      "item": "minecraft:diamond"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemsanitychecker",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemthaumometer"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemzombiebrain"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:diamond"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemsanitychecker"
+    }
+  ]
+}

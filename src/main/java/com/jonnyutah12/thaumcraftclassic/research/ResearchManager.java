@@ -354,7 +354,12 @@ public final class ResearchManager {
      * {@code addStickyWarpToPlayer}: add to the chosen counter, sync it, notify the
      * change, and set the eldritch counter to the new warp total.
      */
-    static void applyWarp(final ServerPlayer player, final int amount, final int kind) {
+    // The original's addWarpToPlayer/addStickyWarpToPlayer are private to
+    // Thaumcraft.java; the matrix's instability warp event (TC-M4-04, inEvWarp)
+    // calls this from outside the package, so the member is public here — the
+    // same visibility widening this class already carries for
+    // isResearchComplete (TC-M3-02).
+    public static void applyWarp(final ServerPlayer player, final int amount, final int kind) {
         PlayerWarpData warp = player.getData(ModAttachments.PLAYER_WARP);
         if (kind == SyncWarpPayload.WARP_PERMANENT) {
             warp = warp.addWarpPerm(amount);

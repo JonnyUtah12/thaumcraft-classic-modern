@@ -1,0 +1,83 @@
+{
+  "type": "thaumcraft:infusion",
+  "original_key": "RunicGirdleKinetic",
+  "research": "RUNICKINETIC",
+  "instability": 7,
+  "aspects": [
+    {
+      "aspect": "tutamen",
+      "constant": "ARMOR",
+      "amount": 33
+    },
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 55
+    },
+    {
+      "aspect": "aer",
+      "constant": "AIR",
+      "amount": 64
+    }
+  ],
+  "input": {
+    "item": "thaumcraft:itemgirdlerunic"
+  },
+  "components": [
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 6
+      }
+    },
+    {
+      "item": "thaumcraft:itemshard"
+    },
+    {
+      "item": "thaumcraft:itemshard"
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "minecraft:splash_potion"
+      ],
+      "components": {
+        "minecraft:potion_contents": {
+          "potion": "minecraft:long_slowness"
+        }
+      },
+      "_known_difference": "original: splash upgraded slowness; modern has no strong slowness"
+    },
+    {
+      "item": "thaumcraft:itemshard"
+    },
+    {
+      "item": "thaumcraft:itemshard"
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "output": {
+    "id": "thaumcraft:itemgirdlerunic",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 1
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgirdlerunic"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:splash_potion"
+    }
+  ]
+}

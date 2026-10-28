@@ -1,0 +1,56 @@
+{
+  "type": "thaumcraft:infusion_enchantment",
+  "original_key": "InfEnch6",
+  "research": "INFUSIONENCHANTMENT",
+  "enchantment": "minecraft:aqua_affinity",
+  "instability": 2,
+  "aspects": [
+    {
+      "aspect": "praecantatio",
+      "constant": "MAGIC",
+      "amount": 4
+    },
+    {
+      "aspect": "motus",
+      "constant": "MOTION",
+      "amount": 8
+    },
+    {
+      "aspect": "aqua",
+      "constant": "WATER",
+      "amount": 8
+    }
+  ],
+  "components": [
+    {
+      "item": "minecraft:sugar_cane"
+    },
+    {
+      "item": "minecraft:slime_ball"
+    },
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 14
+      }
+    }
+  ],
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java (Thaumcraft 4.2.3.5), initializeInfusionRecipes + initializeInfusionEnchantmentRecipes. Extracted mechanically by scripts/extract_infusion_recipes.py.",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:sugar_cane"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:slime_ball"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}
