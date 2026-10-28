@@ -156,6 +156,12 @@ public final class TestProbeContent {
             pool.put(aspect, Math.max(0, amount));
         }
 
+        /** What one aspect has left in the probe's pool (a test assertion seam). */
+        public int amount(final Aspect aspect) {
+            final Integer held = pool.get(aspect);
+            return held == null ? 0 : held;
+        }
+
         @Override
         public int getAspectPoolSize() {
             int total = 0;
