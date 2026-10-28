@@ -130,6 +130,30 @@ against the repository, not against recollection.
    component as "MFCL" in any recorded decision (D-001…D-010). Acting on
    it would fail `compileJava` and void the verified green state.
 
+   Restated 2026-10-28 as the **NeoForge `1.20.1` branch** specifically — a
+   real and separate branch (last commit 2024-05-28), so it is not the same
+   string as "Forge 1.20.1", but it is the same error under a new label.
+   Refused for a stronger reason than a pin mismatch: the ATM10 8.3
+   integration target is itself `net.minecraft=1.21.1` /
+   `net.neoforged=21.1.259`, read from the instance's `mmc-pack.json`, so a
+   1.20.1 artifact cannot load in ATM10 **at all**. Retargeting would make the
+   project's stated primary objective impossible, not merely expensive.
+   `docs/target-platform.md` already bars that surface: "1.20.x / 1.21.4+ /
+   Fabric APIs — the exact 1.21.1 NeoForge API surface only." The substrate
+   this port is built on is also absent there: data components and the codecs
+   built on them postdate 1.20.1, and the 1.21 recipe/loot path conventions
+   differ. Cost if it were ever chosen deliberately: 6 landed commits, the
+   `v0.1.0-alpha.2` release, and every 1.21.1-specific adaptation (BD-04,
+   D-006, D-007) invalidated.
+
+1b. **The Thaumcraft API `1.7.10` repo is not in dispute — it is already the
+   guideline.** Confirmed in use, not merely proposed: cloned at
+   `../reference/api-repos/thaumcraft-api` on branch `1.7.10` at commit
+   `ced30ed35097d53cdb2a843d705477e52896e54b`, the exact revision cited in
+   `docs/licensing-and-attribution.md` as MIT, Copyright (c) 2013 Azanor.
+   API interface shapes and constants are adapted from it with attribution
+   per D-003; it does not license the implementation JAR or its assets.
+
 2. **Mixin injections as a verification subject.** Rejected: this project
    ships **zero** Mixins. Introducing injection points would be a design
    change requiring its own record, not a guardrail step. "Builds cleanly
