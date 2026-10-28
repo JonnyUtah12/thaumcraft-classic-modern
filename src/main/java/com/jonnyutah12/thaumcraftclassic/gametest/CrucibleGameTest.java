@@ -20,6 +20,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
 import com.jonnyutah12.thaumcraftclassic.registration.TestProbeContent;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
+import com.jonnyutah12.thaumcraftclassic.research.ResearchManager;
 import com.jonnyutah12.thaumcraftclassic.tiles.CrucibleStateMachine;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileCrucible;
 import com.mojang.authlib.GameProfile;
@@ -49,6 +50,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.material.Fluids;
@@ -214,11 +216,17 @@ public final class CrucibleGameTest {
         }
     }
 
-    /** An item entity hovering in the crucible mouth, tagged with its thrower. */
-    private static ItemEntity thrown(final GameTestHelper helper, final ItemStack stack,
-                                     final ServerPlayer thrower) {
+    /**
+     * An item entity hovering in the crucible mouth (the tile's own eject
+     * point), tagged with its thrower. {@code at} is the crucible's
+     * {@code worldPosition} — the gametest structure sits far from the world
+     * origin, so anything read by the tile itself has to be placed in world
+     * coordinates, not in the helper's local ones.
+     */
+    private static ItemEntity thrown(final GameTestHelper helper, final BlockPos at,
+                                     final ItemStack stack, final ServerPlayer thrower) {
         final ItemEntity entity = new ItemEntity(helper.getLevel(),
-                1.5, 1.71, 1.5, stack.copy());
+                at.getX() + 0.5, at.getY() + 0.71, at.getZ() + 0.5, stack.copy());
         if (thrower != null) {
             entity.getPersistentData().putString(TileCrucible.THROWER_TAG,
                     thrower.getGameProfile().getName());
@@ -257,9 +265,11 @@ public final class CrucibleGameTest {
 
         // The host hands out the tile only for the crucible variant (the
         // original's createTileEntity switch: meta 0 crucible, 7/8/13 lamps).
-        helper.setBlock(new BlockPos(1, 1, 1),
+        // A lamp on its own cell: setBlock keeps the block entity of an
+        // existing same-block cell, so the two variants need two cells.
+        helper.setBlock(new BlockPos(1, 1, 2),
                 CatalogDevices.BLOCK_METAL_DEVICE.get().withVariant(7));
-        helper.assertTrue(!(helper.getBlockEntity(new BlockPos(1, 1, 1)) instanceof TileCrucible),
+        helper.assertTrue(!(helper.getBlockEntity(new BlockPos(1, 1, 2)) instanceof TileCrucible),
                 "variant 7 (arcane lamp) must not hand out a crucible tile");
         final TileCrucible crucible = crucibleAt(helper, new BlockPos(1, 1, 1));
         helper.assertTrue(CatalogCrucible.TILE_CRUCIBLE.get() == crucible.getType(),
@@ -304,7 +314,7 @@ public final class CrucibleGameTest {
         // 2. The same shipped bytes decode through the serializer's codec on
         //    their own, so the pair (not a vanilla path) is what reads them.
         final var resources = level.getServer().getResourceManager();
-        final ResourceLocation shipped = id("recipe/recipe.0.crucible.0");
+        final ResourceLocation shipped = id("recipe/recipe.0.crucible.0.json");
         final JsonObject json;
         try (var reader = resources.getResource(shipped).orElseThrow().openAsReader()) {
             json = JsonParser.parseReader(reader).getAsJsonObject();
@@ -343,12 +353,15 @@ public final class CrucibleGameTest {
         final ServerLevel level = helper.getLevel();
         final BlockPos pos = new BlockPos(1, 1, 1);
         final TileCrucible crucible = crucibleAt(helper, pos);
+        // The tile's own world position: the tile reads its neighbourhood, the
+        // entity search box and the essentia scan all live in world space.
+        final BlockPos at = crucible.getBlockPos();
         final ServerPlayer thrower = throwerWithResearch(helper, List.of("CRUCIBLE"));
         try {
             // 1. Water in, through the block's held-item seam (the original's
             //    onBlockActivated bucket branch).
             thrower.getInventory().setItem(0, new ItemStack(Items.WATER_BUCKET));
-            crucible.useWithItem(level, pos, thrower, InteractionHand.MAIN_HAND);
+            crucible.useWithItem(level, at, thrower, InteractionHand.MAIN_HAND);
             helper.assertTrue(crucible.tank().getFluidAmount() == CrucibleStateMachine.TANK_CAPACITY,
                     "a water bucket must fill the 1000 mB tank, got "
                             + crucible.tank().getFluidAmount());
@@ -384,7 +397,7 @@ public final class CrucibleGameTest {
             final ItemStack jar = new ItemStack(item("itemresource"));
             jar.set(ModDataComponents.ESSENTIA_CONTAINER.get(),
                     EssentiaContainer.fromAspectList(charge));
-            crucible.attemptSmelt(thrown(helper, jar, null));
+            crucible.attemptSmelt(thrown(helper, at, jar, null));
             for (final String tag : primals) {
                 helper.assertTrue(crucible.pool().getAmount(aspect(tag)) >= 2,
                         "the thrown essentia jar must feed the vis pool through the merged "
@@ -408,7 +421,7 @@ public final class CrucibleGameTest {
             }
             final int water = crucible.tank().getFluidAmount();
 
-            crucible.attemptSmelt(thrown(helper, catalyst, thrower));
+            crucible.attemptSmelt(thrown(helper, at, catalyst, thrower));
 
             for (int i = 0; i < before.length; i++) {
                 final Aspect tag = cost.getAspects().get(i);
@@ -426,8 +439,8 @@ public final class CrucibleGameTest {
             final ItemStack wanted = expected.value().getResultItem(level.registryAccess());
             final int meta = wanted.getOrDefault(ModDataComponents.ITEM_META.get(), -1);
             final List<ItemEntity> ejected = level.getEntitiesOfClass(ItemEntity.class,
-                    new AABB(pos.getX() - 2, pos.getY() - 2, pos.getZ() - 2,
-                            pos.getX() + 3, pos.getY() + 3, pos.getZ() + 3));
+                    new AABB(at.getX() - 2, at.getY() - 2, at.getZ() - 2,
+                            at.getX() + 3, at.getY() + 3, at.getZ() + 3));
             boolean sawResult = false;
             for (final ItemEntity drop : ejected) {
                 if (drop.getItem().is(wanted.getItem())
@@ -447,17 +460,18 @@ public final class CrucibleGameTest {
             //    source in reach is drawn through the handler, not the pool.
             final Aspect ignis = aspect("ignis");
             EssentiaHandler.clearAllSources();
-            helper.assertTrue(!EssentiaHandler.drainEssentia(level, pos, ignis, 1),
+            helper.assertTrue(!EssentiaHandler.drainEssentia(level, at, ignis, 1),
                     "the crucible must never be drained as an essentia source (the original's "
                             + "TileCrucible.takeFromContainer returns false)");
             final int poolBefore = crucible.pool().getAmount(ignis);
-            final BlockPos sourcePos = new BlockPos(2, 1, 1);
-            helper.setBlock(sourcePos, TestProbeContent.PROBE_ASPECT_SOURCE_BLOCK.get());
+            final BlockPos sourceLocal = new BlockPos(2, 1, 1);
+            final BlockPos sourcePos = helper.absolutePos(sourceLocal);
+            helper.setBlock(sourceLocal, TestProbeContent.PROBE_ASPECT_SOURCE_BLOCK.get());
             final TestProbeContent.ProbeAspectSource source =
-                    (TestProbeContent.ProbeAspectSource) helper.getBlockEntity(sourcePos);
+                    (TestProbeContent.ProbeAspectSource) helper.getBlockEntity(sourceLocal);
             source.seed(ignis, 5);
-            EssentiaHandler.refreshSources(pos);
-            helper.assertTrue(EssentiaHandler.drainEssentia(level, pos, ignis, 1),
+            EssentiaHandler.refreshSources(at);
+            helper.assertTrue(EssentiaHandler.drainEssentia(level, at, ignis, 1),
                     "the merged EssentiaHandler must draw from a source in reach of the crucible");
             helper.assertTrue(source.amount(ignis) == 4,
                     "the draw must come out of the source tile, got " + source.amount(ignis));
@@ -478,10 +492,25 @@ public final class CrucibleGameTest {
 
     @GameTest(template = "empty")
     public static void everyUngatedCrucibleRowIsLoaded(final GameTestHelper helper) {
-        final var resources = helper.getLevel().getServer().getResourceManager();
+        final Level level = helper.getLevel();
+        final var resources = level.getServer().getResourceManager();
         final RecipeManager manager = helper.getLevel().getRecipeManager();
+        final TileCrucible crucible = crucibleAt(helper, new BlockPos(1, 1, 1));
+        final ServerPlayer thrower = throwerWithResearch(helper, List.of("INFUSION", "CRUCIBLE"));
+        try {
+            recordUngatedRows(helper, level, resources, manager, crucible, thrower);
+        } finally {
+            setPlayerListed(level.getServer(), thrower, false);
+        }
+    }
+
+    private static void recordUngatedRows(final GameTestHelper helper, final Level level,
+            final net.minecraft.server.packs.resources.ResourceManager resources,
+            final RecipeManager manager, final TileCrucible crucible,
+            final ServerPlayer thrower) {
 
         final List<String> ungated = new ArrayList<>();
+        final java.util.Map<String, JsonObject> rows = new java.util.LinkedHashMap<>();
         final List<String> missing = new ArrayList<>();
         final List<String> badIngredientForm = new ArrayList<>();
         int shipped = 0;
@@ -492,24 +521,27 @@ public final class CrucibleGameTest {
                 path.getNamespace().equals(ThaumcraftClassic.MOD_ID)
                         && path.getPath().contains(".crucible")).entrySet()) {
             final String path = entry.getKey().getPath();
+            final JsonObject shippedJson;
+            // listResources keeps the namespace-local path with its extension;
             // data/thaumcraft/recipe/<name>.json loads under thaumcraft:<name>.
-            final String rowId = path.startsWith("recipe/")
+            final String file = path.startsWith("recipe/")
                     ? path.substring("recipe/".length()) : path;
+            final String rowId = file.endsWith(".json")
+                    ? file.substring(0, file.length() - ".json".length()) : file;
             shipped++;
-            final JsonObject json;
             try (var reader = entry.getValue().openAsReader()) {
-                json = JsonParser.parseReader(reader).getAsJsonObject();
+                shippedJson = JsonParser.parseReader(reader).getAsJsonObject();
             } catch (final IOException failure) {
                 helper.fail("unreadable crucible recipe resource " + entry.getKey() + ": "
                         + failure);
                 return;
             }
-            helper.assertTrue("thaumcraft:crucible".equals(json.get("type").getAsString()),
+            helper.assertTrue("thaumcraft:crucible".equals(shippedJson.get("type").getAsString()),
                     "the crucible row " + rowId + " must name the thaumcraft:crucible type");
 
             // D-015: a components-carrying catalyst is the registered
             // neoforge:components Ingredient, with items as a list.
-            final JsonObject catalyst = json.getAsJsonObject("catalyst");
+            final JsonObject catalyst = shippedJson.getAsJsonObject("catalyst");
             helper.assertTrue(catalyst != null, "the crucible row " + rowId + " has no catalyst");
             if (catalyst.has("components") || catalyst.has("neoforge:components")) {
                 componentCatalysts++;
@@ -520,7 +552,7 @@ public final class CrucibleGameTest {
             }
 
             boolean rowGated = false;
-            final JsonElement conditions = json.get("neoforge:conditions");
+            final JsonElement conditions = shippedJson.get("neoforge:conditions");
             if (conditions != null && conditions.isJsonArray()) {
                 for (final var condition : conditions.getAsJsonArray()) {
                     final JsonObject guard = condition.getAsJsonObject();
@@ -546,6 +578,7 @@ public final class CrucibleGameTest {
                 continue;
             }
             ungated.add(rowId);
+            rows.put(rowId, shippedJson);
             if (manager.byKey(id(rowId)).isEmpty()) {
                 missing.add(rowId);
             }
@@ -566,13 +599,85 @@ public final class CrucibleGameTest {
                 "at least 10 crucible rows must pass their item_exists gate, got "
                         + ungated.size());
 
+        // The research source gate. The pool is filled first — the original's
+        // CrucibleRecipe.matches reads the pool before the research gate, so an
+        // empty pool would make the assertions below true for the wrong reason —
+        // and the thrower deliberately knows only INFUSION and CRUCIBLE, not
+        // ALCHEMY, the source of most of the shipped rows.
+        final AspectList pool = crucible.pool();
+        final AspectList charge = new AspectList();
+        for (final Aspect aspect : Aspect.values()) {
+            charge.add(aspect, 64);
+        }
+        for (int jar = 0; jar < 2; jar++) {
+            final ItemStack fuel = new ItemStack(item("itemresource"));
+            fuel.set(ModDataComponents.ESSENTIA_CONTAINER.get(),
+                    EssentiaContainer.fromAspectList(charge));
+            crucible.attemptSmelt(thrown(helper, crucible.getBlockPos(), fuel, thrower));
+        }
+        helper.assertTrue(pool.visSize() > 0, "the seeded jars must fill the vis pool, got " + pool);
+        final PlayerKnowledgeData knowledge = thrower.getData(ModAttachments.PLAYER_KNOWLEDGE);
+        for (final String known : new String[] {"INFUSION", "CRUCIBLE"}) {
+            helper.assertTrue(ResearchManager.isResearchComplete(knowledge, known),
+                    "the probe thrower must know " + known + " for the source gate");
+        }
+        final var knownRow = manager.byKey(id("recipe.0.crucible.0"));
+        helper.assertTrue(knownRow.isPresent() && knownRow.get().value() instanceof CrucibleRecipe,
+                "the balanced-shard row must be live for the research gate below");
+        final CrucibleRecipe known = (CrucibleRecipe) knownRow.get().value();
+        helper.assertTrue("CRUCIBLE".equals(known.research()),
+                "the balanced-shard row is gated on CRUCIBLE research, got " + known.research());
+        helper.assertTrue(known.researchUnlocked(thrower),
+                "a thrower who knows CRUCIBLE must be able to unlock that row");
+        helper.assertTrue(!known.researchUnlocked(null),
+                "the original's CrucibleRecipe.matches returns false with no player at all");
+
+        int researchGated = 0;
+        int payableWhileGated = 0;
+        for (final String rowId : ungated) {
+            final JsonObject row = rows.get(rowId);
+            final CrucibleRecipe parsed = CatalogCrucible.CRUCIBLE_SERIALIZER.get().codec().codec()
+                    .parse(RegistryOps.create(JsonOps.INSTANCE, level.registryAccess()), row)
+                    .result().orElse(null);
+            if (parsed == null) {
+                continue; // already proven absent by the live-registry assertion
+            }
+            if (parsed.researchUnlocked(thrower)) {
+                continue; // the gate is open for this thrower
+            }
+            researchGated++;
+            final AspectList cost = parsed.aspects();
+            boolean payable = true;
+            for (final Aspect aspect : cost.getAspects()) {
+                payable &= pool.getAmount(aspect) >= cost.getAmount(aspect);
+            }
+            if (payable) {
+                payableWhileGated++;
+            }
+            final ItemStack catalyst = catalystStack(row.getAsJsonObject("catalyst"));
+            helper.assertTrue(!catalyst.isEmpty(),
+                    "the catalyst of " + rowId + " names no item this probe can throw: "
+                            + row.getAsJsonObject("catalyst"));
+            helper.assertTrue(bestMatch(helper, catalyst, pool, thrower) == null,
+                    "a crucible row the thrower has not unlocked (" + parsed.research()
+                            + ") must not match the recipe list: " + rowId);
+        }
+        helper.assertTrue(researchGated >= 1,
+                "at least one live crucible row must be gated on research this thrower does not "
+                        + "know, otherwise the source gate above proves nothing (pool " + pool + ")");
+        helper.assertTrue(payableWhileGated >= 1,
+                "at least one research-gated row must be payable by the seeded pool, otherwise the "
+                        + "gate assertion above proves nothing (" + researchGated
+                        + " gated rows, pool " + pool + ")");
+
         ThaumcraftClassic.LOGGER.info("[TC-M4-05-p] crucible data: {} row files shipped, "
                         + "{} pass their gate and are live in the RecipeManager, {} gated out, "
                         + "{} resolve in total, {} use the registered neoforge:components "
-                        + "ingredient form",
+                        + "ingredient form, {} of the live rows are gated on research this "
+                        + "thrower does not know ({} of those payable by the seeded pool)",
                 shipped, ungated.size() - missing.size(), gated,
                 manager.getAllRecipesFor(CatalogCrucible.CRUCIBLE_TYPE.get()).size(),
-                componentCatalysts);
+                componentCatalysts, researchGated, payableWhileGated);
         helper.succeed();
     }
 
@@ -580,6 +685,29 @@ public final class CrucibleGameTest {
 
     private static String optString(final JsonObject json, final String key) {
         return json.has(key) ? json.get(key).getAsString() : null;
+    }
+
+    /**
+     * A stack the row's shipped catalyst form would accept. Bare ingredients
+     * name one {@code item}; the registered {@code neoforge:components} form
+     * (D-015) names an {@code items} list, and its component predicate is
+     * evaluated by the live {@link Ingredient}, not re-derived here — the
+     * {@code thaumcraft:item_meta} default (D-006) makes a bare stack meta 0,
+     * so a row whose catalyst pins another meta simply does not match the
+     * stack this returns, which is the safe direction for the probe's
+     * negative ("this row must not match") assertion.
+     */
+    private static ItemStack catalystStack(final JsonObject catalyst) {
+        String id = optString(catalyst, "item");
+        if (id == null && catalyst.has("items") && catalyst.get("items").isJsonArray()
+                && !catalyst.getAsJsonArray("items").isEmpty()) {
+            id = catalyst.getAsJsonArray("items").get(0).getAsString();
+        }
+        if (id == null) {
+            return ItemStack.EMPTY;
+        }
+        final Item found = BuiltInRegistries.ITEM.get(ResourceLocation.parse(id));
+        return found == null ? ItemStack.EMPTY : new ItemStack(found);
     }
 
     /** True when an item tag has no members in the live (datapack) tag set. */
