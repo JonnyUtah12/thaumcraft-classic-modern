@@ -21,7 +21,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
@@ -316,7 +315,14 @@ public final class NodeTickDriver {
                     new Vec3(x1 + 0.5, y1 + 0.5, z1 + 0.5),
                     ClipContext.Block.COLLIDER,
                     ClipContext.Fluid.NONE,
-                    (Entity) null));
+                    // 1.21.1's ClipContext(Vec3,Vec3,Block,Fluid,Entity) hands
+                    // the entity to CollisionContext.of -> EntityCollisionContext,
+                    // whose constructor dereferences entity.isDescending(): a
+                    // null entity NPEs (it does in the node probes the moment a
+                    // hungry node ray-traces at a real essentia container). The
+                    // entity-less shape context is the block-only trace the
+                    // original's rayTraceIgnoringSource asks for.
+                    net.minecraft.world.phys.shapes.CollisionContext.empty()));
             if (hit == null || hit.getType() != BlockHitResult.Type.BLOCK) {
                 return null;
             }
