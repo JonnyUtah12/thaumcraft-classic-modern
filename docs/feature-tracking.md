@@ -125,6 +125,34 @@ Statuses (DONE only with test evidence):
      tight per-turn completion cap reads as an empty response — that is the
      shape of the "Response Stopped" failures the board recorded as worker
      crashes.
+   - **Dispatcher host fault RESOLVED 2026-10-28.** The frozen chain
+     turned out to have a second, mechanical cause: every spawned worker
+     died ~60 s in with `Kanban owner refused: Kanban execution unknown;
+     retained by owner` then `[kanban-worker-exit] rc=1` (raise site
+     `hermes_cli/kanban_worker_client.py:79`, the RPC `kanban.run` receipt
+     resolving to `unknown`). The gateway owner process predated the
+     installed kanban owner code, so each card burned its failure budget
+     (failure-limit 2) and self-blocked; the agent cannot clear it because
+     the lifecycle guard refuses `hermes gateway restart` from inside the
+     gateway. The owner was restarted at 10:45 on 2026-10-28; from then on
+     `blocked=0`, spawns land, and the board reads `done=44, running=1`.
+     Triage steps are recorded in
+     `~/.hermes/skills/kanban-orchestration/references/dispatch-triage.md`.
+   - **Crucible integrated 2026-10-28 (TC-M4-05-s, `t_95373ba3` →
+     `3dcf3b6` + `4307fe6`).** The interrupted worker's tree was
+     integrated hunk-wise: crucible core (tile entity, state machine,
+     recipe type/serializer pair, 9 ore-dict tags, 54 gated recipe files)
+     compiles and boots green — 324 unit / 0 failures, 91/91 game tests,
+     no `thaumcraft` ERROR line over 1404 loaded recipes, CI run
+     40711328720 success. Behaviour is **not** proven: the worker's
+     611-line game test did not compile and was excluded, so the three
+     probes are their own card `t_5fa2e0bb`. One integration fix was needed
+     (`TileCrucible.onDataPacket` built a `RegistryFriendlyByteBuf` from
+     `HolderLookup.Provider.asRegistryAccess()`, which does not exist →
+     `level.registryAccess()`), and the docs flip had to be rebuilt because
+     a note containing a comma pushed a `content-mapping.csv` row to 9
+     fields and `ContentMappingCsv.read` throws `expected 8 fields, got 9`
+     — that is the rule behind this file's plain-text-line-edit convention.
    - **Preflight comments** on `t_95373ba3`, `t_d9fa0476`,
      `t_f7e25b1c`, `t_a758393c`, `t_54791c73`: verified main state, the
      per-area WIP inventory on `wip-salvage`, the merged files that must
