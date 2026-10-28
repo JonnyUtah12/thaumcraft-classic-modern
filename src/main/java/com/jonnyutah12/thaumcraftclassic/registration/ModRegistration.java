@@ -5,6 +5,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
@@ -136,6 +137,12 @@ public final class ModRegistration {
         // serializer pair the 54 data files under data/thaumcraft/recipe/
         // resolve through. The essentia jar that refills it stays on TC-M4-06.
         CatalogCrucible.init(modEventBus);
+
+        // TC-M4-06-s: essentia extraction + storage — the infernal furnace
+        // (base + nozzle) and its smelting-bonus table, the warded/void jars
+        // with their jar tiles, the glass phial and the filled-jar item. The
+        // tube network that moves essentia between them stays on TC-M4-07.
+        CatalogEssentiaStorage.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-
