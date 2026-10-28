@@ -3,7 +3,10 @@ package com.jonnyutah12.thaumcraftclassic.gametest;
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.aspect.AspectList;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockArcaneFurnace;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockDeviceBase;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockJar;
+import com.jonnyutah12.thaumcraftclassic.blocks.VariantStateItems;
 import com.jonnyutah12.thaumcraftclassic.items.ItemJarFilled;
 import com.jonnyutah12.thaumcraftclassic.items.ItemPhial;
 import com.jonnyutah12.thaumcraftclassic.recipes.SmeltingBonuses;
@@ -415,6 +418,28 @@ public final class EssentiaStorageGameTest {
                 "an empty jar drops exactly one item, got " + plain.size() + " " + plain);
         helper.assertTrue(plain.get(0).is(CatalogEssentiaStorage.ITEM_JAR.get()),
                 "an empty void jar drops the jar block item, got " + plain.get(0));
+        helper.assertTrue(VariantStateItems.applyVariant(CatalogEssentiaStorage.jarState(true), plain.get(0))
+                        .getValue(BlockJar.VARIANT) == BlockJar.VARIANT_VOID,
+                "and the drop carries the void variant (the original's metadata 3), so re-placing it is "
+                        + "a void jar, not a warded one");
+
+        // The machine drops itself: the original's blockarcanefurnace behaviour, and
+        // in 1.21.1 that only exists through a block loot table
+        // (data/thaumcraft/loot_table/blocks/blockarcanefurnace.json). The nozzle
+        // variant is the case that matters — a nozzle that drops a base plate loses
+        // the eject direction the whole furnace depends on.
+        final BlockPos furnacePos = at(helper, 12, 1, 1);
+        helper.setBlock(12, 1, 1, CatalogEssentiaStorage.BLOCK_ARCANE_FURNACE.get().defaultBlockState()
+                .setValue(BlockArcaneFurnace.VARIANT, BlockArcaneFurnace.VARIANT_NOZZLE));
+        helper.getLevel().destroyBlock(furnacePos, true, null);
+        final List<ItemStack> furnaceDrops = dropsAround(helper, furnacePos);
+        helper.assertTrue(furnaceDrops.size() == 1
+                        && furnaceDrops.get(0).is(CatalogEssentiaStorage.ITEM_ARCANE_FURNACE.get()),
+                "a broken arcane furnace drops itself, got " + furnaceDrops);
+        helper.assertTrue(VariantStateItems.applyVariant(
+                        CatalogEssentiaStorage.BLOCK_ARCANE_FURNACE.get().defaultBlockState(), furnaceDrops.get(0))
+                        .getValue(BlockArcaneFurnace.VARIANT) == BlockArcaneFurnace.VARIANT_NOZZLE,
+                "and the drop keeps the nozzle variant, got " + furnaceDrops);
 
         helper.succeed();
     }
