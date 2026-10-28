@@ -27,10 +27,14 @@ import net.minecraft.world.level.chunk.PalettedContainer;
  * <p>In 1.7.10 a biome was one byte per chunk column, so
  * {@code Utils.setBiomeAt} wrote a byte. In 1.21.1 biomes live in a
  * {@code PalettedContainer<Holder<Biome>>} per 4×4×4 section
- * ({@code LevelChunkSection#getBiomes()}, indexed by {@code (x&3, y&3, z&3)}),
- * so the port writes every cell of the column in every section of the chunk —
- * the exact modern equivalent of "this chunk column is the taint biome". The
- * chunk is marked unsaved so the region file persists it.</p>
+ * ({@code LevelChunkSection#getBiomes()}, indexed in quart space:
+ * the cell of a block coordinate is {@code (coord >> 2) & 3}, which is how
+ * {@code ChunkAccess#getNoiseBiome} reads it), so the port writes every
+ * cell of the column in every section of the chunk — the exact modern
+ * equivalent of "this chunk column is the taint biome". A biome cell is 4
+ * blocks wide, so the write is 4-block granular: it taints the 4×4-block
+ * footprint that contains the column (BD-15 in docs/architecture/taint.md).
+ * The chunk is marked unsaved so the region file persists it.</p>
  *
  * <p>Client sync: the original broadcast {@code PacketBiomeChange}; the port's
  * 1:1 payload {@link BiomeChangePayload} is registered (TC-M7-05) and its
@@ -100,14 +104,25 @@ public final class TaintBiomes {
      */
     public static void setBiomeAt(final Level level, final int x, final int z, final Holder<Biome> biome) {
         final ChunkAccess chunk = level.getChunk(BlockPos.containing(x, 0, z));
+        // The palette cell of a column, in the container's own 4x4x4 index
+        // space. A cell is 4 blocks wide, so the cell of block x is
+        // QuartPos.fromBlock(x) & 3 — exactly the index ChunkAccess.getNoiseBiome
+        // reads with (it takes quart coordinates and does `sections[j]
+        // .getNoiseBiome(x & 3, l & 3, z & 3)`). `x & 3` alone is the offset
+        // inside the cell, not the cell: it lands in the right column only when
+        // the block coordinate happens to agree with the cell coordinate
+        // mod 4, so a 1:1 transcription of the 1.7.10 byte write is off by up to
+        // three cells for every other column.
+        final int cellX = (x >> 2) & 3;
+        final int cellZ = (z >> 2) & 3;
         for (final LevelChunkSection section : chunk.getSections()) {
             @SuppressWarnings("unchecked")
             final PalettedContainer<Holder<Biome>> biomes =
                     (PalettedContainer<Holder<Biome>>) section.getBiomes();
-            // The container index is section-local (x&3, y&3, z&3); a column is
-            // the 4 cells of one (x&3, z&3) pair in every section.
+            // A section is 16 blocks tall = 4 cells tall, so the column is the
+            // 4 cells of one (cellX, cellZ) pair in every section.
             for (int wy = 0; wy < 4; wy++) {
-                biomes.set(x & 3, wy, z & 3, biome);
+                biomes.set(cellX, wy, cellZ, biome);
             }
         }
         if (chunk instanceof LevelChunk levelChunk) {

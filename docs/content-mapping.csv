@@ -73,8 +73,8 @@ Thaumcraft:blockCustomOre,thaumcraft:blockcustomore,block,Cinnabar Ore / Air Inf
 Thaumcraft:blockMagicalLog,thaumcraft:blockmagicallog,block,Greatwood Log / Silverwood Log,not_started,not_tested,id case change only (D-001),class=BlockMagicalLog item_class=BlockMagicalLogItem
 Thaumcraft:blockMagicalLeaves,thaumcraft:blockmagicalleaves,block,Greatwood Leaves / Silverwood Leaves,not_started,not_tested,id case change only (D-001),class=BlockMagicalLeaves item_class=BlockMagicalLeavesItem
 Thaumcraft:blockCustomPlant,thaumcraft:blockcustomplant,block,Greatwood Sapling / Silverwood Sapling / Shimmerleaf / Cinderpearl / Ethereal Bloom / Vishroom,not_started,not_tested,id case change only (D-001),class=BlockCustomPlant item_class=BlockCustomPlantItem
-Thaumcraft:blockTaint,thaumcraft:blocktaint,block,Crusted Taint / Tainted Soil / Block of Flesh,not_started,not_tested,id case change only (D-001),class=BlockTaint item_class=BlockTaintItem
-Thaumcraft:blockTaintFibres,thaumcraft:blocktaintfibres,block,Fibrous Taint / Tainted Grass / Tainted Plant / Spore Stalk / Mature Spore Stalk,not_started,not_tested,id case change only (D-001),class=BlockTaintFibres item_class=BlockTaintFibresItem
+Thaumcraft:blockTaint,thaumcraft:blocktaint,block,Crusted Taint / Tainted Soil / Block of Flesh,done,tested,id case change only (D-001),class=BlockTaint item_class=BlockTaintItem
+Thaumcraft:blockTaintFibres,thaumcraft:blocktaintfibres,block,Fibrous Taint / Tainted Grass / Tainted Plant / Spore Stalk / Mature Spore Stalk,done,tested,id case change only (D-001),class=BlockTaintFibres item_class=BlockTaintFibresItem
 Thaumcraft:blockCosmeticOpaque,thaumcraft:blockcosmeticopaque,block,Amber Block / Amber Bricks / Warded Glass,done,tested,id case change only (D-001),class=BlockCosmeticOpaque item_class=BlockCosmeticOpaqueItem per-variant display names + the item_class block item wired by TC-M7-01b (t_f40bbc0d)
 Thaumcraft:blockCosmeticSolid,thaumcraft:blockcosmeticsolid,block,Obsidian Totem / Obsidian Tile / Paving Stone of Travel / Paving Stone of Warding / Thaumium Block / Tallow Block / Arcane Stone Block / Arcane Stone Bricks / Charged Obsidian Totem / Golem Fetter / Active Golem Fetter / Ancient Stone / Ancient Rock / Ancient Stone / Crusted Stone / Ancient Stone Pedestal,done,tested,id case change only (D-001),class=BlockCosmeticSolid item_class=BlockCosmeticSolidItem per-variant display names + the item_class block item wired by TC-M7-01b (t_f40bbc0d)
 Thaumcraft:blockCrystal,thaumcraft:blockcrystal,block,Air Crystal Cluster / Fire Crystal Cluster / Water Crystal Cluster / Earth Crystal Cluster / Order Crystal Cluster / Entropy Crystal Cluster / Mixed Crystal Cluster / Strange Crystals,done,tested,id case change only (D-001),class=BlockCrystal item_class=BlockCrystalItem per-variant display names + the item_class block item wired by TC-M7-01b (t_f40bbc0d)
@@ -930,7 +930,7 @@ Thaumcraft:config.Monster_Spawning.spawn_angry_zombies,thaumcraft:config.monster
 Thaumcraft:config.Monster_Spawning.spawn_fire_bats,thaumcraft:config.monster_spawning.spawn_fire_bats,config_option,spawn_fire_bats,not_started,not_tested,,category=Monster_Spawning default=true
 Thaumcraft:config.Monster_Spawning.spawn_wisps,thaumcraft:config.monster_spawning.spawn_wisps,config_option,spawn_wisps,not_started,not_tested,,category=Monster_Spawning default=true
 Thaumcraft:config.Monster_Spawning.spawn_taintacles,thaumcraft:config.monster_spawning.spawn_taintacles,config_option,spawn_taintacles,not_started,not_tested,,category=Monster_Spawning default=true
-Thaumcraft:config.Monster_Spawning.spawn_taint_spores,thaumcraft:config.monster_spawning.spawn_taint_spores,config_option,spawn_taint_spores,not_started,not_tested,,category=Monster_Spawning default=true
+Thaumcraft:config.Monster_Spawning.spawn_taint_spores,thaumcraft:config.monster_spawning.spawn_taint_spores,config_option,spawn_taint_spores,done,tested,,category=Monster_Spawning default=true
 Thaumcraft:config.Monster_Spawning.spawn_pechs,thaumcraft:config.monster_spawning.spawn_pechs,config_option,spawn_pechs,not_started,not_tested,,category=Monster_Spawning default=true
 Thaumcraft:config.Monster_Spawning.spawn_eldercreatures,thaumcraft:config.monster_spawning.spawn_eldercreatures,config_option,spawn_eldercreatures,not_started,not_tested,,category=Monster_Spawning default=true
 Thaumcraft:config.Monster_Spawning.champion_mobs,thaumcraft:config.monster_spawning.champion_mobs,config_option,champion_mobs,not_started,not_tested,,category=Monster_Spawning default=championMobs
@@ -956,8 +956,8 @@ Thaumcraft:config.general.thaumcraft_banker_id,thaumcraft:config.general.thaumcr
 Thaumcraft:config.general.golem_chest_interact,thaumcraft:config.general.golem_chest_interact,config_option,golem_chest_interact,not_started,not_tested,,category=general default=true
 Thaumcraft:config.general.portablehole_blacklist,thaumcraft:config.general.portablehole_blacklist,config_option,portablehole_blacklist,not_started,not_tested,,"category=general default=""iron_door"""
 Thaumcraft:config.general.blue_magical_forest,thaumcraft:config.general.blue_magical_forest,config_option,blue_magical_forest,not_started,not_tested,,category=general default=blueBiome
-Thaumcraft:config.general.biome_taint_from_flux,thaumcraft:config.general.biome_taint_from_flux,config_option,biome_taint_from_flux,not_started,not_tested,,category=general default=taintFromFlux
-Thaumcraft:config.general.biome_taint_spread,thaumcraft:config.general.biome_taint_spread,config_option,biome_taint_spread,not_started,not_tested,,category=general default=taintSpreadRate
+Thaumcraft:config.general.biome_taint_from_flux,thaumcraft:config.general.biome_taint_from_flux,config_option,biome_taint_from_flux,done,tested,,category=general default=taintFromFlux
+Thaumcraft:config.general.biome_taint_spread,thaumcraft:config.general.biome_taint_spread,config_option,biome_taint_spread,done,tested,,category=general default=taintSpreadRate
 Thaumcraft:config.general.glowing_taint,thaumcraft:config.general.glowing_taint,config_option,glowing_taint,not_started,not_tested,,category=general default=glowyTaint
 Thaumcraft:config.Runic_Shielding.runic_recharge_speed,thaumcraft:config.runic_shielding.runic_recharge_speed,config_option,runic_recharge_speed,not_started,not_tested,,category=Runic_Shielding default=shieldRecharge
 Thaumcraft:config.Runic_Shielding.runic_recharge_delay,thaumcraft:config.runic_shielding.runic_recharge_delay,config_option,runic_recharge_delay,not_started,not_tested,,category=Runic_Shielding default=shieldWait
@@ -993,7 +993,7 @@ Thaumcraft:potion.deathgaze,thaumcraft:potion.deathgaze,potion,Deadly Gaze,not_s
 Thaumcraft:potion.blurred,thaumcraft:potion.blurred,potion,Blurred Vision,not_started,not_tested,,class=PotionBlurredVision bad=true color=8421504
 Thaumcraft:potion.sunscorned,thaumcraft:potion.sunscorned,potion,Sun Scorned,not_started,not_tested,,class=PotionSunScorned bad=true color=16308330
 Thaumcraft:potion.thaumarhia,thaumcraft:potion.thaumarhia,potion,Thaumarhia,not_started,not_tested,,class=PotionThaumarhia bad=true color=6702199
-Thaumcraft:biome.BiomeGenTaint,thaumcraft:biome.biomegentaint,biome,BiomeGenTaint,not_started,not_tested,,default_id=192 config_key=taint_biome_id
+Thaumcraft:biome.BiomeGenTaint,thaumcraft:biome.biomegentaint,biome,BiomeGenTaint,done,tested,,default_id=192 config_key=taint_biome_id
 Thaumcraft:biome.BiomeGenMagicalForest,thaumcraft:biome.biomegenmagicalforest,biome,BiomeGenMagicalForest,not_started,not_tested,,default_id=193 config_key=magical_forest_biome_id
 Thaumcraft:biome.BiomeGenEerie,thaumcraft:biome.biomegeneerie,biome,BiomeGenEerie,not_started,not_tested,,default_id=194 config_key=eerie_biome_id
 Thaumcraft:biome.BiomeGenEldritch,thaumcraft:biome.biomegeneldritch,biome,BiomeGenEldritch,not_started,not_tested,,default_id=195 config_key=eldritch_biome_id
@@ -1020,7 +1020,7 @@ Thaumcraft:worldgen.eldritch_stone_rings,thaumcraft:worldgen.eldritch_stone_ring
 Thaumcraft:worldgen.hilltop_stones,thaumcraft:worldgen.hilltop_stones,worldgen_feature,Hilltop stones,not_started,not_tested,,impl=WorldGenHilltopStones config=genStructure
 Thaumcraft:worldgen.nether_totems_wild_nodes,thaumcraft:worldgen.nether_totems_wild_nodes,worldgen_feature,Nether: totems + wild nodes,not_started,not_tested,,impl=generateNether config=genAura / genStructure
 Thaumcraft:worldgen.outer_lands_procedural_maze,thaumcraft:worldgen.outer_lands_procedural_maze,worldgen_feature,Outer Lands procedural maze,not_started,not_tested,,impl=MazeHandler.generateEldritch (dimension -42) config=outer_lands_dim
-Thaumcraft:worldgen.taint_spread_conversion,thaumcraft:worldgen.taint_spread_conversion,worldgen_feature,Taint spread / conversion,not_started,not_tested,,"impl=TaintManager (chunk events, not chunk gen) config=-"
+Thaumcraft:worldgen.taint_spread_conversion,thaumcraft:worldgen.taint_spread_conversion,worldgen_feature,Taint spread / conversion,done,tested,,"impl=TaintManager (chunk events, not chunk gen) config=-"
 Thaumcraft:worldgen.wizard_tower_village_house,thaumcraft:worldgen.wizard_tower_village_house,worldgen_feature,Wizard tower village house,not_started,not_tested,,impl=ComponentWizardTower via VillageWizardManager config=villager_wizard spawn
 Thaumcraft:worldgen.banker_house_village_house,thaumcraft:worldgen.banker_house_village_house,worldgen_feature,Banker house village house,not_started,not_tested,,impl=ComponentBankerHome via VillageBankerManager config=villager_banker spawn
 Thaumcraft:oredict.oreCinnabar,thaumcraft:oredict.orecinnabar,oredict,oreCinnabar,not_started,not_tested,,"stack=blockCustomOre, 1, 0)"

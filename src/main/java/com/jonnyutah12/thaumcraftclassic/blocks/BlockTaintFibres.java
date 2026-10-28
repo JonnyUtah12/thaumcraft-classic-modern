@@ -82,6 +82,10 @@ public class BlockTaintFibres extends Block implements VariantDevice {
                 .strength(5.0F, 1.0F)
                 .sound(SoundType.ROOTS)
                 .noOcclusion()
+                // See BlockTaint: the fibres conversion ladder is the original's
+                // func_149674_a on the chunk-tick queue, so the state has to be
+                // marked random-ticking for 1.21.1 to call randomTick at all.
+                .randomTicks()
                 .lightLevel(state -> switch (state.getValue(VARIANT)) {
                     case META_GRASS_2 -> 8;
                     case META_MATURE_SPORE_STALK -> 10;

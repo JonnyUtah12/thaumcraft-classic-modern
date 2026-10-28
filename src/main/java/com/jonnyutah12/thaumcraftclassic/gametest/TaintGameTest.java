@@ -140,6 +140,27 @@ public final class TaintGameTest {
                         && ((IntegerProperty) fibreVariants).getPossibleValues().size() == 5,
                 "blocktaintfibres needs the original 5 metas (fibres .. mature stalk)");
 
+        // The tick engine has to be reachable in a live world, not just from a
+        // probe: 1.21.1 gates Block#randomTick behind Properties#randomTicks(),
+        // so a taint state without that flag never runs the original's
+        // func_149674_a body (spread, decay, fall, conversion) outside a game
+        // test. Pin every state of both blocks.
+        final StringBuilder inert = new StringBuilder();
+        for (final BlockState s : CatalogTaint.BLOCK_TAINT.get().getStateDefinition().getPossibleStates()) {
+            if (!s.isRandomlyTicking()) {
+                inert.append(' ').append(s.getValue(BlockTaint.VARIANT));
+            }
+        }
+        for (final BlockState s : CatalogTaint.BLOCK_TAINT_FIBRES.get().getStateDefinition().getPossibleStates()) {
+            if (!s.isRandomlyTicking()) {
+                inert.append('f').append(s.getValue(BlockTaintFibres.VARIANT));
+            }
+        }
+        helper.assertTrue(inert.length() == 0,
+                "every taint state must be marked random-ticking (Properties#randomTicks) or the tick "
+                        + "bus never calls Block#randomTick and the spread/decay/conversion engine is "
+                        + "dead in a live world; inert states:" + inert);
+
         // the Tainted Land biome is a registry entry with the original's climate
         final Biome taint = level.registryAccess().registryOrThrow(Registries.BIOME)
                 .getHolderOrThrow(TaintBiomes.TAINT_BIOME).value();
@@ -300,22 +321,14 @@ public final class TaintGameTest {
         // section, so the port must write every section of the column.
         // Read through the palette (getNoiseBiome), which is what the shipped
         // write writes and what the client sync sends. Level#getBiome goes
-        // through BiomeManager's per-section cache (up to 600 ticks), so it
-        // keeps reporting the generated biome for a while after a write; that
+        // through BiomeManager (which fiddles the coordinates and caches), so
+        // it can report the generated biome for a while after a write; that
         // staleness is pinned in TaintBiomes' note and in architecture/taint.md.
-        // Sample one height per section. LevelReader#getNoiseBiome short-circuits
-        // an AIR-ONLY section to the source default (its `section.hasOnlyAir()
-        // ? DEFAULT : palette.get(...)` branch), so a bare air column reads
-        // plains in every empty section no matter what the palette holds — the
-        // pad is a 32^3 build over void, so all of these sections are air-only
-        // until a probe puts a block in them. Every real taint column has
-        // ground in it, so the port puts one block per sampled section: the
-        // read then goes to the palette the shipped write writes. (Recorded in
-        // docs/architecture/taint.md.)
+        // Sample one height per section: min..max build height is 384 blocks =
+        // 24 sections, so six samples 64 blocks apart land in six sections.
         final StringBuilder misses = new StringBuilder();
         int heights = 0;
         for (int y = level.getMinBuildHeight() + 1; y < level.getMaxBuildHeight(); y += 64) {
-            level.setBlockAndUpdate(new BlockPos(base.getX(), y, base.getZ()), Blocks.STONE.defaultBlockState());
             final Holder<Biome> at = level.getNoiseBiome(
                     net.minecraft.core.QuartPos.fromBlock(base.getX()),
                     net.minecraft.core.QuartPos.fromBlock(y),
@@ -331,6 +344,44 @@ public final class TaintGameTest {
                         + ", " + heights + " sampled heights):" + misses
                         + " (wrote " + TaintBiomes.taintBiomeHolder(level).getRegisteredName()
                         + " at base=" + base.toShortString() + ")");
+
+        // The write must land in the palette cell that the read reads. The
+        // container is indexed in quart space — the cell of block x is
+        // (x >> 2) & 3 — so writing `x & 3` (the 1:1 transcription of the
+        // 1.7.10 byte write) puts the biome in the wrong cell for three of
+        // every four columns. Pin both edges of that: every column of the
+        // 4x4-block footprint that contains the written column reads taint
+        // (a biome cell is 4 blocks wide, so the write is 4-block granular —
+        // the documented deviation from 1.7.10's byte-per-column), and the
+        // column 4 blocks over is a different cell and stays untouched.
+        final int cellOriginX = base.getX() >> 2 << 2;
+        final int cellOriginZ = base.getZ() >> 2 << 2;
+        final int sampleY = base.getY();
+        final StringBuilder footprint = new StringBuilder();
+        for (int dx = 0; dx < 4; dx++) {
+            for (int dz = 0; dz < 4; dz++) {
+                final Holder<Biome> at = level.getNoiseBiome(
+                        net.minecraft.core.QuartPos.fromBlock(cellOriginX + dx),
+                        net.minecraft.core.QuartPos.fromBlock(sampleY),
+                        net.minecraft.core.QuartPos.fromBlock(cellOriginZ + dz));
+                if (!at.is(TaintBiomes.TAINT_BIOME)) {
+                    footprint.append(" (").append(cellOriginX + dx).append(',')
+                            .append(cellOriginZ + dz).append(")=")
+                            .append(at.getRegisteredName());
+                }
+            }
+        }
+        helper.assertTrue(footprint.length() == 0,
+                "the biome write must land in the palette cell the read reads — every column of the "
+                        + "4x4 cell containing base=" + base.toShortString() + " (cell origin "
+                        + cellOriginX + ',' + cellOriginZ + ", x&3=" + (base.getX() & 3)
+                        + ", (x>>2)&3=" + ((base.getX() >> 2) & 3) + ") must read taint:" + footprint);
+        final Holder<Biome> nextCell = level.getNoiseBiome(
+                net.minecraft.core.QuartPos.fromBlock(cellOriginX + 4),
+                net.minecraft.core.QuartPos.fromBlock(sampleY),
+                net.minecraft.core.QuartPos.fromBlock(cellOriginZ));
+        helper.assertTrue(!nextCell.is(TaintBiomes.TAINT_BIOME),
+                "one column write must not spill into the neighbouring palette cell (4-block granularity)");
 
         // the spread rule needs >= 2 adjacent taint on the source cell
         primeFibresOnGround(level, base);
@@ -531,18 +582,21 @@ public final class TaintGameTest {
     }
 
     /**
-     * Run the tick the way {@code world/TaintTickDriver} does: dispatch on the
-     * live state, so a probe never hands a crust state to the fibres tick (the
-     * driver's dispatch is what keeps those two paths apart in the shipped
-     * game, and the probes are testing the shipped paths).
+     * Run the tick the way the shipped game does: the 1.21.1 tick bus calls
+     * {@code BlockState#randomTick} on the state at the cell, which dispatches
+     * to {@code BlockTaint#randomTick} / {@code BlockTaintFibres#randomTick}
+     * and from there into {@code TaintManager}. Dispatching on the live state
+     * means a probe never hands a crust state to the fibres tick, and the
+     * probes exercise the shipped call chain.
      */
     private static void tickTaintBlock(final ServerLevel level, final BlockPos pos, final long seed) {
-        final BlockState state = level.getBlockState(pos);
-        if (state.is(CatalogTaint.BLOCK_TAINT_FIBRES.get())) {
-            TaintManager.fibresTick(level, pos, state, net.minecraft.util.RandomSource.create(seed));
-        } else if (state.is(CatalogTaint.BLOCK_TAINT.get())) {
-            TaintManager.taintBlockTick(level, pos, state, net.minecraft.util.RandomSource.create(seed));
-        }
+        // Enter through the state, the way the 1.21.1 tick bus does:
+        // BlockState#randomTick → Block#randomTick → TaintManager. Every seeded
+        // probe below therefore pins the block wiring as well as the rule; the
+        // registration probe pins the Properties#randomTicks() gate that makes
+        // that bus path exist in a live world.
+        level.getBlockState(pos).randomTick(level, pos,
+                net.minecraft.util.RandomSource.create(seed));
     }
 
     /** The six faces of a cell, for a probe failure message. */

@@ -88,7 +88,13 @@ public class BlockTaint extends Block implements VariantDevice {
         super(BlockBehaviour.Properties.of()
                 .mapColor(MapColor.COLOR_PURPLE)
                 .strength(10.0F, 2.0F)
-                .sound(SoundType.ROOTS));
+                .sound(SoundType.ROOTS)
+                // The original's tick engine (func_149674_a = updateTick) runs on
+                // the 1.7.10 chunk-tick queue; 1.21.1 only calls Block.randomTick
+                // for a state whose Properties carry randomTicks(), so without this
+                // flag the spread / decay / fall engine never fires in a live world
+                // (the probes call TaintManager, so they stay green either way).
+                .randomTicks());
         registerDefaultState(stateDefinition.any().setValue(VARIANT, META_CRUST));
     }
 
