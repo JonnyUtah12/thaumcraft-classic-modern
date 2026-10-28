@@ -41,6 +41,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.util.INBTSerializable;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -486,9 +488,19 @@ public class TileCrucible extends BlockEntity implements BlockDeviceBase.Ticking
         EssentiaHandler.refreshSources(this.worldPosition);
         // Original onBlockRemoved spilled remnants; setRemoved also fires on
         // chunk unload, so only spill when the crucible block is actually gone.
-        if (this.level != null && !this.level.isClientSide
-                && !this.level.getBlockState(this.worldPosition).is(this.getBlockState().getBlock())) {
-            spillRemnants();
+        // The probe has to read the chunk map, not the level: a
+        // Level.getBlockState here asks the chunk loader for a chunk that is
+        // mid-unload (this method runs from LevelChunk.clearAllBlockEntities),
+        // and ServerChunkCache.getChunk parks the Server thread on the very
+        // thread doing the unload, so the world save never finishes.
+        // getBlockStatesIfLoaded is the non-blocking form: an unloaded chunk
+        // streams no states, which is not a removal, so the spill is skipped.
+        if (this.level != null && !this.level.isClientSide) {
+            final Vec3 mouth = Vec3.atCenterOf(this.worldPosition);
+            this.level.getBlockStatesIfLoaded(new AABB(mouth, mouth))
+                    .filter(state -> !state.is(this.getBlockState().getBlock()))
+                    .findFirst()
+                    .ifPresent(removed -> spillRemnants());
         }
     }
 
