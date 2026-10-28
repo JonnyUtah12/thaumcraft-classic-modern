@@ -2,9 +2,13 @@ package com.jonnyutah12.thaumcraftclassic.registration.catalog;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockAiry;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockAiryItem;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockMetalDevice;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockMetalDeviceItem;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockStoneDevice;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockStoneDeviceItem;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockWoodenDevice;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockWoodenDeviceItem;
 import com.jonnyutah12.thaumcraftclassic.blocks.DeviceTileFactory;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileArcaneBore;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileArcaneBoreBase;
@@ -16,9 +20,8 @@ import com.jonnyutah12.thaumcraftclassic.tiles.TileBellows;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileNitor;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileOwned;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileSensor;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.Item;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
@@ -60,12 +63,15 @@ import net.neoforged.neoforge.registries.RegisterEvent;
  * for airy). The block classes carry the original metadata verbatim in a
  * {@code variant} property (D-001).</p>
  *
- * <p>Block items are plain {@link net.minecraft.world.item.BlockItem}s: the
- * original's {@code Block*DeviceItem} classes were creative-inventory meta
- * pickers, and in 1.21.1 the variant rides the vanilla
- * {@code minecraft:block_state} component (docs/architecture/registration.md
- * ITEM_META convention, see {@link VariantStateItems}; the per-variant
- * creative-tab entries and models are TC-M7-01).</p>
+ * <p>Block items are the original's {@code Block*DeviceItem} classes: thin
+ * {@link com.jonnyutah12.thaumcraftclassic.blocks.VariantBlockItem} subclasses
+ * registered under the block id. The original classes were creative-inventory
+ * meta pickers whose names came from the {@code tile.<id>.<meta>.name} keys;
+ * in 1.21.1 the variant rides the vanilla {@code minecraft:block_state}
+ * component (docs/architecture/registration.md ITEM_META convention, see
+ * {@link VariantStateItems}) and {@code VariantBlockItem} resolves the
+ * per-variant label from it (TC-M7-01b). The per-variant creative-tab entries
+ * and models are TC-M7-01.</p>
  */
 public final class CatalogDevices {
 
@@ -88,19 +94,22 @@ public final class CatalogDevices {
             BLOCKS.register("blockairy", BlockAiry::new);
 
     // --- block items (same ids as the blocks; variant via block_state) ------
+    // TC-M7-01b: the named per-card classes are VariantBlockItem subclasses, so
+    // a stack carrying a variant renders its own tile.<id>.<meta>.name label
+    // instead of the family's meta-0 label.
 
-    public static final DeferredItem<BlockItem> ITEM_STONE_DEVICE =
+    public static final DeferredItem<BlockStoneDeviceItem> ITEM_STONE_DEVICE =
             ITEMS.register("blockstonedevice",
-                    () -> new BlockItem(BLOCK_STONE_DEVICE.get(), new Item.Properties()));
-    public static final DeferredItem<BlockItem> ITEM_METAL_DEVICE =
+                    () -> new BlockStoneDeviceItem(BLOCK_STONE_DEVICE.get(), new Item.Properties()));
+    public static final DeferredItem<BlockMetalDeviceItem> ITEM_METAL_DEVICE =
             ITEMS.register("blockmetaldevice",
-                    () -> new BlockItem(BLOCK_METAL_DEVICE.get(), new Item.Properties()));
-    public static final DeferredItem<BlockItem> ITEM_WOODEN_DEVICE =
+                    () -> new BlockMetalDeviceItem(BLOCK_METAL_DEVICE.get(), new Item.Properties()));
+    public static final DeferredItem<BlockWoodenDeviceItem> ITEM_WOODEN_DEVICE =
             ITEMS.register("blockwoodendevice",
-                    () -> new BlockItem(BLOCK_WOODEN_DEVICE.get(), new Item.Properties()));
-    public static final DeferredItem<BlockItem> ITEM_AIRY =
+                    () -> new BlockWoodenDeviceItem(BLOCK_WOODEN_DEVICE.get(), new Item.Properties()));
+    public static final DeferredItem<BlockAiryItem> ITEM_AIRY =
             ITEMS.register("blockairy",
-                    () -> new BlockItem(BLOCK_AIRY.get(), new Item.Properties()));
+                    () -> new BlockAiryItem(BLOCK_AIRY.get(), new Item.Properties()));
 
     // --- standalone wooden devices (blockWoodenDevice 0/1/2/3/4/5) ----------
 
