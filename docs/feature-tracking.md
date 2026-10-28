@@ -1,7 +1,10 @@
 # Feature Tracking — original feature → task → status
 
 Reconciled against the `thaumcraft-classic-port` board and `origin/main`
-HEAD `e48c4fb` on 2026-10-24. Authoritative parity status lives in
+HEAD `e48c4fb` on 2026-10-24; re-reconciled against `origin/main`
+`3a0eee0` (tag `v0.1.0-alpha.3`) on 2026-10-28 — board counts then: 42 done,
+18 todo, 1 ready→running, 1 blocked (see *Systemic blockers* for the
+dispatch state). Authoritative parity status lives in
 `compatibility-matrix.md`; this file maps each original feature area to the
 Kanban task (board `thaumcraft-classic-port`) that implements it.
 
@@ -29,19 +32,19 @@ Statuses (DONE only with test evidence):
 | Configuration | config class | TC-M2-04 (t_c87a23bc) | DONE (0674bcb) |
 | Research graph | ConfigResearch.java (201 entries) | TC-M3-01 (t_eef90e8c) | DONE (6a96dee, 721e5b9, 6201ef5) |
 | Research progression | ResearchManager | TC-M3-02 (t_25f6eeb2) | DONE (de193f3, 79c49ba) |
-| Thaumonomicon GUI | client/gui | TC-M3-03 (t_38e57cb0) | BLOCKED (worker gave up; no committed code) |
-| Research minigames | note puzzle classes | TC-M3-04 (t_4ebb83af) | BLOCKED; PARTIAL WIP (research/NotePuzzle.java, HexUtils.java, ResearchNoteData.java uncommitted) |
+| Thaumonomicon GUI | client/gui | TC-M3-03 (t_38e57cb0) → reduced-scope TC-M3-03-s (t_547e7ad8) | BLOCKED (t_38e57cb0 gave up 150/150; no committed code) → **re-dispatched 2026-10-26 as t_547e7ad8**, serial chain position 7, worktree isolation |
+| Research minigames | note puzzle classes | TC-M3-04 (t_4ebb83af) → TC-M3-04-s (t_cce3e45d) | BLOCKED → **re-dispatched as t_cce3e45d** (chain position 8, directly after TC-M3-03-s); PARTIAL WIP is on branch `wip-salvage` (`research/NotePuzzle.java`, `HexUtils.java`, `ResearchNoteData.java`), not on the shared tree |
 | Aspects | api/aspects | TC-M4-01 (t_0cc0a0ca) | DONE (5ce3dee; docs/aspects.md) |
 | Vis core | api/visnet, wands | TC-M4-02 (t_d7272167) | DONE (3314f7f; docs/architecture/vis.md) |
 | Arcane workbench core (recipe type + serializer + block/BE + vis) | recipes/, blocks/, tiles/, registration/catalog/CatalogArcaneWorkbench | TC-M4-03-s (t_24af2d37; replaces t_81c79f33) | DONE (this commit; recipes/ArcaneWorkbenchRecipe + SimpleRecipeSerializer + CatalogArcaneWorkbench recipe type/serializer pair registered via DeferredRegister.create(Registries.RECIPE_TYPE/RECIPE_SERIALIZER), blocks/BlockArcaneWorkbench EntityBlock + tiles/TileArcaneWorkbench WorldlyContainer + block entity, one wiring line in ModRegistration.init; 38 of the 109 extracted arcane recipe data files under data/thaumcraft/recipe/ resolve into the live RecipeManager and none logs a RecipeManager parse error (the other 71 carry an unmet neoforge:item_exists gate on an item their owning card has not registered); this row's data was repaired in this commit by TC-M4-03-fix (t_a02e0a31): the 15 rows whose meta-carrying ingredient was the bare {"neoforge:components": {...}} object now carry the registered {"type": "neoforge:components", ...} Ingredient form — that IngredientType is NeoForge's own (NeoForgeMod.DATA_COMPONENT_INGREDIENT_TYPE, NeoForgeMod.java:365), so the earlier claim that they wait on their own card was wrong — and the 16 recipe.112.arcane_shaped.<0..15> banner rows now load because the port registers the thaumcraft:banner_color DataComponentType (registration/ModDataComponents.java) carrying the original's banner NBT "color" byte on the result stack; vis payment runs through TC-M4-02's effectiveCosts→consumeAllVisCrafting all-or-nothing chain (centi-vis pool = real vis x100); ArcaneWorkbenchGameTest 7 probes green: core-registration, shaped direct+mirrored match, shapeless claim-every-item, research-gate flip, exact-pool-empties, short-pool-spends-nothing, assertEveryLoadableArcaneRowLoaded (enumerates the shipped rows through the server's ResourceManager and matches every ungated one against the live instance, its result item, count and thaumcraft:banner_color value); 317 unit + 88/88 game green; gui_arcane_workbench stays on TC-M7-04) |
 | Infusion altar core (TC-M4-04-s) | recipes/InfusionCraftingRecipe + InfusionEnchantmentRecipe, tiles/TileInfusionMatrix + TileInfusionPillar + InfusionMatrixLogic, aspect/EssentiaHandler, registration/catalog/CatalogInfusion | TC-M4-04-s (t_35a2c627; replaces t_30961958) | DONE (this commit; CatalogInfusion registers the thaumcraft:infusion + thaumcraft:infusion_enchantment RecipeType/RecipeSerializer pairs and the two tile-entity ids on the shared blockStoneDevice host (variants 1-4: arcane pedestal + matrix + both pillar orientations) through DeviceTileFactory, one wiring line in ModRegistration.init; InfusionMatrixLogic ports validLocation + getSurroundings (25x16x25 scan, +2 per pedestal +1 with an item −2 for the mirrored twin, stabilisers +0.1 each −0.2 mirrored, truncated) and the instability math (symmetry + recipe instability at start, increments capped at 25, event on nextInt(500) <= instability, the 21-sided event table) unit-tested without a Level; TileInfusionMatrix runs the original craft cycle (essentia drain via EssentiaHandler, five-cycle component animation, eject/zap/harm/lightning/warp events, concrete/NBT-tag/enchantment finish paths) and is proven end-to-end by 4 InfusionAltarGameTest probes; 87 extracted recipe rows under data/thaumcraft/recipe/ (63 infusion + 24 infusion_enchantment) now parse — the extractor was fixed to emit the registered neoforge:components ingredient form with its "type" key, to gate every row on neoforge:item_exists for each item it names (an unported item skips the row instead of failing it), and to write 1.21.1 ids (snake_case enchantments, dead_bush/sugar_cane/cobweb/potion, dye meta 0 → ink_sac, wildcard fish → minecraft:fishes); the enchantment field decodes as a ResourceKey and resolves on use, so the two rows naming the TC-M6-05 enchantments load and never match instead of failing the data pack (the dedicated-server smoke gate counts a parse error naming thaumcraft as mod-attributable) — 41 rows resolve into the live RecipeManager today (17 crafting + 24 enchantment), 317 unit + 87/87 game green; the matrix's particles/runes stay on TC-M7-01 and the essentia jars on TC-M4-06) |
-| Alchemy/crucible | TileCrucible* | TC-M4-05 (t_cdece7cd) | BLOCKED; PARTIAL WIP (docs/crucible-recipe-inventory.json, scripts/extract_crucible_recipes.py + tiles/ uncommitted) |
-| Essentia storage | TileSmelter*, jars | TC-M4-06 (t_e9d23e1c) | BLOCKED; PARTIAL WIP (tiles/ uncommitted) |
+| Alchemy/crucible | TileCrucible* | TC-M4-05 (t_cdece7cd) → TC-M4-05-s (t_95373ba3) | BLOCKED → **re-dispatched as t_95373ba3, running 2026-10-28** (chain position 1, worktree `wt/crucible`); the PARTIAL WIP is 61 crucible paths on branch `wip-salvage` (`recipes/CrucibleRecipe.java`, `tiles/CrucibleStateMachine.java`, `tiles/TileCrucible.java`, `docs/crucible-recipe-inventory.json`, `scripts/extract_crucible_recipes.py`, `data/thaumcraft/recipe/*.crucible.json`), not on the shared tree; those rows predate the D-015 ingredient fix and must be re-gated |
+| Essentia storage | TileSmelter*, jars | TC-M4-06 (t_e9d23e1c) → TC-M4-06-s (t_d9fa0476) | BLOCKED → **re-dispatched as t_d9fa0476** (chain position 2); WIP on `wip-salvage`: `aspect/{EssentiaContainer,EssentiaTags,EssentiaTagDataLoader,IEssentiaContainerItem,IEssentiaTransport}.java`, `tiles/TileMirrorEssentia.java`, `data/thaumcraft/essentia/tags.json`; `aspect/EssentiaHandler.java` and the hungry-chest pair are ALREADY merged (`a9303ea`, TC-M6-04d) — diff, do not duplicate; `TileSmelter*` has no WIP (from scratch). This is the essentia supply path the v0.1.0-alpha.3 notes call the altar "a structure test, not a crafting test" about |
 | Essentia transport | tube network | TC-M4-07 (t_2047bca5) | NOT STARTED |
 | Aura + nodes | common/world, api/nodes | TC-M5-01 (t_71def828) | DONE (aaca66c; docs/architecture/aura-nodes.md) |
 | Node behavior | WorldMagicData tick | TC-M5-02 (t_d00335ab) | DONE (47281ea; docs/architecture/node-behavior.md) |
 | Flux | WorldMagicData flux | TC-M5-03 (t_c476f104) | DONE (8395621; docs/architecture/flux.md) |
-| Taint | common/taint | TC-M5-04 (t_66c37e97) | BLOCKED; PARTIAL WIP (taint/ uncommitted) |
+| Taint | common/taint | TC-M5-04 (t_66c37e97) → TC-M5-04-s (t_f7e25b1c) | BLOCKED → **re-dispatched as t_f7e25b1c** (chain position 3); WIP on `wip-salvage`: `taint/{TaintManager,TaintConversion,TaintBiomes}.java`, `blocks/{BlockTaint,BlockTaintFibres}.java`, `api/entities/ITaintedMob.java`, `data/thaumcraft/damage_type/taint.json`; `potions/PotionFluxTaint.java` belongs to the enchantments/potions card, and the per-chunk store is the merged TC-M5-03 flux world-data store — no second per-chunk store |
 | World gen (ores) | worldgen handlers | TC-M5-05 (t_de33def3) | DONE (d1d7d5f; docs/architecture/worldgen.md) |
 | World gen (structures) | totems, mounds, eldritch rings, hilltop stones | TC-M5-05b (t_7c49bfdc) | DONE (d4acdb3; StructureParityTest replays original setBlock sequence + roll frequencies; full unit suite green, runGameTestServer 59/59) |
 | Wands (rods/caps) | items/wands | TC-M6-01 (t_aaab7bef) | NOT STARTED (VisContainerItem/WandVis seam landed with TC-M8-02, e48c4fb) |
@@ -54,9 +57,9 @@ Statuses (DONE only with test evidence):
 | — catalog: furniture/storage/display | content-mapping.csv | TC-M6-04d (t_244a0547; replaces t_a2a41d5b) | DONE (this commit; blocks/ + tiles/ + items/ + menus/ + entities/ + registration/catalog/CatalogFurniture integrated, one wiring line in ModRegistration.init; CatalogFurnitureGameTest 3 probes - all 26 flipped contract rows re-resolve in the registry their csv kind names (block / item / tile_entity / entity_type / menu) with every owned id present, (block, variant) -> tile suppliers resolve for the table family and for the tiles hosted on sibling device blocks (blockStoneDevice 9/11, blockMetalDevice 5/6, blockWoodenDevice 8, blockAiry 4, blockCosmeticSolid 3/15) while the research-table base and arcane workbench metas stay hostless, and the hungry chest's 27 slots + the magic box's item list survive a vanilla saveWithFullMetadata/loadStatic round-trip with slot positions, membership and counts intact; 26 content-mapping rows flipped to done/tested; full unit suite 299 green, runGameTestServer 71/71; tileresearchtable / tilearcaneworkbench, the device GUIs TC-M7-04 and the essentia-transport machines TC-M4-07 deferred) |
 | — catalog: trinkets/tools/loot | content-mapping.csv | TC-M6-04e (t_56d498c2; replaces t_bba23f51) | DONE (this commit; loot/ + blocks/BlockLoot + blocks/BlockLootItem + items/ (loot bag, thaumometer, resonator, compass stone, hand mirror, trunk spawner) + items/component/HandMirrorLink + menus/ (hand mirror, trunk) + entities/TrunkHost seam + registration/catalog/CatalogTrinketsLoot integrated, one wiring line in ModRegistration.init; CatalogTrinketsLootGameTest 6 probes - registry + contract (both block ids, all 8 item ids, mirror_link/trunk_upgrade/trunk_inventory component types, both gui ids), urn/crate break-drops follow the original Utils.generateLoot shape (1+rarity..3+rarity per rarity from the Config.initLoot bag tables, silk touch keeps the container with its ITEM_META rarity, pick-block preserves it), treasure bags keep the original 0/1/2 metas on ITEM_META with per-meta name keys and stack limit 16, the trunk spawner is a no-op and unconsumed while TC-M6-06's entity is absent, the hand-mirror menu is the original 1 input slot at (80,24) over 36 player slots on its own container, and the dark-node announcement map prunes past the original 10 s bound inside the original client-only body while the server-side inventoryTick keeps the world.field_72995_K gate; 10 content-mapping rows flipped to done/tested; full unit suite 299 green, runGameTestServer 77/77; the traveling-trunk entity itself TC-M6-06, lodestone icon/model TC-M7-01) |
 | — catalog: eldritch realm | content-mapping.csv | TC-M6-04f (t_146ef5b3) | PARTIAL (f252c58 integrates world/outerlands maze cells + MazeGeneratorTest; catalog items + data/thaumcraft/damage_type still WIP in wip-salvage) |
-| Enchantments/potions | lib/enchantment, api/potions | TC-M6-05 (t_a8f8a37c) | BLOCKED; PARTIAL WIP (enchantment/, potions/, data/thaumcraft/enchantment/, gametest/EnchantmentPotionGameTest.java uncommitted) |
+| Enchantments/potions | lib/enchantment, api/potions | TC-M6-05 (t_a8f8a37c) → TC-M6-05-s (t_a758393c) | BLOCKED → **re-dispatched as t_a758393c** (chain position 4); WIP on `wip-salvage`: `enchantment/EnchantmentBehaviours.java`, `registration/ModEnchantments.java`, `data/thaumcraft/enchantment/{ench_haste,ench_repair}.json`, ten `potions/Potion*.java`, `gametest/EnchantmentPotionGameTest.java`; `recipes/InfusionEnchantmentRecipe.java` is ALREADY merged (`a9303ea`) and decodes the enchantment as a `ResourceKey` resolved on use — which is exactly why the two infusion rows naming `thaumcraft:ench_repair` / `ench_haste` load today and never match. Registering those two enchantments turns two shipped rows live; it is this card's highest-value hunk |
 | Entities/AI | common/entities (125 classes) | TC-M6-06 (t_cd287131) | NOT STARTED (entities/ dir exists on shared tree, uncommitted, unverified) |
-| Armor/equipment | items/armor | TC-M6-07 (t_1ba6e428) | BLOCKED (runic shielding mechanics landed early with TC-M8-02, e48c4fb; armor items themselves not done) |
+| Armor/equipment | items/armor | TC-M6-07 (t_1ba6e428) → TC-M6-07-s (t_54791c73) | BLOCKED → **re-dispatched as t_54791c73** (chain position 5). WIP is negligible (`api/IRunicArmor.java` only) — treat as from-scratch, not salvage. Runic shielding MECHANICS landed early with TC-M8-02 (`e48c4fb`) and the accessory provider layer + Curios bridge are merged (TC-M8-01/02), so this card must not re-implement slot handling, the shielding maths or the baubles seam; reduced scope = ONE family + its signature effect, the rest to named follow-up cards |
 | Models/textures | assets + renderers | TC-M7-01 (t_1625375e) | NOT STARTED |
 | Particles/beams | client/fx | TC-M7-02 (t_b1249368) | NOT STARTED |
 | Entity renderers | renderers/entity | TC-M7-03 (t_6c2e5f60) | NOT STARTED |
@@ -86,6 +89,44 @@ Statuses (DONE only with test evidence):
    `git worktree` isolation via `workspace_kind: worktree`), each with
    a reduced scope, and integrate hunk-wise per the TC-M5-05 precedent
    (t_833087c1 → d1d7d5f).
+4. **Remediation IN EFFECT — orchestrator findings, 2026-10-28.**
+   - **Incident: the serial chain was frozen, not idle.** The 19
+     reduced-scope cards are chained child→child
+     (`t_95373ba3 → t_d9fa0476 → t_f7e25b1c → t_a758393c → t_54791c73 →
+     t_db7fcc2d → t_547e7ad8 → t_cce3e45d → t_becee16b → t_01f994cf →
+     t_21f78517 → t_62ddfe14 → t_26136494 → t_2c24f643 → t_e87a7f7c →
+     t_215d6fd4 → t_7eb3e438 → t_d827c350 → t_1476daed`), and the chain
+     head `t_35a2c627` (TC-M4-04-s, infusion) sat `blocked` although its
+     work was already merged as `a9303ea`. Symptom read as "busy":
+     `running=0`, `todo=19`, zero dispatcher spawns. Closed by the
+     orchestrator with evidence (317 unit tests 0 failures, 89/89 game,
+     89/89 no-Curios, CI run 40697171757 on `v0.1.0-alpha.3`), which
+     promoted TC-M4-05-s to `ready` and started the pipeline.
+   - **Isolation is the default now:** every chain card runs
+     `workspace_kind: worktree` on its own branch under
+     `.worktrees/<task>`, so the 2026-10-24 shared-tree `compileJava`
+     poisoning cannot recur. Integration stays hunk-wise onto `main`
+     per the TC-M5-05 precedent.
+   - **Worker model is a real dependency:** the profile default model
+     endpoint (`custom:coder`) is unreachable from this host, so
+     workers fall back to a smaller model that crashed twice on
+     `t_a2a74726` ("Response Stopped — Repetition Detected"), which the
+     board records as a worker crash, not a model fault. `custom:gemma4`
+     is pinned per card for the five nearest chain cards and for
+     `t_a2a74726` (`hermes kanban set-model <id> gemma4 --provider
+     custom:gemma4`).
+   - **Preflight comments** on `t_95373ba3`, `t_d9fa0476`,
+     `t_f7e25b1c`, `t_a758393c`, `t_54791c73`: verified main state, the
+     per-area WIP inventory on `wip-salvage`, the merged files that must
+     NOT be re-added (`aspect/EssentiaHandler.java`,
+     `recipes/InfusionEnchantmentRecipe.java`,
+     `blocks/BlockChestHungry.java` + `tiles/TileChestHungry.java`), and
+     the recipe ingredient/gating rules the `runServer` smoke gate
+     enforces.
+   - **Scope discipline for the 150-iteration cap:** each card ships
+     its demonstrable hunk as its own commit first and names the rest in
+     `left_out_of_scope`, so a partial pass lands value instead of
+     burning the budget and auto-blocking.
 
 ## Release honesty
 

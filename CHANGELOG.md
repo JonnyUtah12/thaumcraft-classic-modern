@@ -7,6 +7,29 @@ Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
 ## [Unreleased]
 
+Work towards the next release (the `v0.1.0-alpha.3` cut removed the previous
+section; this is the new one).
+
+### Development
+- Dispatch bookkeeping from the orchestrator pass at `v0.1.0-alpha.3`: the
+  19-card serial chain was **frozen, not idle** — its head `t_35a2c627` sat
+  `blocked` while its work was already merged as `a9303ea`, so `running=0`
+  and 19 cards waited on it. The head was closed with evidence (317 unit
+  tests, 89/89 game, 89/89 no-Curios, CI run 40697171757), TC-M4-05-s was
+  promoted and runs in its own `git worktree`, and the seven `BLOCKED` rows
+  in `docs/feature-tracking.md` / `docs/FEATURE_MATRIX.md` now name the
+  reduced-scope card that owns each area, with the WIP inventory recorded
+  per area (it lives on the read-only `wip-salvage` branch, not on the
+  shared tree).
+- `docs/FEATURE_MATRIX.md` carries a **suite at the current tag** bullet so
+  per-commit counts quoted inside Evidence cells are not read as current,
+  and its structures row is corrected from the stale
+  `IN PROGRESS / none (uncommitted)` to VERIFIED: the code is merged
+  (`d4acdb3`, a confirmed ancestor of `3a0eee0`) and
+  `StructureParityTest` is in `src/test`.
+- `GameTestIndex.java` is generated at build time; its committed copy is now
+  byte-identical to the generated one (`07fb19d`).
+
 ## [0.1.0-alpha.3] - 2026-10-28
 
 Third pre-release. Still not playable end-to-end: the interaction layer
