@@ -32,11 +32,12 @@
       "item": "minecraft:daylight_detector"
     },
     "N": {
-      "neoforge:components": {
-        "items": "thaumcraft:itemresource",
-        "components": {
-          "thaumcraft:item_meta": 1
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 1
       }
     },
     "I": {

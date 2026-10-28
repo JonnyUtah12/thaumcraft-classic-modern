@@ -28,22 +28,24 @@
       "item": "minecraft:piston"
     },
     "A": {
-      "neoforge:components": {
-        "items": "thaumcraft:blockmetaldevice",
-        "components": {
-          "minecraft:block_state": {
-            "variant": "1"
-          }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blockmetaldevice"
+      ],
+      "components": {
+        "minecraft:block_state": {
+          "variant": "1"
         }
       }
     },
     "C": {
-      "neoforge:components": {
-        "items": "thaumcraft:blockmetaldevice",
-        "components": {
-          "minecraft:block_state": {
-            "variant": "9"
-          }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blockmetaldevice"
+      ],
+      "components": {
+        "minecraft:block_state": {
+          "variant": "9"
         }
       }
     }

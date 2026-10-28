@@ -21,6 +21,7 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
@@ -296,6 +297,149 @@ public final class ArcaneWorkbenchGameTest {
         helper.assertTrue(charge(wand, "aqua") == 500 && charge(wand, "ordo") == 499,
                 "the all-or-nothing payment rule must spend nothing on a short pool");
         helper.assertTrue(bench.getItem(9).isEmpty(), "the result must not appear");
+        helper.succeed();
+    }
+
+    /**
+     * TC-M4-03-fix: the shipped data set, not the code. Every `recipe.<N>.arcane_*`
+     * row under {@code data/thaumcraft/recipe/} is enumerated through the server's
+     * {@link ResourceManager}; a row whose {@code neoforge:conditions} are all
+     * satisfied must be in the live {@link RecipeManager}, matched against the real
+     * instance (research gate, pattern, result item + count, and the
+     * {@code thaumcraft:banner_color} component the 16 banner rows carry). A row that
+     * fails to decode — a malformed ingredient form, an unregistered component type —
+     * is dropped by the RecipeManager in silence, and this is what pins it.
+     */
+    @GameTest(template = "empty")
+    public static void assertEveryLoadableArcaneRowLoaded(final GameTestHelper helper) {
+        final var resources = helper.getLevel().getServer().getResourceManager();
+        final RecipeManager manager = helper.getLevel().getRecipeManager();
+
+        // Live instances of this card's type; a data row may claim each one only
+        // once, so a duplicated signature cannot stand in for a missing row.
+        final java.util.ArrayList<ArcaneWorkbenchRecipe> live = new java.util.ArrayList<>();
+        for (final RecipeHolder<?> holder : manager.getAllRecipesFor(
+                CatalogArcaneWorkbench.ARCANE_WORKBENCH_TYPE.get())) {
+            if (holder.value() instanceof ArcaneWorkbenchRecipe row) {
+                live.add(row);
+            }
+        }
+        final java.util.ArrayList<String> loadedPaths = new java.util.ArrayList<>();
+        final java.util.ArrayList<Boolean> claimed = new java.util.ArrayList<>();
+        for (final ArcaneWorkbenchRecipe ignored : live) {
+            claimed.add(false);
+        }
+
+        var bannerRowsLoaded = 0;
+        for (final ArcaneWorkbenchRecipe row : live) {
+            if (row.output().has(ModDataComponents.BANNER_COLOR.get())) {
+                bannerRowsLoaded++;
+            }
+        }
+
+        var shipped = 0;
+        var loadable = 0;
+        for (final var entry : resources.listResources("recipe", path ->
+                path.getNamespace().equals(ThaumcraftClassic.MOD_ID)
+                        && path.getPath().contains(".arcane")).entrySet()) {
+            final com.google.gson.JsonObject json;
+            try (var reader = entry.getValue().openAsReader()) {
+                json = com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
+            } catch (final java.io.IOException failure) {
+                helper.fail("unreadable recipe resource " + entry.getKey() + ": " + failure);
+                return;
+            }
+            shipped++;
+
+            var gated = false;
+            final var conditions = json.get("neoforge:conditions");
+            if (conditions != null && conditions.isJsonArray()) {
+                for (final var condition : conditions.getAsJsonArray()) {
+                    final var guard = condition.getAsJsonObject();
+                    if (!"neoforge:item_exists".equals(guard.get("type").getAsString())) {
+                        gated = true; // a Config / tag gate this probe cannot evaluate
+                        continue;
+                    }
+                    if (!BuiltInRegistries.ITEM.containsKey(
+                            ResourceLocation.parse(guard.get("item").getAsString()))) {
+                        gated = true; // the row is legitimately skipped at load
+                    }
+                }
+            }
+            if (gated) {
+                continue;
+            }
+            loadable++;
+
+            final com.google.gson.JsonObject result = json.getAsJsonObject("result");
+            final String resultId = result.get("id").getAsString();
+            final int wantedCount = result.has("count") ? result.get("count").getAsInt() : 1;
+            final com.google.gson.JsonObject components =
+                    result.has("components") ? result.getAsJsonObject("components") : null;
+            final int wantedColor = components != null && components.has("thaumcraft:banner_color")
+                    ? components.get("thaumcraft:banner_color").getAsInt() : -1;
+            final java.util.ArrayList<String> pattern = new java.util.ArrayList<>();
+            if (json.has("pattern")) {
+                for (final var line : json.getAsJsonArray("pattern")) {
+                    pattern.add(line.getAsString());
+                }
+            }
+            final String research = json.has("research") ? json.get("research").getAsString() : "";
+
+            final Item expected;
+            try {
+                expected = BuiltInRegistries.ITEM.get(ResourceLocation.parse(resultId));
+            } catch (final IllegalArgumentException failure) {
+                helper.fail("ungated row " + entry.getKey() + " names an unregistered result "
+                        + resultId + ", which the load cannot resolve: " + failure);
+                return;
+            }
+
+            var found = -1;
+            for (int i = 0; i < live.size(); i++) {
+                if (claimed.get(i)) {
+                    continue;
+                }
+                final ArcaneWorkbenchRecipe row = live.get(i);
+                final String rowResearch = row.research() == null ? "" : row.research();
+                if (!rowResearch.equals(research)) {
+                    continue;
+                }
+                if (!row.pattern().equals(pattern)) {
+                    continue;
+                }
+                final ItemStack output = row.output();
+                if (output.getCount() != wantedCount || !output.is(expected)) {
+                    continue;
+                }
+                if (output.getOrDefault(ModDataComponents.BANNER_COLOR.get(), -1) != wantedColor) {
+                    continue;
+                }
+                found = i;
+                break;
+            }
+            helper.assertTrue(found >= 0,
+                    "the shipped data row " + entry.getKey() + " is gated on nothing missing, so it "
+                            + "must reach the live RecipeManager; it is either malformed (check the "
+                            + "server log's RecipeManager parse error for this row) or it carries "
+                            + "the result " + resultId + " x" + wantedCount
+                            + " colour " + wantedColor + " that no loaded instance matches");
+            claimed.set(found, true);
+            loadedPaths.add(entry.getKey().toString());
+        }
+
+        ThaumcraftClassic.LOGGER.info(
+                "[TC-M4-03-fix] arcane data: {} rows shipped, {} ungated and all {} matched against "
+                        + "a live instance; {} loaded rows carry a thaumcraft:banner_color component",
+                shipped, loadable, loadable, bannerRowsLoaded);
+        ThaumcraftClassic.LOGGER.info(
+                "[TC-M4-03-fix] the {} rows that resolve into the live RecipeManager: {}",
+                loadedPaths.size(), String.join(", ", loadedPaths));
+        helper.assertTrue(loadable >= 31,
+                "only " + loadable + " arcane rows are ungated — the data set looks truncated");
+        helper.assertTrue(bannerRowsLoaded >= 16,
+            "the 16 recipe.112.arcane_shaped.<0..15> banner rows must each carry the port's "
+                    + "thaumcraft:banner_color component, got " + bannerRowsLoaded);
         helper.succeed();
     }
 

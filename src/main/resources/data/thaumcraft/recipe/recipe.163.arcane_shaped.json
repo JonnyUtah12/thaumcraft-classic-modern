@@ -14,11 +14,12 @@
   ],
   "key": {
     "I": {
-      "neoforge:components": {
-        "items": "thaumcraft:itemresource",
-        "components": {
-          "thaumcraft:item_meta": 7
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 7
       }
     }
   },

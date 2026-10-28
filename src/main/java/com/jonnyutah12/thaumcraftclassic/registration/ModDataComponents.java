@@ -71,6 +71,25 @@ public final class ModDataComponents {
                             .build());
 
     /**
+     * Dye colour of a hanging banner carried by its stack (TC-M4-03 fix): the
+     * original wrote {@code banner.field_77990_d.func_74774_a("color", (byte)a)}
+     * on the banner ItemStack inside {@code ConfigRecipes.initializeArcaneRecipes}
+     * ({@code ConfigRecipes.java:750-752}, the {@code for (int a = 0; a < 16; a++)}
+     * loop that registers {@code Banner_0..Banner_15}), and read it back at
+     * render/placement time ({@code TileBanner.java:48}
+     * {@code this.setColor(nbttagcompound.func_74771_c("color"))} and
+     * {@code ItemBannerRenderer.java:39}). The port keeps that value as a typed
+     * component so the recipe rows (data {@code recipe.112.arcane_shaped.<0..15>})
+     * decode and the colour survives into the banner the player places.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> BANNER_COLOR =
+            DATA_COMPONENT_TYPES.register("banner_color",
+                    () -> DataComponentType.<Integer>builder()
+                            .persistent(Codec.intRange(0, 15))
+                            .networkSynchronized(ByteBufCodecs.VAR_INT)
+                            .build());
+
+    /**
      * Runic hardening bonus (TC-M8-02): the original's {@code "RS.HARDEN"}
      * ItemStack NBT int read by {@code EventHandlerRunic.getFinalCharge}
      * ({@code common/lib/events/EventHandlerRunic.java:347-350}); written by

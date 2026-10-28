@@ -21,11 +21,12 @@
       "item": "minecraft:iron_ingot"
     },
     "S": {
-      "neoforge:components": {
-        "items": "thaumcraft:itemshard",
-        "components": {
-          "thaumcraft:item_meta": 6
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 6
       }
     }
   },

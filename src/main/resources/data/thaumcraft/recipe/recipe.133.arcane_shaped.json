@@ -18,11 +18,12 @@
   ],
   "key": {
     "E": {
-      "neoforge:components": {
-        "items": "thaumcraft:itemshard",
-        "components": {
-          "thaumcraft:item_meta": 5
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 5
       }
     },
     "B": {

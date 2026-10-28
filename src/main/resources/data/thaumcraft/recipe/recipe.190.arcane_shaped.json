@@ -21,22 +21,24 @@
       "item": "thaumcraft:blocktube"
     },
     "V": {
-      "neoforge:components": {
-        "items": "thaumcraft:blocktube",
-        "components": {
-          "minecraft:block_state": {
-            "variant": "1"
-          }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blocktube"
+      ],
+      "components": {
+        "minecraft:block_state": {
+          "variant": "1"
         }
       }
     },
     "R": {
-      "neoforge:components": {
-        "items": "thaumcraft:blocktube",
-        "components": {
-          "minecraft:block_state": {
-            "variant": "5"
-          }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blocktube"
+      ],
+      "components": {
+        "minecraft:block_state": {
+          "variant": "5"
         }
       }
     },

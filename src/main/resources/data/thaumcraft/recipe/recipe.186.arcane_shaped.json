@@ -27,20 +27,22 @@
       "item": "minecraft:gold_ingot"
     },
     "F": {
-      "neoforge:components": {
-        "items": "thaumcraft:itemresource",
-        "components": {
-          "thaumcraft:item_meta": 8
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 8
       }
     },
     "L": {
-      "neoforge:components": {
-        "items": "thaumcraft:blockmagicalleaves",
-        "components": {
-          "minecraft:block_state": {
-            "variant": "1"
-          }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blockmagicalleaves"
+      ],
+      "components": {
+        "minecraft:block_state": {
+          "variant": "1"
         }
       }
     }

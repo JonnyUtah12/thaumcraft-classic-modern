@@ -18,12 +18,13 @@
   ],
   "key": {
     "S": {
-      "neoforge:components": {
-        "items": "thaumcraft:blockcosmeticsolid",
-        "components": {
-          "minecraft:block_state": {
-            "variant": "6"
-          }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blockcosmeticsolid"
+      ],
+      "components": {
+        "minecraft:block_state": {
+          "variant": "6"
         }
       }
     },
@@ -31,12 +32,13 @@
       "item": "minecraft:iron_ingot"
     },
     "B": {
-      "neoforge:components": {
-        "items": "thaumcraft:blockcosmeticsolid",
-        "components": {
-          "minecraft:block_state": {
-            "variant": "7"
-          }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blockcosmeticsolid"
+      ],
+      "components": {
+        "minecraft:block_state": {
+          "variant": "7"
         }
       }
     },

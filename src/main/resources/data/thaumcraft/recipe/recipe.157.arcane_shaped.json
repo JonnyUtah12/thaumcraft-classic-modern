@@ -28,11 +28,12 @@
       "item": "minecraft:quartz"
     },
     "C": {
-      "neoforge:components": {
-        "items": "thaumcraft:itemshard",
-        "components": {
-          "thaumcraft:item_meta": 3
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 3
       }
     }
   },

@@ -20,6 +20,18 @@ new_id); original damage metadata becomes the port's variant components
 block items, thaumcraft:banner_color for banner colour). OreDict names
 become thaumcraft:oredict.* item tags (created here when missing).
 
+Component ingredients (multi-meta items) use the platform's registered
+``{"type": "neoforge:components", "items": [...], "components": {...}}``
+Ingredient form: the dispatch in 1.21.1 reads the ``type`` key, so the untyped
+object ``{"neoforge:components": {...}}`` is not decodable at all and makes
+RecipeManager log ``Parsing error loading recipe`` and drop the row. The
+IngredientType itself is NeoForge's own (``DATA_COMPONENT_INGREDIENT_TYPE``);
+only the JSON form was wrong. Banner colour likewise travels on the result as
+the port's ``thaumcraft:banner_color`` DataComponentType — the original wrote
+the same value as the ItemStack NBT byte key "color" on the banner stack
+(``ConfigRecipes.java:750-752``, read back by ``TileBanner.java:48`` and
+``ItemBannerRenderer.java:39``).
+
 Every recipe carries neoforge:item_exists conditions for every thaumcraft
 item it references, so the data loads before the owning catalog cards land.
 
@@ -291,9 +303,11 @@ class RecipeExtractor:
             return None
         item_id, components = mapped
         if components:
-            self.used_tags  # no-op; keeps linters honest
-            return {"neoforge:components": {
-                "items": item_id, "components": components}}
+            # 1.21.1 decodes an Ingredient through its "type" key
+            # (NeoForgeMod.DATA_COMPONENT_INGREDIENT_TYPE); an object that only
+            # carries the "neoforge:components" key is not decodable.
+            return {"type": "neoforge:components",
+                    "items": [item_id], "components": components}
         return {"item": item_id}
 
     # ---------------------------------------------------------------- recipes
@@ -376,10 +390,12 @@ class RecipeExtractor:
 
     @staticmethod
     def _ingredient_items(ing):
+        items = ing.get("items")
+        if items is None:
+            items = (ing.get("neoforge:components") or {}).get("items")
         if "item" in ing:
             yield ing["item"]
-        elif "neoforge:components" in ing:
-            items = ing["neoforge:components"]["items"]
+        if items is not None:
             yield from ([items] if isinstance(items, str) else items)
 
     # ------------------------------------------------------------------ main
@@ -419,6 +435,7 @@ class RecipeExtractor:
                     if banner_result:
                         self.resolver.vars["banner"] = {
                             "item": "Thaumcraft:blockWoodenDevice", "meta": 8,
+                            # the original's per-instance banner colour
                             "banner_color": ivar}
                     r = self.recipe(args[0], args[1], args[2], args[3:],
                                     shapeless=shapeless,
@@ -426,6 +443,13 @@ class RecipeExtractor:
                     if r is None:
                         continue
                     if "banner_color" in (self.resolver.vars.get("banner") or {}):
+                        # Original: banner.field_77990_d.func_74774_a("color",
+                        # (byte)a) — ConfigRecipes.java:752, inside the loop over
+                        # the 16 dye colours. The value is the banner's own
+                        # ItemStack NBT byte, read back at placement by
+                        # TileBanner.java:48 and ItemBannerRenderer.java:39, so
+                        # the port carries it on the result stack as the
+                        # thaumcraft:banner_color DataComponentType (ModDataComponents).
                         r["result"].setdefault("components", {})[
                             "thaumcraft:banner_color"] = ivar
                     instances.append((f"{row_id}.{idx}", r))

@@ -13,11 +13,12 @@
   ],
   "ingredients": [
     {
-      "neoforge:components": {
-        "items": "thaumcraft:itemresource",
-        "components": {
-          "thaumcraft:item_meta": 3
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 3
       }
     },
     {

@@ -722,31 +722,31 @@ Thaumcraft:recipe.108.infusion,thaumcraft:recipe.108.infusion,recipe,blockEssent
 Thaumcraft:recipe.109.infusion,thaumcraft:recipe.109.infusion,recipe,ItemCompassStone,done,tested,,type=infusion research=SINSTONE
 Thaumcraft:recipe.110.infusion,thaumcraft:recipe.110.infusion,recipe,ItemPrimalCrusher,not_started,not_tested,,type=infusion research=PRIMALCRUSHER
 Thaumcraft:recipe.111.infusion,thaumcraft:recipe.111.infusion,recipe,ItemEldritchObject,not_started,not_tested,,type=infusion research=OCULUS
-Thaumcraft:recipe.112.arcane_shaped,thaumcraft:recipe.112.arcane_shaped,recipe,"Blocks.field_150325_L, 1, a",not_started,not_tested,,type=arcane_shaped research=BANNERS
-Thaumcraft:recipe.113.arcane_shaped,thaumcraft:recipe.113.arcane_shaped,recipe,"ItemResource, 1, 15",not_started,not_tested,,type=arcane_shaped research=BASICARTIFACE
+Thaumcraft:recipe.112.arcane_shaped,thaumcraft:recipe.112.arcane_shaped,recipe,"Blocks.field_150325_L, 1, a",done,tested,,type=arcane_shaped research=BANNERS
+Thaumcraft:recipe.113.arcane_shaped,thaumcraft:recipe.113.arcane_shaped,recipe,"ItemResource, 1, 15",done,tested,,type=arcane_shaped research=BASICARTIFACE
 Thaumcraft:recipe.114.arcane_shaped,thaumcraft:recipe.114.arcane_shaped,recipe,ItemArcaneDoor,done,tested,,type=arcane_shaped research=WARDEDARCANA
 Thaumcraft:recipe.115.arcane_shaped,thaumcraft:recipe.115.arcane_shaped,recipe,"blockCosmeticOpaque, 8, 2",done,tested,,type=arcane_shaped research=WARDEDARCANA
 Thaumcraft:recipe.116.arcane_shaped,thaumcraft:recipe.116.arcane_shaped,recipe,"ArcaneDoorKey, 2, 0",done,tested,,type=arcane_shaped research=WARDEDARCANA
 Thaumcraft:recipe.117.arcane_shaped,thaumcraft:recipe.117.arcane_shaped,recipe,"blockStoneDevice, 1, 14",done,tested,,type=arcane_shaped research=FLUXSCRUB
 Thaumcraft:recipe.118.arcane_shaped,thaumcraft:recipe.118.arcane_shaped,recipe,"ArcaneDoorKey, 2, 1",done,tested,,type=arcane_shaped research=WARDEDARCANA
 Thaumcraft:recipe.119.arcane_shaped,thaumcraft:recipe.119.arcane_shaped,recipe,"blockWoodenDevice, 1, 2",done,tested,,type=arcane_shaped research=WARDEDARCANA
-Thaumcraft:recipe.120.arcane_shaped,thaumcraft:recipe.120.arcane_shaped,recipe,"blockStoneDevice, 1, 9",not_started,not_tested,,type=arcane_shaped research=NODESTABILIZER
-Thaumcraft:recipe.121.arcane_shaped,thaumcraft:recipe.121.arcane_shaped,recipe,"blockStoneDevice, 1, 11",not_started,not_tested,,type=arcane_shaped research=VISPOWER
-Thaumcraft:recipe.122.arcane_shaped,thaumcraft:recipe.122.arcane_shaped,recipe,"blockMetalDevice, 2, 14",not_started,not_tested,,type=arcane_shaped research=VISPOWER
+Thaumcraft:recipe.120.arcane_shaped,thaumcraft:recipe.120.arcane_shaped,recipe,"blockStoneDevice, 1, 9",done,tested,,type=arcane_shaped research=NODESTABILIZER
+Thaumcraft:recipe.121.arcane_shaped,thaumcraft:recipe.121.arcane_shaped,recipe,"blockStoneDevice, 1, 11",done,tested,,type=arcane_shaped research=VISPOWER
+Thaumcraft:recipe.122.arcane_shaped,thaumcraft:recipe.122.arcane_shaped,recipe,"blockMetalDevice, 2, 14",done,tested,,type=arcane_shaped research=VISPOWER
 Thaumcraft:recipe.123.arcane_shaped,thaumcraft:recipe.123.arcane_shaped,recipe,"blockMetalDevice, 1, 2",done,tested,,type=arcane_shaped research=VISCHARGERELAY
-Thaumcraft:recipe.124.arcane_shaped,thaumcraft:recipe.124.arcane_shaped,recipe,"blockStoneDevice, 1, 13",not_started,not_tested,,type=arcane_shaped research=FOCALMANIPULATION
-Thaumcraft:recipe.125.arcane_shaped,thaumcraft:recipe.125.arcane_shaped,recipe,"blockCosmeticSolid, 1, 9",not_started,not_tested,,type=arcane_shaped research=GOLEMFETTER
+Thaumcraft:recipe.124.arcane_shaped,thaumcraft:recipe.124.arcane_shaped,recipe,"blockStoneDevice, 1, 13",done,tested,,type=arcane_shaped research=FOCALMANIPULATION
+Thaumcraft:recipe.125.arcane_shaped,thaumcraft:recipe.125.arcane_shaped,recipe,"blockCosmeticSolid, 1, 9",done,tested,,type=arcane_shaped research=GOLEMFETTER
 Thaumcraft:recipe.126.arcane_shaped,thaumcraft:recipe.126.arcane_shaped,recipe,"blockCosmeticSolid, 9, 6",done,tested,,type=arcane_shaped research=ARCANESTONE
-Thaumcraft:recipe.127.arcane_shaped,thaumcraft:recipe.127.arcane_shaped,recipe,"blockCosmeticSolid, 4, 2",not_started,not_tested,,type=arcane_shaped research=PAVETRAVEL
-Thaumcraft:recipe.128.arcane_shaped,thaumcraft:recipe.128.arcane_shaped,recipe,"blockMetalDevice, 1, 7",not_started,not_tested,,type=arcane_shaped research=ARCANELAMP
+Thaumcraft:recipe.127.arcane_shaped,thaumcraft:recipe.127.arcane_shaped,recipe,"blockCosmeticSolid, 4, 2",done,tested,,type=arcane_shaped research=PAVETRAVEL
+Thaumcraft:recipe.128.arcane_shaped,thaumcraft:recipe.128.arcane_shaped,recipe,"blockMetalDevice, 1, 7",done,tested,,type=arcane_shaped research=ARCANELAMP
 Thaumcraft:recipe.129.arcane_shaped,thaumcraft:recipe.129.arcane_shaped,recipe,"blockStoneDevice, 1, 12",done,tested,,type=arcane_shaped research=ARCANESPA
-Thaumcraft:recipe.130.arcane_shaped,thaumcraft:recipe.130.arcane_shaped,recipe,"blockCosmeticSolid, 4, 3",not_started,not_tested,,type=arcane_shaped research=PAVEWARD
+Thaumcraft:recipe.130.arcane_shaped,thaumcraft:recipe.130.arcane_shaped,recipe,"blockCosmeticSolid, 4, 3",done,tested,,type=arcane_shaped research=PAVEWARD
 Thaumcraft:recipe.131.arcane_shaped,thaumcraft:recipe.131.arcane_shaped,recipe,blockLifter,done,tested,,type=arcane_shaped research=LEVITATOR
 Thaumcraft:recipe.132.arcane_shaped,thaumcraft:recipe.132.arcane_shaped,recipe,"blockWoodenDevice, 1, 1",done,tested,,type=arcane_shaped research=ARCANEEAR
 Thaumcraft:recipe.133.arcane_shaped,thaumcraft:recipe.133.arcane_shaped,recipe,ItemBowBone,done,tested,,type=arcane_shaped research=BONEBOW
 Thaumcraft:recipe.134.arcane_shaped,thaumcraft:recipe.134.arcane_shaped,recipe,"PrimalArrow, 8, a",done,tested,,type=arcane_shaped research=PRIMALARROW
-Thaumcraft:recipe.135.arcane_shaped,thaumcraft:recipe.135.arcane_shaped,recipe,"blockStoneDevice, 1, 2",not_started,not_tested,,type=arcane_shaped research=INFUSION
-Thaumcraft:recipe.136.arcane_shaped,thaumcraft:recipe.136.arcane_shaped,recipe,"blockStoneDevice, 2, 1",not_started,not_tested,,type=arcane_shaped research=INFUSION
+Thaumcraft:recipe.135.arcane_shaped,thaumcraft:recipe.135.arcane_shaped,recipe,"blockStoneDevice, 1, 2",done,tested,,type=arcane_shaped research=INFUSION
+Thaumcraft:recipe.136.arcane_shaped,thaumcraft:recipe.136.arcane_shaped,recipe,"blockStoneDevice, 2, 1",done,tested,,type=arcane_shaped research=INFUSION
 Thaumcraft:recipe.137.arcane_shaped,thaumcraft:recipe.137.arcane_shaped,recipe,"blockJar, 1, 0",done,tested,,type=arcane_shaped research=DISTILESSENTIA
 Thaumcraft:recipe.138.arcane_shaped,thaumcraft:recipe.138.arcane_shaped,recipe,"blockJar, 1, 3",done,tested,,type=arcane_shaped research=JARVOID
 Thaumcraft:recipe.139.arcane_shaped,thaumcraft:recipe.139.arcane_shaped,recipe,"WandCap, 1, 1",done,tested,,type=arcane_shaped research=CAP_gold
@@ -771,7 +771,7 @@ Thaumcraft:recipe.157.arcane_shaped,thaumcraft:recipe.157.arcane_shaped,recipe,F
 Thaumcraft:recipe.158.arcane_shaped,thaumcraft:recipe.158.arcane_shaped,recipe,FocusPrimal,done,tested,,type=arcane_shaped research=FOCUSPRIMAL
 Thaumcraft:recipe.159.arcane_shaped,thaumcraft:recipe.159.arcane_shaped,recipe,FocusPouch,done,tested,,type=arcane_shaped research=FOCUSPOUCH
 Thaumcraft:recipe.160.arcane_shaped,thaumcraft:recipe.160.arcane_shaped,recipe,"blockTable, 1, 14",done,tested,,type=arcane_shaped research=DECONSTRUCTOR
-Thaumcraft:recipe.161.arcane_shaped,thaumcraft:recipe.161.arcane_shaped,recipe,"blockWoodenDevice, 1, 4",not_started,not_tested,,type=arcane_shaped research=ARCANEBORE
+Thaumcraft:recipe.161.arcane_shaped,thaumcraft:recipe.161.arcane_shaped,recipe,"blockWoodenDevice, 1, 4",done,tested,,type=arcane_shaped research=ARCANEBORE
 Thaumcraft:recipe.162.arcane_shaped,thaumcraft:recipe.162.arcane_shaped,recipe,"ItemResource, 1, 7",done,tested,,type=arcane_shaped research=ENCHFABRIC
 Thaumcraft:recipe.163.arcane_shaped,thaumcraft:recipe.163.arcane_shaped,recipe,"ItemChestplateRobe, 1",done,tested,,type=arcane_shaped research=ENCHFABRIC
 Thaumcraft:recipe.164.arcane_shaped,thaumcraft:recipe.164.arcane_shaped,recipe,"ItemLeggingsRobe, 1",done,tested,,type=arcane_shaped research=ENCHFABRIC
@@ -794,8 +794,8 @@ Thaumcraft:recipe.180.arcane_shaped,thaumcraft:recipe.180.arcane_shaped,recipe,"
 Thaumcraft:recipe.181.arcane_shaped,thaumcraft:recipe.181.arcane_shaped,recipe,"ItemGolemDecoration, 1, 5",done,tested,,type=arcane_shaped research=TINYVISOR
 Thaumcraft:recipe.182.arcane_shaped,thaumcraft:recipe.182.arcane_shaped,recipe,"ItemGolemDecoration, 1, 6",done,tested,,type=arcane_shaped research=TINYARMOR
 Thaumcraft:recipe.183.arcane_shaped,thaumcraft:recipe.183.arcane_shaped,recipe,"ItemGolemDecoration, 1, 7",done,tested,,type=arcane_shaped research=TINYHAMMER
-Thaumcraft:recipe.184.arcane_shaped,thaumcraft:recipe.184.arcane_shaped,recipe,"ItemResource, 2, 8",not_started,not_tested,,type=arcane_shaped research=DISTILESSENTIA
-Thaumcraft:recipe.185.arcane_shaped,thaumcraft:recipe.185.arcane_shaped,recipe,"blockStoneDevice, 1, 0",not_started,not_tested,,type=arcane_shaped research=DISTILESSENTIA
+Thaumcraft:recipe.184.arcane_shaped,thaumcraft:recipe.184.arcane_shaped,recipe,"ItemResource, 2, 8",done,tested,,type=arcane_shaped research=DISTILESSENTIA
+Thaumcraft:recipe.185.arcane_shaped,thaumcraft:recipe.185.arcane_shaped,recipe,"blockStoneDevice, 1, 0",done,tested,,type=arcane_shaped research=DISTILESSENTIA
 Thaumcraft:recipe.186.arcane_shaped,thaumcraft:recipe.186.arcane_shaped,recipe,"blockMetalDevice, 1, 1",done,tested,,type=arcane_shaped research=DISTILESSENTIA
 Thaumcraft:recipe.187.arcane_shaped,thaumcraft:recipe.187.arcane_shaped,recipe,"blockWoodenDevice, 1, 0",done,tested,,type=arcane_shaped research=BELLOWS
 Thaumcraft:recipe.188.arcane_shaped,thaumcraft:recipe.188.arcane_shaped,recipe,"blockTube, 8, 0",done,tested,,type=arcane_shaped research=TUBES
@@ -806,7 +806,7 @@ Thaumcraft:recipe.192.arcane_shaped,thaumcraft:recipe.192.arcane_shaped,recipe,"
 Thaumcraft:recipe.193.arcane_shaped,thaumcraft:recipe.193.arcane_shaped,recipe,"blockTube, 1, 2",done,tested,,type=arcane_shaped research=CENTRIFUGE
 Thaumcraft:recipe.194.arcane_shaped,thaumcraft:recipe.194.arcane_shaped,recipe,"blockTube, 1, 7",done,tested,,type=arcane_shaped research=ESSENTIACRYSTAL
 Thaumcraft:recipe.195.arcane_shaped,thaumcraft:recipe.195.arcane_shaped,recipe,"blockMetalDevice, 1, 12",done,tested,,type=arcane_shaped research=THAUMATORIUM
-Thaumcraft:recipe.196.arcane_shapeless,thaumcraft:recipe.196.arcane_shapeless,recipe,"ItemResource, 1, 10",not_started,not_tested,,type=arcane_shapeless research=BASICARTIFACE
+Thaumcraft:recipe.196.arcane_shapeless,thaumcraft:recipe.196.arcane_shapeless,recipe,"ItemResource, 1, 10",done,tested,,type=arcane_shapeless research=BASICARTIFACE
 Thaumcraft:recipe.197.arcane_shapeless,thaumcraft:recipe.197.arcane_shapeless,recipe,"blockTube, 1, 1",done,tested,,type=arcane_shapeless research=TUBES
 Thaumcraft:recipe.198.arcane_shapeless,thaumcraft:recipe.198.arcane_shapeless,recipe,"blockTube, 1, 3",done,tested,,type=arcane_shapeless research=TUBEFILTER
 Thaumcraft:recipe.199.arcane_shapeless,thaumcraft:recipe.199.arcane_shapeless,recipe,"blockTube, 1, 5",done,tested,,type=arcane_shapeless research=TUBEFILTER

@@ -25,12 +25,13 @@
       "item": "minecraft:iron_ingot"
     },
     "R": {
-      "neoforge:components": {
-        "items": "thaumcraft:blockmetaldevice",
-        "components": {
-          "minecraft:block_state": {
-            "variant": "14"
-          }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blockmetaldevice"
+      ],
+      "components": {
+        "minecraft:block_state": {
+          "variant": "14"
         }
       }
     },

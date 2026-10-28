@@ -22,29 +22,32 @@
   ],
   "key": {
     "A": {
-      "neoforge:components": {
-        "items": "thaumcraft:blockmetaldevice",
-        "components": {
-          "minecraft:block_state": {
-            "variant": "9"
-          }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blockmetaldevice"
+      ],
+      "components": {
+        "minecraft:block_state": {
+          "variant": "9"
         }
       }
     },
     "V": {
-      "neoforge:components": {
-        "items": "thaumcraft:itemresource",
-        "components": {
-          "thaumcraft:item_meta": 16
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 16
       }
     },
     "P": {
-      "neoforge:components": {
-        "items": "thaumcraft:itemeldritchobject",
-        "components": {
-          "thaumcraft:item_meta": 3
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemeldritchobject"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 3
       }
     }
   },

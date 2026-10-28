@@ -9,19 +9,21 @@
   ],
   "key": {
     "S": {
-      "neoforge:components": {
-        "items": "thaumcraft:itemresource",
-        "components": {
-          "thaumcraft:item_meta": 15
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 15
       }
     },
     "G": {
-      "neoforge:components": {
-        "items": "thaumcraft:wandrod",
-        "components": {
-          "thaumcraft:item_meta": 6
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:wandrod"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 6
       }
     }
   },

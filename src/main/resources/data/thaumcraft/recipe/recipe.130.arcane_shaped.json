@@ -17,29 +17,32 @@
   ],
   "key": {
     "S": {
-      "neoforge:components": {
-        "items": "thaumcraft:blockcosmeticsolid",
-        "components": {
-          "minecraft:block_state": {
-            "variant": "7"
-          }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blockcosmeticsolid"
+      ],
+      "components": {
+        "minecraft:block_state": {
+          "variant": "7"
         }
       }
     },
     "A": {
-      "neoforge:components": {
-        "items": "thaumcraft:itemshard",
-        "components": {
-          "thaumcraft:item_meta": 1
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 1
       }
     },
     "B": {
-      "neoforge:components": {
-        "items": "thaumcraft:itemshard",
-        "components": {
-          "thaumcraft:item_meta": 4
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 4
       }
     }
   },

@@ -27,11 +27,12 @@
       "item": "minecraft:glass"
     },
     "Q": {
-      "neoforge:components": {
-        "items": "thaumcraft:itemnugget",
-        "components": {
-          "thaumcraft:item_meta": 5
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemnugget"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 5
       }
     }
   },

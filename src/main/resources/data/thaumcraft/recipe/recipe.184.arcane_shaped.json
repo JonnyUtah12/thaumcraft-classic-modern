@@ -19,12 +19,13 @@
       "item": "minecraft:gold_ingot"
     },
     "W": {
-      "neoforge:components": {
-        "items": "thaumcraft:blockwoodendevice",
-        "components": {
-          "minecraft:block_state": {
-            "variant": "7"
-          }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blockwoodendevice"
+      ],
+      "components": {
+        "minecraft:block_state": {
+          "variant": "7"
         }
       }
     }

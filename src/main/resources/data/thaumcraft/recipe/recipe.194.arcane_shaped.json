@@ -28,11 +28,12 @@
       "item": "minecraft:dispenser"
     },
     "Q": {
-      "neoforge:components": {
-        "items": "thaumcraft:itemshard",
-        "components": {
-          "thaumcraft:item_meta": 6
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 6
       }
     },
     "I": {
@@ -42,12 +43,13 @@
       "tag": "thaumcraft:oredict.plankwood"
     },
     "C": {
-      "neoforge:components": {
-        "items": "thaumcraft:blockmetaldevice",
-        "components": {
-          "minecraft:block_state": {
-            "variant": "9"
-          }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blockmetaldevice"
+      ],
+      "components": {
+        "minecraft:block_state": {
+          "variant": "9"
         }
       }
     }

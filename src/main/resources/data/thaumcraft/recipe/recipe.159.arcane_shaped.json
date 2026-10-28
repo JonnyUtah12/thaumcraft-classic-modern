@@ -22,11 +22,12 @@
   ],
   "key": {
     "B": {
-      "neoforge:components": {
-        "items": "thaumcraft:itembaubleblanks",
-        "components": {
-          "thaumcraft:item_meta": 2
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itembaubleblanks"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 2
       }
     },
     "L": {

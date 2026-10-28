@@ -22,12 +22,13 @@
   ],
   "key": {
     "S": {
-      "neoforge:components": {
-        "items": "thaumcraft:blockcosmeticsolid",
-        "components": {
-          "minecraft:block_state": {
-            "variant": "7"
-          }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blockcosmeticsolid"
+      ],
+      "components": {
+        "minecraft:block_state": {
+          "variant": "7"
         }
       }
     },
@@ -41,11 +42,12 @@
       "item": "minecraft:quartz_block"
     },
     "N": {
-      "neoforge:components": {
-        "items": "thaumcraft:itemresource",
-        "components": {
-          "thaumcraft:item_meta": 1
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 1
       }
     }
   },

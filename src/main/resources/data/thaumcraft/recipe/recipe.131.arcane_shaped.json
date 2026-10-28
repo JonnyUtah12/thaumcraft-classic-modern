@@ -18,32 +18,35 @@
   ],
   "key": {
     "W": {
-      "neoforge:components": {
-        "items": "thaumcraft:blockwoodendevice",
-        "components": {
-          "minecraft:block_state": {
-            "variant": "6"
-          }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:blockwoodendevice"
+      ],
+      "components": {
+        "minecraft:block_state": {
+          "variant": "6"
         }
       }
     },
     "E": {
-      "neoforge:components": {
-        "items": "thaumcraft:itemshard",
-        "components": {
-          "thaumcraft:item_meta": 3
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemshard"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 3
       }
     },
     "A": {
       "item": "thaumcraft:itemshard"
     },
     "N": {
-      "neoforge:components": {
-        "items": "thaumcraft:itemresource",
-        "components": {
-          "thaumcraft:item_meta": 1
-        }
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 1
       }
     },
     "B": {
