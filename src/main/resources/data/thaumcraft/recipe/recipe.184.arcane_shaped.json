@@ -1,0 +1,49 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "DISTILESSENTIA",
+  "aspects": [
+    {
+      "aspect": "ordo",
+      "amount": 5
+    },
+    {
+      "aspect": "aqua",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    "GWG"
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "W": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockwoodendevice",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "7"
+          }
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:itemresource",
+    "count": 2,
+    "components": {
+      "thaumcraft:item_meta": 8
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockwoodendevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

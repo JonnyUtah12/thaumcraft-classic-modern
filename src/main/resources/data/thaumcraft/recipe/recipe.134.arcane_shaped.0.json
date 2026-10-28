@@ -1,0 +1,37 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "PRIMALARROW",
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 8
+    }
+  ],
+  "pattern": [
+    "AAA",
+    "ASA",
+    "AAA"
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:arrow"
+    },
+    "S": {
+      "item": "thaumcraft:itemshard"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:primalarrow",
+    "count": 8
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:primalarrow"
+    }
+  ]
+}

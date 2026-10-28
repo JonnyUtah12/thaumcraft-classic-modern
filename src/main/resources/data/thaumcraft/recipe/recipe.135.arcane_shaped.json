@@ -1,0 +1,56 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "INFUSION",
+  "aspects": [
+    {
+      "aspect": "ordo",
+      "amount": 40
+    }
+  ],
+  "pattern": [
+    "SBS",
+    "BEB",
+    "SBS"
+  ],
+  "key": {
+    "S": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockcosmeticsolid",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "6"
+          }
+        }
+      }
+    },
+    "E": {
+      "item": "minecraft:ender_pearl"
+    },
+    "B": {
+      "item": "thaumcraft:itemshard"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockstonedevice",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "2"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcosmeticsolid"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockstonedevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "UPGRADEAIR",
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 10
+    }
+  ],
+  "pattern": [
+    "NNN",
+    "NCN",
+    "NNN"
+  ],
+  "key": {
+    "N": {
+      "item": "minecraft:gold_nugget"
+    },
+    "C": {
+      "item": "thaumcraft:itemshard"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:itemgolemupgrade",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgolemupgrade"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

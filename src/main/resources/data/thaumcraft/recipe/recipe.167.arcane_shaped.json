@@ -1,0 +1,41 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "HUNGRYCHEST",
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 5
+    },
+    {
+      "aspect": "ordo",
+      "amount": 3
+    },
+    {
+      "aspect": "perditio",
+      "amount": 3
+    }
+  ],
+  "pattern": [
+    "WTW",
+    "W W",
+    "WWW"
+  ],
+  "key": {
+    "W": {
+      "tag": "thaumcraft:oredict.plankwood"
+    },
+    "T": {
+      "item": "minecraft:trapdoor"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockchesthungry",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockchesthungry"
+    }
+  ]
+}

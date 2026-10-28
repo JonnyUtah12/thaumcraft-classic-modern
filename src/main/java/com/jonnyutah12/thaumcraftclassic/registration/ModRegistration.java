@@ -1,5 +1,6 @@
 package com.jonnyutah12.thaumcraftclassic.registration;
 
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArcaneWorkbench;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
@@ -111,6 +112,13 @@ public final class ModRegistration {
         // the traveling-trunk spawner with its hand-mirror and trunk menus
         // (the trunk entity itself stays on TC-M6-06).
         CatalogTrinketsLoot.init(modEventBus);
+
+        // TC-M4-03-s: arcane workbench core — the recipe type + serializer pair
+        // the 109 data files under data/thaumcraft/recipe/ resolve through, the
+        // workbench block/item + its TileArcaneWorkbench block entity, and vis
+        // payment routed through TC-M4-02's cost chain. The GUI (gui_arcane_workbench)
+        // stays on TC-M7-04.
+        CatalogArcaneWorkbench.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

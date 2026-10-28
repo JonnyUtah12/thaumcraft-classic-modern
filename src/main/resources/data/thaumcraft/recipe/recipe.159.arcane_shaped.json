@@ -1,0 +1,53 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "FOCUSPOUCH",
+  "aspects": [
+    {
+      "aspect": "terra",
+      "amount": 10
+    },
+    {
+      "aspect": "ordo",
+      "amount": 10
+    },
+    {
+      "aspect": "perditio",
+      "amount": 10
+    }
+  ],
+  "pattern": [
+    "LGL",
+    "LBL",
+    "LLL"
+  ],
+  "key": {
+    "B": {
+      "neoforge:components": {
+        "items": "thaumcraft:itembaubleblanks",
+        "components": {
+          "thaumcraft:item_meta": 2
+        }
+      }
+    },
+    "L": {
+      "item": "minecraft:leather"
+    },
+    "G": {
+      "item": "minecraft:gold_ingot"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:focuspouch",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:focuspouch"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itembaubleblanks"
+    }
+  ]
+}

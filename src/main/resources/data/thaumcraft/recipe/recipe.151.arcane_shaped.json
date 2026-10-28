@@ -1,0 +1,45 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "ROD_blaze_staff",
+  "aspects": [],
+  "pattern": [
+    "  S",
+    " G ",
+    "G  "
+  ],
+  "key": {
+    "S": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemresource",
+        "components": {
+          "thaumcraft:item_meta": 15
+        }
+      }
+    },
+    "G": {
+      "neoforge:components": {
+        "items": "thaumcraft:wandrod",
+        "components": {
+          "thaumcraft:item_meta": 6
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:wandrod",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 56
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandrod"
+    }
+  ]
+}

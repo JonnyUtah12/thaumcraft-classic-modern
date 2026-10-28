@@ -1,0 +1,75 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "NODESTABILIZER",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 32
+    },
+    {
+      "aspect": "terra",
+      "amount": 32
+    },
+    {
+      "aspect": "ordo",
+      "amount": 32
+    }
+  ],
+  "pattern": [
+    " G ",
+    "QPQ",
+    "SNS"
+  ],
+  "key": {
+    "S": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockcosmeticsolid",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "7"
+          }
+        }
+      }
+    },
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "P": {
+      "item": "minecraft:piston"
+    },
+    "Q": {
+      "item": "minecraft:quartz_block"
+    },
+    "N": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemresource",
+        "components": {
+          "thaumcraft:item_meta": 1
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockstonedevice",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "9"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcosmeticsolid"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockstonedevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

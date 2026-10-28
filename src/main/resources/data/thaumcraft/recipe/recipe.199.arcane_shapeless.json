@@ -1,0 +1,37 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "TUBEFILTER",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 5
+    },
+    {
+      "aspect": "terra",
+      "amount": 16
+    }
+  ],
+  "ingredients": [
+    {
+      "item": "thaumcraft:blocktube"
+    },
+    {
+      "tag": "thaumcraft:oredict.stone"
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:blocktube",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "5"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blocktube"
+    }
+  ]
+}

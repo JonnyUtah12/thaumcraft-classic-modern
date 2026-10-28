@@ -1,0 +1,52 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "ARCANEBORE",
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 10
+    },
+    {
+      "aspect": "ordo",
+      "amount": 10
+    }
+  ],
+  "pattern": [
+    "WIW",
+    "IDI",
+    "WIW"
+  ],
+  "key": {
+    "W": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockwoodendevice",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "6"
+          }
+        }
+      }
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "D": {
+      "item": "minecraft:dispenser"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockwoodendevice",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "4"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockwoodendevice"
+    }
+  ]
+}

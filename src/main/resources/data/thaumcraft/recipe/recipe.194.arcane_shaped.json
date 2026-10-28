@@ -1,0 +1,78 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "ESSENTIACRYSTAL",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 5
+    },
+    {
+      "aspect": "terra",
+      "amount": 15
+    },
+    {
+      "aspect": "ordo",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    "IDI",
+    "QCQ",
+    "WTW"
+  ],
+  "key": {
+    "T": {
+      "item": "thaumcraft:blocktube"
+    },
+    "D": {
+      "item": "minecraft:dispenser"
+    },
+    "Q": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemshard",
+        "components": {
+          "thaumcraft:item_meta": 6
+        }
+      }
+    },
+    "I": {
+      "tag": "thaumcraft:oredict.ingotiron"
+    },
+    "W": {
+      "tag": "thaumcraft:oredict.plankwood"
+    },
+    "C": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockmetaldevice",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "9"
+          }
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blocktube",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "7"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockmetaldevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blocktube"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

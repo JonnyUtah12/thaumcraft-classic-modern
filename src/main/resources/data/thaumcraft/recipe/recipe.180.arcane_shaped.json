@@ -1,0 +1,43 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "TINYDART",
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 4
+    },
+    {
+      "aspect": "ignis",
+      "amount": 4
+    }
+  ],
+  "pattern": [
+    "AIA",
+    "ADA",
+    "AIA"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "D": {
+      "item": "minecraft:dispenser"
+    },
+    "A": {
+      "item": "minecraft:arrow"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:itemgolemdecoration",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 4
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgolemdecoration"
+    }
+  ]
+}

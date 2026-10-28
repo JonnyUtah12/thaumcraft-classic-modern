@@ -1,0 +1,60 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "VISCHARGERELAY",
+  "aspects": [
+    {
+      "aspect": "ignis",
+      "amount": 16
+    },
+    {
+      "aspect": "ordo",
+      "amount": 16
+    },
+    {
+      "aspect": "aer",
+      "amount": 16
+    }
+  ],
+  "pattern": [
+    " R ",
+    "W W",
+    "I I"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockmetaldevice",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "14"
+          }
+        }
+      }
+    },
+    "W": {
+      "item": "thaumcraft:wandrod"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockmetaldevice",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "2"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockmetaldevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandrod"
+    }
+  ]
+}

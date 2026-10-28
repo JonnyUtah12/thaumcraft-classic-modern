@@ -1,0 +1,83 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "FLUXSCRUB",
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 16
+    },
+    {
+      "aspect": "ordo",
+      "amount": 16
+    },
+    {
+      "aspect": "aer",
+      "amount": 8
+    }
+  ],
+  "pattern": [
+    " B ",
+    "GOG",
+    "STS"
+  ],
+  "key": {
+    "B": {
+      "item": "thaumcraft:blockwoodendevice"
+    },
+    "G": {
+      "item": "minecraft:iron_bars"
+    },
+    "T": {
+      "item": "thaumcraft:blocktube"
+    },
+    "O": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemresource",
+        "components": {
+          "thaumcraft:item_meta": 8
+        }
+      }
+    },
+    "S": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockcosmeticsolid",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "7"
+          }
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockstonedevice",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "14"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcosmeticsolid"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockstonedevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blocktube"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockwoodendevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

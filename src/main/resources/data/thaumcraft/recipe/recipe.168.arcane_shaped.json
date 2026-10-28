@@ -1,0 +1,33 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "GOLEMBELL",
+  "aspects": [
+    {
+      "aspect": "ordo",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    " QQ",
+    " QQ",
+    "S  "
+  ],
+  "key": {
+    "S": {
+      "tag": "thaumcraft:oredict.stickwood"
+    },
+    "Q": {
+      "item": "minecraft:quartz"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:golembell",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:golembell"
+    }
+  ]
+}

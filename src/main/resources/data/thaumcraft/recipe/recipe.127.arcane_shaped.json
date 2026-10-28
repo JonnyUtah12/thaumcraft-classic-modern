@@ -1,0 +1,60 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "PAVETRAVEL",
+  "aspects": [
+    {
+      "aspect": "terra",
+      "amount": 10
+    },
+    {
+      "aspect": "aer",
+      "amount": 10
+    }
+  ],
+  "pattern": [
+    "SAS",
+    "SBS"
+  ],
+  "key": {
+    "S": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockcosmeticsolid",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "7"
+          }
+        }
+      }
+    },
+    "A": {
+      "item": "thaumcraft:itemshard"
+    },
+    "B": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemshard",
+        "components": {
+          "thaumcraft:item_meta": 3
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockcosmeticsolid",
+    "count": 4,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "2"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcosmeticsolid"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

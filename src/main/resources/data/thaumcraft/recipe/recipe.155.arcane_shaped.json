@@ -1,0 +1,48 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "FOCUSSHOCK",
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 10
+    },
+    {
+      "aspect": "ordo",
+      "amount": 10
+    },
+    {
+      "aspect": "perditio",
+      "amount": 10
+    }
+  ],
+  "pattern": [
+    "CQC",
+    "Q#Q",
+    "CQC"
+  ],
+  "key": {
+    "#": {
+      "item": "minecraft:potato"
+    },
+    "Q": {
+      "item": "minecraft:quartz"
+    },
+    "C": {
+      "item": "thaumcraft:itemshard"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:focusshock",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:focusshock"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

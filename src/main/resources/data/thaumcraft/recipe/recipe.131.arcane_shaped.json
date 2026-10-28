@@ -1,0 +1,75 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "LEVITATOR",
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 10
+    },
+    {
+      "aspect": "terra",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    "WEW",
+    "BNB",
+    "WAW"
+  ],
+  "key": {
+    "W": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockwoodendevice",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "6"
+          }
+        }
+      }
+    },
+    "E": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemshard",
+        "components": {
+          "thaumcraft:item_meta": 3
+        }
+      }
+    },
+    "A": {
+      "item": "thaumcraft:itemshard"
+    },
+    "N": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemresource",
+        "components": {
+          "thaumcraft:item_meta": 1
+        }
+      }
+    },
+    "B": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blocklifter",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blocklifter"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockwoodendevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

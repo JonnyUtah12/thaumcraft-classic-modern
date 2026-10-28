@@ -1,0 +1,65 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "PAVEWARD",
+  "aspects": [
+    {
+      "aspect": "ignis",
+      "amount": 10
+    },
+    {
+      "aspect": "ordo",
+      "amount": 10
+    }
+  ],
+  "pattern": [
+    "SAS",
+    "SBS"
+  ],
+  "key": {
+    "S": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockcosmeticsolid",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "7"
+          }
+        }
+      }
+    },
+    "A": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemshard",
+        "components": {
+          "thaumcraft:item_meta": 1
+        }
+      }
+    },
+    "B": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemshard",
+        "components": {
+          "thaumcraft:item_meta": 4
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockcosmeticsolid",
+    "count": 4,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "3"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcosmeticsolid"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "FOCUSEXCAVATION",
+  "aspects": [
+    {
+      "aspect": "terra",
+      "amount": 20
+    },
+    {
+      "aspect": "perditio",
+      "amount": 5
+    },
+    {
+      "aspect": "ordo",
+      "amount": 5
+    }
+  ],
+  "pattern": [
+    "CQC",
+    "Q#Q",
+    "CQC"
+  ],
+  "key": {
+    "#": {
+      "tag": "thaumcraft:oredict.gememerald"
+    },
+    "Q": {
+      "item": "minecraft:quartz"
+    },
+    "C": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemshard",
+        "components": {
+          "thaumcraft:item_meta": 3
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:focusexcavation",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:focusexcavation"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "FOCALMANIPULATION",
+  "aspects": [
+    {
+      "aspect": "ignis",
+      "amount": 32
+    },
+    {
+      "aspect": "aer",
+      "amount": 32
+    },
+    {
+      "aspect": "perditio",
+      "amount": 32
+    },
+    {
+      "aspect": "terra",
+      "amount": 32
+    },
+    {
+      "aspect": "aqua",
+      "amount": 32
+    },
+    {
+      "aspect": "ordo",
+      "amount": 32
+    }
+  ],
+  "pattern": [
+    "IQI",
+    "SPS",
+    "GTG"
+  ],
+  "key": {
+    "Q": {
+      "item": "thaumcraft:blockcosmeticslabstone"
+    },
+    "S": {
+      "neoforge:components": {
+        "items": "thaumcraft:blockcosmeticsolid",
+        "components": {
+          "minecraft:block_state": {
+            "variant": "6"
+          }
+        }
+      }
+    },
+    "T": {
+      "item": "thaumcraft:blocktable"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "P": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemresource",
+        "components": {
+          "thaumcraft:item_meta": 15
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockstonedevice",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "13"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcosmeticslabstone"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcosmeticsolid"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockstonedevice"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blocktable"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

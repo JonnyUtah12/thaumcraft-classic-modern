@@ -1,0 +1,46 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "ARCANESTONE",
+  "aspects": [
+    {
+      "aspect": "terra",
+      "amount": 1
+    },
+    {
+      "aspect": "ignis",
+      "amount": 1
+    }
+  ],
+  "pattern": [
+    "SSS",
+    "SCS",
+    "SSS"
+  ],
+  "key": {
+    "S": {
+      "tag": "thaumcraft:oredict.stone"
+    },
+    "C": {
+      "item": "thaumcraft:itemshard"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blockcosmeticsolid",
+    "count": 9,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "6"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcosmeticsolid"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

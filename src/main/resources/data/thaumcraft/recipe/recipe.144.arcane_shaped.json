@@ -1,0 +1,28 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "ROD_greatwood",
+  "aspects": [],
+  "pattern": [
+    " G",
+    "G "
+  ],
+  "key": {
+    "G": {
+      "item": "thaumcraft:blockmagicallog"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:wandrod",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockmagicallog"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandrod"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "FOCUSPRIMAL",
+  "aspects": [
+    {
+      "aspect": "terra",
+      "amount": 25
+    },
+    {
+      "aspect": "perditio",
+      "amount": 25
+    },
+    {
+      "aspect": "ordo",
+      "amount": 25
+    },
+    {
+      "aspect": "aer",
+      "amount": 25
+    },
+    {
+      "aspect": "ignis",
+      "amount": 25
+    },
+    {
+      "aspect": "aqua",
+      "amount": 25
+    }
+  ],
+  "pattern": [
+    "CQC",
+    "Q#Q",
+    "CQC"
+  ],
+  "key": {
+    "#": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemresource",
+        "components": {
+          "thaumcraft:item_meta": 15
+        }
+      }
+    },
+    "Q": {
+      "item": "minecraft:quartz"
+    },
+    "C": {
+      "item": "minecraft:diamond"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:focusprimal",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:focusprimal"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

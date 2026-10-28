@@ -1,0 +1,45 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "UPGRADEFIRE",
+  "aspects": [
+    {
+      "aspect": "ignis",
+      "amount": 10
+    }
+  ],
+  "pattern": [
+    "NNN",
+    "NCN",
+    "NNN"
+  ],
+  "key": {
+    "N": {
+      "item": "minecraft:gold_nugget"
+    },
+    "C": {
+      "neoforge:components": {
+        "items": "thaumcraft:itemshard",
+        "components": {
+          "thaumcraft:item_meta": 1
+        }
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:itemgolemupgrade",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 2
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgolemupgrade"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemshard"
+    }
+  ]
+}

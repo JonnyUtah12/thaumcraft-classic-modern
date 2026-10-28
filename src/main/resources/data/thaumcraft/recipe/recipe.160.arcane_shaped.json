@@ -1,0 +1,47 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "DECONSTRUCTOR",
+  "aspects": [
+    {
+      "aspect": "perditio",
+      "amount": 20
+    }
+  ],
+  "pattern": [
+    " S ",
+    "ATP"
+  ],
+  "key": {
+    "T": {
+      "item": "thaumcraft:blocktable"
+    },
+    "S": {
+      "item": "thaumcraft:itemthaumometer"
+    },
+    "P": {
+      "item": "minecraft:golden_pickaxe"
+    },
+    "A": {
+      "item": "minecraft:golden_axe"
+    }
+  },
+  "result": {
+    "id": "thaumcraft:blocktable",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "14"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blocktable"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemthaumometer"
+    }
+  ]
+}
