@@ -10,6 +10,47 @@ Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 Work towards the next release (the `v0.1.0-alpha.3` cut removed the previous
 section; this is the new one).
 
+### Added
+- **Localization — `assets/thaumcraft/lang/en_us.json`** (TC-LOC-s, card
+  `t_a2a74726`): 128 keys ship for the first time, so the mod's identifiers
+  resolve to real words in-game — 27 block display names, 15 item names, 58
+  per-meta names across the 9 multi-meta item families (shards, dusts, ingots,
+  nuggets, patches, capsules, vials, blocks), 9 container/screen titles
+  (`container.thaumcraft.*`, covering the menu types the alpha.3 notes listed
+  as "menus with no screens yet"), 1 entity name (`thaumcraft:efrite`), and 15
+  tooltip and wand-action strings. 118 keys are verbatim from the original
+  4.2.3.5 `en_US.lang`, 2 come from `docs/content-mapping.csv`, and 8 are
+  authored for port-created ids (`container.thaumcraft:purifier`,
+  `container.thaumcraft:Thaumonomicon`, `item.thaumcraft.thaumium_grapple`,
+  `item.thaumcraft.primal_orb`, `item.thaumcraft.creation_pearl`, 2
+  `item_category.thaumcraft.*` tab labels, `thaumcraft.slot.mirror_slot`) —
+  all declared in a whitelist in the new `LocalizationGameTest`, alongside
+  `LocalizationFileTest` (7 unit tests) and a 128-key static audit written to
+  `build/lang-audit.txt`. No legacy `§` colour codes. Closes the
+  "Thaumcraft identifiers are not localized" known limitation; item groups
+  (tabs) and enchantment/mob-effect names remain open on their own cards.
+- **Crucible core and gated data** (TC-M4-05-s, card `t_95373ba3`): the
+  alchemy crucible now exists as a running block entity — `thaumcraft:tilecrucible`
+  with `TileCrucible` + `CrucibleStateMachine`, the `thaumcraft:crucible`
+  recipe type and serializer pair in `CatalogCrucible`, one wiring line in
+  `ModRegistration.init`, 9 ore-dictionary item tags, and 54 crucible recipe
+  files (48 `recipe.N.crucible` rows plus `recipe.0.crucible` expanded to its
+  6 rarity variants). Every row carries a `neoforge:item_exists` gate, 22 use
+  the registered `{"type": "neoforge:components", ...}` ingredient form, and
+  none use the bare form the alpha.3 notes flagged as loading-unsafe (D-015) —
+  0 JSON parse failures, and the game-test server boots with no `thaumcraft`
+  ERROR line across 1404 loaded recipes. **Behaviour is not proven**: the
+  worker's 611-line game test did not compile and was excluded from the build,
+  so no crucible probe runs. The three probes (registration, a real-world craft
+  cycle drawing essentia through the merged `aspect/EssentiaHandler`, live row
+  count through the server `ResourceManager`) are split onto TC-M4-05-p
+  (`t_5fa2e0bb`); `gui_crucible` remains TC-M7-04 and tubes/transport TC-M4-07.
+- **Per-variant mega-block display names** filed as TC-M7-01b (`t_f40bbc0d`),
+  found while verifying the localization jar in the installed test instance:
+  `block.thaumcraft.blockstonedevice` resolves to the meta-0 label ("Alchemical
+  Furnace") for every meta, because 1.21.1 has no per-state block display name
+  and the generated `BlockItem`s do not override `getName`.
+
 ### Development
 - Dispatch bookkeeping from the orchestrator pass at `v0.1.0-alpha.3`: the
   19-card serial chain was **frozen, not idle** — its head `t_35a2c627` sat

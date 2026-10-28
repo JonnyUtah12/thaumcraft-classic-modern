@@ -1,0 +1,49 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "ETHEREALBLOOM",
+  "research": "ETHEREALBLOOM",
+  "catalyst": {
+    "type": "neoforge:components",
+    "items": [
+      "thaumcraft:blockcustomplant"
+    ],
+    "components": {
+      "minecraft:block_state": {
+        "variant": "2"
+      }
+    }
+  },
+  "aspects": [
+    {
+      "aspect": "praecantatio",
+      "amount": 16
+    },
+    {
+      "aspect": "herba",
+      "amount": 16
+    },
+    {
+      "aspect": "sano",
+      "amount": 16
+    },
+    {
+      "aspect": "vitium",
+      "amount": 8
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:blockcustomplant",
+    "count": 1,
+    "components": {
+      "minecraft:block_state": {
+        "variant": "4"
+      }
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcustomplant"
+    }
+  ]
+}

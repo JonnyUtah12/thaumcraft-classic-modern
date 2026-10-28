@@ -1,0 +1,48 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "SANESOAP",
+  "research": "SANESOAP",
+  "catalyst": {
+    "type": "neoforge:components",
+    "items": [
+      "thaumcraft:blockcosmeticsolid"
+    ],
+    "components": {
+      "minecraft:block_state": {
+        "variant": "5"
+      }
+    }
+  },
+  "aspects": [
+    {
+      "aspect": "cognitio",
+      "amount": 16
+    },
+    {
+      "aspect": "alienis",
+      "amount": 16
+    },
+    {
+      "aspect": "ordo",
+      "amount": 16
+    },
+    {
+      "aspect": "sano",
+      "amount": 16
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemsanitysoap",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcosmeticsolid"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemsanitysoap"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "ENTROPICPROCESSING",
+  "research": "ENTROPICPROCESSING",
+  "catalyst": {
+    "item": "minecraft:bone"
+  },
+  "aspects": [
+    {
+      "aspect": "perditio",
+      "amount": 1
+    }
+  ],
+  "result": {
+    "id": "minecraft:bone_meal",
+    "count": 4
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:bone"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:bone_meal"
+    }
+  ]
+}

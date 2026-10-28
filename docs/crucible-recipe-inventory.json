@@ -1,0 +1,168 @@
+{
+  "source": "decompiled thaumcraft/common/config/ConfigRecipes.java initializeAlchemyRecipes (Thaumcraft 4.2.3.5); extracted mechanically by scripts/extract_crucible_recipes.py",
+  "inventoryRows": 49,
+  "instances": 54,
+  "rows": {
+    "recipe.0.crucible": [
+      "recipe.0.crucible.0",
+      "recipe.0.crucible.1",
+      "recipe.0.crucible.2",
+      "recipe.0.crucible.3",
+      "recipe.0.crucible.4",
+      "recipe.0.crucible.5"
+    ],
+    "recipe.1.crucible": [
+      "recipe.1.crucible"
+    ],
+    "recipe.2.crucible": [
+      "recipe.2.crucible"
+    ],
+    "recipe.3.crucible": [
+      "recipe.3.crucible"
+    ],
+    "recipe.4.crucible": [
+      "recipe.4.crucible"
+    ],
+    "recipe.5.crucible": [
+      "recipe.5.crucible"
+    ],
+    "recipe.6.crucible": [
+      "recipe.6.crucible"
+    ],
+    "recipe.7.crucible": [
+      "recipe.7.crucible"
+    ],
+    "recipe.8.crucible": [
+      "recipe.8.crucible"
+    ],
+    "recipe.9.crucible": [
+      "recipe.9.crucible"
+    ],
+    "recipe.10.crucible": [
+      "recipe.10.crucible"
+    ],
+    "recipe.11.crucible": [
+      "recipe.11.crucible"
+    ],
+    "recipe.12.crucible": [
+      "recipe.12.crucible"
+    ],
+    "recipe.13.crucible": [
+      "recipe.13.crucible"
+    ],
+    "recipe.14.crucible": [
+      "recipe.14.crucible"
+    ],
+    "recipe.15.crucible": [
+      "recipe.15.crucible"
+    ],
+    "recipe.16.crucible": [
+      "recipe.16.crucible"
+    ],
+    "recipe.17.crucible": [
+      "recipe.17.crucible"
+    ],
+    "recipe.18.crucible": [
+      "recipe.18.crucible"
+    ],
+    "recipe.19.crucible": [
+      "recipe.19.crucible"
+    ],
+    "recipe.20.crucible": [
+      "recipe.20.crucible"
+    ],
+    "recipe.21.crucible": [
+      "recipe.21.crucible"
+    ],
+    "recipe.22.crucible": [
+      "recipe.22.crucible"
+    ],
+    "recipe.23.crucible": [
+      "recipe.23.crucible"
+    ],
+    "recipe.24.crucible": [
+      "recipe.24.crucible"
+    ],
+    "recipe.25.crucible": [
+      "recipe.25.crucible"
+    ],
+    "recipe.26.crucible": [
+      "recipe.26.crucible"
+    ],
+    "recipe.27.crucible": [
+      "recipe.27.crucible"
+    ],
+    "recipe.28.crucible": [
+      "recipe.28.crucible"
+    ],
+    "recipe.29.crucible": [
+      "recipe.29.crucible"
+    ],
+    "recipe.30.crucible": [
+      "recipe.30.crucible"
+    ],
+    "recipe.31.crucible": [
+      "recipe.31.crucible"
+    ],
+    "recipe.32.crucible": [
+      "recipe.32.crucible"
+    ],
+    "recipe.33.crucible": [
+      "recipe.33.crucible"
+    ],
+    "recipe.34.crucible": [
+      "recipe.34.crucible"
+    ],
+    "recipe.35.crucible": [
+      "recipe.35.crucible"
+    ],
+    "recipe.36.crucible": [
+      "recipe.36.crucible"
+    ],
+    "recipe.37.crucible": [
+      "recipe.37.crucible"
+    ],
+    "recipe.38.crucible": [
+      "recipe.38.crucible"
+    ],
+    "recipe.39.crucible": [
+      "recipe.39.crucible"
+    ],
+    "recipe.40.crucible": [
+      "recipe.40.crucible"
+    ],
+    "recipe.41.crucible": [
+      "recipe.41.crucible"
+    ],
+    "recipe.42.crucible": [
+      "recipe.42.crucible"
+    ],
+    "recipe.43.crucible": [
+      "recipe.43.crucible"
+    ],
+    "recipe.44.crucible": [
+      "recipe.44.crucible"
+    ],
+    "recipe.45.crucible": [
+      "recipe.45.crucible"
+    ],
+    "recipe.46.crucible": [
+      "recipe.46.crucible"
+    ],
+    "recipe.47.crucible": [
+      "recipe.47.crucible"
+    ],
+    "recipe.48.crucible": [
+      "recipe.48.crucible"
+    ]
+  },
+  "oredictTags": [
+    "dustglowstone",
+    "orecopper",
+    "oregold",
+    "oreiron",
+    "orelead",
+    "oresilver",
+    "oretin"
+  ]
+}

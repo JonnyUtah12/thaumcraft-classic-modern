@@ -1,0 +1,34 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "COREFILL",
+  "research": "COREFILL",
+  "catalyst": {
+    "type": "neoforge:components",
+    "items": [
+      "thaumcraft:itemgolemcore"
+    ],
+    "components": {
+      "thaumcraft:item_meta": 100
+    }
+  },
+  "aspects": [
+    {
+      "aspect": "fames",
+      "amount": 5
+    },
+    {
+      "aspect": "vacuos",
+      "amount": 5
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemgolemcore",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgolemcore"
+    }
+  ]
+}

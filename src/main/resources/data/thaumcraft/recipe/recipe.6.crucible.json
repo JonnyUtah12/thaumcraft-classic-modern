@@ -1,0 +1,31 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "TALLOW",
+  "research": "TALLOW",
+  "catalyst": {
+    "item": "minecraft:rotten_flesh"
+  },
+  "aspects": [
+    {
+      "aspect": "praecantatio",
+      "amount": 2
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemresource",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 4
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:rotten_flesh"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

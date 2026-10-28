@@ -3,6 +3,7 @@ package com.jonnyutah12.thaumcraftclassic.registration;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArcaneWorkbench;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
@@ -129,6 +130,12 @@ public final class ModRegistration {
         // matrix's client-side particles/runes stay on TC-M7-01 and the essentia
         // jar that feeds it on TC-M4-06.
         CatalogInfusion.init(modEventBus);
+
+        // TC-M4-05-s: crucible (alchemy) core — the tilecrucible block entity
+        // on its blockMetalDevice variant-0 host, and the recipe type +
+        // serializer pair the 54 data files under data/thaumcraft/recipe/
+        // resolve through. The essentia jar that refills it stays on TC-M4-06.
+        CatalogCrucible.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

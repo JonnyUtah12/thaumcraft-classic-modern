@@ -1,0 +1,39 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "VOIDMETAL",
+  "research": "VOIDMETAL",
+  "catalyst": {
+    "item": "minecraft:wheat_seeds"
+  },
+  "aspects": [
+    {
+      "aspect": "tenebrae",
+      "amount": 8
+    },
+    {
+      "aspect": "vacuos",
+      "amount": 8
+    },
+    {
+      "aspect": "alienis",
+      "amount": 2
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemresource",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 17
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:wheat_seeds"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

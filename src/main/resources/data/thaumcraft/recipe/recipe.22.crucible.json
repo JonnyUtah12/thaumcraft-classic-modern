@@ -1,0 +1,38 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "PURELEAD",
+  "research": "PURELEAD",
+  "catalyst": {
+    "tag": "thaumcraft:oredict.orelead"
+  },
+  "aspects": [
+    {
+      "aspect": "metallum",
+      "amount": 1
+    },
+    {
+      "aspect": "ordo",
+      "amount": 1
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemnugget",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 20
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemnugget"
+    },
+    {
+      "type": "neoforge:not",
+      "value": {
+        "type": "neoforge:tag_empty",
+        "tag": "thaumcraft:oredict.orelead"
+      }
+    }
+  ]
+}

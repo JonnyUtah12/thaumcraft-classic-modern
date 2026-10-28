@@ -1,0 +1,45 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "ALUMENTUM",
+  "research": "ALUMENTUM",
+  "catalyst": {
+    "type": "neoforge:components",
+    "items": [
+      "minecraft:coal",
+      "minecraft:charcoal"
+    ],
+    "components": {}
+  },
+  "aspects": [
+    {
+      "aspect": "potentia",
+      "amount": 3
+    },
+    {
+      "aspect": "ignis",
+      "amount": 3
+    },
+    {
+      "aspect": "perditio",
+      "amount": 3
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemresource",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:charcoal"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:coal"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

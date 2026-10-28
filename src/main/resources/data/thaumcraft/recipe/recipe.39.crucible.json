@@ -1,0 +1,47 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "GOLEMTHAUMIUM",
+  "research": "GOLEMTHAUMIUM",
+  "catalyst": {
+    "type": "neoforge:components",
+    "items": [
+      "thaumcraft:blockcosmeticsolid"
+    ],
+    "components": {
+      "minecraft:block_state": {
+        "variant": "4"
+      }
+    }
+  },
+  "aspects": [
+    {
+      "aspect": "humanus",
+      "amount": 8
+    },
+    {
+      "aspect": "motus",
+      "amount": 8
+    },
+    {
+      "aspect": "spiritus",
+      "amount": 8
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemgolemplacer",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 7
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:blockcosmeticsolid"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgolemplacer"
+    }
+  ]
+}

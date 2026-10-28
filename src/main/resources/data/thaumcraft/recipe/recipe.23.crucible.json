@@ -1,0 +1,30 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "TRANSIRON",
+  "research": "TRANSIRON",
+  "catalyst": {
+    "type": "neoforge:components",
+    "items": [
+      "thaumcraft:itemnugget"
+    ],
+    "components": {
+      "thaumcraft:item_meta": 0
+    }
+  },
+  "aspects": [
+    {
+      "aspect": "metallum",
+      "amount": 2
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemnugget",
+    "count": 3
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemnugget"
+    }
+  ]
+}

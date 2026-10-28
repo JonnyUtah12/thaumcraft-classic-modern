@@ -1,0 +1,37 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "COREBUTCHER",
+  "research": "COREBUTCHER",
+  "catalyst": {
+    "type": "neoforge:components",
+    "items": [
+      "thaumcraft:itemgolemcore"
+    ],
+    "components": {
+      "thaumcraft:item_meta": 4
+    }
+  },
+  "aspects": [
+    {
+      "aspect": "corpus",
+      "amount": 5
+    },
+    {
+      "aspect": "bestia",
+      "amount": 5
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemgolemcore",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 9
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemgolemcore"
+    }
+  ]
+}

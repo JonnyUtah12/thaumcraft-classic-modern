@@ -1,0 +1,38 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "PURETIN",
+  "research": "PURETIN",
+  "catalyst": {
+    "tag": "thaumcraft:oredict.oretin"
+  },
+  "aspects": [
+    {
+      "aspect": "metallum",
+      "amount": 1
+    },
+    {
+      "aspect": "ordo",
+      "amount": 1
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemnugget",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 18
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemnugget"
+    },
+    {
+      "type": "neoforge:not",
+      "value": {
+        "type": "neoforge:tag_empty",
+        "tag": "thaumcraft:oredict.oretin"
+      }
+    }
+  ]
+}

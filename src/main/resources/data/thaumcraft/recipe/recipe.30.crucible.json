@@ -1,0 +1,36 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "LIQUIDDEATH",
+  "research": "LIQUIDDEATH",
+  "catalyst": {
+    "item": "minecraft:bucket"
+  },
+  "aspects": [
+    {
+      "aspect": "mortuus",
+      "amount": 32
+    },
+    {
+      "aspect": "venenum",
+      "amount": 32
+    },
+    {
+      "aspect": "perditio",
+      "amount": 32
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itembucketdeath",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:bucket"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itembucketdeath"
+    }
+  ]
+}

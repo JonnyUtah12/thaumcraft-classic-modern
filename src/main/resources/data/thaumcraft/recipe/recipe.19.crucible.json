@@ -1,0 +1,38 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "PURECOPPER",
+  "research": "PURECOPPER",
+  "catalyst": {
+    "tag": "thaumcraft:oredict.orecopper"
+  },
+  "aspects": [
+    {
+      "aspect": "metallum",
+      "amount": 1
+    },
+    {
+      "aspect": "ordo",
+      "amount": 1
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itemnugget",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 17
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemnugget"
+    },
+    {
+      "type": "neoforge:not",
+      "value": {
+        "type": "neoforge:tag_empty",
+        "tag": "thaumcraft:oredict.orecopper"
+      }
+    }
+  ]
+}

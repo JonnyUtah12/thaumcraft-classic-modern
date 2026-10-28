@@ -1,0 +1,38 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "BOTTLETAINT",
+  "research": "BOTTLETAINT",
+  "catalyst": {
+    "type": "neoforge:components",
+    "items": [
+      "thaumcraft:itemessence"
+    ],
+    "components": {
+      "thaumcraft:item_meta": 1
+    }
+  },
+  "aspects": [
+    {
+      "aspect": "vitium",
+      "amount": 8
+    },
+    {
+      "aspect": "praecantatio",
+      "amount": 8
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:itembottletaint",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itembottletaint"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemessence"
+    }
+  ]
+}

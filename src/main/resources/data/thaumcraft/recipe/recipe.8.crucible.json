@@ -1,0 +1,28 @@
+{
+  "type": "thaumcraft:crucible",
+  "original_key": "ALCHEMICALDUPLICATION",
+  "research": "ALCHEMICALDUPLICATION",
+  "catalyst": {
+    "item": "minecraft:slime_ball"
+  },
+  "aspects": [
+    {
+      "aspect": "aqua",
+      "amount": 2
+    },
+    {
+      "aspect": "victus",
+      "amount": 2
+    }
+  ],
+  "result": {
+    "id": "minecraft:slime_ball",
+    "count": 2
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:slime_ball"
+    }
+  ]
+}
