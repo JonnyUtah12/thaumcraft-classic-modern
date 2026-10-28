@@ -32,6 +32,7 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -47,6 +48,14 @@ import java.util.Map;
  *       instances into the live {@link RecipeManager} (instances whose
  *       {@code neoforge:conditions} name not-yet-registered items stay gated
  *       until their owning cards land).</li>
+ *   <li>{@link #componentCarryingRecipePayloadsLoad}: TC-M4-03-s-b acceptance — the
+ *       31 instances whose payloads carry a component (the 16 banner results naming
+ *       {@code thaumcraft:banner_color} and the 15 with a components-carrying
+ *       ingredient) resolve through the live {@link RecipeManager}'s own parse path:
+ *       the ingredient form is NeoForge's documented custom-ingredient form
+ *       ({"type": "neoforge:components", "items": …, "components": …}, parsed by
+ *       {@code Ingredient.MAP_CODEC_NONEMPTY} = {@code CraftingHelper.makeIngredientMapCodec()}),
+ *       and {@code thaumcraft:banner_color} is a registered data component (D-015).</li>
  *   <li>{@link #shapedMatchDirectAndMirrored}: the original shaped
  *       {@code NNI/N  } grid matches in its direct orientation and through the
  *       original's default {@code mirrored = true} horizontal mirror
@@ -171,6 +180,41 @@ public final class ArcaneWorkbenchGameTest {
                 "no data recipe resolved as the arcane workbench recipe type");
         // The probes below exercise three of these directly; they must be
         // among the loaded instances (their condition ids are registered).
+        helper.succeed();
+    }
+
+    /**
+     * The instance ids whose generated payloads carry a component: 16 banner results
+     * (loop expansion of the original banner family, one per colour) plus 14 shaped and
+     * 1 shapeless instance whose ingredient needs a component-carrying ingredient. All
+     * 31 have their {@code neoforge:conditions} ids registered, so the only legitimate
+     * reason one is absent from the {@link RecipeManager} is a payload the parser rejects.
+     */
+    private static final List<String> componentCarryingInstanceIds() {
+        final List<String> ids = new ArrayList<>();
+        for (int colour = 0; colour < 16; colour++) {
+            ids.add("recipe.112.arcane_shaped." + colour);
+        }
+        for (final int row : List.of(113, 120, 121, 122, 124, 125, 127, 128, 130,
+                135, 136, 161, 184, 185)) {
+            ids.add("recipe." + row + ".arcane_shaped");
+        }
+        ids.add("recipe.196.arcane_shapeless");
+        return ids;
+    }
+
+    @GameTest(template = "empty")
+    public static void componentCarryingRecipePayloadsLoad(final GameTestHelper helper) {
+        final RecipeManager recipes = helper.getLevel().getRecipeManager();
+        final List<String> missing = new ArrayList<>();
+        for (final String path : componentCarryingInstanceIds()) {
+            if (!recipes.byKey(id(path)).isPresent()) {
+                missing.add(path);
+            }
+        }
+        helper.assertTrue(missing.isEmpty(),
+                "components-carrying recipe payloads rejected by the RecipeManager parse: "
+                        + String.join(", ", missing));
         helper.succeed();
     }
 

@@ -364,3 +364,46 @@ dedicated-server smoke — it does not cover `runs/server`, EULA acceptance, or
 
 **Fidelity impact:** none directly. This record fixes which documentation is
 authoritative and closes the prerequisite checks.
+
+
+## D-015 — Banner colour as a registered data component (TC-M4-03-s-b)
+
+The 16 generated banner recipe instances name `thaumcraft:banner_color` in
+`result.components`. Nothing registers that component id, so the RecipeManager
+rejects all 16 payloads (`No component with type: 'thaumcraft:banner_color'`)
+and the dedicated-server smoke gate is red. Two ways out, chosen deliberately:
+
+- **Register `thaumcraft:banner_color`** (chosen, `ModDataComponents.BANNER_COLOR`).
+  The original writes exactly this value onto the result stack:
+  `banner.func_77990_d.func_74774_a("color", (byte)a)` in
+  `ConfigRecipes.initializeArcaneRecipes` (the `a < 16` loop, line 751). D-006
+  already fixes the rule "original ItemStack NBT key → typed data component", and
+  the other members of this same block/item family already ride that rule
+  (`minecraft:block_state` for block metas, `thaumcraft:item_meta` for item
+  metas). The new component has the same shape as those, value range 0..15 = the
+  original's colour index.
+- **Stop emitting the component** (rejected). The colour would then only be
+  implied by which coloured wool the recipe asked for; the crafted banner itself
+  would carry no colour, the 16 instances would collapse onto one identical
+  result, and TC-M6-04d's `TileBanner.color` — an entity field, i.e. placed-tile
+  state, not stack state — would have nothing to read from the crafted item. That
+  deletes original data instead of representing it.
+
+**Why not the block's `variant` property instead?** `blockwoodendevice`'s variant
+property is `IntegerProperty(0, 8)`, the original meta map. Colour is 0..15 — a
+different axis, and not a legal value of that property, so it cannot be smuggled
+through it.
+
+Verified against the built 21.1.259 jars rather than assumed: in an ingredient /
+`key` position the only valid way to carry components is NeoForge's own
+custom-ingredient object `{"type": "neoforge:components", "items": …,
+"components": …}` (`DataComponentIngredient`, dispatched on a `"type"` key by
+`CraftingHelper.makeIngredientMapCodec()` = `Ingredient.MAP_CODEC_NONEMPTY`); the
+bare `{"neoforge:components": …}` wrapper this card inherited is not an
+ingredient at all, which is why 15 more payloads were rejected.
+
+**Fidelity impact:** the 16 banner recipes now encode the colour the originals
+encoded; nothing consumes it on this card (TC-M6-04d owns the banner tile), so no
+in-game behaviour changes here. The observable change is the data contract: the
+RecipeManager's parse errors for our mod go from 31 to 0.
+

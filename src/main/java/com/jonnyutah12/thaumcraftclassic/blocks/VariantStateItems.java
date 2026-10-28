@@ -19,7 +19,10 @@ import java.util.Map;
  *
  * <p>Recipe JSONs address variants the same way: results carry
  * {@code "components": {"minecraft:block_state": {"variant": "N"}}} and
- * ingredients match them with a {@code neoforge:components} ingredient. Block
+ * ingredients match them with a {@code {"type": "neoforge:components",
+ * "items": …, "components": …}} custom ingredient (NeoForge's own
+ * {@code DataComponentIngredient}, dispatched on {@code type} by
+ * {@code CraftingHelper.makeIngredientMapCodec()}). Block
  * classes call {@link #variantComponent(BlockState)} from
  * {@code getCloneItemStack} so drops and pick-block preserve the variant.</p>
  */
