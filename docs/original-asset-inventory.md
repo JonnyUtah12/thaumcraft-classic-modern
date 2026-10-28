@@ -26,6 +26,39 @@ in the code, then resolving it to a file:
 | `sounds.json` event keys + `playSound("thaumcraft:<event>")` call sites | `sounds/<file>.ogg` |
 | OBJ `mtllib` | `.mtl` (see model section — not loaded at runtime) |
 
+### Published layout (1.21.1)
+
+The reference tree keeps the 1.7.10 directory names, and 1.21.1 resolves block
+and item sprites under **singular** directories — the plural names were dropped
+in 1.14. Measured against `minecraft_1.21.1_client.jar`
+(`assets/minecraft/textures/`: `block` 1061, `item` 605, `gui` 502,
+`particle` 229, `misc` 19, `models` 15 — there is no `blocks`/`items`), each
+directory is handled on its own evidence:
+
+| 1.7.10 source dir | published at | why |
+| --- | --- | --- |
+| `textures/blocks/` | `textures/block/` | 1.21.1 block sprite directory; a model sprite `thaumcraft:block/amberore` resolves only there |
+| `textures/items/` | `textures/item/` | 1.21.1 item sprite directory; same reasoning |
+| `textures/models/` | unchanged | vanilla ships `textures/models`; the OBJ files are addressed by literal path (`mtllib`) |
+| `textures/misc/` | unchanged | vanilla ships `textures/misc`; bound by literal path (research `<IMG>`, TESR `bindTexture`) |
+| `textures/gui/` | unchanged | vanilla ships `textures/gui`; bound by literal path in the GUI classes |
+| `textures/aspects/` | unchanged | literal path built by `Aspect#iconTexture` (`thaumcraft:textures/aspects/<tag>.png`) |
+| `textures/foci/` | unchanged | literal path from `ItemFocus*` / `ConfigResearch` |
+
+The rename happens at copy time in `overlayOriginalAssets` (build.gradle) —
+the ARR source tree is never modified (D-004) — and the `new_asset` column of
+`docs/asset-mapping.csv` records the 1.21.1 target, so the recorded contract
+matches the pipeline. Committed references split on how they are consumed:
+**structured** locations (the research graph's `texture`/`icon`/`background`
+fields) name the modern path, because they are read as resource locations;
+`<IMG>` paths inside research page **text** keep the original 1.7.10 path,
+because that text is byte-identical to the original `en_US.lang` (guarded by
+`ResearchGraphDataTest.langStringsAreVerbatimFromTheOriginalFile`) — the
+research renderer therefore applies this same rename to `<IMG>` paths at draw
+time. `OriginalTextureOverlayTest` guards the CSV targets, the overlay output,
+every `thaumcraft:` sprite referenced by the committed models, and the
+structured research locations.
+
 `used_by` in the CSV lists the decompiled classes that reference the asset,
 tagged by kind: `(block) (item) (block-entity) (entity-render) (entity)
 (gui) (effect) (model) (wand-component) (aspect-system) (registration)
