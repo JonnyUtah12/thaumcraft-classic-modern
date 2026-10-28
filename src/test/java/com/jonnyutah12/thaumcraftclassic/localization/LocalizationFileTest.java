@@ -242,6 +242,119 @@ class LocalizationFileTest {
         assertTrue(checked >= 55, "expected the nine multi-meta families to be checked, got " + checked);
     }
 
+
+    /**
+     * TC-M7-01b / t_f40bbc0d: every (block, meta) pair the port declares in
+     * {@code BlockVariantNames} — the original's per-metadata
+     * {@code tile.<id>.<meta>.name} set, sparse metas included — ships a
+     * {@code block.thaumcraft.<id>.<meta>} entry, because
+     * {@code VariantBlockItem.getName} emits that key for a variant stack.
+     */
+    @Test
+    void everyMultiMetaBlockHasItsFullVariantSet() {
+        final JsonObject lang = lang();
+        final List<String> missing = new java.util.ArrayList<>();
+        int checked = 0;
+        for (final String path : com.jonnyutah12.thaumcraftclassic.blocks.BlockVariantNames.paths()) {
+            for (final int meta : com.jonnyutah12.thaumcraftclassic.blocks.BlockVariantNames.metasOf(path)) {
+                final String key = com.jonnyutah12.thaumcraftclassic.blocks.BlockVariantNames.key(path, meta);
+                if (!lang.has(key) || !lang.get(key).isJsonPrimitive() || lang.get(key).getAsString().isEmpty()) {
+                    missing.add(key + " (original " + com.jonnyutah12.thaumcraftclassic.blocks
+                            .BlockVariantNames.legacyKey(path, meta) + ")");
+                }
+                checked++;
+            }
+        }
+        assertEquals(List.of(), missing, "per-variant block names the port resolves are not shipped in en_us.json");
+        assertTrue(checked >= 100, "expected the 13 mega-block families to be checked in full, got " + checked);
+    }
+
+    /**
+     * The wording parity for those keys, in both directions, on a build that
+     * has the reference tree: every declared pair preserves the original
+     * string, every shipped per-variant block key is declared, and the
+     * original's {@code tile.<id>.<meta>.name} set for the shipped families
+     * has no name the port leaves unshipped.
+     */
+    @Test
+    void perVariantBlockNamesPreserveTheOriginalWording() throws IOException {
+        final Path original = Path.of(System.getProperty("tc.originalLangFile", ""));
+        org.junit.jupiter.api.Assumptions.assumeTrue(Files.isRegularFile(original),
+                "the reference tree (reference/assets/thaumcraft/lang/en_US.lang) is not present");
+
+        final Map<String, String> legacy = new LinkedHashMap<>();
+        for (final String line : Files.readAllLines(original, StandardCharsets.UTF_8)) {
+            final String trimmed = line.replace("\r", "");
+            final int equals = trimmed.indexOf('=');
+            if (equals > 0 && !trimmed.startsWith("#")) {
+                legacy.put(trimmed.substring(0, equals).trim(), normalize(trimmed.substring(equals + 1)));
+            }
+        }
+
+        final Map<String, String> declaredByLegacy = new java.util.LinkedHashMap<>();
+        for (final String path : com.jonnyutah12.thaumcraftclassic.blocks.BlockVariantNames.paths()) {
+            for (final int meta : com.jonnyutah12.thaumcraftclassic.blocks.BlockVariantNames.metasOf(path)) {
+                declaredByLegacy.put(com.jonnyutah12.thaumcraftclassic.blocks.BlockVariantNames
+                                .legacyKey(path, meta),
+                        com.jonnyutah12.thaumcraftclassic.blocks.BlockVariantNames.key(path, meta));
+            }
+        }
+        // The original ids the port ships variants of, e.g. `blockAiry`.
+        final java.util.Set<String> shippedLegacyIds = declaredByLegacy.keySet().stream()
+                .map(key -> key.substring("tile.".length(), key.lastIndexOf('.')))
+                .collect(java.util.stream.Collectors.toCollection(java.util.TreeSet::new));
+
+        final JsonObject lang = lang();
+        final List<String> problems = new java.util.ArrayList<>();
+
+        // 1. declared -> original string, verbatim after normalization.
+        declaredByLegacy.forEach((legacyKey, portKey) -> {
+            final String expected = legacy.get(legacyKey);
+            if (expected == null) {
+                problems.add(portKey + " is declared with no original " + legacyKey + " to preserve");
+                return;
+            }
+            if (!lang.has(portKey)) {
+                problems.add(portKey + " is not shipped; the original names it " + legacyKey + "=" + expected);
+                return;
+            }
+            final String shipped = normalize(lang.get(portKey).getAsString());
+            if (!expected.equals(shipped)) {
+                problems.add(portKey + ": expected \"" + expected + "\" from " + legacyKey
+                        + ", got \"" + shipped + "\"");
+            }
+        });
+
+        // 2. original -> declared: the shipped families keep every original
+        //    per-meta name, so a name the port drops shows up here.
+        final java.util.regex.Pattern perMeta =
+                java.util.regex.Pattern.compile("tile\\.([A-Za-z0-9_]+)\\..+\\.name");
+        for (final String legacyKey : legacy.keySet()) {
+            final java.util.regex.Matcher matcher = perMeta.matcher(legacyKey);
+            if (!matcher.matches() || !shippedLegacyIds.contains(matcher.group(1))) {
+                continue;
+            }
+            if (!declaredByLegacy.containsKey(legacyKey)) {
+                problems.add("the original ships " + legacyKey + "=" + legacy.get(legacyKey)
+                        + " for a mega-block the port names, but BlockVariantNames does not declare it");
+            }
+        }
+
+        // 3. shipped -> declared: no stray per-variant block key.
+        for (final String key : lang.keySet()) {
+            if (key.startsWith("block.thaumcraft.") && key.matches(".*\\.\\d+$")
+                    && !declaredByLegacy.containsValue(key)) {
+                problems.add(key + " is a per-variant block key that BlockVariantNames does not declare");
+            }
+        }
+
+        assertEquals(List.of(), problems,
+                "per-variant block names must mirror the original en_US.lang set verbatim");
+        assertTrue(declaredByLegacy.size() >= 100,
+                "expected the mega-block families to declare their full name set, got "
+                        + declaredByLegacy.size());
+    }
+
     /** The normalization the port applies to original 1.7 lang strings. */
     private static String normalize(final String value) {
         return value.replaceAll("\u00a7[0-9a-fk-orA-FK-OR]", "")

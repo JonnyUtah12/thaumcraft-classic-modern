@@ -6,7 +6,9 @@ import com.jonnyutah12.thaumcraftclassic.blocks.BlockChestHungry;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockLifter;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockMagicBox;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockMirror;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockMirrorItem;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockTable;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockTableItem;
 import com.jonnyutah12.thaumcraftclassic.blocks.DeviceTileFactory;
 import com.jonnyutah12.thaumcraftclassic.entities.EntityItemGrate;
 import com.jonnyutah12.thaumcraftclassic.items.ItemArcaneDoor;
@@ -106,14 +108,16 @@ public final class CatalogFurniture {
 
     // Same-id block items for the two rows whose item_class column names one
     // (BlockTableItem / BlockMirrorItem in the original); the WIP omitted them
-    // and this integration adds the plain block items so the done/tested rows
+    // and this integration adds the block items so the done/tested rows
     // resolve in the ITEM registry too (same shape as the device blocks in
-    // TC-M6-04c). Carrying the placed variant/orientation from the item is
-    // deferred (the items place the default variant).
-    public static final DeferredItem<BlockItem> ITEM_TABLE =
-            ITEMS.register("blocktable", () -> new BlockItem(BLOCK_TABLE.get(), new Item.Properties()));
-    public static final DeferredItem<BlockItem> ITEM_MIRROR =
-            ITEMS.register("blockmirror", () -> new BlockItem(BLOCK_MIRROR.get(), new Item.Properties()));
+    // TC-M6-04c). TC-M7-01b: both are VariantBlockItem subclasses, so a stack
+    // carrying a variant applies it when placing and names itself with the
+    // original's tile.<id>.<meta>.name label (Deconstruction Table vs Arcane
+    // Worktable on blockTable, Magic Mirror vs Essentia Mirror on blockMirror).
+    public static final DeferredItem<BlockTableItem> ITEM_TABLE =
+            ITEMS.register("blocktable", () -> new BlockTableItem(BLOCK_TABLE.get(), new Item.Properties()));
+    public static final DeferredItem<BlockMirrorItem> ITEM_MIRROR =
+            ITEMS.register("blockmirror", () -> new BlockMirrorItem(BLOCK_MIRROR.get(), new Item.Properties()));
     public static final DeferredItem<ItemArcaneDoor> ITEM_ARCANE_DOOR =
             ITEMS.register("itemarcanedoor", () -> new ItemArcaneDoor(BLOCK_ARCANE_DOOR.get(), new Item.Properties()));
     public static final DeferredItem<ItemKey> ARCANE_DOOR_KEY =
