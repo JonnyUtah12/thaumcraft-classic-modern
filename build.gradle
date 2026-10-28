@@ -147,6 +147,34 @@ def soundEventRenames = [
         'runicShieldCharge' : 'runic_shield_charge',
 ]
 
+// The original 1.7.10 tree keeps block and item textures in the PLURAL
+// directories `blocks`/`items`; 1.14 renamed them and 1.21.1 resolves a model
+// sprite `thaumcraft:block/amberore` at
+// assets/thaumcraft/textures/block/amberore.png (SINGULAR) — measured against
+// minecraft_1.21.1_client.jar, which ships assets/minecraft/textures/block
+// (1061 files) and textures/item (605) and has no plural counterpart. Overlaid
+// unchanged, the original tree is therefore unreachable at the path every model
+// asks for: every block and item renders the missing-texture magenta
+// (kanban t_2c24f643, player screenshot 2026-10-28).
+//
+// Verified per directory rather than blanket-renamed, because most of them keep
+// their 1.7.10 name in 1.21.1: `gui`, `misc` and `models` are plural in the
+// vanilla jar too (textures/gui, textures/misc, textures/models), and `aspects`
+// and `foci` are Thaumcraft directories addressed by literal path
+// (Aspect#iconTexture builds `thaumcraft:textures/aspects/<tag>.png`), so
+// moving them would break the one reference that is not model-driven. Only
+// these two rename. docs/asset-mapping.csv records the same targets and
+// OriginalTextureOverlayTest guards both sides, like the sound overlay above.
+def textureDirectoryRenames = [
+        'blocks': 'block',
+        'items' : 'item',
+]
+
+// Captured as a provider so the copy-cleanup below can resolve it at execution
+// time — the configuration cache forbids touching `layout` inside a task action.
+def overlayTexturesOutDir =
+        layout.buildDirectory.dir('generated/resources/original-assets/assets/thaumcraft/textures')
+
 def overlayOriginalAssets = tasks.register("overlayOriginalAssets", Sync) {
     onlyIf { originalAssetsDir.exists() }
     from(originalAssetsDir) {
@@ -160,6 +188,28 @@ def overlayOriginalAssets = tasks.register("overlayOriginalAssets", Sync) {
             def renamed = soundEventRenames[path - 'thaumcraft/sounds/' - '.ogg']
             if (renamed != null) {
                 details.relativePath = new RelativePath(true, 'thaumcraft', 'sounds', renamed + '.ogg')
+            }
+        } else if (path.startsWith('thaumcraft/textures/')) {
+            // textures/<dir>/<file> -> textures/<modern dir>/<file>, including the
+            // paired .mcmeta. Copy-time only: the ARR source tree is never touched.
+            def parts = path.split('/')
+            def renamedDir = parts.length >= 4 ? textureDirectoryRenames[parts[2]] : null
+            if (renamedDir != null) {
+                def target = ['thaumcraft', 'textures', renamedDir] + parts.toList().drop(3)
+                details.relativePath = new RelativePath(true, target as String[])
+            }
+        }
+    }
+    doLast {
+        // Sync mirrors the source tree's directory structure before eachFile
+        // rewrites the paths, so the emptied 1.7.10 directories survive in the
+        // output and ship as jar entries under a path 1.21.1 never resolves.
+        // Drop them: an asset audit should show only the published layout.
+        def texturesOut = overlayTexturesOutDir.get().asFile
+        textureDirectoryRenames.keySet().each { legacyDir ->
+            def legacy = new File(texturesOut, legacyDir)
+            if (legacy.isDirectory() && (legacy.listFiles() == null || legacy.listFiles().length == 0)) {
+                legacy.delete()
             }
         }
     }
@@ -202,7 +252,23 @@ sourceSets.main.resources {
     srcDir(layout.buildDirectory.dir('generated/resources/original-assets'))
     srcDir(layout.buildDirectory.dir('generated/resources/original-sounds'))
 }
-tasks.named('processResources') { dependsOn overlayOriginalAssets, transformOriginalSoundsJson }
+// processResources is a Copy task and never prunes its destination: a directory
+// an earlier layout produced (the 1.7.10 textures/blocks|items) is packaged as a
+// jar entry forever. Drop those legacy texture directories from the destination
+// so the jar shows only the published 1.21.1 layout.
+def processedTexturesDir = layout.buildDirectory.dir('resources/main/assets/thaumcraft/textures')
+tasks.named('processResources') {
+    dependsOn overlayOriginalAssets, transformOriginalSoundsJson
+    doLast {
+        def textures = processedTexturesDir.get().asFile
+        textureDirectoryRenames.keySet().each { legacyDir ->
+            def legacy = new File(textures, legacyDir)
+            if (legacy.isDirectory() && (legacy.listFiles() == null || legacy.listFiles().length == 0)) {
+                legacy.delete()
+            }
+        }
+    }
+}
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
     var replaceProperties = [
@@ -246,6 +312,10 @@ tasks.named('test', Test).configure {
             layout.buildDirectory.dir('generated/resources/original-assets/assets').get().asFile.absolutePath
     systemProperty 'tc.originalSoundsJson',
             layout.buildDirectory.file('generated/resources/original-sounds/assets/thaumcraft/sounds.json').get().asFile.absolutePath
+    // OriginalTextureOverlayTest resolves the sprites of the committed models
+    // against the overlay output; it needs the committed asset tree too.
+    systemProperty 'tc.modAssetsDir',
+            file('src/main/resources/assets').absolutePath
     systemProperty 'tc.configReferenceFile',
             file('docs/config-reference.md').absolutePath
     systemProperty 'tc.contentMappingFile',
