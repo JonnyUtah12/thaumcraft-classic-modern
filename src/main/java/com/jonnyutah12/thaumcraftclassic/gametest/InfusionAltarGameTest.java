@@ -76,8 +76,12 @@ import java.util.List;
  *       {@code getSurroundings} symmetry rule (+2 per pedestal, +1 when it
  *       holds an item, −2 for the point-mirrored pedestal) and the snow-layer
  *       stabiliser rule (+0.1 each, −0.2 for a mirrored pair, truncated into
- *       the integer at the end) produce exactly the expected values against a
- *       real world, including twelve lone snow layers pushing 6 up to 7.</li>
+ *       the integer at the end) are measured against a real world as DELTAS
+ *       over an ambient scan — the 25x16x25 scan box reaches neighbouring
+ *       game test structures, so absolute totals depend on the batch layout.
+ *       On a clean neighbourhood the deltas are the raw numbers: +6 for two
+ *       unmirrored pedestals holding items, +1 for twelve lone snow layers
+ *       pushing 6.2 into 7.</li>
  *   <li>{@link #infusionCraftRunsToCompletion}: a player use activates and
  *       then starts a craft; the matched recipe's essentia cost is drained
  *       pedestal-first from the probe source, its component items are consumed
@@ -316,6 +320,18 @@ public final class InfusionAltarGameTest {
         final ItemStack ingot = new ItemStack(Items.GOLD_INGOT);
         final ItemStack pane = new ItemStack(net.minecraft.world.item.Items.GLASS_PANE);
 
+        // Ambient scan first. getSurroundings reads a 25x16x25 box around the
+        // matrix, and the game test server packs these 1x1-template structures
+        // only ~6 blocks apart, so a neighbouring probe's pedestals and
+        // stabilisers sit inside that box — the box's contents depend on which
+        // probes land next door, which changes whenever a probe is added
+        // anywhere in the batch. Assert DELTAS over this baseline, never
+        // absolute totals; on a clean neighbourhood the baseline is 0 and the
+        // deltas read as the original's raw numbers.
+        matrix.checkSurroundings = true;
+        tickMatrix(helper, ALTAR, matrix, 1);
+        final int ambient = matrix.symmetry;
+
         // Two component pedestals, neither with a point-mirrored twin: +3 each
         // (+2 for the pedestal, +1 because it holds an item).
         pedestalWith(helper, new BlockPos(5, 2, 1), ingot);
@@ -323,12 +339,17 @@ public final class InfusionAltarGameTest {
 
         matrix.checkSurroundings = true;
         tickMatrix(helper, ALTAR, matrix, 1);
-        helper.assertTrue(matrix.symmetry == 6,
-                "two unmirrored pedestals holding items must score +3 each, got "
-                        + matrix.symmetry);
+        helper.assertTrue(matrix.symmetry - ambient == 6,
+                "two unmirrored pedestals holding items must score +3 each, ambient "
+                        + ambient + " -> " + matrix.symmetry);
+        final int withPedestals = matrix.symmetry;
 
         // Twelve lone snow layers: the original adds +0.1 per stabiliser and
-        // truncates the float total, so 6.2 reads back as 7.
+        // truncates the float total, so 6.2 reads back as 7. The truncation
+        // applies to the WHOLE running total, so an ambient stabiliser field
+        // (a neighbour's snow/candle/crystal blocks, +0.1 each) shifts the
+        // fraction and the step reads +1, or +2 once that fraction reaches
+        // 0.8 — never less, never more.
         for (final int x : List.of(5, 6, 7)) {
             for (final int z : List.of(3, 4, 5)) {
                 snowLayer(helper, new BlockPos(x, 2, z));
@@ -337,9 +358,12 @@ public final class InfusionAltarGameTest {
         }
         matrix.checkSurroundings = true;
         tickMatrix(helper, ALTAR, matrix, 1);
-        helper.assertTrue(matrix.symmetry == 7,
-                "twelve lone snow layers must add 1.2 to the symmetry total, got "
-                        + matrix.symmetry);
+        helper.assertTrue(matrix.symmetry - withPedestals == 1
+                        || matrix.symmetry - withPedestals == 2,
+                "twelve lone snow layers must add 1.2 to the symmetry total, which truncates "
+                        + "to +1 (+2 when the ambient scan already carries a >=0.8 fraction): "
+                        + "ambient " + ambient + ", with pedestals " + withPedestals
+                        + ", with stabilisers " + matrix.symmetry);
 
         helper.succeed();
     }

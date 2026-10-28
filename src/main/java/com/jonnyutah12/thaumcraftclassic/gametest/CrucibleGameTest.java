@@ -252,7 +252,14 @@ public final class CrucibleGameTest {
 
     // --- probes --------------------------------------------------------------
 
-    @GameTest(template = "empty")
+    // Every probe here claims its own 32x32 cell (template =
+    // "gametest_pad_32", data/thaumcraft/structure/gametest_pad_32.nbt): the
+    // game test server packs 1x1-template structures ~6 blocks apart, so with
+    // the "empty" template a neighbour probe can setBlock on top of the cell
+    // this probe just built (observed: blockMetalDevice replaced mid-probe by
+    // a TileArcaneLamp from the neighbouring CatalogDevices probe). The pad
+    // template places nothing and only widens the packing footprint.
+    @GameTest(template = "gametest_pad_32")
     public static void crucibleCoreIsRegistered(final GameTestHelper helper) {
         helper.assertTrue(BuiltInRegistries.BLOCK.containsKey(id("blockmetaldevice")),
                 "the crucible's host block blockmetaldevice is not registered");
@@ -348,7 +355,7 @@ public final class CrucibleGameTest {
         helper.succeed();
     }
 
-    @GameTest(template = "empty", timeoutTicks = 600)
+    @GameTest(template = "gametest_pad_32", timeoutTicks = 600)
     public static void entropicCycleCraftsTheBalancedShard(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
         final BlockPos pos = new BlockPos(1, 1, 1);
@@ -490,7 +497,7 @@ public final class CrucibleGameTest {
         }
     }
 
-    @GameTest(template = "empty")
+    @GameTest(template = "gametest_pad_32")
     public static void everyUngatedCrucibleRowIsLoaded(final GameTestHelper helper) {
         final Level level = helper.getLevel();
         final var resources = level.getServer().getResourceManager();
@@ -654,7 +661,7 @@ public final class CrucibleGameTest {
             if (payable) {
                 payableWhileGated++;
             }
-            final ItemStack catalyst = catalystStack(row.getAsJsonObject("catalyst"));
+            final ItemStack catalyst = catalystStack(level, row.getAsJsonObject("catalyst"));
             helper.assertTrue(!catalyst.isEmpty(),
                     "the catalyst of " + rowId + " names no item this probe can throw: "
                             + row.getAsJsonObject("catalyst"));
@@ -695,16 +702,27 @@ public final class CrucibleGameTest {
      * {@code thaumcraft:item_meta} default (D-006) makes a bare stack meta 0,
      * so a row whose catalyst pins another meta simply does not match the
      * stack this returns, which is the safe direction for the probe's
-     * negative ("this row must not match") assertion.
+     * negative ("this row must not match") assertion. The third shipped form
+     * is a tag (the ore rows: {@code thaumcraft:oredict.oreiron}), resolved
+     * through the live item tag so the thrown stack is a real member.
      */
-    private static ItemStack catalystStack(final JsonObject catalyst) {
+    private static ItemStack catalystStack(final Level level, final JsonObject catalyst) {
         String id = optString(catalyst, "item");
         if (id == null && catalyst.has("items") && catalyst.get("items").isJsonArray()
                 && !catalyst.getAsJsonArray("items").isEmpty()) {
             id = catalyst.getAsJsonArray("items").get(0).getAsString();
         }
         if (id == null) {
-            return ItemStack.EMPTY;
+            final String tag = optString(catalyst, "tag");
+            if (tag == null) {
+                return ItemStack.EMPTY;
+            }
+            return level.registryAccess()
+                    .lookupOrThrow(Registries.ITEM)
+                    .get(TagKey.create(Registries.ITEM, ResourceLocation.parse(tag)))
+                    .filter(members -> members.size() > 0)
+                    .map(members -> new ItemStack(members.get(0).value()))
+                    .orElse(ItemStack.EMPTY);
         }
         final Item found = BuiltInRegistries.ITEM.get(ResourceLocation.parse(id));
         return found == null ? ItemStack.EMPTY : new ItemStack(found);

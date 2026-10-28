@@ -46,3 +46,27 @@ without the evidence for its stages.
 - Seeded tests for random processes where practical.
 - Regression: identifier stability tests over the content mapping; previously
   fixed bugs get a guarding test.
+- **Game test structures share a level and pack densely.** The game test server
+  lays every test in a batch out on a grid whose spacing comes from the test's
+  *template size*: the `empty` template (1×1×1) packs structures ~6 blocks apart
+  in x and ~25 in z, so probes run concurrently in the same 25-block
+  neighbourhood. Two failure modes follow, both seen on this repo: a neighbour
+  can `setBlock` on top of the cell another probe just built (a crucible probe
+  found its `blockMetalDevice` replaced by a neighbouring probe's arcane lamp),
+  and a probe whose logic scans a wide box reads the neighbour's blocks
+  (`InfusionMatrixLogic.scan` covers 25×16×25, so a neighbour's pedestals
+  inflate `symmetry`). Writing MORE probes shifts the grid and moves the
+  collision, so a green 91-test run does not protect the 94-test run.
+  Two conventions handle it: a probe that owns a machine claims its own padded
+  cell (`template = "gametest_pad_32"`,
+  `data/thaumcraft/structure/gametest_pad_32.nbt` — places nothing, only
+  widens the packing footprint), and a probe whose assertions depend on a world
+  scan measures DELTAS over an ambient baseline scan, never absolute totals.
+  Prefer both over reordering tests: the layout is not stable across runs.
+- A `@GameTest` body that touches a block entity must not park the server
+  thread. The game test server shuts down by unloading chunks
+  (`LevelChunk.clearAllBlockEntities` → `BlockEntity.setRemoved`), and a
+  `setRemoved` that reads `Level.getBlockState`/`getChunk` deadlocks
+  `BlockableEventLoop.managedBlock` on the worker performing that unload — the
+  server hangs at *Saving worlds* and `runGameTestServer` never exits. Read
+  `Level.getBlockStatesIfLoaded` (hasChunksAt-guarded) in removal hooks.
