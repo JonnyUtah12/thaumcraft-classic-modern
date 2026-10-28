@@ -29,6 +29,20 @@ section; this is the new one).
   `StructureParityTest` is in `src/test`.
 - `GameTestIndex.java` is generated at build time; its committed copy is now
   byte-identical to the generated one (`07fb19d`).
+- Localization (TC-LOC-s, card `t_a2a74726`): `assets/thaumcraft/lang/en_us.json`
+  now ships, closing the defect where every shipped item, block, menu and
+  tooltip rendered as its raw translation key. 128 keys — 27 blocks, 15
+  single-name items, 58 per-meta names across the 9 multi-meta item families,
+  9 container titles (5 menu ids + the 4 titles the shipped block entities
+  pass), 1 entity name and 15 tooltip/action lines; 118 of them carry the
+  original Thaumcraft 4.2.3.5 `en_US.lang` wording (legacy `§` colour codes
+  stripped, the `%TYPE` token converted to a real `%s` argument). Guarded by
+  `LocalizationGameTest` (every registered block/item/menu/entity name is
+  covered, and no entry in the file is dead) and `LocalizationFileTest`
+  (key shape, placeholders, and per-meta parity against the original lang):
+  324 unit + 91/91 game tests, 91/91 without Curios.
+  `CatalogTrinketsLootGameTest.treasureBagCarriesOriginalMetaNames` now checks
+  the key *and* that it resolves, instead of asserting the raw key renders.
 
 ## [0.1.0-alpha.3] - 2026-10-28
 

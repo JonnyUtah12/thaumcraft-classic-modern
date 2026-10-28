@@ -1,0 +1,355 @@
+package com.jonnyutah12.thaumcraftclassic.gametest;
+
+import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.items.ItemLootBag;
+import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
+import com.jonnyutah12.thaumcraftclassic.registration.ModRegistration;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.entity.EntityType;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.IntStream;
+
+/**
+ * Localization audit (TC-LOC-s / t_a2a74726): the shipped content must never
+ * render as a raw translation key.
+ *
+ * <p>Two directions, both against the live registries of the gameTestServer
+ * (the only place the real id set exists):</p>
+ * <ol>
+ *   <li>{@link #everyRegisteredNameHasAnEntry}: every registered block, item
+ *       (including the per-meta name keys the multi-meta item classes emit
+ *       from {@code getName(ItemStack)}), menu, entity type and creative tab
+ *       under {@code thaumcraft} has an entry in
+ *       {@code assets/thaumcraft/lang/en_us.json}.</li>
+ *   <li>{@link #noDeadLangEntries}: the reverse direction — every key in the
+ *       file maps to shipped content, i.e. to a live registration, to a
+ *       translation key the shipped code passes to
+ *       {@code Component.translatable}, or to a documented exception below.</li>
+ * </ol>
+ *
+ * <p>Each run also writes {@code build/lang-audit.txt} (next to
+ * {@code docs/content-mapping.csv}'s project root) with the required/missing/
+ * dead key sets, so the gap list is inspectable without reading the failure
+ * message.</p>
+ */
+@GameTestHolder(ThaumcraftClassic.MOD_ID)
+@PrefixGameTestTemplate(false)
+public final class LocalizationGameTest {
+
+    /**
+     * Registry ids that are test fixtures, not shipped content: registered
+     * only when the run config sets {@code -Dthaumcraft.testprobe=true}, and
+     * never in a release build, so they carry no lang entry by design.
+     */
+    private static final List<String> TEST_FIXTURE_ID_PREFIXES = List.of("test_probe", "test_aspect_source");
+
+    /**
+     * Lang keys the shipped code passes to {@code Component.translatable} that
+     * are not derived from a registry id. Deliberate exceptions to the
+     * no-dead-keys rule; the value provenance for each is in the TC-LOC-s
+     * commit note (all preserve the original Thaumcraft 4.2.3.5 wording).
+     */
+    private static final Map<String, String> CODE_AUTHORED_KEYS = Map.ofEntries(
+            // getDisplayName() of the four shipped container block entities —
+            // the title the client shows for the open menu.
+            Map.entry("container.thaumcraft.chesthungry", "TileChestHungry.getDisplayName"),
+            Map.entry("container.thaumcraft.deconstructiontable", "TileDeconstructionTable.getDisplayName"),
+            Map.entry("container.thaumcraft.magicbox", "TileMagicBox.getDisplayName"),
+            Map.entry("container.thaumcraft.spa", "TileSpa.getDisplayName"),
+            // tooltip / action lines
+            Map.entry("item.thaumcraft.itemlootbag.tooltip", "ItemLootBag.appendHoverText"),
+            Map.entry("item.thaumcraft.trunkspawner.tooltip", "ItemTrunkSpawner.appendHoverText"),
+            Map.entry("item.thaumcraft.itemgolemupgrade.0", "ItemTrunkSpawner tooltip (TC-M6-06 trunk upgrades)"),
+            Map.entry("item.thaumcraft.itemgolemupgrade.1", "ItemTrunkSpawner tooltip (TC-M6-06 trunk upgrades)"),
+            Map.entry("item.thaumcraft.itemgolemupgrade.2", "ItemTrunkSpawner tooltip (TC-M6-06 trunk upgrades)"),
+            Map.entry("item.thaumcraft.itemgolemupgrade.3", "ItemTrunkSpawner tooltip (TC-M6-06 trunk upgrades)"),
+            Map.entry("item.thaumcraft.itemgolemupgrade.4", "ItemTrunkSpawner tooltip (TC-M6-06 trunk upgrades)"),
+            Map.entry("item.thaumcraft.itemgolemupgrade.5", "ItemTrunkSpawner tooltip (TC-M6-06 trunk upgrades)"),
+            Map.entry("item.capacity.text", "ItemAmuletVis capacity line (original key shape kept)"),
+            Map.entry("item.ItemAmuletVis.text", "ItemAmuletVis helper line (original key shape kept)"),
+            Map.entry("tc.discount", "ItemBaubleBlanks apprentice-ring tooltip"),
+            Map.entry("tc.resonator1", "ItemResonator action bar"),
+            Map.entry("tc.resonator2", "ItemResonator action bar"),
+            Map.entry("tc.resonator3", "ItemResonator untyped-aspect label"),
+            Map.entry("tc.handmirrorlinkedto", "ItemHandMirror link message"),
+            Map.entry("tc.handmirrorlinked", "ItemHandMirror link message"),
+            Map.entry("tc.handmirrorerror", "ItemHandMirror link message"),
+            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"));
+
+    /**
+     * Base name keys of the multi-meta items whose {@code getName} always
+     * returns the per-meta key. They are not dead: vanilla reads
+     * {@code item.<ns>.<path>} as the description id for tooltips built
+     * outside {@code getName} (creative-tab tooltips, {@code /give} feedback),
+     * so they stay in the file as the documented fallback.
+     */
+    private static final Set<String> META_DRIVEN_ITEMS = Set.of(
+            "itemresource", "itemshard", "itemnugget", "itemlootbag", "itembaubleblanks",
+            "itemamuletvis", "itemamuletrunic", "itemringrunic", "itemgirdlerunic");
+
+    private LocalizationGameTest() {
+    }
+
+    // ------------------------------------------------------------------ probes
+
+    @GameTest(template = "empty")
+    public static void everyRegisteredNameHasAnEntry(final GameTestHelper helper) {
+        final JsonObject lang = loadLang(helper);
+        final Set<String> required = requiredKeys();
+        final Set<String> missing = new TreeSet<>();
+        for (final String key : required) {
+            if (!lang.has(key)) {
+                missing.add(key);
+            }
+        }
+        writeAudit(helper, required, missing, Set.of());
+
+        ThaumcraftClassic.LOGGER.info("[TC-LOC-s] {} registry-derived keys required, {} missing",
+                required.size(), missing.size());
+        helper.assertTrue(missing.isEmpty(),
+                "en_us.json is missing " + missing.size() + " of " + required.size()
+                        + " registry-derived keys: " + preview(missing));
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void noDeadLangEntries(final GameTestHelper helper) {
+        final JsonObject lang = loadLang(helper);
+        final Set<String> required = requiredKeys();
+        final Set<String> dead = new TreeSet<>();
+        for (final String key : lang.keySet()) {
+            if (required.contains(key) || CODE_AUTHORED_KEYS.containsKey(key)) {
+                continue;
+            }
+            final String path = key.substring(key.lastIndexOf('.') + 1);
+            if (isTestFixture(path)) {
+                continue;
+            }
+            // The base key of a multi-meta item is the documented vanilla
+            // fallback (getName returns the per-meta key, which is in
+            // `required`): keep the base key in the file.
+            final String baseId = metaDrivenBaseId(key);
+            if (key.equals("item.thaumcraft." + baseId) && META_DRIVEN_ITEMS.contains(baseId)) {
+                continue;
+            }
+            dead.add(key);
+        }
+        writeAudit(helper, required, Set.of(), dead);
+
+        helper.assertTrue(dead.isEmpty(),
+                "en_us.json carries " + dead.size() + " keys that map to no shipped content "
+                        + "(registration, code translatable, or documented exception): " + preview(dead));
+        helper.succeed();
+    }
+
+    // ------------------------------------------------------------------ helpers
+
+    /** Every translation key the live registries make reachable, plus the keys the code passes to translatable(). */
+    private static Set<String> requiredKeys() {
+        final Set<String> keys = new LinkedHashSet<>();
+
+        for (final Block block : BuiltInRegistries.BLOCK) {
+            final ResourceLocation id = BuiltInRegistries.BLOCK.getKey(block);
+            if (eligible(id)) {
+                keys.add(block.getDescriptionId());
+            }
+        }
+
+        for (final Item item : BuiltInRegistries.ITEM) {
+            final ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
+            if (!eligible(id)) {
+                continue;
+            }
+            if (item instanceof BlockItem blockItem) {
+                // 1.21.1 shows the owning block's key for a block item; the
+                // same-id block item contract makes this the shipped label.
+                keys.add(blockItem.getBlock().getDescriptionId());
+            }
+            for (final int meta : metasOf(item)) {
+                final ItemStack stack = new ItemStack(item);
+                stack.set(ModDataComponents.ITEM_META.get(), meta);
+                final String key = translatableKeyOf(item.getName(stack));
+                if (key != null) {
+                    keys.add(key);
+                }
+            }
+        }
+
+        for (final var menu : BuiltInRegistries.MENU) {
+            final ResourceLocation id = BuiltInRegistries.MENU.getKey(menu);
+            if (eligible(id)) {
+                keys.add("container.thaumcraft." + id.getPath());
+            }
+        }
+
+        for (final EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
+            final ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(type);
+            if (eligible(id)) {
+                keys.add("entity.thaumcraft." + id.getPath());
+            }
+        }
+
+        for (final CreativeModeTab tab : BuiltInRegistries.CREATIVE_MODE_TAB) {
+            final ResourceLocation id = BuiltInRegistries.CREATIVE_MODE_TAB.getKey(tab);
+            if (eligible(id)) {
+                keys.add("itemGroup.thaumcraft." + id.getPath());
+            }
+        }
+
+        keys.addAll(CODE_AUTHORED_KEYS.keySet());
+        return keys;
+    }
+
+    /**
+     * The original-metadata domain of a shipped item: the class's own
+     * {@code META_COUNT} (contiguous metas) or {@code VALID_METAS} (sparse
+     * damage values), walking up the class hierarchy the way the item classes
+     * declare them. {@link ItemLootBag} keeps its rarity metas on the shared
+     * ITEM_META component with no bound constant, so it is named explicitly.
+     */
+    private static int[] metasOf(final Item item) {
+        for (Class<?> c = item.getClass(); c != null && c != Object.class; c = c.getSuperclass()) {
+            final Integer count = staticInt(c, "META_COUNT");
+            if (count != null) {
+                return IntStream.range(0, count).toArray();
+            }
+            final Set<?> valid = staticSet(c, "VALID_METAS");
+            if (valid != null) {
+                return valid.stream().mapToInt(v -> (Integer) v).toArray();
+            }
+        }
+        if (item instanceof ItemLootBag) {
+            return new int[] {0, 1, 2};
+        }
+        return new int[] {0};
+    }
+
+    private static Integer staticInt(final Class<?> type, final String name) {
+        try {
+            final Field field = type.getDeclaredField(name);
+            return java.lang.reflect.Modifier.isStatic(field.getModifiers()) ? field.getInt(null) : null;
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            return null;
+        }
+    }
+
+    private static Set<?> staticSet(final Class<?> type, final String name) {
+        try {
+            final Field field = type.getDeclaredField(name);
+            return java.lang.reflect.Modifier.isStatic(field.getModifiers())
+                    && field.get(null) instanceof Set<?> set ? set : null;
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            return null;
+        }
+    }
+
+    /** The key of a pure translatable component, or null when the name is not a lang key. */
+    private static String translatableKeyOf(final Component component) {
+        return component.getContents() instanceof TranslatableContents contents ? contents.getKey() : null;
+    }
+
+    /** {@code item.thaumcraft.itemresource.5} -> {@code itemresource}. */
+    private static String metaDrivenBaseId(final String key) {
+        final String[] parts = key.split("\\.");
+        return parts.length >= 3 ? parts[2] : key;
+    }
+
+    private static boolean eligible(final ResourceLocation id) {
+        return ThaumcraftClassic.MOD_ID.equals(id.getNamespace()) && !isTestFixture(id.getPath());
+    }
+
+    private static boolean isTestFixture(final String path) {
+        return TEST_FIXTURE_ID_PREFIXES.stream().anyMatch(path::startsWith);
+    }
+
+    private static String preview(final Set<String> keys) {
+        final List<String> list = new ArrayList<>(keys);
+        final int shown = Math.min(list.size(), 40);
+        return list.subList(0, shown) + (list.size() > shown ? " …(+" + (list.size() - shown) + " more)" : "");
+    }
+
+    /** The lang file as shipped in the mod's own resources. */
+    private static JsonObject loadLang(final GameTestHelper helper) {
+        String text = null;
+        try (InputStream in = LocalizationGameTest.class.getResourceAsStream("/assets/"
+                + ThaumcraftClassic.MOD_ID + "/lang/en_us.json")) {
+            if (in != null) {
+                text = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        if (text == null) {
+            final String csv = System.getProperty("tc.contentMappingFile", "");
+            helper.assertTrue(!csv.isEmpty(), "tc.contentMappingFile must be set by the gameTestServer run config");
+            final Path file = Path.of(csv).toAbsolutePath().getParent().getParent()
+                    .resolve("src/main/resources/assets/" + ThaumcraftClassic.MOD_ID + "/lang/en_us.json");
+            helper.assertTrue(Files.isRegularFile(file), "en_us.json not found on the classpath or at " + file);
+            try {
+                text = Files.readString(file);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        final var parsed = JsonParser.parseString(text);
+        helper.assertTrue(parsed.isJsonObject(), "en_us.json must be a JSON object");
+        return parsed.getAsJsonObject();
+    }
+
+    /** Diagnostic artifact: build/lang-audit.txt with the full key sets. */
+    private static void writeAudit(final GameTestHelper helper, final Set<String> required,
+                                   final Set<String> missing, final Set<String> dead) {
+        final String csv = System.getProperty("tc.contentMappingFile", "");
+        if (csv.isEmpty()) {
+            return;
+        }
+        final Path audit = Path.of(csv).toAbsolutePath().getParent().getParent().resolve("build/lang-audit.txt");
+        try {
+            Files.createDirectories(audit.getParent());
+            final StringBuilder sb = new StringBuilder();
+            sb.append("# TC-LOC-s lang audit (generated by LocalizationGameTest; not a build input)\n");
+            sb.append("# required=").append(required.size())
+                    .append(" missing=").append(missing.size())
+                    .append(" dead=").append(dead.size())
+                    .append(" probeEnabled=").append(Boolean.getBoolean(ModRegistration.TEST_PROBE_PROPERTY))
+                    .append('\n');
+            sb.append("\n[required]\n");
+            required.forEach(k -> sb.append(k).append('\n'));
+            sb.append("\n[missing]\n");
+            missing.forEach(k -> sb.append(k).append('\n'));
+            sb.append("\n[dead]\n");
+            dead.forEach(k -> sb.append(k).append('\n'));
+            Files.writeString(audit, sb.toString());
+        } catch (IOException e) {
+            ThaumcraftClassic.LOGGER.warn("[TC-LOC-s] could not write the lang audit file", e);
+        }
+    }
+
+}
