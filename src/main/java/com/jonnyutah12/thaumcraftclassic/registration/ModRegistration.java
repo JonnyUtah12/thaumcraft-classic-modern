@@ -3,6 +3,7 @@ package com.jonnyutah12.thaumcraftclassic.registration;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
 import net.neoforged.bus.api.IEventBus;
 
@@ -88,6 +89,18 @@ public final class ModRegistration {
         // plate, bore + bore base, arcane lamps, nitor, the shared ownership base)
         // and the (block, variant) -> tile suppliers for those metas.
         CatalogDevices.init(modEventBus);
+
+        // TC-M6-04d-s: furniture/storage/display — the table family (blockTable
+        // variants incl. the deconstruction table), hungry chest storage with its
+        // persisted container inventory, magic box, mirrors (tilemirror/tilemirroressentia),
+        // arcane door + key, levitator, and the tiles hosted on sibling device
+        // blocks (banner on blockWoodenDevice 8, item grate on blockMetalDevice
+        // 5/6, pedestal on blockCosmeticSolid 3/15, wand pedestal + spa on
+        // blockStoneDevice 9/11, warding stone/fence), the decon-table/magic-box/spa
+        // menus and the specialitemgrate entity; suppliers go through
+        // DeviceTileFactory. Research-table tiles/workbench and portable-hole
+        // style rows stay on their cards.
+        CatalogFurniture.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

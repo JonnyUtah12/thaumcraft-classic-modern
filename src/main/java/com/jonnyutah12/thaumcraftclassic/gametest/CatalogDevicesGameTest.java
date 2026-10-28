@@ -45,9 +45,11 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
  *       (block, variant) → tile suppliers this card registers through
  *       {@code DeviceTileFactory} really produce their tile entity, and the
  *       metas this card deliberately left out (the essentia-transport furnace
- *       machines, the nodes/warding hosts and the furniture owned by TC-M6-04d)
- *       produce none — the same shape as the original's
- *       {@code createTileEntity} returning null.</li>
+ *       machines and the node/warding hosts) produce none — the same shape as
+ *       the original's {@code createTileEntity} returning null. The one
+ *       furniture meta this card probed as hostless (blockWoodenDevice 8, the
+ *       banner) was filled in by TC-M6-04d through the same seam, so the probe
+ *       now asserts the tile resolves instead.</li>
  *   <li>{@link #standaloneMachinesTickThroughTheirBlock} — the original's
  *       {@code canUpdate()} contract: the nitor and the arcane ear tick through
  *       the device block's shared ticker (the marker interface is what selects
@@ -231,18 +233,28 @@ public final class CatalogDevicesGameTest {
                 base.offset(0, step * 9, 0), "nitor");
 
         // Metas with no supplier here: the essentia-transport furnace (TC-M4-07),
-        // the metal crucible/alembic metas, the wooden banners/planks (TC-M6-04d),
-        // and the airy node metas, which are record-driven (TC-M5-03).
+        // the metal crucible/alembic metas, and the airy node metas, which are
+        // record-driven (TC-M5-03).
         expectNoTile(helper, (BlockDeviceBase) CatalogDevices.BLOCK_STONE_DEVICE.get(),
                 BlockStoneDevice.VARIANT_ALCHEMY_FURNACE, base.offset(0, step * 10, 0));
         expectNoTile(helper, (BlockDeviceBase) CatalogDevices.BLOCK_METAL_DEVICE.get(), 1,
                 base.offset(0, step * 11, 0));
-        expectNoTile(helper, (BlockDeviceBase) CatalogDevices.BLOCK_WOODEN_DEVICE.get(),
-                BlockWoodenDevice.VARIANT_BANNER, base.offset(0, step * 12, 0));
         expectNoTile(helper, (BlockDeviceBase) CatalogDevices.BLOCK_AIRY.get(),
                 BlockAiry.VARIANT_NODE, base.offset(0, step * 13, 0));
         expectNoTile(helper, (BlockDeviceBase) CatalogDevices.BLOCK_AIRY.get(),
                 BlockAiry.VARIANT_NODE_ENERGIZED, base.offset(0, step * 14, 0));
+        // blockWoodenDevice 8 (the hanging banner) is no longer hostless: TC-M6-04d
+        // owns it and registers its tile through this same DeviceTileFactory seam.
+        // The tile *type* is asserted in CatalogFurnitureGameTest; here the parent
+        // card only asserts that the seam still resolves once a sibling card fills
+        // it in, so this probe flips from expectNoTile to a presence check.
+        final BlockPos bannerPos = base.offset(0, step * 12, 0);
+        final BlockState bannerState = ((BlockDeviceBase) CatalogDevices.BLOCK_WOODEN_DEVICE.get())
+                .withVariant(BlockWoodenDevice.VARIANT_BANNER);
+        helper.setBlock(bannerPos, bannerState);
+        helper.assertTrue(helper.getBlockEntity(bannerPos) != null,
+                "blockWoodenDevice " + BlockWoodenDevice.VARIANT_BANNER
+                        + " is owned by TC-M6-04d and must resolve to its tile through this seam");
         helper.succeed();
     }
 

@@ -82,12 +82,12 @@ Thaumcraft:blockTube,thaumcraft:blocktube,block,Essentia Tube / Essentia Valve /
 Thaumcraft:blockMetalDevice,thaumcraft:blockmetaldevice,block,Crucible / Arcane Alembic / Vis Charge Relay / Advanced Alchemical Construct / Item Grate / Item Grate (Closed) / Arcane Lamp / Lamp of Growth / Alchemical Construct / Thaumatorium / Thaumatorium / Mnemonic Matrix / Lamp of Fertility / Vis Relay,done,tested,id case change only (D-001),class=BlockMetalDevice item_class=BlockMetalDeviceItem (TC-M6-04c registers the lamp metas 7/8/13 only - crucible/alembic/charger/thaumatorium/grate/vis-relay hosts and furnace machines are their own cards)
 Thaumcraft:blockWoodenDevice,thaumcraft:blockwoodendevice,block,Arcane Bellows / Arcane Ear / Arcane Pressure Plate / Arcane Bore Base / Arcane Bore / Greatwood Planks / Silverwood Planks / Crimson Cult Banner / White Banner / Orange Banner / Magenta Banner / Light Blue Banner / Yellow Banner / Lime Banner / Pink Banner / Gray Banner / Light Gray Banner / Cyan Banner / Purple Banner / Blue Banner / Brown Banner / Green Banner / Red Banner / Black Banner,done,tested,id case change only (D-001),class=BlockWoodenDevice item_class=BlockWoodenDeviceItem (TC-M6-04c registers metas 0-5 - bellows / sensor / pressure plate / bore base + bore - banner and planks are TC-M6-04d)
 Thaumcraft:blockStoneDevice,thaumcraft:blockstonedevice,block,Alchemical Furnace / Arcane Pedestal / Runic Matrix / Infusion Pillar / Infusion Pillar / Wand Recharge Pedestal / Infusion Pillar / Infusion Pillar / Compound Recharge Focus / Node Stabilizer / Advanced Node Stabilizer / Node Transducer / Arcane Spa / Focal Manipulator / Flux Scrubber,done,tested,id case change only (D-001),class=BlockStoneDevice item_class=BlockStoneDeviceItem (TC-M6-04c registers no stone meta host - the alchemical furnace host is TC-M4-07 and the pedestal/infusion/stabilizer/transducer/spa/focal-manipulator/flux-scrubber hosts are their own cards)
-Thaumcraft:blockMirror,thaumcraft:blockmirror,block,Magic Mirror,not_started,not_tested,id case change only (D-001),class=BlockMirror item_class=BlockMirrorItem
-Thaumcraft:blockTable,thaumcraft:blocktable,block,Table / Table / Research Table / Deconstruction Table / Arcane Worktable,not_started,not_tested,id case change only (D-001),class=BlockTable item_class=BlockTableItem
-Thaumcraft:blockChestHungry,thaumcraft:blockchesthungry,block,Hungry Chest,not_started,not_tested,id case change only (D-001),class=BlockChestHungry item_class=-
-Thaumcraft:blockArcaneDoor,thaumcraft:blockarcanedoor,block,Arcane Door,not_started,not_tested,id case change only (D-001),class=BlockArcaneDoor item_class=-
-Thaumcraft:blockLifter,thaumcraft:blocklifter,block,Arcane Levitator,not_started,not_tested,id case change only (D-001),class=BlockLifter item_class=-
-Thaumcraft:blockMagicBox,thaumcraft:blockmagicbox,block,,not_started,not_tested,id case change only (D-001),class=BlockMagicBox item_class=-
+Thaumcraft:blockMirror,thaumcraft:blockmirror,block,Magic Mirror,done,tested,id case change only (D-001),class=BlockMirror item_class=BlockMirrorItem
+Thaumcraft:blockTable,thaumcraft:blocktable,block,Table / Table / Research Table / Deconstruction Table / Arcane Worktable,done,tested,id case change only (D-001),class=BlockTable item_class=BlockTableItem
+Thaumcraft:blockChestHungry,thaumcraft:blockchesthungry,block,Hungry Chest,done,tested,id case change only (D-001),class=BlockChestHungry item_class=-
+Thaumcraft:blockArcaneDoor,thaumcraft:blockarcanedoor,block,Arcane Door,done,tested,id case change only (D-001),class=BlockArcaneDoor item_class=-
+Thaumcraft:blockLifter,thaumcraft:blocklifter,block,Arcane Levitator,done,tested,id case change only (D-001),class=BlockLifter item_class=-
+Thaumcraft:blockMagicBox,thaumcraft:blockmagicbox,block,,done,tested,id case change only (D-001),class=BlockMagicBox item_class=-
 Thaumcraft:blockAlchemyFurnace,thaumcraft:blockalchemyfurnace,block,Advanced Alchemical Furnace,not_started,not_tested,id case change only (D-001),class=BlockAlchemyFurnace item_class=-
 Thaumcraft:blockJar,thaumcraft:blockjar,block,Warded Jar / Brain in a Jar / Node in a Jar / Void Jar,not_started,not_tested,id case change only (D-001),class=BlockJar item_class=BlockJarItem
 Thaumcraft:blockCandle,thaumcraft:blockcandle,block,White Tallow Candle / Orange Tallow Candle / Magenta Tallow Candle / Light Blue Tallow Candle / Yellow Tallow Candle / Lime Tallow Candle / Pink Tallow Candle / Gray Tallow Candle / Light Gray Tallow Candle / Cyan Tallow Candle / Purple Tallow Candle / Blue Tallow Candle / Brown Tallow Candle / Green Tallow Candle / Red Tallow Candle / Black Tallow Candle,done,tested,id case change only (D-001),class=BlockCandle item_class=BlockCandleItem
@@ -124,9 +124,9 @@ Thaumcraft:TileJarVoid,thaumcraft:tilejarvoid,tile_entity,TileJarFillableVoid,no
 Thaumcraft:TileJarNode,thaumcraft:tilejarnode,tile_entity,TileJarNode,not_started,not_tested,,class=TileJarNode
 Thaumcraft:TileJarBrain,thaumcraft:tilejarbrain,tile_entity,TileJarBrain,not_started,not_tested,,class=TileJarBrain
 Thaumcraft:TileResearchTable,thaumcraft:tileresearchtable,tile_entity,TileResearchTable,not_started,not_tested,,class=TileResearchTable
-Thaumcraft:TileTable,thaumcraft:tiletable,tile_entity,TileTable,not_started,not_tested,,class=TileTable
+Thaumcraft:TileTable,thaumcraft:tiletable,tile_entity,TileTable,done,tested,,class=TileTable
 Thaumcraft:TileArcaneWorkbench,thaumcraft:tilearcaneworkbench,tile_entity,TileArcaneWorkbench,not_started,not_tested,,class=TileArcaneWorkbench
-Thaumcraft:TileChestHungry,thaumcraft:tilechesthungry,tile_entity,TileChestHungry,not_started,not_tested,,class=TileChestHungry
+Thaumcraft:TileChestHungry,thaumcraft:tilechesthungry,tile_entity,TileChestHungry,done,tested,,class=TileChestHungry
 Thaumcraft:TileBellows,thaumcraft:tilebellows,tile_entity,TileBellows,done,tested,,class=TileBellows
 Thaumcraft:TileSensor,thaumcraft:tilesensor,tile_entity,TileSensor,done,tested,,class=TileSensor
 Thaumcraft:TileArcanePressurePlate,thaumcraft:tilearcanepressureplate,tile_entity,TileArcanePressurePlate,done,tested,,class=TileArcanePressurePlate
@@ -136,21 +136,21 @@ Thaumcraft:TileArcaneLamp,thaumcraft:tilearcanelamp,tile_entity,TileArcaneLamp,d
 Thaumcraft:TileArcaneLampGrowth,thaumcraft:tilearcanelampgrowth,tile_entity,TileArcaneLampGrowth,done,tested,,class=TileArcaneLampGrowth
 Thaumcraft:TileArcaneLampFertility,thaumcraft:tilearcanelampfertility,tile_entity,TileArcaneLampFertility,done,tested,,class=TileArcaneLampFertility
 Thaumcraft:TileOwned,thaumcraft:tileowned,tile_entity,TileOwned,done,tested,,class=TileOwned
-Thaumcraft:TileLifter,thaumcraft:tilelifter,tile_entity,TileLifter,not_started,not_tested,,class=TileLifter
+Thaumcraft:TileLifter,thaumcraft:tilelifter,tile_entity,TileLifter,done,tested,,class=TileLifter
 Thaumcraft:TileNitor,thaumcraft:tilenitor,tile_entity,TileNitor,done,tested,,class=TileNitor
 Thaumcraft:TileNode,thaumcraft:tilenode,tile_entity,TileNode,done,tested,,class=TileNode (behaviour engine = nodes/NodeRuntime + world/NodeTickDriver; no BE)
 Thaumcraft:TileCrystal,thaumcraft:tilecrystal,tile_entity,TileCrystal,not_started,not_tested,,class=TileCrystal
 Thaumcraft:TileEldritchCrystal,thaumcraft:tileeldritchcrystal,tile_entity,TileEldritchCrystal,not_started,not_tested,,class=TileEldritchCrystal
-Thaumcraft:TileMirror,thaumcraft:tilemirror,tile_entity,TileMirror,not_started,not_tested,,class=TileMirror
-Thaumcraft:TileMirrorEssentia,thaumcraft:tilemirroressentia,tile_entity,TileMirrorEssentia,not_started,not_tested,,class=TileMirrorEssentia
-Thaumcraft:TilePedestal,thaumcraft:tilepedestal,tile_entity,TilePedestal,not_started,not_tested,,class=TilePedestal
-Thaumcraft:TileWandPedestal,thaumcraft:tilewandpedestal,tile_entity,TileWandPedestal,not_started,not_tested,,class=TileWandPedestal
+Thaumcraft:TileMirror,thaumcraft:tilemirror,tile_entity,TileMirror,done,tested,,class=TileMirror
+Thaumcraft:TileMirrorEssentia,thaumcraft:tilemirroressentia,tile_entity,TileMirrorEssentia,done,tested,,class=TileMirrorEssentia
+Thaumcraft:TilePedestal,thaumcraft:tilepedestal,tile_entity,TilePedestal,done,tested,,class=TilePedestal
+Thaumcraft:TileWandPedestal,thaumcraft:tilewandpedestal,tile_entity,TileWandPedestal,done,tested,,class=TileWandPedestal
 Thaumcraft:TileInfusionStone,thaumcraft:tileinfusionstone,tile_entity,TileInfusionMatrix,not_started,not_tested,,class=TileInfusionMatrix
 Thaumcraft:TileInfusionPillar,thaumcraft:tileinfusionpillar,tile_entity,TileInfusionPillar,not_started,not_tested,,class=TileInfusionPillar
 Thaumcraft:TileAlchemyFurnace,thaumcraft:tilealchemyfurnace,tile_entity,TileAlchemyFurnace,not_started,not_tested,,class=TileAlchemyFurnace
 Thaumcraft:TileAlchemyFurnaceAdvanced,thaumcraft:tilealchemyfurnaceadvanced,tile_entity,TileAlchemyFurnaceAdvanced,not_started,not_tested,,class=TileAlchemyFurnaceAdvanced
 Thaumcraft:TileAlchemyFurnaceAdvancedNozzle,thaumcraft:tilealchemyfurnaceadvancednozzle,tile_entity,TileAlchemyFurnaceAdvancedNozzle,not_started,not_tested,,class=TileAlchemyFurnaceAdvancedNozzle
-Thaumcraft:TileDeconstructionTable,thaumcraft:tiledeconstructiontable,tile_entity,TileDeconstructionTable,not_started,not_tested,,class=TileDeconstructionTable
+Thaumcraft:TileDeconstructionTable,thaumcraft:tiledeconstructiontable,tile_entity,TileDeconstructionTable,done,tested,,class=TileDeconstructionTable
 Thaumcraft:TilePurifyTotem,thaumcraft:tilepurifytotem,tile_entity,TileEtherealBloom,not_started,not_tested,,class=TileEtherealBloom
 Thaumcraft:TileTube,thaumcraft:tiletube,tile_entity,TileTube,not_started,not_tested,,class=TileTube
 Thaumcraft:TileTubeValve,thaumcraft:tiletubevalve,tile_entity,TileTubeValve,not_started,not_tested,,class=TileTubeValve
@@ -163,21 +163,21 @@ Thaumcraft:TileThaumatorium,thaumcraft:tilethaumatorium,tile_entity,TileThaumato
 Thaumcraft:TileThaumatoriumTop,thaumcraft:tilethaumatoriumtop,tile_entity,TileThaumatoriumTop,not_started,not_tested,,class=TileThaumatoriumTop
 Thaumcraft:TileBrainbox,thaumcraft:tilebrainbox,tile_entity,TileBrainbox,not_started,not_tested,,class=TileBrainbox
 Thaumcraft:TileWarded,thaumcraft:tilewarded,tile_entity,TileWarded,not_started,not_tested,,class=TileWarded
-Thaumcraft:TileGrate,thaumcraft:tilegrate,tile_entity,TileGrate,not_started,not_tested,,class=TileGrate
-Thaumcraft:TileWardingStone,thaumcraft:tilewardingstone,tile_entity,TileWardingStone,not_started,not_tested,,class=TileWardingStone
-Thaumcraft:TileWardingStoneFence,thaumcraft:tilewardingstonefence,tile_entity,TileWardingStoneFence,not_started,not_tested,,class=TileWardingStoneFence
-Thaumcraft:TileMagicBox,thaumcraft:tilemagicbox,tile_entity,TileMagicBox,not_started,not_tested,,class=TileMagicBox
+Thaumcraft:TileGrate,thaumcraft:tilegrate,tile_entity,TileGrate,done,tested,,class=TileGrate
+Thaumcraft:TileWardingStone,thaumcraft:tilewardingstone,tile_entity,TileWardingStone,done,tested,,class=TileWardingStone
+Thaumcraft:TileWardingStoneFence,thaumcraft:tilewardingstonefence,tile_entity,TileWardingStoneFence,done,tested,,class=TileWardingStoneFence
+Thaumcraft:TileMagicBox,thaumcraft:tilemagicbox,tile_entity,TileMagicBox,done,tested,,class=TileMagicBox
 Thaumcraft:TileNodeStabilizer,thaumcraft:tilenodestabilizer,tile_entity,TileNodeStabilizer,not_started,not_tested,,class=TileNodeStabilizer
 Thaumcraft:TileVisRelay,thaumcraft:tilevisrelay,tile_entity,TileVisRelay,not_started,not_tested,,class=TileVisRelay
 Thaumcraft:TileNodeEnergized,thaumcraft:tilenodeenergized,tile_entity,TileNodeEnergized,not_started,not_tested,,class=TileNodeEnergized
 Thaumcraft:TileNodeConverter,thaumcraft:tilenodeconverter,tile_entity,TileNodeConverter,not_started,not_tested,,class=TileNodeConverter
 Thaumcraft:TileMagicWorkbenchCharger,thaumcraft:tilemagicworkbenchcharger,tile_entity,TileMagicWorkbenchCharger,not_started,not_tested,,class=TileMagicWorkbenchCharger
 Thaumcraft:TileManaPod,thaumcraft:tilemanapod,tile_entity,TileManaPod,done,tested,,class=TileManaPod
-Thaumcraft:TileSpa,thaumcraft:tilespa,tile_entity,TileSpa,not_started,not_tested,,class=TileSpa
+Thaumcraft:TileSpa,thaumcraft:tilespa,tile_entity,TileSpa,done,tested,,class=TileSpa
 Thaumcraft:TileEldritchAltar,thaumcraft:tileeldritchaltar,tile_entity,TileEldritchAltar,not_started,not_tested,,class=TileEldritchAltar
 Thaumcraft:TileEldritchObelisk,thaumcraft:tileeldritchobelisk,tile_entity,TileEldritchObelisk,not_started,not_tested,,class=TileEldritchObelisk
 Thaumcraft:TileEldritchCap,thaumcraft:tileeldritchcap,tile_entity,TileEldritchCap,not_started,not_tested,,class=TileEldritchCap
-Thaumcraft:TileBanner,thaumcraft:tilebanner,tile_entity,TileBanner,not_started,not_tested,,class=TileBanner
+Thaumcraft:TileBanner,thaumcraft:tilebanner,tile_entity,TileBanner,done,tested,,class=TileBanner
 Thaumcraft:TileEldritchPortal,thaumcraft:tileeldritchportal,tile_entity,TileEldritchPortal,not_started,not_tested,,class=TileEldritchPortal
 Thaumcraft:TileEssentiaReservoir,thaumcraft:tileessentiareservoir,tile_entity,TileEssentiaReservoir,not_started,not_tested,,class=TileEssentiaReservoir
 Thaumcraft:TileEssentiaCrystalizer,thaumcraft:tileessentiacrystalizer,tile_entity,TileEssentiaCrystalizer,not_started,not_tested,,class=TileEssentiaCrystalizer
@@ -220,7 +220,7 @@ Thaumcraft:ItemPickThaumium,thaumcraft:itempickthaumium,item,Thaumium Pickaxe,no
 Thaumcraft:ItemAxeThaumium,thaumcraft:itemaxethaumium,item,Thaumium Axe,not_started,not_tested,id case change only (D-001),class=ItemThaumiumAxe
 Thaumcraft:ItemSwordThaumium,thaumcraft:itemswordthaumium,item,Thaumium Sword,not_started,not_tested,id case change only (D-001),class=ItemThaumiumSword
 Thaumcraft:ItemHoeThaumium,thaumcraft:itemhoethaumium,item,Thaumium Hoe,not_started,not_tested,id case change only (D-001),class=ItemThaumiumHoe
-Thaumcraft:ItemArcaneDoor,thaumcraft:itemarcanedoor,item,Arcane Door,not_started,not_tested,id case change only (D-001),class=ItemArcaneDoor
+Thaumcraft:ItemArcaneDoor,thaumcraft:itemarcanedoor,item,Arcane Door,done,tested,id case change only (D-001),class=ItemArcaneDoor
 Thaumcraft:ItemNugget,thaumcraft:itemnugget,item,Iron Nugget / Copper Nugget / Tin Nugget / Silver Nugget / Lead Nugget / Quicksilver Drop / Thaumium Nugget / Void metal Nugget / Native Iron Cluster / Native Copper Cluster / Native Tin Cluster / Native Silver Cluster / Native Lead Cluster / Native Cinnabar Cluster / Native Gold Cluster,done,tested,id case change only (D-001),class=ItemNugget
 Thaumcraft:BootsTraveller,thaumcraft:bootstraveller,item,Boots of the Traveler,not_started,not_tested,id case change only (D-001),class=ItemBootsTraveller
 Thaumcraft:ItemNuggetChicken,thaumcraft:itemnuggetchicken,item,Chicken Nugget,done,tested,id case change only (D-001),class=ItemNuggetEdible
@@ -236,7 +236,7 @@ Thaumcraft:ItemHoeElemental,thaumcraft:itemhoeelemental,item,Hoe of Growth,not_s
 Thaumcraft:ItemChestplateRobe,thaumcraft:itemchestplaterobe,item,Thaumaturge's Robe,not_started,not_tested,id case change only (D-001),class=ItemRobeArmor
 Thaumcraft:ItemLeggingsRobe,thaumcraft:itemleggingsrobe,item,Thaumaturge's Leggings,not_started,not_tested,id case change only (D-001),class=ItemRobeArmor
 Thaumcraft:ItemBootsRobe,thaumcraft:itembootsrobe,item,Thaumaturge's Boots,not_started,not_tested,id case change only (D-001),class=ItemRobeArmor
-Thaumcraft:ArcaneDoorKey,thaumcraft:arcanedoorkey,item,Iron Arcane Key / Gold Arcane Key,not_started,not_tested,id case change only (D-001),class=ItemKey
+Thaumcraft:ArcaneDoorKey,thaumcraft:arcanedoorkey,item,Iron Arcane Key / Gold Arcane Key,done,tested,id case change only (D-001),class=ItemKey
 Thaumcraft:HandMirror,thaumcraft:handmirror,item,Magic Hand Mirror,not_started,not_tested,id case change only (D-001),class=ItemHandMirror
 Thaumcraft:HoverHarness,thaumcraft:hoverharness,item,Thaumostatic Harness,not_started,not_tested,id case change only (D-001),class=ItemHoverHarness
 Thaumcraft:BlockJarFilledItem,thaumcraft:blockjarfilleditem,item,Jar of Essentia,not_started,not_tested,id case change only (D-001),class=ItemJarFilled
@@ -343,7 +343,7 @@ Thaumcraft:TaintedPig,thaumcraft:taintedpig,entity,Tainted Pig,not_started,not_t
 Thaumcraft:TaintedSheep,thaumcraft:taintedsheep,entity,Tainted Sheep,not_started,not_tested,,class=EntityTaintSheep mod_index=45
 Thaumcraft:TaintedVillager,thaumcraft:taintedvillager,entity,Tainted Villager,not_started,not_tested,,class=EntityTaintVillager mod_index=46
 Thaumcraft:TaintacleGiant,thaumcraft:taintaclegiant,entity,Giant Taintacle,not_started,not_tested,,class=EntityTaintacleGiant mod_index=47
-Thaumcraft:SpecialItemGrate,thaumcraft:specialitemgrate,entity,,not_started,not_tested,,class=EntityItemGrate mod_index=48
+Thaumcraft:SpecialItemGrate,thaumcraft:specialitemgrate,entity,,done,tested,,class=EntityItemGrate mod_index=48
 Thaumcraft:GolemBobber,thaumcraft:golembobber,entity,Golem Fishing Bobber,not_started,not_tested,,class=EntityGolemBobber mod_index=49
 Thaumcraft:spawnegg.BrainyZombie,thaumcraft:spawnegg.brainyzombie,spawner_egg,BrainyZombie,not_started,not_tested,,egg_colors=FFC0FF/008000
 Thaumcraft:spawnegg.GiantBrainyZombie,thaumcraft:spawnegg.giantbrainyzombie,spawner_egg,GiantBrainyZombie,not_started,not_tested,,egg_colors=FFC0FF/004000
@@ -967,7 +967,7 @@ Thaumcraft:GUI_PECH,thaumcraft:gui_pech,gui,GuiPech,not_started,not_tested,,gui_
 Thaumcraft:GUI_TRUNK,thaumcraft:gui_trunk,gui,GuiTravelingTrunk,not_started,not_tested,,gui_id=2 handler=GuiTravelingTrunk
 Thaumcraft:GUI_THAUMATORIUM,thaumcraft:gui_thaumatorium,gui,GuiThaumatorium,not_started,not_tested,,gui_id=3 handler=GuiThaumatorium
 Thaumcraft:GUI_FOCUS_POUCH,thaumcraft:gui_focus_pouch,gui,GuiFocusPouch,not_started,not_tested,,gui_id=5 handler=GuiFocusPouch
-Thaumcraft:GUI_DECON_TABLE,thaumcraft:gui_decon_table,gui,GuiDeconstructionTable,not_started,not_tested,,gui_id=8 handler=GuiDeconstructionTable
+Thaumcraft:GUI_DECON_TABLE,thaumcraft:gui_decon_table,gui,GuiDeconstructionTable,done,tested,,gui_id=8 handler=GuiDeconstructionTable
 Thaumcraft:GUI_ALCHEMY_FURNACE,thaumcraft:gui_alchemy_furnace,gui,GuiAlchemyFurnace,not_started,not_tested,,gui_id=9 handler=GuiAlchemyFurnace
 Thaumcraft:GUI_RESEARCH_TABLE,thaumcraft:gui_research_table,gui,GuiResearchTable,not_started,not_tested,,gui_id=10 handler=GuiResearchTable
 Thaumcraft:GUI_CHEST_HUNGRY,thaumcraft:gui_chest_hungry,gui,-,not_started,not_tested,,gui_id=11 handler=-
@@ -976,8 +976,8 @@ Thaumcraft:GUI_ARCANE_WORKBENCH,thaumcraft:gui_arcane_workbench,gui,GuiArcaneWor
 Thaumcraft:GUI_ARCANE_BORE,thaumcraft:gui_arcane_bore,gui,GuiArcaneBore,not_started,not_tested,,gui_id=15 handler=GuiArcaneBore
 Thaumcraft:GUI_HAND_MIRROR,thaumcraft:gui_hand_mirror,gui,GuiHandMirror,not_started,not_tested,,gui_id=16 handler=GuiHandMirror
 Thaumcraft:GUI_HOVER_HARNESS,thaumcraft:gui_hover_harness,gui,GuiHoverHarness,not_started,not_tested,,gui_id=17 handler=GuiHoverHarness
-Thaumcraft:GUI_MAGIC_BOX,thaumcraft:gui_magic_box,gui,GuiMagicBox,not_started,not_tested,,gui_id=18 handler=GuiMagicBox
-Thaumcraft:GUI_SPA,thaumcraft:gui_spa,gui,GuiSpa,not_started,not_tested,,gui_id=19 handler=GuiSpa
+Thaumcraft:GUI_MAGIC_BOX,thaumcraft:gui_magic_box,gui,GuiMagicBox,done,tested,,gui_id=18 handler=GuiMagicBox
+Thaumcraft:GUI_SPA,thaumcraft:gui_spa,gui,GuiSpa,done,tested,,gui_id=19 handler=GuiSpa
 Thaumcraft:GUI_FOCAL_MANUPULATOR,thaumcraft:gui_focal_manupulator,gui,GuiFocalManipulator,not_started,not_tested,,gui_id=20 handler=GuiFocalManipulator
 Thaumcraft:ench_haste,thaumcraft:ench_haste,enchantment,,not_started,not_tested,,class=? config_key=ench_haste registered=yes
 Thaumcraft:ench_repair,thaumcraft:ench_repair,enchantment,,not_started,not_tested,,class=? config_key=ench_repair registered=yes
