@@ -1,6 +1,9 @@
 package com.jonnyutah12.thaumcraftclassic.gametest;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockVariantNames;
+import com.jonnyutah12.thaumcraftclassic.blocks.VariantBlockItem;
+import com.jonnyutah12.thaumcraftclassic.blocks.VariantStateItems;
 import com.jonnyutah12.thaumcraftclassic.items.ItemLootBag;
 import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
 import com.jonnyutah12.thaumcraftclassic.registration.ModRegistration;
@@ -17,7 +20,9 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.BlockItemStateProperties;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.entity.EntityType;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -52,6 +57,11 @@ import java.util.stream.IntStream;
  *       file maps to shipped content, i.e. to a live registration, to a
  *       translation key the shipped code passes to
  *       {@code Component.translatable}, or to a documented exception below.</li>
+ *   <li>{@link #megaBlockVariantsCarryTheirOwnLabels} (TC-M7-01b): the
+ *       multi-variant mega-block families resolve a per-variant key
+ *       ({@code block.thaumcraft.<id>.<meta>}, the original's
+ *       {@code tile.<id>.<meta>.name}) from the stack's {@code variant} value,
+ *       so a variant never renders the family's meta-0 label.</li>
  * </ol>
  *
  * <p>Each run also writes {@code build/lang-audit.txt} (next to
@@ -136,6 +146,89 @@ public final class LocalizationGameTest {
         helper.assertTrue(missing.isEmpty(),
                 "en_us.json is missing " + missing.size() + " of " + required.size()
                         + " registry-derived keys: " + preview(missing));
+        helper.succeed();
+    }
+
+    /**
+     * TC-M7-01b / t_f40bbc0d: the mega-block families must name themselves per
+     * variant. The original rendered {@code tile.<id>.<meta>.name} for each
+     * metadata value; 1.21.1 has no per-state block display name, so
+     * {@link com.jonnyutah12.thaumcraftclassic.blocks.VariantBlockItem} reads
+     * the stack's {@code variant} value and resolves the per-variant key from
+     * {@link BlockVariantNames}. This probe drives the real
+     * {@code Item.getName(ItemStack)} path — the one tooltips, {@code /give}
+     * feedback and container names go through — for every declared (block,
+     * meta) pair, in both variant carriers, and proves the label is the
+     * variant's own and not the family's meta-0 label.
+     */
+    @GameTest(template = "empty")
+    public static void megaBlockVariantsCarryTheirOwnLabels(final GameTestHelper helper) {
+        final JsonObject lang = loadLang(helper);
+        int checked = 0;
+        int distinctFromBase = 0;
+        for (final String path : BlockVariantNames.paths()) {
+            final ResourceLocation id = ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, path);
+            final Block block = BuiltInRegistries.BLOCK.get(id);
+            helper.assertTrue(block != net.minecraft.world.level.block.Blocks.AIR
+                            && BuiltInRegistries.BLOCK.containsKey(id),
+                    "block variant family " + id + " is declared in BlockVariantNames but not registered");
+            final Item item = BuiltInRegistries.ITEM.get(id);
+            helper.assertTrue(item instanceof BlockItem blockItem && blockItem.getBlock() == block,
+                    "the same-id item of " + id + " must be a BlockItem of that block, got "
+                            + BuiltInRegistries.ITEM.getKey(item));
+            helper.assertTrue(item instanceof VariantBlockItem,
+                    id + " carries named variants, so its item must be a VariantBlockItem (the per-variant "
+                            + "names only resolve through that class)");
+
+            final String baseKey = block.getDescriptionId();
+            final String baseLabel = labelOf(lang, baseKey, id.getPath() + " base label");
+            for (final int meta : BlockVariantNames.metasOf(path)) {
+                final String expected = BlockVariantNames.key(path, meta);
+                helper.assertTrue(lang.has(expected) && !lang.get(expected).getAsString().isEmpty(),
+                        expected + " is declared for " + BlockVariantNames.legacyKey(path, meta)
+                                + " but is not shipped in en_us.json");
+
+                // The two carriers a variant stack ships with: the vanilla
+                // block_state component (pick-block, drops, recipe results,
+                // /give with components) and the ported ITEM_META component.
+                final ItemStack stateStack = new ItemStack(item);
+                stateStack.set(net.minecraft.core.component.DataComponents.BLOCK_STATE,
+                        new BlockItemStateProperties(
+                                java.util.Map.of(VariantStateItems.VARIANT_PROPERTY, Integer.toString(meta))));
+                final ItemStack metaStack = new ItemStack(item);
+                metaStack.set(ModDataComponents.ITEM_META.get(), meta);
+                for (final ItemStack stack : java.util.List.of(stateStack, metaStack)) {
+                    final String key = translatableKeyOf(item.getName(stack));
+                    helper.assertTrue(expected.equals(key),
+                            "meta " + meta + " of " + id + " names itself \"" + key + "\"; the original ships "
+                                    + BlockVariantNames.legacyKey(path, meta) + ", ported as " + expected);
+                }
+
+                final String label = lang.get(expected).getAsString();
+                if (!label.equals(baseLabel)) {
+                    // The observed defect: every blockStoneDevice meta read
+                    // "Alchemical Furnace" (the meta-0 label), so an Arcane
+                    // Bore pedestal looked like a furnace. A variant the
+                    // original named differently must not resolve to the base.
+                    final String plainKey = translatableKeyOf(item.getName(stateStack));
+                    helper.assertTrue(!baseKey.equals(plainKey),
+                            "meta " + meta + " of " + id + " is \"" + label + "\" in the original but still "
+                                    + "resolves to the family's base key " + baseKey);
+                    distinctFromBase++;
+                }
+                checked++;
+            }
+
+            // A stack that carries no variant keeps the plain block key — the
+            // documented fallback vanilla uses for component-less stacks.
+            helper.assertTrue(baseKey.equals(translatableKeyOf(item.getName(new ItemStack(item)))),
+                    id + " must keep the plain block key for a stack with no variant component");
+        }
+        ThaumcraftClassic.LOGGER.info("[TC-M7-01b] {} declared mega-block variants across {} families "
+                        + "resolve their own labels ({} differ from the family's base label)",
+                checked, BlockVariantNames.paths().size(), distinctFromBase);
+        helper.assertTrue(checked >= 100,
+                "expected the declared mega-block families to be probed in full, checked " + checked);
         helper.succeed();
     }
 
@@ -235,6 +328,17 @@ public final class LocalizationGameTest {
      * ITEM_META component with no bound constant, so it is named explicitly.
      */
     private static int[] metasOf(final Item item) {
+        if (item instanceof BlockItem blockItem) {
+            // A multi-variant block item names every state its block can be
+            // in (TC-M7-01b): the original-metadata domain is the block's own
+            // `variant` property range, not a class constant.
+            final net.minecraft.world.level.block.state.properties.Property<?> variant =
+                    blockItem.getBlock().getStateDefinition()
+                            .getProperty(VariantStateItems.VARIANT_PROPERTY);
+            if (variant instanceof IntegerProperty range) {
+                return range.getPossibleValues().stream().mapToInt(Integer::intValue).sorted().toArray();
+            }
+        }
         for (Class<?> c = item.getClass(); c != null && c != Object.class; c = c.getSuperclass()) {
             final Integer count = staticInt(c, "META_COUNT");
             if (count != null) {
@@ -268,6 +372,15 @@ public final class LocalizationGameTest {
         } catch (ReflectiveOperationException | RuntimeException e) {
             return null;
         }
+    }
+
+    /** The shipped string of a key, with the audit failing loudly when it is absent. */
+    private static String labelOf(final JsonObject lang, final String key, final String what) {
+        final var entry = lang.get(key);
+        if (entry == null || !entry.isJsonPrimitive() || entry.getAsString().isEmpty()) {
+            throw new AssertionError(what + " has no en_us.json entry: " + key);
+        }
+        return entry.getAsString();
     }
 
     /** The key of a pure translatable component, or null when the name is not a lang key. */

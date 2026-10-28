@@ -1,6 +1,5 @@
 package com.jonnyutah12.thaumcraftclassic.blocks;
 
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.level.block.Block;
 
 /**
@@ -8,11 +7,12 @@ import net.minecraft.world.level.block.Block;
  * {@code thaumcraft:blockCustomOre}, item_class=BlockCustomOreItem).
  *
  * <p>The original class existed to list all eight metadata variants in the
- * creative tab (fillCreativeTab, metas 0-7). The creative tab itself is
- * TC-M6-04 territory; this subclass keeps the class contract from the
- * content mapping and is where that variant listing will land.</p>
+ * creative tab (fillCreativeTab, metas 0-7). That listing is TC-M7-01 tab
+ * territory; the per-metadata names — {@code tile.blockCustomOre.0.name=Cinnabar
+ * Ore} through {@code .7.name=Amber Bearing Stone} — arrive with TC-M7-01b
+ * through {@link VariantBlockItem}.</p>
  */
-public class BlockCustomOreItem extends BlockItem {
+public class BlockCustomOreItem extends VariantBlockItem {
 
     /**
      * Per-variant overlay tints, original {@code BlockCustomOreItem.colors}

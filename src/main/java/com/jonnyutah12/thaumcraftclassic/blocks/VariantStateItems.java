@@ -56,6 +56,30 @@ public final class VariantStateItems {
     }
 
     /**
+     * The original-metadata value a stack carries: the {@code variant} entry
+     * of its {@code minecraft:block_state} component (placed-state stacks:
+     * pick-block, drops, recipe results, {@code /give} with components),
+     * falling back to the {@code thaumcraft:item_meta} component (the
+     * multi-meta item convention, so a stack built by code that only tags the
+     * meta resolves too). Null when the stack carries neither, or when the
+     * carried value is not a number.
+     */
+    @javax.annotation.Nullable
+    public static Integer variantOf(final ItemStack stack) {
+        final BlockItemStateProperties component =
+                stack.get(net.minecraft.core.component.DataComponents.BLOCK_STATE);
+        final String carried = component == null ? null : component.properties().get(VARIANT_PROPERTY);
+        if (carried != null) {
+            try {
+                return Integer.valueOf(carried);
+            } catch (NumberFormatException notANumber) {
+                return null;
+            }
+        }
+        return stack.get(com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents.ITEM_META.get());
+    }
+
+    /**
      * Merge the {@code minecraft:block_state} component of a held stack into
      * a placement state (vanilla {@code BlockItem} ignores the component when
      * placing; variant items must apply it themselves via
