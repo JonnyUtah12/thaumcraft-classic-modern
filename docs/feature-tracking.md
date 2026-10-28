@@ -107,14 +107,21 @@ Statuses (DONE only with test evidence):
      `.worktrees/<task>`, so the 2026-10-24 shared-tree `compileJava`
      poisoning cannot recur. Integration stays hunk-wise onto `main`
      per the TC-M5-05 precedent.
-   - **Worker model is a real dependency:** the profile default model
-     endpoint (`custom:coder`) is unreachable from this host, so
-     workers fall back to a smaller model that crashed twice on
-     `t_a2a74726` ("Response Stopped — Repetition Detected"), which the
-     board records as a worker crash, not a model fault. `custom:gemma4`
-     is pinned per card for the five nearest chain cards and for
-     `t_a2a74726` (`hermes kanban set-model <id> gemma4 --provider
-     custom:gemma4`).
+   - **Worker model is a real dependency (operator directive
+     2026-10-28: use `swift`, not `gemma4`):** the worker model is pinned
+     per card to `custom:swift` (alias `swift` → `swift-1.5-iq3_s`,
+     `hermes kanban set-model <id> swift --provider custom:swift`) on the
+     five nearest chain cards and on `t_a2a74726`. The earlier note here
+     that the `custom:coder` endpoint was unreachable is stale — all three
+     local endpoints (`swift` 192.168.13.221:8080, `coder`
+     192.168.12.88:8080, `gemma4` 192.168.13.164:8033) answer HTTP 200 on
+     `/v1/models` as of this pass, so probe before treating an endpoint as
+     down. Two measured properties: `swift-1.5-iq3_s` is a **reasoning**
+     model (a probe with `max_tokens: 8` returned `finish_reason: length`,
+     `content: null`, all of the budget in `reasoning_content`), so a
+     tight per-turn completion cap reads as an empty response — that is the
+     shape of the "Response Stopped" failures the board recorded as worker
+     crashes.
    - **Preflight comments** on `t_95373ba3`, `t_d9fa0476`,
      `t_f7e25b1c`, `t_a758393c`, `t_54791c73`: verified main state, the
      per-area WIP inventory on `wip-salvage`, the merged files that must
