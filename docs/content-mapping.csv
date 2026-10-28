@@ -89,12 +89,12 @@ Thaumcraft:blockArcaneDoor,thaumcraft:blockarcanedoor,block,Arcane Door,done,tes
 Thaumcraft:blockLifter,thaumcraft:blocklifter,block,Arcane Levitator,done,tested,id case change only (D-001),class=BlockLifter item_class=-
 Thaumcraft:blockMagicBox,thaumcraft:blockmagicbox,block,,done,tested,id case change only (D-001),class=BlockMagicBox item_class=-
 Thaumcraft:blockAlchemyFurnace,thaumcraft:blockalchemyfurnace,block,Advanced Alchemical Furnace,not_started,not_tested,id case change only (D-001),class=BlockAlchemyFurnace item_class=-
-Thaumcraft:blockJar,thaumcraft:blockjar,block,Warded Jar / Brain in a Jar / Node in a Jar / Void Jar,not_started,not_tested,id case change only (D-001),class=BlockJar item_class=BlockJarItem
+Thaumcraft:blockJar,thaumcraft:blockjar,block,Warded Jar / Brain in a Jar / Node in a Jar / Void Jar,done,tested,id case change only (D-001),class=BlockJar item_class=BlockJarItem
 Thaumcraft:blockCandle,thaumcraft:blockcandle,block,White Tallow Candle / Orange Tallow Candle / Magenta Tallow Candle / Light Blue Tallow Candle / Yellow Tallow Candle / Lime Tallow Candle / Pink Tallow Candle / Gray Tallow Candle / Light Gray Tallow Candle / Cyan Tallow Candle / Purple Tallow Candle / Blue Tallow Candle / Brown Tallow Candle / Green Tallow Candle / Red Tallow Candle / Black Tallow Candle,done,tested,id case change only (D-001),class=BlockCandle item_class=BlockCandleItem
 Thaumcraft:blockEldritch,thaumcraft:blockeldritch,block,Eldritch Altar / Eldritch Obelisk / Eldritch Obelisk / Eldritch Capstone / Glowing Crusted Stone / Glyphed Stone / Ancient Doorway / Ancient Locking Mechanism / Crusted Opening / Runed Stone,not_started,not_tested,id case change only (D-001),class=BlockEldritch item_class=BlockEldritchItem
 Thaumcraft:blockAiry,thaumcraft:blockairy,block,Aura Node / Nitor / Glimmer of Light / Glimmer of Light / Warding Aura / Energized Aura Node / Static Field / Sapping Field / Impassable,done,tested,id case change only (D-001),class=BlockAiry item_class=BlockAiryItem (vis-node host has no port-side block: TC-M5-02 nodes are record-driven per docs/architecture/node-behavior.md; nitor host registered by TC-M6-04c; warding-fence hosts pending their cards)
 Thaumcraft:blockManaPod,thaumcraft:blockmanapod,block,,done,tested,id case change only (D-001),class=BlockManaPod item_class=-
-Thaumcraft:blockArcaneFurnace,thaumcraft:blockarcanefurnace,block,Infernal Furnace,not_started,not_tested,id case change only (D-001),class=BlockArcaneFurnace item_class=-
+Thaumcraft:blockArcaneFurnace,thaumcraft:blockarcanefurnace,block,Infernal Furnace,done,tested,id case change only (D-001),class=BlockArcaneFurnace item_class=-
 Thaumcraft:blockWarded,thaumcraft:blockwarded,block,,not_started,not_tested,id case change only (D-001),class=BlockWarded item_class=-
 Thaumcraft:blockHole,thaumcraft:blockhole,block,Empty Space,not_started,not_tested,id case change only (D-001),class=BlockHole item_class=-
 Thaumcraft:blockPortalEldritch,thaumcraft:blockportaleldritch,block,Eldritch Portal,not_started,not_tested,id case change only (D-001),class=BlockEldritchPortal item_class=-
@@ -201,7 +201,7 @@ Thaumcraft:FocusPortableHole,thaumcraft:focusportablehole,item,Wand Focus: Porta
 Thaumcraft:FocusPech,thaumcraft:focuspech,item,Wand Focus: Pech's Curse,not_started,not_tested,id case change only (D-001),class=ItemFocusPech
 Thaumcraft:FocusWarding,thaumcraft:focuswarding,item,Wand Focus: Warding,not_started,not_tested,id case change only (D-001),class=ItemFocusWarding
 Thaumcraft:FocusPrimal,thaumcraft:focusprimal,item,Wand Focus: Primal,not_started,not_tested,id case change only (D-001),class=ItemFocusPrimal
-Thaumcraft:ItemEssence,thaumcraft:itemessence,item,Glass Phial / Phial of Essentia,not_started,not_tested,id case change only (D-001),class=ItemEssence
+Thaumcraft:ItemEssence,thaumcraft:itemessence,item,Glass Phial / Phial of Essentia,done,tested,id case change only (D-001),class=ItemEssence
 Thaumcraft:ItemManaBean,thaumcraft:itemmanabean,item,Mana Bean,done,tested,id case change only (D-001),class=ItemManaBean
 Thaumcraft:ItemWispEssence,thaumcraft:itemwispessence,item,Ethereal Essence,done,tested,id case change only (D-001),class=ItemWispEssence
 Thaumcraft:ItemResource,thaumcraft:itemresource,item,Alumentum / Nitor / Thaumium Ingot / Quicksilver / Magic Tallow / Zombie Brain (defunct) / Amber / Enchanted Fabric / Vis Filter / Knowledge Fragment / Mirrored Glass / Tainted Goo / Taint Tendril / Jar Label / Salis Mundus / Primal Charm / Void metal Ingot / Void Seed / Gold Coin,done,tested,id case change only (D-001),class=ItemResource
@@ -239,7 +239,7 @@ Thaumcraft:ItemBootsRobe,thaumcraft:itembootsrobe,item,Thaumaturge's Boots,not_s
 Thaumcraft:ArcaneDoorKey,thaumcraft:arcanedoorkey,item,Iron Arcane Key / Gold Arcane Key,done,tested,id case change only (D-001),class=ItemKey
 Thaumcraft:HandMirror,thaumcraft:handmirror,item,Magic Hand Mirror,done,tested,id case change only (D-001),class=ItemHandMirror
 Thaumcraft:HoverHarness,thaumcraft:hoverharness,item,Thaumostatic Harness,not_started,not_tested,id case change only (D-001),class=ItemHoverHarness
-Thaumcraft:BlockJarFilledItem,thaumcraft:blockjarfilleditem,item,Jar of Essentia,not_started,not_tested,id case change only (D-001),class=ItemJarFilled
+Thaumcraft:BlockJarFilledItem,thaumcraft:blockjarfilleditem,item,Jar of Essentia,done,tested,id case change only (D-001),class=ItemJarFilled
 Thaumcraft:BlockJarNodeItem,thaumcraft:blockjarnodeitem,item,Node in a Jar,not_started,not_tested,id case change only (D-001),class=ItemJarNode
 Thaumcraft:TrunkSpawner,thaumcraft:trunkspawner,item,Traveling Trunk,done,tested,id case change only (D-001),class=ItemTrunkSpawner
 Thaumcraft:ItemGolemPlacer,thaumcraft:itemgolemplacer,item,Straw Golem / Wood Golem / Tallow Golem / Clay Golem / Flesh Golem / Stone Golem / Iron Golem / Thaumium Golem,not_started,not_tested,id case change only (D-001),class=ItemGolemPlacer
@@ -835,24 +835,24 @@ Thaumcraft:recipe.221.infusion_enchantment,thaumcraft:recipe.221.infusion_enchan
 Thaumcraft:recipe.222.infusion_enchantment,thaumcraft:recipe.222.infusion_enchantment,recipe,Enchantment.field_77344_u,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
 Thaumcraft:recipe.223.infusion_enchantment,thaumcraft:recipe.223.infusion_enchantment,recipe,Enchantment.field_77343_v,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
 Thaumcraft:recipe.224.infusion_enchantment,thaumcraft:recipe.224.infusion_enchantment,recipe,Enchantment.field_77342_w,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.225.smelting_bonus,thaumcraft:recipe.225.smelting_bonus,recipe,"Items.field_151074_bl, 0, 0)",not_started,not_tested,,type=smelting_bonus research=-
-Thaumcraft:recipe.226.smelting_bonus,thaumcraft:recipe.226.smelting_bonus,recipe,"ItemNugget, 0, 0)",not_started,not_tested,,type=smelting_bonus research=-
-Thaumcraft:recipe.227.smelting_bonus,thaumcraft:recipe.227.smelting_bonus,recipe,"ItemNugget, 0, 5)",not_started,not_tested,,type=smelting_bonus research=-
-Thaumcraft:recipe.228.smelting_bonus,thaumcraft:recipe.228.smelting_bonus,recipe,"ItemNugget, 0, 1)",not_started,not_tested,,type=smelting_bonus research=-
-Thaumcraft:recipe.229.smelting_bonus,thaumcraft:recipe.229.smelting_bonus,recipe,"ItemNugget, 0, 2)",not_started,not_tested,,type=smelting_bonus research=-
-Thaumcraft:recipe.230.smelting_bonus,thaumcraft:recipe.230.smelting_bonus,recipe,"ItemNugget, 0, 3)",not_started,not_tested,,type=smelting_bonus research=-
-Thaumcraft:recipe.231.smelting_bonus,thaumcraft:recipe.231.smelting_bonus,recipe,"ItemNugget, 0, 4)",not_started,not_tested,,type=smelting_bonus research=-
-Thaumcraft:recipe.232.smelting_bonus,thaumcraft:recipe.232.smelting_bonus,recipe,"Items.field_151074_bl, 0, 0)",not_started,not_tested,,type=smelting_bonus research=-
-Thaumcraft:recipe.233.smelting_bonus,thaumcraft:recipe.233.smelting_bonus,recipe,"ItemNugget, 0, 0)",not_started,not_tested,,type=smelting_bonus research=-
-Thaumcraft:recipe.234.smelting_bonus,thaumcraft:recipe.234.smelting_bonus,recipe,"ItemNugget, 0, 5)",not_started,not_tested,,type=smelting_bonus research=-
-Thaumcraft:recipe.235.smelting_bonus,thaumcraft:recipe.235.smelting_bonus,recipe,"ItemNugget, 0, 1)",not_started,not_tested,,type=smelting_bonus research=-
-Thaumcraft:recipe.236.smelting_bonus,thaumcraft:recipe.236.smelting_bonus,recipe,"ItemNugget, 0, 2)",not_started,not_tested,,type=smelting_bonus research=-
-Thaumcraft:recipe.237.smelting_bonus,thaumcraft:recipe.237.smelting_bonus,recipe,"ItemNugget, 0, 3)",not_started,not_tested,,type=smelting_bonus research=-
-Thaumcraft:recipe.238.smelting_bonus,thaumcraft:recipe.238.smelting_bonus,recipe,"ItemNugget, 0, 4)",not_started,not_tested,,type=smelting_bonus research=-
-Thaumcraft:recipe.239.smelting_bonus,thaumcraft:recipe.239.smelting_bonus,recipe,ItemNuggetChicken),not_started,not_tested,,type=smelting_bonus research=-
-Thaumcraft:recipe.240.smelting_bonus,thaumcraft:recipe.240.smelting_bonus,recipe,ItemNuggetBeef),not_started,not_tested,,type=smelting_bonus research=-
-Thaumcraft:recipe.241.smelting_bonus,thaumcraft:recipe.241.smelting_bonus,recipe,ItemNuggetPork),not_started,not_tested,,type=smelting_bonus research=-
-Thaumcraft:recipe.242.smelting_bonus,thaumcraft:recipe.242.smelting_bonus,recipe,ItemNuggetFish),not_started,not_tested,,type=smelting_bonus research=-
+Thaumcraft:recipe.225.smelting_bonus,thaumcraft:recipe.225.smelting_bonus,recipe,"Items.field_151074_bl, 0, 0)",done,tested,,type=smelting_bonus research=-
+Thaumcraft:recipe.226.smelting_bonus,thaumcraft:recipe.226.smelting_bonus,recipe,"ItemNugget, 0, 0)",done,tested,,type=smelting_bonus research=-
+Thaumcraft:recipe.227.smelting_bonus,thaumcraft:recipe.227.smelting_bonus,recipe,"ItemNugget, 0, 5)",done,tested,,type=smelting_bonus research=-
+Thaumcraft:recipe.228.smelting_bonus,thaumcraft:recipe.228.smelting_bonus,recipe,"ItemNugget, 0, 1)",done,tested,,type=smelting_bonus research=-
+Thaumcraft:recipe.229.smelting_bonus,thaumcraft:recipe.229.smelting_bonus,recipe,"ItemNugget, 0, 2)",done,tested,,type=smelting_bonus research=-
+Thaumcraft:recipe.230.smelting_bonus,thaumcraft:recipe.230.smelting_bonus,recipe,"ItemNugget, 0, 3)",done,tested,,type=smelting_bonus research=-
+Thaumcraft:recipe.231.smelting_bonus,thaumcraft:recipe.231.smelting_bonus,recipe,"ItemNugget, 0, 4)",done,tested,,type=smelting_bonus research=-
+Thaumcraft:recipe.232.smelting_bonus,thaumcraft:recipe.232.smelting_bonus,recipe,"Items.field_151074_bl, 0, 0)",done,tested,,type=smelting_bonus research=-
+Thaumcraft:recipe.233.smelting_bonus,thaumcraft:recipe.233.smelting_bonus,recipe,"ItemNugget, 0, 0)",done,tested,,type=smelting_bonus research=-
+Thaumcraft:recipe.234.smelting_bonus,thaumcraft:recipe.234.smelting_bonus,recipe,"ItemNugget, 0, 5)",done,tested,,type=smelting_bonus research=-
+Thaumcraft:recipe.235.smelting_bonus,thaumcraft:recipe.235.smelting_bonus,recipe,"ItemNugget, 0, 1)",done,tested,,type=smelting_bonus research=-
+Thaumcraft:recipe.236.smelting_bonus,thaumcraft:recipe.236.smelting_bonus,recipe,"ItemNugget, 0, 2)",done,tested,,type=smelting_bonus research=-
+Thaumcraft:recipe.237.smelting_bonus,thaumcraft:recipe.237.smelting_bonus,recipe,"ItemNugget, 0, 3)",done,tested,,type=smelting_bonus research=-
+Thaumcraft:recipe.238.smelting_bonus,thaumcraft:recipe.238.smelting_bonus,recipe,"ItemNugget, 0, 4)",done,tested,,type=smelting_bonus research=-
+Thaumcraft:recipe.239.smelting_bonus,thaumcraft:recipe.239.smelting_bonus,recipe,ItemNuggetChicken),done,tested,,type=smelting_bonus research=-
+Thaumcraft:recipe.240.smelting_bonus,thaumcraft:recipe.240.smelting_bonus,recipe,ItemNuggetBeef),done,tested,,type=smelting_bonus research=-
+Thaumcraft:recipe.241.smelting_bonus,thaumcraft:recipe.241.smelting_bonus,recipe,ItemNuggetPork),done,tested,,type=smelting_bonus research=-
+Thaumcraft:recipe.242.smelting_bonus,thaumcraft:recipe.242.smelting_bonus,recipe,ItemNuggetFish),done,tested,,type=smelting_bonus research=-
 Thaumcraft:recipe.243.multiblock_structure,thaumcraft:recipe.243.multiblock_structure,recipe,(structure),not_started,not_tested,,type=multiblock_structure research=Thaumonomicon
 Thaumcraft:recipe.244.multiblock_structure,thaumcraft:recipe.244.multiblock_structure,recipe,(structure),not_started,not_tested,,type=multiblock_structure research=ArcTable
 Thaumcraft:recipe.245.multiblock_structure,thaumcraft:recipe.245.multiblock_structure,recipe,(structure),not_started,not_tested,,type=multiblock_structure research=Crucible
