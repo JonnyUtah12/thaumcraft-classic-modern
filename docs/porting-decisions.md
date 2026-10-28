@@ -156,6 +156,17 @@ against the repository, not against recollection.
    would also reintroduce the block-storm failure mode that stalled this
    board for three days (see D-012).
 
+   **Correction and verified state (2026-10-27).** Jev is genuinely installed
+   on this profile, and an earlier summary of this decision that called it a
+   tool which "does not exist in this environment" was wrong. Verified:
+   `hermes-jev` is enabled in `~/.hermes/config.yaml`, `~/.hermes/skills/jev/`
+   holds 13 Jev skills, a `jev` binary is on PATH (`~/.hermes/bin/jev` →
+   `~/hermes-jev-skills/bin/jev`), and the plugin catalog carries `jev-judge`,
+   `jev-approvals`, `jev-skill-router` and `jev-model-router`. Its existence is
+   not in question. What is rejected is narrower and unchanged: adopting a
+   calibrated-probability gate as this project's **blocking** verification of
+   correctness, for the two reasons above.
+
 **What is used instead** — deterministic and free: `compileJava` / `build`
 exit codes; `runGameTestServer` asserting "required tests passed"; CI green
 on the pushed SHA; `git merge-base --is-ancestor` before claiming a commit
@@ -196,3 +207,77 @@ Consequences adopted:
   should raise an alert rather than depend on someone checking by hand.
 
 **Fidelity impact:** none (process only).
+
+## D-013 — Third-party Minecraft agent skills: installed subset and authority limits
+
+Installed 2026-10-27 from https://github.com/Jahrome907/minecraft-agent-skills
+at pinned commit `30137f93fdbd4446910ceaa8776d561fd291aed1` (2026-10-11), MIT.
+The clone lives outside the repository at `~/.hermes/cache/minecraft-agent-skills`.
+
+Placed in the agent-skills tree, **not** committed to this repository:
+`~/.hermes/skills/minecraft/{minecraft-modding, minecraft-testing,
+minecraft-world-generation, minecraft-resource-pack}`, plus a
+`PROVENANCE.md` in the same directory. Four of the thirteen. Only the
+canonical `.agents/skills/` tree was copied — `.claude/skills/` and
+`.codex/skills/` are generated mirrors, so copying all three would create 39
+duplicate copies competing for the same skill names. Discovery was verified
+rather than assumed (`skills_list` resolves all four; `skill_view` loads
+`minecraft-modding` with its four references and `setup_needed: false`).
+
+Not installed, and why: `minecraft-plugin-dev` (Paper/Bukkit/Spigot — wrong
+target for a mod), `minecraft-multiloader` (Architectury/Fabric — a loader and
+dependency change; D-001…D-010 pin native NeoForge with no extra runtime
+dependencies), `minecraft-datapack` and `minecraft-commands-scripting` (this
+project's JSON is generated from the decompiled sources, not authored as
+datapack schemas), `minecraft-ci-release` (the ModDevGradle harness is proven
+and both real defects in it were found by inspection), and `imagegen` /
+`server-admin` / `worldedit-ops` / `essentials-ops` (different domain).
+
+**Authority — the load-bearing part of this record.** The bundle is reviewed
+against Minecraft 26.3 / Java 25, and its own audit states "No Minecraft,
+Gradle, or server runtime was launched" — validation is static and was never
+run against a target. This project is pinned `minecraft_version=1.21.1`,
+`neo_version=21.1.259`, Java 21. Therefore:
+
+- The skills are **advisory documentation for platform mechanics only**. They
+  know nothing about Thaumcraft behaviour: they have never seen the decompiled
+  tree, `docs/balance-values.md`, or `docs/content-mapping.csv`. Ground truth
+  for behaviour remains the decompiled 4.2.3.5 JAR, this repo's pins, and
+  green CI.
+- Where a skill contradicts a pin, a recorded decision, or the decompiled
+  original, **the pin/decision/original wins**, and the conflict is recorded
+  in `BEHAVIORAL_DEVIATIONS.md` rather than adopted. A concrete instance
+  already visible: `minecraft-modding` teaches
+  `Identifier.fromNamespaceAndPath(...)` for "26.x official names" and
+  1.21.4+ item-definition JSON, whereas this tree uses `ResourceLocation`
+  under Mojang mappings on 1.21.1.
+- Do not adopt 26.x-only idioms (pack formats, loot/predicate/worldgen JSON
+  shapes, NeoForge datagen routing) into this tree, and do not "modernise" the
+  recorded 1.21.1 adaptations — NBT → data components/codecs (BD-04, D-006)
+  and hardcoded research → data-driven JSON (BD-05, D-007).
+- A skill's bundled validator is **not** evidence and must never be cited as
+  verification. Authoritative gates remain `./gradlew build` and
+  `runGameTestServer` ("required tests passed"), CI green on the pushed SHA,
+  `git merge-base --is-ancestor`, `git status` for tracked worktree
+  deletions, and per-card test evidence.
+- The repository's npm tooling (`npm install` / `run check` / `run
+  sync:skills`) was deliberately **not** executed: the brief forbids running
+  arbitrary scripts from reference repositories, and the README states the
+  copied skill directories do not need it.
+
+**Expected value, stated honestly.** These help with generic 1.21-adjacent
+plumbing on the M5/M7 edges — worldgen feature and structure JSON, model and
+blockstate wiring, GameTest shape. They cannot help the hard part of this
+port, which is Thaumcraft-specific behavioural fidelity: essentia matching,
+vis all-or-nothing payment ordering, the research hidden-parent quirk, and
+original RNG ordering. Modest benefit on platform mechanics; none on fidelity.
+
+**Loading policy:** per-card opt-in via `kanban --skill`, on matching cards
+only, never a global auto-load. Blanket-loading thirteen skills across ~23
+live cards inflates every worker's context against a fixed iteration budget —
+the same budget that already produced three consecutive 150/150 ceilings
+(D-012).
+
+**Fidelity impact:** none on game behaviour. This record exists so the version
+boundary is visible where the skills are used, and so they are never mistaken
+for authority.
