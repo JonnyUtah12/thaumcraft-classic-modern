@@ -71,6 +71,20 @@ public final class ModDataComponents {
                             .build());
 
     /**
+     * The aspect a jar label / filled jar locks its jar to (TC-M4-06-s): the
+     * original wrote the label's tag string to the {@code AspectFilter} key on
+     * the stack's NBT ({@code ItemJarFilled.getFilter},
+     * {@code BlockJar.getDrops}); 1.21.1 gives it its own component so the
+     * contents ({@link #ESSENTIA_CONTAINER}) and the label stay separate.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> JAR_FILTER =
+            DATA_COMPONENT_TYPES.register("jar_filter",
+                    () -> DataComponentType.<String>builder()
+                            .persistent(Codec.STRING)
+                            .networkSynchronized(ByteBufCodecs.STRING_UTF8)
+                            .build());
+
+    /**
      * Dye colour of a hanging banner carried by its stack (TC-M4-03 fix): the
      * original wrote {@code banner.field_77990_d.func_74774_a("color", (byte)a)}
      * on the banner ItemStack inside {@code ConfigRecipes.initializeArcaneRecipes}

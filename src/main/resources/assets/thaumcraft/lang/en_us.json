@@ -243,5 +243,11 @@
   "tc.researcherror": "You lack the required knowledge to understand this.",
   "tc.resonator1": "Contains %1$s %2$s essentia",
   "tc.resonator2": "Suction %1$s %2$s",
-  "tc.resonator3": "Untyped"
+  "tc.resonator3": "Untyped",
+  "block.thaumcraft.blockjar": "Warded Jar",
+  "block.thaumcraft.blockarcanefurnace": "Infernal Furnace",
+  "item.thaumcraft.blockjarfilleditem": "Jar of Essentia",
+  "item.thaumcraft.blockjarfilleditem.void": "Void Jar of Essentia",
+  "item.thaumcraft.itemessence.0": "Glass Phial",
+  "item.thaumcraft.itemessence.1": "Phial of Essentia"
 }

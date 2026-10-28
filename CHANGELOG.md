@@ -5,12 +5,51 @@ Format: Keep a Changelog; versioning: Semantic Versioning (see
 `docs/release-process.md`). Project versions are independent of the pinned
 Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
-## [Unreleased]
+## [0.1.0-alpha.4] - 2026-10-28
 
-Work towards the next release (the `v0.1.0-alpha.3` cut removed the previous
-section; this is the new one).
+Fourth pre-release. Still deliberately a pre-release, not playable end-to-end:
+wands and foci, all GUI screens, the Thaumonomicon, essentia transport, taint,
+enchantment registration, armor, entities, particles and item models remain
+unimplemented. Per-system status: `docs/FEATURE_MATRIX.md`; deviations:
+`docs/BEHAVIORAL_DEVIATIONS.md`.
+
+**Artifact policy:** the jar attached to this release is **code-only** — no
+original Thaumcraft textures, sounds, models or language files. Original assets
+are All Rights Reserved and are never redistributed; local builds overlay the
+user's own extracted assets (D-004).
+
+**Known limitations, stated accurately.** The alpha.3 notes attributed missing
+in-game textures to the code-only artifact policy. That explanation was
+incomplete and is corrected here: even an **asset-included** build renders
+blocks magenta, because the overlay copies the original 1.7.10 layout
+(`textures/blocks/`) while 1.21.1 resolves `textures/block/` (singular). The
+path remap is tracked as `TC-M7-01-s-a` and is **not** in this build. The
+companion localization defect **is** fixed (see Added).
+
+**Counts in this section, measured on the released tree rather than copied
+forward.** Unit tests **368** (0 failures, 1 skipped); required game tests
+**103/103**, and the same 103/103 in the no-Curios configuration. The alpha.3
+notes' 317 unit / 89 game figures are superseded. `en_us.json` ships **241
+keys** — not the 128 the localization card recorded as its own delta, nor 107
+alone from the per-variant-names card; those are per-card contributions to the
+same file.
+
+**Licensing flag, stated rather than implied.** Of those 241 shipped values,
+**231 appear verbatim in the original 4.2.3.5 `en_US.lang`**, which is All
+Rights Reserved; only 10 are authored for port-created ids. D-004 says original
+assets are never committed or redistributed, and this file is both committed to
+the public repository and included in the code-only jar. It was not generated at
+build time as its card specified. Recorded as **D-016** with the options; the
+exposure predates this release (the commits are already public), so publishing
+this jar adds no new copy, but the posture needs an explicit decision.
 
 ### Added
+- **Essentia extraction and storage** (TC-M4-06-s, merged by TC-M4-06-p,
+  `42d94ae`; gates re-measured on the merged tree at `22ba516`): the arcane
+  furnace, essentia jars and phials as running content, with 8 game probes
+  green — including the void-jar variant and the arcane furnace's self-drop via
+  its block loot table. Measured on the merged tree: **103/103 game tests** and
+  **368 unit tests**.
 - **Localization — `assets/thaumcraft/lang/en_us.json`** (TC-LOC-s, card
   `t_a2a74726`): 128 keys ship for the first time, so the mod's identifiers
   resolve to real words in-game — 27 block display names, 15 item names, 58

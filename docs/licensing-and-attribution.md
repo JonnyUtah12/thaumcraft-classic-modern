@@ -65,3 +65,21 @@ Decompiled output (`../reference/decompiled/`), extracted assets
 (`../reference/api-repos/`) live outside the repository and are never
 committed. Decompiled code is cited as analysis evidence (class + method)
 in docs and task notes, never pasted into committed sources.
+
+
+## Original display strings are shipped (D-016, OPEN)
+
+`src/main/resources/assets/thaumcraft/lang/en_us.json` is committed to this
+public repository and is included in the code-only release artifact. Of its
+**241 shipped values, 231 appear verbatim in the original 4.2.3.5 `en_US.lang`**
+(All Rights Reserved); 10 are authored for port-created ids. Measured
+2026-10-28 by comparing shipped values against the original file.
+
+D-004 states original assets are never committed or redistributed. The claim
+that the release artifact is "code-only, no original content" is therefore
+accurate for **binary** assets (textures, sounds, models — these are excluded)
+but **not** for display strings. The exposure predates v0.1.0-alpha.4 (the
+commits `fca4fb8` / `3810797` are already public), so the jar adds no new copy.
+Options and the recommendation are recorded as **D-016** in
+`porting-decisions.md`; this needs an explicit decision rather than an implicit
+one.

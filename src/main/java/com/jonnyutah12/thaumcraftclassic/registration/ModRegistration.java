@@ -5,6 +5,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
@@ -138,12 +139,20 @@ public final class ModRegistration {
         // resolve through. The essentia jar that refills it stays on TC-M4-06.
         CatalogCrucible.init(modEventBus);
 
+        // TC-M4-06-s: essentia extraction + storage — the infernal furnace
+        // (base + nozzle) and its smelting-bonus table, the warded/void jars
+        // with their jar tiles, the glass phial and the filled-jar item. The
+        // tube network that moves essentia between them stays on TC-M4-07.
+        CatalogEssentiaStorage.init(modEventBus);
+
         // TC-M5-04-s: taint — the crust/soil/flesh and fibres mega-blocks and
         // their variant items. The Tainted Land biome is a datapack entry
-        // (data/thaumcraft/worldgen/biome/), the spread/conversion/cleansing
-        // rules run in TaintManager, and the config keys already live in
-        // TcConfigCatalog. The taint creatures, the Taint Poison effect and
-        // the worldgen biome hook stay on TC-M6-06 / TC-M6-05 / TC-M5-05.
+        // (data/thaumcraft/worldgen/biome/), and the spread/conversion rules
+        // run in TaintManager; the config keys already live in
+        // TcConfigCatalog. Taint cleansing and aura restore stay on the
+        // sibling card TC-M5-04b, the taint creatures and the Taint Poison
+        // effect on TC-M6-06 / TC-M6-05, and the worldgen biome hook on
+        // TC-M5-05.
         CatalogTaint.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
