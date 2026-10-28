@@ -326,3 +326,41 @@ the same budget that already produced three consecutive 150/150 ceilings
 **Fidelity impact:** none on game behaviour. This record exists so the version
 boundary is visible where the skills are used, and so they are never mistaken
 for authority.
+
+## D-014 — Authoritative platform documentation, and the "latest" banner trap
+
+The binding NeoForge documentation for this project is the **versioned** page,
+https://docs.neoforged.net/docs/1.21.1/gettingstarted/, which matches the pin
+(`minecraft_version=1.21.1`, `neo_version=21.1.259`).
+
+**The banner on that page is a trap, not guidance.** It reads: *"This is
+documentation for NeoForged 1.21 - 1.21.1, which is no longer actively
+maintained. For up-to-date documentation, see the latest version (26.1)."*
+Following that link lands on 26.1 documentation, describing a loader and pack
+surface this project does not target — the same contamination class as the
+26.3 agent skills fenced by D-013. **Authority follows the pin.** Where the
+versioned page and the "latest" page disagree, the 1.21.1 page wins, and any
+difference is recorded here rather than adopted.
+
+Verified against that page rather than assumed:
+
+- Prerequisite "Java 21 JDK and 64-bit JVM" — satisfied: Temurin
+  `21.0.12.1+1 LTS`, reporting `OpenJDK 64-Bit Server VM`.
+- Build-output convention `<archivesBaseName>-<version>.jar` in `build/libs`
+  — satisfied: `thaumcraft-0.1.0-alpha.2.jar` (`archivesBaseName` defaults to
+  `mod_id` = `thaumcraft`).
+- Workspace template — satisfied by ModDevGradle (the page covers both
+  ModDevGradle and NeoGradle; this project is ModDevGradle).
+- Integration issue tracker — https://github.com/AllTheMods/ATM-10 is the
+  official repository and issue-tracker for *All the Mods 10 1.21.1*, i.e.
+  the right place to check known conflicts during ATM10 triage (TC-M9-02).
+
+**One gap the page exposes, tracked as its own card rather than claimed as
+done:** the page states *"You should always test your mod in a dedicated
+server environment."* CI currently runs `build`, `runGameTestServer`, and
+`-Ptc.noCurios runGameTestServer`. A game-test server is **not** a plain
+dedicated-server smoke — it does not cover `runs/server`, EULA acceptance, or
+`online-mode=false`. There is no `runServer` gate in CI.
+
+**Fidelity impact:** none directly. This record fixes which documentation is
+authoritative and closes the prerequisite checks.
