@@ -69,9 +69,13 @@ jobs:
   # This job boots our mod on a real dedicated server and asserts:
   #   * the first start completes the EULA/properties handshake non-interactively
   #     (accept run/eula.txt if written; pin online-mode=false so no auth),
+  #   * our mod is ACTUALLY loaded on that server (Mod List entry / its init
+  #     hook ran) — else a server booted WITHOUT the mod is vacuously green,
   #   * the server reaches the ready state ("Done (Ns)"),
-  #   * the log has ZERO errors attributable to our mod (ERROR/FATAL/Exception
-  #     lines naming the `thaumcraft` namespace; other mods' noise stays ignored),
+  #   * run/logs/debug.log — the COMPLETE per-run log; `latest.log` is only a
+  #     truncated subset of it (62 of 885 lines on a real boot) — has ZERO
+  #     errors attributable to our mod (ERROR/FATAL/Exception lines naming the
+  #     `thaumcraft` namespace; other mods' noise stays ignored),
   #   * the run then STOPS cleanly (bounded polling + SIGTERM; the job cannot
   #     hang CI; "All dimensions are saved" must appear).
   # Independent of the build job; does not weaken the existing gates.
@@ -99,8 +103,23 @@ jobs:
         run: |
           set -u
           NS='thaumcraft'
-          JAR_PAT='neoforge-21\.1\.259\.jar'
-          LOG='run/logs/latest.log'
+          # Scan the COMPLETE per-run boot log. `latest.log` is a truncated subset
+          # of the same boot (62 of 885 lines, in 27 scattered blocks), so a
+          # registration failure inside a dropped span passes vacuously there.
+          LOG='run/logs/debug.log'
+          # Game jar discovered from the built artifact instead of a hardcoded
+          # version: the game jar is the bare `neoforge-<ver>.jar` (its
+          # -sources / -merged / -client-extra siblings are not run by the JVM).
+          GAME_JAR=$(find build/moddev/artifacts -maxdepth 1 -type f -name 'neoforge-*.jar' 2>/dev/null | grep -E '/neoforge-[0-9][0-9.]*\.jar$' | head -1)
+          if [ -z "$GAME_JAR" ]; then echo "FAIL: no game jar present (cannot target the server JVM)"; exit 1; fi
+          JAR_BASE=${GAME_JAR##*/}
+          JAR_PAT=${JAR_BASE//./\\.}
+          echo "target game JVM via $JAR_BASE"
+          # Positive PROOF-OF-PRESENCE markers: the launcher's Mod List entry and
+          # the mod's own init line. Without one of these every check below is
+          # satisfiable by a server that never loaded our mod at all.
+          MOD_LIST_RE='Thaumcraft Classic .*\(thaumcraft\)'
+          MOD_INIT_RE='\[com\.jonnyutah12\.thaumcraftclassic\.ThaumcraftClassic/\]'
           kill_game_jvm() {
             pid=$(pgrep -f "$JAR_PAT" | head -1 || true)
             if [ -n "$pid" ]; then kill -TERM "$pid" 2>/dev/null || true; fi
@@ -183,6 +202,19 @@ jobs:
           fi
 
           echo "READY: $(grep -E 'Done \([0-9.]+s\)' "$LOG" | tail -1)"
+
+          # Distinct failure branch: "the mod never loaded" must not be mistaken
+          # for "the server never started". A missing mod produces no ERROR line,
+          # so without this branch the whole gate is vacuous.
+          MOD_LIST_HITS=$(grep -cE "$MOD_LIST_RE" "$LOG" || true)
+          MOD_INIT_HITS=$(grep -cE "$MOD_INIT_RE" "$LOG" || true)
+          if [ "${MOD_LIST_HITS:-0}" = "0" ] && [ "${MOD_INIT_HITS:-0}" = "0" ]; then
+            echo "FAIL: our mod did NOT load on the dedicated server (no Mod List entry, no init line in $LOG)"
+            grep -A6 -E 'Mod List|Prohibited mods' "$LOG" | tail -30 || true
+            exit 1
+          fi
+          echo "mod load: Mod List entry x${MOD_LIST_HITS}, init-hook line x${MOD_INIT_HITS} in $LOG"
+          echo "LOADED: $(grep -m1 -E "$MOD_INIT_RE" "$LOG" || grep -m1 -E "$MOD_LIST_RE" "$LOG")"
 
           MOD_FATALS=$(grep -E '/(ERROR|FATAL)\]|Exception' "$LOG" | grep -i -- "$NS" || true)
           if [ -n "$MOD_FATALS" ]; then
