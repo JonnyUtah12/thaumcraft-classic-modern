@@ -167,6 +167,27 @@ against the repository, not against recollection.
    calibrated-probability gate as this project's **blocking** verification of
    correctness, for the two reasons above.
 
+5. **A third-party generative "persona" offered as a code-writing capability**
+   (LobeHub "Minecraft Senior Developer", `java-development`, from the
+   lobe-chat-agents collection, dated 2025-11-11). Rejected on three grounds.
+   It is a prompt for a different host (LobeChat + MCP) whose counters are
+   usage stats, not capabilities, so adopting it installs documentation and
+   adds a new way to produce plausible wrong code. Its stated value is
+   greenfield invention — its own showcase is "add a special item that
+   triggers an explosion within a radius", alongside "enhance gameplay" and
+   "maintain server stability" — which is precisely what the preservation
+   brief forbids; and "complete, executable, well-commented" is
+   confidence-shaped rather than verifiable, indistinguishable in tone from a
+   correct port. It carries no version boundary at all (no loader, no 1.21.1 /
+   NeoForge pin, and it predates the 26.x refresh), and part of its domain is
+   server-plugin work this client modpack never does. Where this project wants
+   that kind of help, `~/.hermes/skills/mc-style-api-migration` (derived from
+   this tree) already covers it in a version-correct form: `javap` against the
+   compiled NeoForge jar rather than guessing or trusting decompiled sources,
+   the accessor-clash rename gotchas that cost wasted builds, per-package
+   compile proof instead of drifting whole-project totals, and the rule that a
+   test unreachable because main fails to compile is not a pass.
+
 **What is used instead** — deterministic and free: `compileJava` / `build`
 exit codes; `runGameTestServer` asserting "required tests passed"; CI green
 on the pushed SHA; `git merge-base --is-ancestor` before claiming a commit
