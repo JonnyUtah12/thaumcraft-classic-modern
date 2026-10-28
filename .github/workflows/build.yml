@@ -61,3 +61,171 @@ jobs:
 
       - name: Assert game tests ran and passed
         run: grep -q "required tests passed" run/logs/latest.log
+
+  # Docs prerequisite (docs/porting-decisions.md D-014): the versioned 1.21.1
+  # gettingstarted page requires testing EVERY mod, incl. client-only ones, in a
+  # plain dedicated server. runGameTestServer is not that: it never exercises
+  # the `runs/server` config, the eula.txt handshake, or online-mode=false.
+  # This job boots our mod on a real dedicated server and asserts:
+  #   * the first start completes the EULA/properties handshake non-interactively
+  #     (accept run/eula.txt if written; pin online-mode=false so no auth),
+  #   * our mod is ACTUALLY loaded on that server (Mod List entry / its init
+  #     hook ran) — else a server booted WITHOUT the mod is vacuously green,
+  #   * the server reaches the ready state ("Done (Ns)"),
+  #   * run/logs/debug.log — the COMPLETE per-run log; `latest.log` is only a
+  #     truncated subset of it (62 of 885 lines on a real boot) — has ZERO
+  #     errors attributable to our mod (ERROR/FATAL/Exception lines naming the
+  #     `thaumcraft` namespace; other mods' noise stays ignored),
+  #   * the run then STOPS cleanly (bounded polling + SIGTERM; the job cannot
+  #     hang CI; "All dimensions are saved" must appear).
+  # Independent of the build job; does not weaken the existing gates.
+  runServer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build with Gradle
+        run: ./gradlew build
+        timeout-minutes: 20
+
+      - name: Dedicated-server smoke (runs/server + eula + online-mode=false)
+        timeout-minutes: 20
+        run: |
+          set -u
+          NS='thaumcraft'
+          # Scan the COMPLETE per-run boot log. `latest.log` is a truncated subset
+          # of the same boot (62 of 885 lines, in 27 scattered blocks), so a
+          # registration failure inside a dropped span passes vacuously there.
+          LOG='run/logs/debug.log'
+          # Game jar discovered from the built artifact instead of a hardcoded
+          # version: the game jar is the bare `neoforge-<ver>.jar` (its
+          # -sources / -merged / -client-extra siblings are not run by the JVM).
+          GAME_JAR=$(find build/moddev/artifacts -maxdepth 1 -type f -name 'neoforge-*.jar' 2>/dev/null | grep -E '/neoforge-[0-9][0-9.]*\.jar$' | head -1)
+          if [ -z "$GAME_JAR" ]; then echo "FAIL: no game jar present (cannot target the server JVM)"; exit 1; fi
+          JAR_BASE=${GAME_JAR##*/}
+          JAR_PAT=${JAR_BASE//./\\.}
+          echo "target game JVM via $JAR_BASE"
+          # Positive PROOF-OF-PRESENCE markers: the launcher's Mod List entry and
+          # the mod's own init line. Without one of these every check below is
+          # satisfiable by a server that never loaded our mod at all.
+          MOD_LIST_RE='Thaumcraft Classic .*\(thaumcraft\)'
+          MOD_INIT_RE='\[com\.jonnyutah12\.thaumcraftclassic\.ThaumcraftClassic/\]'
+          kill_game_jvm() {
+            pid=$(pgrep -f "$JAR_PAT" | head -1 || true)
+            if [ -n "$pid" ]; then kill -TERM "$pid" 2>/dev/null || true; fi
+            for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+              pid=$(pgrep -f "$JAR_PAT" | head -1 || true)
+              if [ -z "$pid" ]; then return 0; fi
+              sleep 3
+            done
+            pid=$(pgrep -f "$JAR_PAT" | head -1 || true)
+            if [ -n "$pid" ]; then
+              echo "game JVM $pid survived SIGTERM; sending SIGKILL"
+              kill -9 "$pid" 2>/dev/null || true
+              sleep 5
+              pid=$(pgrep -f "$JAR_PAT" | head -1 || true)
+              if [ -n "$pid" ]; then echo "FAIL: game JVM $pid refuses to stop"; return 1; fi
+            fi
+            return 0
+          }
+          join_client() {
+            for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+              if ! kill -0 "$1" 2>/dev/null; then return 0; fi
+              sleep 2
+            done
+            kill -TERM "$1" 2>/dev/null || true
+            sleep 5
+            kill -KILL "$1" 2>/dev/null || true
+            return 0
+          }
+
+          echo '### STEP 1: first dedicated-server start (EULA handshake)'
+          rm -f "$LOG"
+          ./gradlew runServer >/tmp/smoke-step1.log 2>&1 &
+          S1=$!
+          for i in $(seq 1 36); do
+            if [ -f run/eula.txt ]; then break; fi
+            if [ -f "$LOG" ] && grep -qE 'SERVER IS RUNNING IN OFFLINE|Preparing level' "$LOG"; then break; fi
+            if ! kill -0 "$S1" 2>/dev/null; then break; fi
+            sleep 5
+          done
+          kill_game_jvm || { echo "FAIL: could not stop step-1 server"; exit 1; }
+          join_client "$S1"
+
+          if [ -f run/eula.txt ]; then
+            sed -i 's/eula=false/eula=true/' run/eula.txt
+            if ! grep -q 'eula=true' run/eula.txt; then echo "FAIL: eula.txt still not accepted"; exit 1; fi
+            echo "accepted EULA via run/eula.txt (eula=true)"
+          else
+            echo "note: toolchain pre-accepts the EULA (no run/eula.txt written)"
+          fi
+
+          SP='run/server.properties'
+          if [ ! -f "$SP" ]; then : > "$SP"; fi
+          if ! grep -q '^online-mode=' "$SP"; then echo 'online-mode=false' >> "$SP"; fi
+          sed -i 's/^online-mode=.*/online-mode=false/' "$SP"
+          if ! grep -q '^online-mode=false' "$SP"; then echo "FAIL: cannot enforce online-mode=false"; exit 1; fi
+          echo "server.properties pins online-mode=false (no authentication)"
+
+          echo '### STEP 2: dedicated-server smoke boot'
+          rm -f "$LOG"
+          ./gradlew runServer >/tmp/smoke-step2.log 2>&1 &
+          GPID=$!
+          READY=0
+          for i in $(seq 1 60); do
+            if [ -f "$LOG" ] && grep -qE 'Done \([0-9.]+s\)' "$LOG"; then READY=1; break; fi
+            if ! kill -0 "$GPID" 2>/dev/null; then break; fi
+            sleep 5
+          done
+
+          kill_game_jvm || { echo "FAIL: run did not stop cleanly"; exit 1; }
+          join_client "$GPID"
+
+          if [ "$READY" = "0" ]; then
+            echo "FAIL: server never reached the ready state ('Done (Ns)')"
+            tail -30 /tmp/smoke-step2.log
+            exit 1
+          fi
+
+          if ! grep -qE 'SERVER IS RUNNING IN OFFLINE/INSECURE MODE' "$LOG"; then
+            echo "FAIL: authentication was NOT disabled"; exit 1
+          fi
+
+          echo "READY: $(grep -E 'Done \([0-9.]+s\)' "$LOG" | tail -1)"
+
+          # Distinct failure branch: "the mod never loaded" must not be mistaken
+          # for "the server never started". A missing mod produces no ERROR line,
+          # so without this branch the whole gate is vacuous.
+          MOD_LIST_HITS=$(grep -cE "$MOD_LIST_RE" "$LOG" || true)
+          MOD_INIT_HITS=$(grep -cE "$MOD_INIT_RE" "$LOG" || true)
+          if [ "${MOD_LIST_HITS:-0}" = "0" ] && [ "${MOD_INIT_HITS:-0}" = "0" ]; then
+            echo "FAIL: our mod did NOT load on the dedicated server (no Mod List entry, no init line in $LOG)"
+            grep -A6 -E 'Mod List|Prohibited mods' "$LOG" | tail -30 || true
+            exit 1
+          fi
+          echo "mod load: Mod List entry x${MOD_LIST_HITS}, init-hook line x${MOD_INIT_HITS} in $LOG"
+          echo "LOADED: $(grep -m1 -E "$MOD_INIT_RE" "$LOG" || grep -m1 -E "$MOD_LIST_RE" "$LOG")"
+
+          MOD_FATALS=$(grep -E '/(ERROR|FATAL)\]|Exception' "$LOG" | grep -i -- "$NS" || true)
+          if [ -n "$MOD_FATALS" ]; then
+            echo "FAIL: fatal errors attributable to our mod:"
+            printf '%s\n' "$MOD_FATALS"
+            exit 1
+          fi
+          echo "mod-attributable ERROR/FATAL/Exception count: 0 (scanned $(wc -l < "$LOG") log lines)"
+
+          if ! grep -q 'All dimensions are saved' "$LOG"; then
+            echo "FAIL: shutdown did not complete cleanly"; exit 1
+          fi
+          echo "shutdown: 'All dimensions are saved' present (clean stop)"
+          echo "SMOKE GATE PASSED"
