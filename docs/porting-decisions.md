@@ -407,3 +407,43 @@ encoded; nothing consumes it on this card (TC-M6-04d owns the banner tile), so n
 in-game behaviour changes here. The observable change is the data contract: the
 RecipeManager's parse errors for our mod go from 31 to 0.
 
+
+
+## D-016 — Original display strings are committed, and ship in the public jar
+
+**Status: OPEN — needs an explicit call.** Found 2026-10-28 while cutting
+v0.1.0-alpha.4.
+
+**Fact.** `src/main/resources/assets/thaumcraft/lang/en_us.json` is committed to
+the public repository (landed `fca4fb8`, merged `3810797`). Of its **241 shipped
+values, 231 appear verbatim in the original 4.2.3.5 `en_US.lang`** (All Rights
+Reserved); 10 are authored for port-created ids. Measured by comparing shipped
+values against the original file, not by trusting the card's own 118-key claim.
+
+**Why it conflicts.** D-004 states original assets are never committed or
+redistributed. The card that closed the localization defect
+(`TC-LOC-s`, `t_a2a74726`) explicitly specified generating original strings at
+**build time** from the user's own extracted assets, committing only port-created
+ids. The port-created half was done; the original half went into git. The
+code-only release artifact is built from `src/`, so those strings ship in it.
+
+**Mitigating.** The commits are already public, so publishing the jar adds no new
+copy. Individual item/block names are short and weakly protectable. This is the
+same class as the alpha.1 release still carrying a ~10.38 MB asset-included jar.
+
+**Options.**
+1. Keep as shipped; record the position in `docs/licensing-and-attribution.md`
+   and stop calling the artifact strictly "code-only".
+2. Move original-derived strings to build-time generation like the other
+   mappings (message A: `asset-mapping.csv` already specifies the `.lang`
+   conversion), leaving only the 10 port-authored values committed. Consequence
+   to state plainly: a code-only build then has **almost no display names**, so
+   public testers see raw keys again until they overlay their own assets. This is
+   the policy-aligned outcome, and it is a visible regression for the exact
+   symptom just fixed.
+3. Keep the file but drop it from the release artifact, so the public jar and the
+   repository disagree.
+
+**Recommendation:** option 2 deferred by one release, with option 1's wording
+correction done now (the notes should not claim the jar is free of original
+content while it carries 231 original strings).
