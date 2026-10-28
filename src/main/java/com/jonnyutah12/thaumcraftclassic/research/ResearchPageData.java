@@ -49,4 +49,17 @@ public record ResearchPageData(
         @SerializedName("infusion_enchantment") INFUSION_ENCHANTMENT,
         @SerializedName("smelting") SMELTING;
     }
+
+    /**
+     * The inline {@code <IMG>} images of this page, parsed from the verbatim
+     * {@code en_US.lang} text with their texture locations resolved to the
+     * published 1.21.1 layout (1.7.10 {@code textures/blocks|items/} renamed
+     * to {@code textures/block|item/}, every other directory unchanged). The
+     * renderer draws these locations; the page text itself stays untouched.
+     *
+     * @see ResearchPageImages
+     */
+    public java.util.List<ResearchPageImages.PageImage> images() {
+        return ResearchPageImages.parse(textEnUs);
+    }
 }

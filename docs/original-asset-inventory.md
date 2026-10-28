@@ -54,10 +54,18 @@ fields) name the modern path, because they are read as resource locations;
 `<IMG>` paths inside research page **text** keep the original 1.7.10 path,
 because that text is byte-identical to the original `en_US.lang` (guarded by
 `ResearchGraphDataTest.langStringsAreVerbatimFromTheOriginalFile`) — the
-research renderer therefore applies this same rename to `<IMG>` paths at draw
-time. `OriginalTextureOverlayTest` guards the CSV targets, the overlay output,
-every `thaumcraft:` sprite referenced by the committed models, and the
-structured research locations.
+rename for those happens at resolution time, in the renderer seam
+`research/ResearchPageImages`: `ResearchPageData.images()` parses the
+original `<IMG>namespace:path:u1:v1:u2:v2:scale</IMG>` markers and hands the
+book screen (TC-M3-03/04) texture locations on this published layout, the
+page text itself never changing. `OriginalTextureOverlayTest` guards the CSV
+targets, the overlay output, every `thaumcraft:` sprite referenced by the
+committed models, and the structured research locations;
+`ResearchPageImagesTest` and the `researchimglocationsresolvetopublishedtextures`
+game probe guard the draw-time rename — every one of the 29 shipped markers
+resolves to a texture byte the jar publishes (the 11 plural `textures/items/`
+ones renamed to `textures/item/`, the 18 `misc` atlases untouched), and the
+verbatim-text marker census (29 markers, 11 plural) stays pinned in the data.
 
 `used_by` in the CSV lists the decompiled classes that reference the asset,
 tagged by kind: `(block) (item) (block-entity) (entity-render) (entity)
