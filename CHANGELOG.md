@@ -39,17 +39,25 @@ section; this is the new one).
   the registered `{"type": "neoforge:components", ...}` ingredient form, and
   none use the bare form the alpha.3 notes flagged as loading-unsafe (D-015) —
   0 JSON parse failures, and the game-test server boots with no `thaumcraft`
-  ERROR line across 1404 loaded recipes. **Behaviour is not proven**: the
-  worker's 611-line game test did not compile and was excluded from the build,
-  so no crucible probe runs. The three probes (registration, a real-world craft
-  cycle drawing essentia through the merged `aspect/EssentiaHandler`, live row
-  count through the server `ResourceManager`) are split onto TC-M4-05-p
-  (`t_5fa2e0bb`); `gui_crucible` remains TC-M7-04 and tubes/transport TC-M4-07.
-- **Per-variant mega-block display names** filed as TC-M7-01b (`t_f40bbc0d`),
-  found while verifying the localization jar in the installed test instance:
-  `block.thaumcraft.blockstonedevice` resolves to the meta-0 label ("Alchemical
-  Furnace") for every meta, because 1.21.1 has no per-state block display name
-  and the generated `BlockItem`s do not override `getName`.
+  ERROR line across 1404 loaded recipes. Behaviour is now **proven** by
+  TC-M4-05-p (`t_5fa2e0bb`, merge `28fa0fd`): three game probes run in the
+  build — the recipe type, serializer and `thaumcraft:tilecrucible` resolve;
+  a real-world crucible reaches ignition in 151 ticks and crafts
+  `itemshard` meta 6; and the data invariant counts **54 row files, 30
+  passing their `neoforge:item_exists` gate and live in the `RecipeManager`,
+  24 gated out, 30 resolving**. Gate run on the merged tree: 94/94 game tests
+  and 94/94 without Curios. `gui_crucible` remains TC-M7-04 and
+  tubes/transport TC-M4-07.
+- **Per-variant mega-block display names** (TC-M7-01b, `t_f40bbc0d`, merge
+  `5fc5051`): the 10 multi-variant mega-blocks (stone/wooden/metal devices,
+  cosmetics, crystals, candles, tables, `blockairy`, custom ores) and their
+  slabs now resolve their own label per variant instead of rendering the
+  meta-0 name for every variant — 1.21.1 has no per-state block display name,
+  so this is a block-item `getName` override reading the `variant` property.
+  107 keys added to `en_us.json` (audit: required=235 missing=0 dead=0);
+  103 of them are verbatim from the original 4.2.3.5 `tile.<id>.<meta>.name`
+  entries, 0 mismatches, and 4 authored (the slab labels, because 1.21.1 slabs
+  are separate blocks). Gate run: 95/95 game tests, 95/95 without Curios.
 
 ### Development
 - Dispatch bookkeeping from the orchestrator pass at `v0.1.0-alpha.3`: the
