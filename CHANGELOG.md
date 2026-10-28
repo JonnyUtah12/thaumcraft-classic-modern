@@ -7,6 +7,91 @@ Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
 ## [Unreleased]
 
+## [0.1.0-alpha.3] - 2026-10-28
+
+Third pre-release. Still not playable end-to-end: the interaction layer
+(wand casting, GUI screens, Thaumonomicon UI, crucible/alchemy, essentia
+storage, golem, taint, entities, models and renderers) is not implemented.
+Per-system status: `docs/FEATURE_MATRIX.md`; deviations:
+`docs/BEHAVIORAL_DEVIATIONS.md`.
+
+**Artifact policy:** the jar attached to this release is **code-only** — no
+original Thaumcraft textures, sounds, models or language files (All Rights
+Reserved, no license grant). Local builds overlay the user's own extracted
+assets into the output JAR (see `docs/porting-decisions.md` D-004); a
+code-only jar is markedly smaller, which is the signal the overlay did not
+apply.
+
+### Added
+- **Arcane workbench core** (TC-M4-03-s `64f6ac6`, data repaired by
+  TC-M4-03-fix `31ca741`, decision D-015): the `thaumcraft:arcane_workbench`
+  recipe type + serializer pair, `BlockArcaneWorkbench` +
+  `TileArcaneWorkbench` (`WorldlyContainer`), and vis payment through the
+  TC-M4-02 `effectiveCosts → consumeAllVisCrafting` all-or-nothing chain
+  (centi-vis pool = real vis × 100). Shaped matching honours the original's
+  `mirrored=true` horizontal mirror; shapeless claims every grid item and
+  rejects an unclaimable extra; the research gate refuses until the TC-M3-02
+  knowledge bit is written. 109 extracted arcane rows ship — 38 resolve into
+  the live `RecipeManager`, the other 71 carry an unmet `neoforge:item_exists`
+  gate on an item their owning card has not registered, so they skip rather
+  than fail. `ArcaneWorkbenchGameTest` proves registration, both match shapes,
+  the research flip, exact-pool-empties / short-pool-spends-nothing, and that
+  every shipped row whose conditions are satisfied is loaded with its result
+  item, count and `thaumcraft:banner_color` value.
+- **`thaumcraft:banner_color` data component** (D-015, `9777550`):
+  `ModDataComponents.BANNER_COLOR` carries the original's banner NBT `"color"`
+  byte on the crafted result stack (`banner.func_77990_d.func_74774_a("color",
+  (byte)a)`, `ConfigRecipes.initializeArcaneRecipes`), range 0..15. This took
+  our mod's `RecipeManager` parse errors from 31 to 0; the 16
+  `recipe.112.arcane_shaped.<0..15>` rows now match with their colour. Nothing
+  consumes the component yet — TC-M6-04d owns the banner tile.
+- **Infusion altar core** (TC-M4-04-s `a9303ea`): `thaumcraft:infusion` and
+  `thaumcraft:infusion_enchantment` recipe type + serializer pairs
+  (`CatalogInfusion`), `TileInfusionMatrix` + `TileInfusionPillar` bound to
+  `blockStoneDevice` metas 1-4 through `DeviceTileFactory`.
+  `InfusionMatrixLogic` ports `validLocation` (complete altar only: pedestal
+  two below + four corner pillars), `getSurroundings` (25×16×25 scan, +2 per
+  filled pedestal, +1 with an item, −2 for the mirrored twin, stabilisers +0.1
+  each / −0.2 mirrored, truncated) and the instability math (symmetry + recipe
+  instability at start, increments capped at 25, event on
+  `nextInt(500) <= instability`, the 21-sided event table).
+  `TileInfusionMatrix` runs the original craft cycle — essentia drain via the
+  new `aspect/EssentiaHandler`, five-cycle component animation,
+  eject/zap/harm/lightning/warp events, concrete/NBT-tag/enchantment finish
+  paths — proven end-to-end by 4 `InfusionAltarGameTest` probes. 87 extracted
+  rows ship (63 infusion + 24 infusion_enchantment); 41 resolve today (17
+  crafting + 24 enchantment).
+- **Catalog — device blocks / standalone machines** (TC-M6-04c `04274d2`):
+  14 contract rows — `blockStoneDevice/Metal/Wooden/Airy` with the original
+  meta ranges 15/15/9/13 verbatim as the `as-number` variant property, plus 10
+  tile entities (bellows, sensor, arcane pressure plate, bore + bore base,
+  3 arcane lamps, shared ownership base, nitor). Nitor and arcane ear tick
+  through the shared device ticker (redstone countdown, Fire-starved
+  burn-out); the pressure plate never ticks per the original
+  `canUpdate() = false`.
+- **Catalog — furniture / storage / display** (TC-M6-04d `947863a`): 26
+  contract rows — tables + deconstruction table, hungry chest, magic box,
+  mirror + essentia mirror, arcane door + key, lifter, pedestal, wand
+  pedestal, spa, banner, item grate, warding stone + fence, the
+  `specialitemgrate` entity type and three menu rows. The hungry chest's 27
+  slots and the magic box's item list survive a
+  `saveWithFullMetadata`/`loadStatic` round-trip with slot positions,
+  membership and counts intact.
+- **Catalog — trinkets / tools / loot containers** (TC-M6-04e `57007b4`): 10
+  contract rows — `blockLootUrn` / `blockLootCrate` as one `BlockLoot`
+  carrying the original 0/1/2 rarity verbatim, treasure bags with the
+  original metas on `ITEM_META` and the original stack limit 16, thaumometer,
+  resonator, compass stone, hand mirror (menu, 1 input slot at (80,24) over
+  36 player slots) and the traveling-trunk spawner seam. Break-drops follow
+  the original `Utils.generateLoot` shape (1+rarity..3+rarity from the
+  `Config.initLoot` bag tables), with silk touch and pick-block preserving the
+  container and its rarity.
+- **CI: dedicated-server smoke job** (`c0f0a00`): boots a real dedicated
+  server with the mod, scans the complete boot log for any
+  `thaumcraft`-attributable `ERROR`/`FATAL`/`Exception` line and asserts the
+  mod loaded, so a single non-decoding recipe row turns CI red instead of
+  shipping.
+
 ### Fixed
 - ATM10 startup battery (TC-M9-01): the aggregate research graph files moved
   from `data/thaumcraft/research/` to `data/thaumcraft/research_graph/` —
@@ -17,6 +102,35 @@ Minecraft 1.21.1 / NeoForge 21.1.259 targets.
   their test-probe entries `"required": false`: the probe items are only
   registered under the gametest property, so the shipped tags failed
   vanilla tag validation in production startup.
+- The 31 arcane recipe payloads that failed to parse (TC-M4-03-fix): the
+  meta-carrying ingredient now uses NeoForge's own registered
+  `{"type": "neoforge:components", …}` ingredient form (that `IngredientType`
+  is `NeoForgeMod.DATA_COMPONENT_INGREDIENT_TYPE`, `NeoForgeMod.java:365`), so
+  the bare `{"neoforge:components": …}` object — which is not an ingredient at
+  all — is gone, and the 16 banner rows load because the component id above is
+  registered. The earlier claim that those rows waited on their own card was
+  wrong and is corrected here.
+- Infusion recipe extraction (`scripts/extract_infusion_recipes.py`): rows are
+  gated on `neoforge:item_exists` for every item they name (an unported item
+  skips the row instead of failing the data pack), ids are 1.21.1
+  (snake_case enchantments, `dead_bush` / `sugar_cane` / `cobweb` / `potion`,
+  dye meta 0 → `ink_sac`, wildcard fish → `minecraft:fishes`), and the
+  enchantment field decodes as a `ResourceKey` resolved on use, so the two
+  rows naming the TC-M6-05 enchantments load and never match instead of
+  failing the pack.
+
+### Verification
+- 317 unit tests, 0 failures; **89** required game tests passed in
+  `runGameTestServer`, and the no-Curios configuration
+  (`-Ptc.noCurios runGameTestServer`) also 89/89; `./gradlew build` green
+  locally and on CI at this tag. (The alpha.2 notes quoted 299 unit / 65 game
+  tests — those counts are superseded.)
+- Recipe data invariant: of the 109 arcane rows, 38 resolve and none logs a
+  `RecipeManager` parse error; of the 87 infusion rows, 41 resolve, and the
+  dedicated-server smoke job is green on the boot log.
+- Testing note: structures and ores generate in **new chunks** only — load a
+  pre-alpha.2 world and they will not appear. Use a fresh world or explore
+  ungenerated terrain.
 
 ## [0.1.0-alpha.2] - 2026-10-24
 
