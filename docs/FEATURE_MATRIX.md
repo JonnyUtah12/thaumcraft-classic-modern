@@ -84,6 +84,7 @@ Translation to the other status sets used in this repo:
 | Persistence substrate | world + player state | TESTED (PARTIAL) | t_0083a616 → 5ead7f1 | 17 unit + 3 game (lenient codecs, copyOnDeath, S2C) | BD-11 | full-state coverage follows features |
 | Networking substrate | 37 payloads | TESTED (PARTIAL) | t_cbc91aec → 7fdcd0a | 37 payloads 1:1, both-dist | — | per-feature sync follows features |
 | Configuration | 62 options | VERIFIED (with deviation) | t_c87a23bc → 0674bcb | 53/62 ported, clamps at read | BD-07 | — |
+| Localization (names, tooltips, menu titles) | 128 en_us.json keys | VERIFIED | t_a2a74726 (this commit) | LocalizationGameTest 2 probes (128/128 registry-derived keys, 0 dead) + LocalizationFileTest 7 unit incl. original-wording parity over the 58 per-meta names; 324 unit + 91/91 game, 91/91 no-Curios | mega-block variants show the default-variant label (block items have no `getName` override); 8 strings authored because the original never named that content | per-variant block labels, the creative tab label and the non-English languages follow TC-M7-01 |
 | Models / textures / item+block models | 1107 asset files (models subset) | INVESTIGATED | TC-M7-01; asset inventory + local overlay (D-004) | overlay present, playback guarded | — | dispatch TC-M7-01 |
 | Particles / beams / fx | client/fx set | INVESTIGATED | TC-M7-02 | none | — | dispatch TC-M7-02 |
 | Entity renderers | renderers/entity set | INVESTIGATED | TC-M7-03 | none | — | dispatch TC-M7-03 |

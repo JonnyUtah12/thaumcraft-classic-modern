@@ -15,6 +15,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
@@ -139,9 +140,15 @@ public final class CatalogTrinketsLootGameTest {
             final ItemStack stack = ItemLootBag.withRarity(bag, meta);
             helper.assertTrue(stack.getOrDefault(ModDataComponents.ITEM_META.get(), -1) == meta,
                     "bag meta " + meta + " must be stored on ITEM_META");
-            helper.assertTrue(bag.getName(stack).getString()
-                            .contains("item.thaumcraft.itemlootbag." + meta),
+            final Component name = bag.getName(stack);
+            helper.assertTrue(name.getContents()
+                            instanceof net.minecraft.network.chat.contents.TranslatableContents contents
+                            && ("item.thaumcraft.itemlootbag." + meta).equals(contents.getKey()),
                     "bag meta " + meta + " must use the per-meta name key");
+            // TC-LOC-s: the key must resolve to a shipped en_us.json string —
+            // a raw key in the display name is the defect this card removes.
+            helper.assertTrue(!name.getString().contains("item.thaumcraft.itemlootbag."),
+                    "bag meta " + meta + " renders its raw translation key; en_us.json has no entry for it");
         }
         helper.assertTrue(ItemLootBag.withRarity(bag, 0).getMaxStackSize() == 16,
                 "treasure bags stack to 16 (original)");
