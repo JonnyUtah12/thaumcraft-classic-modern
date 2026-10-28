@@ -108,8 +108,8 @@ Thaumcraft:blockCosmeticSlabWood,thaumcraft:blockcosmeticslabwood,block,Greatwoo
 Thaumcraft:blockCosmeticSlabStone,thaumcraft:blockcosmeticslabstone,block,Arcane Stone Slab / Ancient Stone Slab,done,tested,id case change only (D-001),class=BlockCosmeticStoneSlab item_class=BlockCosmeticStoneSlabItem
 Thaumcraft:blockCosmeticDoubleSlabWood,thaumcraft:blockcosmeticdoubleslabwood,block,,done,tested,id case change only (D-001),class=BlockCosmeticWoodSlab item_class=-
 Thaumcraft:blockCosmeticDoubleSlabStone,thaumcraft:blockcosmeticdoubleslabstone,block,,done,tested,id case change only (D-001),class=BlockCosmeticStoneSlab item_class=-
-Thaumcraft:blockLootUrn,thaumcraft:blocklooturn,block,Old Urn,not_started,not_tested,id case change only (D-001),class=BlockLoot item_class=BlockLootItem
-Thaumcraft:blockLootCrate,thaumcraft:blocklootcrate,block,Abandoned Crate,not_started,not_tested,id case change only (D-001),class=BlockLoot item_class=BlockLootItem
+Thaumcraft:blockLootUrn,thaumcraft:blocklooturn,block,Old Urn,done,tested,id case change only (D-001),class=BlockLoot item_class=BlockLootItem
+Thaumcraft:blockLootCrate,thaumcraft:blocklootcrate,block,Abandoned Crate,done,tested,id case change only (D-001),class=BlockLoot item_class=BlockLootItem
 Thaumcraft:fluxGoo,thaumcraft:fluxgoo,fluid,fluxGoo,not_started,not_tested,,class=Fluid
 Thaumcraft:fluxGas,thaumcraft:fluxgas,fluid,fluxGas,not_started,not_tested,,class=Fluid
 Thaumcraft:fluidPure,thaumcraft:fluidpure,fluid,fluidPure,not_started,not_tested,,class=Fluid
@@ -209,7 +209,7 @@ Thaumcraft:ItemShard,thaumcraft:itemshard,item,Air Shard / Fire Shard / Water Sh
 Thaumcraft:ItemResearchNotes,thaumcraft:itemresearchnotes,item,Research Notes,not_started,not_tested,id case change only (D-001),class=ItemResearchNotes
 Thaumcraft:ItemInkwell,thaumcraft:iteminkwell,item,Scribing Tools,not_started,not_tested,id case change only (D-001),class=ItemInkwell
 Thaumcraft:ItemThaumonomicon,thaumcraft:itemthaumonomicon,item,Thaumonomicon,not_started,not_tested,id case change only (D-001),class=ItemThaumonomicon
-Thaumcraft:ItemThaumometer,thaumcraft:itemthaumometer,item,Thaumometer,not_started,not_tested,id case change only (D-001),class=ItemThaumometer
+Thaumcraft:ItemThaumometer,thaumcraft:itemthaumometer,item,Thaumometer,done,tested,id case change only (D-001),class=ItemThaumometer
 Thaumcraft:ItemGoggles,thaumcraft:itemgoggles,item,Goggles of Revealing,not_started,not_tested,id case change only (D-001),class=ItemGoggles
 Thaumcraft:ItemHelmetThaumium,thaumcraft:itemhelmetthaumium,item,Thaumium Helm,not_started,not_tested,id case change only (D-001),class=ItemThaumiumArmor
 Thaumcraft:ItemChestplateThaumium,thaumcraft:itemchestplatethaumium,item,Thaumium Chestplate,not_started,not_tested,id case change only (D-001),class=ItemThaumiumArmor
@@ -237,11 +237,11 @@ Thaumcraft:ItemChestplateRobe,thaumcraft:itemchestplaterobe,item,Thaumaturge's R
 Thaumcraft:ItemLeggingsRobe,thaumcraft:itemleggingsrobe,item,Thaumaturge's Leggings,not_started,not_tested,id case change only (D-001),class=ItemRobeArmor
 Thaumcraft:ItemBootsRobe,thaumcraft:itembootsrobe,item,Thaumaturge's Boots,not_started,not_tested,id case change only (D-001),class=ItemRobeArmor
 Thaumcraft:ArcaneDoorKey,thaumcraft:arcanedoorkey,item,Iron Arcane Key / Gold Arcane Key,done,tested,id case change only (D-001),class=ItemKey
-Thaumcraft:HandMirror,thaumcraft:handmirror,item,Magic Hand Mirror,not_started,not_tested,id case change only (D-001),class=ItemHandMirror
+Thaumcraft:HandMirror,thaumcraft:handmirror,item,Magic Hand Mirror,done,tested,id case change only (D-001),class=ItemHandMirror
 Thaumcraft:HoverHarness,thaumcraft:hoverharness,item,Thaumostatic Harness,not_started,not_tested,id case change only (D-001),class=ItemHoverHarness
 Thaumcraft:BlockJarFilledItem,thaumcraft:blockjarfilleditem,item,Jar of Essentia,not_started,not_tested,id case change only (D-001),class=ItemJarFilled
 Thaumcraft:BlockJarNodeItem,thaumcraft:blockjarnodeitem,item,Node in a Jar,not_started,not_tested,id case change only (D-001),class=ItemJarNode
-Thaumcraft:TrunkSpawner,thaumcraft:trunkspawner,item,Traveling Trunk,not_started,not_tested,id case change only (D-001),class=ItemTrunkSpawner
+Thaumcraft:TrunkSpawner,thaumcraft:trunkspawner,item,Traveling Trunk,done,tested,id case change only (D-001),class=ItemTrunkSpawner
 Thaumcraft:ItemGolemPlacer,thaumcraft:itemgolemplacer,item,Straw Golem / Wood Golem / Tallow Golem / Clay Golem / Flesh Golem / Stone Golem / Iron Golem / Thaumium Golem,not_started,not_tested,id case change only (D-001),class=ItemGolemPlacer
 Thaumcraft:ItemGolemCore,thaumcraft:itemgolemcore,item,Golem Animation Core,not_started,not_tested,id case change only (D-001),class=ItemGolemCore
 Thaumcraft:ItemGolemUpgrade,thaumcraft:itemgolemupgrade,item,Golem Upgrade: Air / Golem Upgrade: Earth / Golem Upgrade: Fire / Golem Upgrade: Water / Golem Upgrade: Order / Golem Upgrade: Entropy,not_started,not_tested,id case change only (D-001),class=ItemGolemUpgrade
@@ -249,7 +249,7 @@ Thaumcraft:GolemBell,thaumcraft:golembell,item,Golemancer's Bell,not_started,not
 Thaumcraft:ItemGolemDecoration,thaumcraft:itemgolemdecoration,item,Accessory,not_started,not_tested,id case change only (D-001),class=ItemGolemDecoration
 Thaumcraft:ItemBowBone,thaumcraft:itembowbone,item,Bow of Bone,not_started,not_tested,id case change only (D-001),class=ItemBowBone
 Thaumcraft:PrimalArrow,thaumcraft:primalarrow,item,Air Arrow / Fire Arrow / Water Arrow / Earth Arrow / Order Arrow / Entropy Arrow,not_started,not_tested,id case change only (D-001),class=ItemPrimalArrow
-Thaumcraft:ItemResonator,thaumcraft:itemresonator,item,Essentia Resonator,not_started,not_tested,id case change only (D-001),class=ItemResonator
+Thaumcraft:ItemResonator,thaumcraft:itemresonator,item,Essentia Resonator,done,tested,id case change only (D-001),class=ItemResonator
 Thaumcraft:ItemBaubleBlanks,thaumcraft:itembaubleblanks,item,Mundane Amulet / Mundane Ring / Mundane Belt / Apprentices Ring of %TYPE,done,tested,id case change only (D-001),class=ItemBaubleBlanks
 Thaumcraft:ItemAmuletRunic,thaumcraft:itemamuletrunic,item,Amulet of Runic Shielding / Amulet of Emergency Shielding,done,tested,id case change only (D-001),class=ItemAmuletRunic
 Thaumcraft:ItemRingRunic,thaumcraft:itemringrunic,item,Ring of Protection / Ring of Runic Shielding / Charged Ring of Shielding / Revitalizing Ring of Shielding,done,tested,id case change only (D-001),class=ItemRingRunic
@@ -292,8 +292,8 @@ Thaumcraft:ItemHelmetCultistLeaderPlate,thaumcraft:itemhelmetcultistleaderplate,
 Thaumcraft:ItemChestplateCultistLeaderPlate,thaumcraft:itemchestplatecultistleaderplate,item,Crimson Praetor Chestplate,not_started,not_tested,id case change only (D-001),class=ItemCultistLeaderArmor
 Thaumcraft:ItemLeggingsCultistLeaderPlate,thaumcraft:itemleggingscultistleaderplate,item,Crimson Praetor Greaves,not_started,not_tested,id case change only (D-001),class=ItemCultistLeaderArmor
 Thaumcraft:ItemSwordCrimson,thaumcraft:itemswordcrimson,item,Crimson Blade,not_started,not_tested,id case change only (D-001),class=ItemCrimsonSword
-Thaumcraft:ItemLootBag,thaumcraft:itemlootbag,item,Common Treasure / Uncommon Treasure / Rare Treasure,not_started,not_tested,id case change only (D-001),class=ItemLootBag
-Thaumcraft:ItemCompassStone,thaumcraft:itemcompassstone,item,Sinister Lodestone,not_started,not_tested,id case change only (D-001),class=ItemCompassStone
+Thaumcraft:ItemLootBag,thaumcraft:itemlootbag,item,Common Treasure / Uncommon Treasure / Rare Treasure,done,tested,id case change only (D-001); the original's potion block (metas i|8192 and i|16384 guarded by PotionHelper.getPotionEffects) was dead code in 1.7.10 - vanilla returned no effects for metas with the 0x2000/0x4000 bits set - the port realizes the ten effect ids valid in 1.7.10 in base/extended/upgraded tiers at the loop's weights 1/2/3 with the original durations,class=ItemLootBag
+Thaumcraft:ItemCompassStone,thaumcraft:itemcompassstone,item,Sinister Lodestone,done,tested,id case change only (D-001),class=ItemCompassStone
 Thaumcraft:ItemPrimalCrusher,thaumcraft:itemprimalcrusher,item,Primal Crusher,not_started,not_tested,id case change only (D-001),class=ItemPrimalCrusher
 Thaumcraft:SpecialItem,thaumcraft:specialitem,entity,Magic Item,not_started,not_tested,,class=EntitySpecialItem mod_index=0
 Thaumcraft:PermanentItem,thaumcraft:permanentitem,entity,,not_started,not_tested,,class=EntityPermanentItem mod_index=1
@@ -964,7 +964,7 @@ Thaumcraft:config.Runic_Shielding.runic_recharge_delay,thaumcraft:config.runic_s
 Thaumcraft:config.Runic_Shielding.runic_cost,thaumcraft:config.runic_shielding.runic_cost,config_option,runic_cost,not_started,not_tested,,category=Runic_Shielding default=shieldCost
 Thaumcraft:GUI_GOLEM,thaumcraft:gui_golem,gui,GuiGolem,not_started,not_tested,,gui_id=0 handler=GuiGolem
 Thaumcraft:GUI_PECH,thaumcraft:gui_pech,gui,GuiPech,not_started,not_tested,,gui_id=1 handler=GuiPech
-Thaumcraft:GUI_TRUNK,thaumcraft:gui_trunk,gui,GuiTravelingTrunk,not_started,not_tested,,gui_id=2 handler=GuiTravelingTrunk
+Thaumcraft:GUI_TRUNK,thaumcraft:gui_trunk,gui,GuiTravelingTrunk,done,tested,,gui_id=2 handler=GuiTravelingTrunk
 Thaumcraft:GUI_THAUMATORIUM,thaumcraft:gui_thaumatorium,gui,GuiThaumatorium,not_started,not_tested,,gui_id=3 handler=GuiThaumatorium
 Thaumcraft:GUI_FOCUS_POUCH,thaumcraft:gui_focus_pouch,gui,GuiFocusPouch,not_started,not_tested,,gui_id=5 handler=GuiFocusPouch
 Thaumcraft:GUI_DECON_TABLE,thaumcraft:gui_decon_table,gui,GuiDeconstructionTable,done,tested,,gui_id=8 handler=GuiDeconstructionTable
@@ -974,7 +974,7 @@ Thaumcraft:GUI_CHEST_HUNGRY,thaumcraft:gui_chest_hungry,gui,-,not_started,not_te
 Thaumcraft:GUI_THAUMONOMICON,thaumcraft:gui_thaumonomicon,gui,GuiResearchBrowser,not_started,not_tested,,gui_id=12 handler=GuiResearchBrowser
 Thaumcraft:GUI_ARCANE_WORKBENCH,thaumcraft:gui_arcane_workbench,gui,GuiArcaneWorkbench,not_started,not_tested,,gui_id=13 handler=GuiArcaneWorkbench
 Thaumcraft:GUI_ARCANE_BORE,thaumcraft:gui_arcane_bore,gui,GuiArcaneBore,not_started,not_tested,,gui_id=15 handler=GuiArcaneBore
-Thaumcraft:GUI_HAND_MIRROR,thaumcraft:gui_hand_mirror,gui,GuiHandMirror,not_started,not_tested,,gui_id=16 handler=GuiHandMirror
+Thaumcraft:GUI_HAND_MIRROR,thaumcraft:gui_hand_mirror,gui,GuiHandMirror,done,tested,,gui_id=16 handler=GuiHandMirror
 Thaumcraft:GUI_HOVER_HARNESS,thaumcraft:gui_hover_harness,gui,GuiHoverHarness,not_started,not_tested,,gui_id=17 handler=GuiHoverHarness
 Thaumcraft:GUI_MAGIC_BOX,thaumcraft:gui_magic_box,gui,GuiMagicBox,done,tested,,gui_id=18 handler=GuiMagicBox
 Thaumcraft:GUI_SPA,thaumcraft:gui_spa,gui,GuiSpa,done,tested,,gui_id=19 handler=GuiSpa

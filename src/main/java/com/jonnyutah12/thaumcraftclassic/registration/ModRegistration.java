@@ -5,6 +5,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeB
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
 import net.neoforged.bus.api.IEventBus;
 
 /**
@@ -101,6 +102,15 @@ public final class ModRegistration {
         // DeviceTileFactory. Research-table tiles/workbench and portable-hole
         // style rows stay on their cards.
         CatalogFurniture.init(modEventBus);
+
+        // TC-M6-04e-s: trinkets / curios tools / loot containers — the old urn
+        // and abandoned crate (blockLootUrn / blockLootCrate: rarity carried as
+        // the shared ITEM_META component, break-drops from the original Config.
+        // initLoot bag tables in loot/LootRoller), treasure bags, the thaumom-
+        // eter, essentia resonator, sinister lodestone, magic hand mirror and
+        // the traveling-trunk spawner with its hand-mirror and trunk menus
+        // (the trunk entity itself stays on TC-M6-06).
+        CatalogTrinketsLoot.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-
