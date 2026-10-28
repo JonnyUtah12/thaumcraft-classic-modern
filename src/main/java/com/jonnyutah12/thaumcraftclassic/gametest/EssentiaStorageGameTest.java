@@ -10,6 +10,7 @@ import com.jonnyutah12.thaumcraftclassic.recipes.SmeltingBonuses;
 import com.jonnyutah12.thaumcraftclassic.registration.ContentMappingCsv;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
+import com.jonnyutah12.thaumcraftclassic.tiles.JarStorageLogic;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileArcaneFurnace;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileBellows;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileJarFillable;
@@ -24,13 +25,18 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -229,7 +235,9 @@ public final class EssentiaStorageGameTest {
         helper.succeed();
     }
 
-    @GameTest(template = "empty_24")
+    // timeoutTicks: the cook is 140 ticks cold, so the default 100-tick game-test
+    // budget cannot cover a full cook + eject.
+    @GameTest(template = "empty_24", timeoutTicks = 400)
     public static void theFurnaceSmeltsAnItemAndEjectsTheResult(final GameTestHelper helper) {
         final BlockPos pos = at(helper, 2, 1, 1);
         helper.setBlock(2, 1, 1, CatalogEssentiaStorage.BLOCK_ARCANE_FURNACE.get().defaultBlockState());
@@ -241,21 +249,40 @@ public final class EssentiaStorageGameTest {
                 "raw iron has a smelting recipe in 1.21.1, so the furnace must accept it");
 
         // Cold, no bellows: 140 ticks of cook, then the eject. Ticked, not faked:
-        // the eject is a real entity in the world.
-        helper.succeedOnTickWhen(170, () -> {
-            helper.assertTrue(furnace.getStackInSlot(0).isEmpty(),
-                    "the furnace consumed the input");
-            final List<net.minecraft.world.entity.item.ItemEntity> drops = helper.getLevel().getEntities(
-                    EntityType.ITEM, new AABB(pos).inflate(4.0D), e -> true);
-            boolean sawResult = false;
-            for (final net.minecraft.world.entity.item.ItemEntity drop : drops) {
-                if (drop.getItem().is(Items.IRON_INGOT)) {
-                    sawResult = true;
+        // the eject is a real entity in the world, driven by the block's ticker.
+        helper.runAtTickTime(8L, () -> helper.assertTrue(furnace.furnaceCookTime > 0,
+                "the block's ticker must be driving TileArcaneFurnace.serverTick: CookTime after 8 ticks = "
+                        + furnace.furnaceCookTime));
+
+        // Watch on every tick instead of reading one fixed tick: the original's
+        // onEntityCollidedWithBlock lifts items resting on the plate back into
+        // slot 0, so the ejected ingot is re-absorbed a few ticks after it lands
+        // (see deviceEntityInside). The evidence is that the raw iron left the
+        // slot and that the result existed as a world entity.
+        final int[] ejectTick = { -1 };
+        final boolean[] rawIronLeft = { false };
+        helper.onEachTick(() -> {
+            if (ejectTick[0] < 0) {
+                for (final net.minecraft.world.entity.item.ItemEntity drop
+                        : helper.getLevel().getEntities(EntityType.ITEM, new AABB(pos).inflate(6.0D), e -> true)) {
+                    if (drop.getItem().is(Items.IRON_INGOT)) {
+                        ejectTick[0] = (int) helper.getTick();
+                        break;
+                    }
                 }
             }
-            helper.assertTrue(sawResult,
-                    "the smelt result must be ejected out of the nozzle side, found " + drops.size()
-                            + " item entities");
+            if (!furnace.getStackInSlot(0).is(Items.RAW_IRON)) {
+                rawIronLeft[0] = true;
+            }
+        });
+        helper.runAtTickTime(175L, () -> {
+            helper.assertTrue(rawIronLeft[0],
+                    "the furnace consumed the raw iron input, slot 0 = " + furnace.getStackInSlot(0));
+            helper.assertTrue(ejectTick[0] >= 0,
+                    "the smelt result must be ejected out of the nozzle side as a real item entity");
+            helper.assertTrue(!furnace.canSmelt(0),
+                    "and nothing smeltable is left in the input slot, got " + furnace.getStackInSlot(0));
+            helper.succeed();
         });
     }
 
@@ -269,29 +296,79 @@ public final class EssentiaStorageGameTest {
         jar.addToContainer(aer(), 20);
 
         final Player player = helper.makeMockPlayer(net.minecraft.world.level.GameType.CREATIVE);
+
+        // The fill lives in ItemPhial.useOn (the port of the original's
+        // onItemUseFirst). That is the hook ServerPlayerGameMode.useItemOn
+        // calls for an item that overrides useOn; GameTestHelper.useBlock
+        // goes straight at the block, and BlockJar.useItemOn passes a phial
+        // through (PASS_TO_DEFAULT_BLOCK_INTERACTION), so the phial never
+        // fills on that path. Drive the hook the way the server does.
         final ItemStack emptyPhial = ItemPhial.stack(ItemPhial.META_EMPTY);
-        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, emptyPhial);
+        player.setItemInHand(InteractionHand.MAIN_HAND, emptyPhial);
+        final InteractionResult fill = emptyPhial.useOn(useContext(helper, pos, player, emptyPhial));
+        helper.assertTrue(fill.consumesAction(), "the fill consumes the interaction, got " + fill);
 
-        helper.useBlock(pos, player);
-
-        final ItemStack phial = player.getItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND);
-        helper.assertTrue(ItemPhial.isFilled(phial),
+        // The original spends the clicked stack and ADDS a new ItemEssence
+        // stack to the player's inventory — it never mutates the held phial —
+        // so the evidence is read off the inventory.
+        final ItemStack gained = firstPhial(player, true);
+        helper.assertTrue(gained != null && ItemPhial.isFilled(gained),
                 "filling from a jar turns a Glass Phial into a Phial of Essentia");
-        final AspectList carried = CatalogEssentiaStorage.ITEM_ESSENCE.get().getAspects(phial);
+        final AspectList carried = CatalogEssentiaStorage.ITEM_ESSENCE.get().getAspects(gained);
         helper.assertTrue(carried != null && carried.getAmount(aer()) == 8,
                 "a phial takes 8 units per fill, got " + (carried == null ? "nothing" : carried.getAmount(aer())));
         helper.assertTrue(jar.amount == 12, "and the jar drops by exactly that, got " + jar.amount);
+        helper.assertTrue(countPhials(player) == 1,
+                "the clicked empty phial is spent (the original's stack.setCount(0)): the player is left with "
+                        + "exactly one phial, got " + countPhials(player));
+        helper.assertTrue(ItemPhial.isFilled(player.getItemInHand(InteractionHand.MAIN_HAND)),
+                "and 1.21.1's Inventory.add reuses the slot the spent phial vacated, so the new "
+                        + "Phial of Essentia is the stack in the hand");
 
-        // Drain it back.
-        helper.useBlock(pos, player);
+        // Drain it back: the filled phial in hand against the same jar.
+        final ItemStack filled = ItemPhial.filled(aer(), JarStorageLogic.PHIAL_TRANSFER);
+        player.setItemInHand(InteractionHand.MAIN_HAND, filled);
+        final InteractionResult drain = filled.useOn(useContext(helper, pos, player, filled));
+        helper.assertTrue(drain.consumesAction(), "the drain consumes the interaction, got " + drain);
         helper.assertTrue(jar.amount == 20,
                 "the filled phial pours its 8 units back into the jar, got " + jar.amount);
-        helper.assertTrue(!ItemPhial.isFilled(player.getItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND))
-                        || CatalogEssentiaStorage.ITEM_ESSENCE.get()
-                        .getAspects(player.getItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND)) == null,
-                "a drained phial is empty again");
+        helper.assertTrue(filled.isEmpty(), "the filled phial is spent");
+        helper.assertTrue(countPhials(player) == 1,
+                "and a drain does not duplicate the phial: exactly one phial left, got " + countPhials(player));
+        final ItemStack emptied = firstPhial(player, false);
+        helper.assertTrue(emptied != null && !ItemPhial.isFilled(emptied)
+                        && CatalogEssentiaStorage.ITEM_ESSENCE.get().getAspects(emptied) == null,
+                "a drained phial is an empty Glass Phial again");
 
         helper.succeed();
+    }
+
+    /** The interaction context the server would build for this stack on this block. */
+    private static UseOnContext useContext(final GameTestHelper helper, final BlockPos pos,
+                                           final Player player, final ItemStack stack) {
+        final BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false);
+        return new UseOnContext(helper.getLevel(), player, InteractionHand.MAIN_HAND, stack, hit);
+    }
+
+    /** The player's first phial that is (or is not) filled, or null. */
+    private static ItemStack firstPhial(final Player player, final boolean filled) {
+        for (final ItemStack stack : player.getInventory().items) {
+            if (stack.is(CatalogEssentiaStorage.ITEM_ESSENCE.get()) && ItemPhial.isFilled(stack) == filled) {
+                return stack;
+            }
+        }
+        return null;
+    }
+
+    /** How many phials the player is carrying, filled or empty. */
+    private static int countPhials(final Player player) {
+        int phials = 0;
+        for (final ItemStack stack : player.getInventory().items) {
+            if (stack.is(CatalogEssentiaStorage.ITEM_ESSENCE.get())) {
+                phials++;
+            }
+        }
+        return phials;
     }
 
     // --- the filled-jar drop ---------------------------------------------
@@ -322,10 +399,18 @@ public final class EssentiaStorageGameTest {
                 "and the label, so a placed-back jar keeps its filter");
 
         // An empty, unlabelled jar drops its own block item (the original's
-        // getDrops returns the block for that case).
-        helper.setBlock(1, 1, 1, CatalogEssentiaStorage.jarState(true));
-        helper.getLevel().destroyBlock(pos, true, null);
-        final List<ItemStack> plain = dropsAround(helper, pos);
+        // getDrops returns the block for that case) — on a FRESH cell.
+        // Re-placing the same state on the cell that just held the filled jar
+        // does not rebuild the block entity (identical state, so the tile
+        // survives with its essentia and label), and this leg then reads a
+        // filled jar and asserts against the wrong drop.
+        final BlockPos emptyPos = at(helper, 8, 1, 1);
+        helper.setBlock(8, 1, 1, CatalogEssentiaStorage.jarState(true));
+        final TileJarFillable emptyJar = jarAt(helper, emptyPos);
+        helper.assertTrue(emptyJar != null && emptyJar.amount == 0 && emptyJar.aspectFilter == null,
+                "the fresh cell's void jar is empty and unlabelled");
+        helper.getLevel().destroyBlock(emptyPos, true, null);
+        final List<ItemStack> plain = dropsAround(helper, emptyPos);
         helper.assertTrue(plain.size() == 1,
                 "an empty jar drops exactly one item, got " + plain.size() + " " + plain);
         helper.assertTrue(plain.get(0).is(CatalogEssentiaStorage.ITEM_JAR.get()),
