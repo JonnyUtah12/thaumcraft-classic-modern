@@ -8,6 +8,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTaint;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
 import net.neoforged.bus.api.IEventBus;
 
@@ -136,6 +137,14 @@ public final class ModRegistration {
         // serializer pair the 54 data files under data/thaumcraft/recipe/
         // resolve through. The essentia jar that refills it stays on TC-M4-06.
         CatalogCrucible.init(modEventBus);
+
+        // TC-M5-04-s: taint — the crust/soil/flesh and fibres mega-blocks and
+        // their variant items. The Tainted Land biome is a datapack entry
+        // (data/thaumcraft/worldgen/biome/), the spread/conversion/cleansing
+        // rules run in TaintManager, and the config keys already live in
+        // TcConfigCatalog. The taint creatures, the Taint Poison effect and
+        // the worldgen biome hook stay on TC-M6-06 / TC-M6-05 / TC-M5-05.
+        CatalogTaint.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

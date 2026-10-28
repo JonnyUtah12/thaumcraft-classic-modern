@@ -2,6 +2,7 @@ package com.jonnyutah12.thaumcraftclassic.network;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
+import com.jonnyutah12.thaumcraftclassic.taint.TaintBiomes;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
@@ -67,9 +68,20 @@ public final class ClientEffectHooks {
 
     // --- misc client effects ---
 
-    /** TODO(M6 world/magic plants): client biome view update, per original PacketBiomeChange. */
+    /**
+     * TC-M5-04-s WIRED: the client half of the original PacketBiomeChange. The
+     * original's handler wrote the biome byte of the chunk column into the
+     * client's chunk; the port applies the same palette write through
+     * {@link TaintBiomes#applyBiomeChange} (1.21.1 keeps biomes in a
+     * 4×4×4-section container), so biome fog/sky/grass tint follow a runtime
+     * conversion the way they did in 1.7.10.
+     */
     static void biomeChange(final int x, final int z, final ResourceLocation biome) {
         LOGGER.debug("biome change at ({}, {}) -> {}", x, z, biome);
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level != null) {
+            TaintBiomes.applyBiomeChange(mc.level, x, z, biome);
+        }
     }
 
     /**
