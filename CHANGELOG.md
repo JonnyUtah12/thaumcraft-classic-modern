@@ -9,6 +9,21 @@ Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
 Work heading for `0.1.0-alpha.5`, gated per merge on `main`.
 
+- **Enchantments `Repair` and `Haste` are registered** (`TC-M6-05-s-e1c`): the two shipped infusion
+  rows `recipe.201.infusion_enchantment.json` / `recipe.202.infusion_enchantment.json` named
+  `thaumcraft:ench_repair` and `thaumcraft:ench_haste` with nothing behind those ids, so both rows
+  loaded and resolved no enchantment holder — they could never match a pedestal. 1.21.1 keeps
+  enchantments in the **datapack** registry `minecraft:enchantment`, so registration is two JSON
+  payloads under `data/thaumcraft/enchantment/` plus their `enchantment.thaumcraft.*` labels (the
+  original 4.2.3.5 wording: Repair, Haste) and a `ResourceKey` pair on `ModEnchantments` (an id
+  holder, deliberately not a `DeferredRegister` — that registry is not in `BuiltInRegistries`, so a
+  deferred register for it silently never populates). Gates: `EnchantmentRegistrationGameTest`
+  asserts both ids in the live registry, both labels shipped, and both recipe rows resolving a holder;
+  `EnchantmentIdsTest` pins the payload path/id, the codec shape, and that no infusion row names a
+  thaumcraft enchantment outside the pair. **Registration only**: neither payload carries an
+  `enchantment_effects` component, so Repair does not mend and Haste does not speed anything up —
+  the effect bodies are the next slice (`TC-M6-05-s-e2`).
+
 - **First authored container screen** (`TC-M7-04-s-cr1`): `TrunkScreen` extends 1.21.1
   `AbstractContainerScreen`; `ModClientScreens` registers it on the mod bus through
   `RegisterMenuScreensEvent`, client-only, bound to the trunk menu type. Gate: 372 unit
