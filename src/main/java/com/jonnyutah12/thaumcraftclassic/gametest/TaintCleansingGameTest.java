@@ -37,8 +37,8 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
  * so the cleansed area is a disc of radius ~9 — not an 81-block field, and not
  * the square the scan box draws.</li>
  * <li><b>The pre-taint record.</b> The restore writes back the biome the column
- * held BEFORE taint overwrote it ({@link TaintBiomes#takeGeneratedBiome},
- * BD-16); plains is the fallback for a column with no record, which is exactly
+ * held BEFORE taint overwrote it ({@link TaintBiomes#takeGeneratedBiome}, BD-16);
+ * plains is the fallback for a column with no record, which is exactly
  * the case {@code TileEtherealBloom.java:37} documents.</li>
  * <li><b>Variant 4 only.</b> The plant family is one id with six metas, and only
  * the Ethereal Bloom (meta 4) gets a block entity and a ticker. In 1.21.1
@@ -59,13 +59,25 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
  * <p>Two numbers shape the assertions. (1) The rolls: the probes replay the
  * original's draw order with the same seed ({@link #mirroredBloomOffset}) and
  * assert the geometry of every roll that fired, so the ±7 modulus and the
- * squared radius are pinned exactly, not as a statistics band; the coverage
- * floor uses {@link #ROLLS} rolls, where the rarest core offset
- * ((±3, ±3), P = (5/64)²) has ~15 expected draws, i.e. a 1-in-10⁶ chance of a
- * miss. (2) The 4-block palette cell: one restore rewrites the whole cell of
- * the column it fired on (BD-15), so the disc is a set of cells, a cell is
- * cleansed at most once, and "never cleansed beyond the disc" is asserted for
- * columns whose CELL no ±7 offset can reach.</p>
+ * squared radius are pinned exactly, not as a statistics band. (2) The 4-block
+ * palette cell: one restore rewrites the whole cell of the column it fired on
+ * (BD-15), so the disc is a set of CELLS, a cell is cleansed at most once, and
+ * "never cleansed beyond the disc" is a statement about cells, not columns —
+ * one 4×4 cell spans the bloom's own column and a column 8 blocks out on the
+ * other side, so the disc gate is evaluated on the cell, and the
+ * {@link ScriptedRollRandom} sweep proves coverage by construction instead of
+ * by luck.</p>
+ *
+ * <p><b>The roll stream is part of the fixture</b> (TC-M5-04-s-b2). The seeded
+ * rolls used to run on the consecutive seeds 1..N, and Java's LCG — the
+ * generator {@code RandomSource.create(long)} wraps — cannot span the bloom's
+ * scan box from consecutive seeds. See {@link #rollSeed(long)}: the seeds are
+ * decorrelated by an odd-constant multiply, and the disc probe additionally
+ * sweeps every offset of the box explicitly
+ * ({@link ScriptedRollRandom}) so "the disc is cleansed" never depends on which
+ * offsets a seed sequence happens to draw. That split is what the 2026-10-29
+ * investigation on {@code wt/taint-b1} came back with: four of sixteen disc
+ * cells never fired, and the write path was clean.</p>
  */
 @GameTestHolder(ThaumcraftClassic.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -83,15 +95,45 @@ public final class TaintCleansingGameTest {
      * the gate passes) and generous: after every cell of the disc is cleansed a
      * roll just reads the biome and returns false.
      */
-    private static final int ROLLS = 2500;
+    public static final int ROLLS = 2500;
 
     /**
-     * The offset the bloom picks on this seed, by replaying the original's draw
-     * order: x's pair first, then z's pair, each {@code nextInt(8) -
-     * nextInt(8)}. Java evaluates constructor arguments left to right, so this
-     * draws in exactly that order.
+     * The seed of roll number {@code index}.
+     *
+     * <p>TC-M5-04-s-b2. Java's LCG — {@code RandomSource.create(long)} goes
+     * {@code RandomSourceSupport.create -> LegacyRandomSource -> java.util.Random}
+     * — sets {@code seed = (seed ^ 0x5DEECE66D) & 2^48-1} and steps it by
+     * {@code seed = seed * 0x5DEECE66D + 0xB}, returning the TOP bits. A seed
+     * difference of ONE therefore moves the first output by only
+     * 0x5DEECE66D ≈ 2.3e10 in a 2^48 state: the first {@code nextInt(8)} changes
+     * roughly every 1400 consecutive seeds. Measured over the seeds 1..2500 the
+     * first draw takes four values (4,5,6,7) and the second draw is already
+     * decorrelated. The bloom draws x's pair first, so
+     * {@code tx = first - second} spans [-3, +7] and NEVER reaches -5..-7 —
+     * the four biome palette cells at x offsets -7..-5 got ZERO of the 2500
+     * rolls, at every bloom alignment, and the disc probe read that as an
+     * engine bug ("4 of 16 cells never cleanse").</p>
+     *
+     * <p>Multiplying the roll index by an odd golden-ratio constant decorrelates
+     * consecutive rolls: measured over the same 2500 rolls, both axes span the
+     * full -7..+7, the rarest axis value is drawn 34 times, and the
+     * least-covered disc cell gets 16 rolls. Pinned by
+     * {@code TaintCleansingRollCoverageTest}, which goes red the moment this
+     * multiplication is removed — the unit test is the mutation guard, the game
+     * probe does not have to carry the statistics.</p>
      */
-    private static BlockPos mirroredBloomOffset(final long seed) {
+    public static long rollSeed(final long index) {
+        return index * 0x9E3779B97F4A7C15L;
+    }
+
+    /**
+     * The offset the bloom picks for a SEED, by replaying the original's draw
+     * order: x's pair first, then z's pair, each {@code nextInt(8) - nextInt(8)}.
+     * Java evaluates constructor arguments left to right, so this draws in
+     * exactly that order. Public so the unit coverage test can sweep the stream;
+     * callers must feed it {@link #rollSeed(long)}, not a raw counter.
+     */
+    public static BlockPos mirroredBloomOffset(final long seed) {
         final RandomSource mirror = RandomSource.create(seed);
         return new BlockPos(
                 TaintRules.bloomOffset(mirror.nextInt(TaintRules.BLOOM_SCAN_MOD),
@@ -99,6 +141,95 @@ public final class TaintCleansingGameTest {
                 0,
                 TaintRules.bloomOffset(mirror.nextInt(TaintRules.BLOOM_SCAN_MOD),
                         mirror.nextInt(TaintRules.BLOOM_SCAN_MOD)));
+    }
+
+    /** The offset of roll {@code index}: the seed stream, decorrelated. */
+    public static BlockPos bloomRollOffset(final long index) {
+        return mirroredBloomOffset(rollSeed(index));
+    }
+
+    /**
+     * A {@link RandomSource} whose {@code nextInt(8)} draws are scripted, so one
+     * cleansing roll lands on an EXACT offset. The bloom draws x's pair, then z's
+     * pair (the original's order), so the queue is supplied in that order:
+     * {@code (max(tx,0), max(-tx,0))} then {@code (max(tz,0), max(-tz,0))}, which
+     * makes {@code bloomOffset(a,b) = a - b} equal the requested offset.
+     *
+     * <p>Two properties come from the shape: the disc's cell coverage stops being
+     * a property of the seed stream (it is a sweep of the whole ±7 box), and the
+     * draw ORDER is pinned — a bloom that drew z's pair first would compute the
+     * transposed offset, land in a different palette cell, and turn the probe
+     * red.</p>
+     */
+    private static final class ScriptedRollRandom implements RandomSource {
+
+        private final int[] draws;
+        private int at;
+
+        private ScriptedRollRandom(final int tx, final int tz) {
+            draws = new int[] {Math.max(tx, 0), Math.max(-tx, 0), Math.max(tz, 0), Math.max(-tz, 0)};
+        }
+
+        @Override
+        public int nextInt(final int bound) {
+            if (at >= draws.length) {
+                throw new IllegalStateException("the bloom drew past its scripted "
+                        + draws.length + "-int roll: the roll consumes four nextInt("
+                        + TaintRules.BLOOM_SCAN_MOD + ") draws (x pair, then z pair)");
+            }
+            final int value = draws[at++];
+            if (value >= bound) {
+                throw new IllegalStateException("the bloom asked nextInt(" + bound
+                        + ") for a scripted draw of " + value + ": BLOOM_SCAN_MOD is "
+                        + TaintRules.BLOOM_SCAN_MOD);
+            }
+            return value;
+        }
+
+        @Override
+        public int nextInt() {
+            throw new UnsupportedOperationException("the bloom's roll uses nextInt(bound) only");
+        }
+
+        @Override
+        public long nextLong() {
+            throw new UnsupportedOperationException("the bloom's roll uses nextInt(bound) only");
+        }
+
+        @Override
+        public boolean nextBoolean() {
+            throw new UnsupportedOperationException("the bloom's roll uses nextInt(bound) only");
+        }
+
+        @Override
+        public float nextFloat() {
+            throw new UnsupportedOperationException("the bloom's roll uses nextInt(bound) only");
+        }
+
+        @Override
+        public double nextDouble() {
+            throw new UnsupportedOperationException("the bloom's roll uses nextInt(bound) only");
+        }
+
+        @Override
+        public double nextGaussian() {
+            throw new UnsupportedOperationException("the bloom's roll uses nextInt(bound) only");
+        }
+
+        @Override
+        public void setSeed(final long seed) {
+            at = 0;
+        }
+
+        @Override
+        public RandomSource fork() {
+            throw new UnsupportedOperationException("the bloom's roll must not fork its source");
+        }
+
+        @Override
+        public net.minecraft.world.level.levelgen.PositionalRandomFactory forkPositional() {
+            throw new UnsupportedOperationException("the bloom's roll must not fork its source");
+        }
     }
 
     /**
@@ -125,9 +256,20 @@ public final class TaintCleansingGameTest {
         }
     }
 
-    /** The palette cell key a column's write lands in — {@code (coord >> 2) & 3}. */
+    /**
+     * The identity of the biome palette cell a column's write lands in.
+     *
+     * <p>The index inside the section's 4×4×4 biome palette is
+     * {@code (coord >> 2) & 3}, and that index REPEATS every chunk (16 blocks),
+     * so the index alone is not an identity: the cell at index 2 of chunk -848996
+     * and the cell at index 2 of chunk -848995 are different cells that share a
+     * name. The disc probe paints ±12 columns — two chunks — and a ±7 offset
+     * reaches cells in the next chunk, so an index-only key merges them and made
+     * the 2026-10-29 "missing cell" reading ambiguous. The chunk coordinate is
+     * in the key, and the index stays visible in it.</p>
+     */
     private static String cellKeyOf(final int x, final int z) {
-        return ((x >> 2) & 3) + "_" + ((z >> 2) & 3);
+        return (x >> 4) + ":" + ((x >> 2) & 3) + "|" + (z >> 4) + ":" + ((z >> 2) & 3);
     }
 
     /**
@@ -135,7 +277,6 @@ public final class TaintCleansingGameTest {
      * that pass its own gate. One restore rewrites a whole cell, so this is also
      * the number of rolls that can fire — the disc, counted in 4×4 cells.
      */
-    /** The derived cell set, for the failure message (a parity pin should name cells). */
     private static java.util.Set<String> reachableCells(final BlockPos bloom) {
         final java.util.Set<String> cells = new java.util.TreeSet<>();
         final int limit = TaintRules.BLOOM_SCAN_MOD - 1;
@@ -157,16 +298,7 @@ public final class TaintCleansingGameTest {
     }
 
     private static int reachableCellCount(final BlockPos bloom) {
-        final java.util.Set<String> cells = new java.util.TreeSet<>();
-        final int limit = TaintRules.BLOOM_SCAN_MOD - 1;
-        for (int dx = -limit; dx <= limit; dx++) {
-            for (int dz = -limit; dz <= limit; dz++) {
-                if (TaintRules.bloomDistanceSquared(dx, dz) <= TaintRules.BLOOM_RADIUS_SQUARED) {
-                    cells.add(cellKeyOf(bloom.getX() + dx, bloom.getZ() + dz));
-                }
-            }
-        }
-        return cells.size();
+        return reachableCells(bloom).size();
     }
 
     // ------------------------------------------------------------ 1. the disc gate
@@ -175,9 +307,9 @@ public final class TaintCleansingGameTest {
     public static void bloomCleansesInsideTheDiscAndNeverBeyondIt(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
         // The bloom sits on a palette-cell origin (16 is a multiple of 4) so the
-        // "must stay tainted" ring at |offset| >= 8 is a whole cell away from the
-        // farthest cell a ±7 offset can touch: the 4-block granularity of a
-        // biome write (BD-15) cannot blur the gate.
+        // "must stay tainted" ring is a whole cell away from the farthest cell a
+        // ±7 offset can touch: the 4-block granularity of a biome write (BD-15)
+        // cannot blur the gate.
         final BlockPos origin = helper.absolutePos(new BlockPos(16, 8, 16));
         // The template origin is NOT 4-aligned in world space (observed: 6183709,
         // 8526245 -> both ≡1 mod 4), so snap to the palette-cell grid instead of
@@ -186,6 +318,16 @@ public final class TaintCleansingGameTest {
         helper.assertTrue((bloom.getX() & 3) == 0 && (bloom.getZ() & 3) == 0,
                 "the fixture bloom must sit on a biome palette cell origin, got " + bloom.toShortString());
 
+        final int limit = TaintRules.BLOOM_SCAN_MOD - 1;
+        final java.util.Set<String> derived = reachableCells(bloom);
+        final int cells = derived.size();
+
+        // ------------------------------------------------ (A) the exhaustive sweep
+        // Every offset of the ±7 box, exactly once, with the roll forced
+        // (ScriptedRollRandom). Coverage stops being a property of a seed stream:
+        // each cell the gate admits is targeted while it is still the taint
+        // biome, so it MUST fire, and the engine's fire decision is compared
+        // against the rule at all 225 offsets.
         // Raw write: no pre-taint record, so every restore lands on the plains
         // fallback and "cleansed" reads unambiguously as "no longer taint".
         paintBiome(level, bloom, PAINT_RADIUS, TaintBiomes.taintBiomeHolder(level), false);
@@ -193,22 +335,89 @@ public final class TaintCleansingGameTest {
                 "fixture: the bloom's own column must be the taint biome, got "
                         + TaintBiomes.biomeAt(level, bloom).getRegisteredName());
 
+        final java.util.Set<String> sweptCells = new java.util.TreeSet<>();
+        final StringBuilder gateMismatch = new StringBuilder();
+        int sweptFires = 0;
+        int sweptBeyondRadius = 0;
+        for (int dx = -limit; dx <= limit; dx++) {
+            for (int dz = -limit; dz <= limit; dz++) {
+                final Holder<Biome> stored =
+                        TaintBiomes.biomeAt(level, bloom.offset(dx, 0, dz));
+                final double d2 = TaintRules.bloomDistanceSquared(dx, dz);
+                final boolean expect =
+                        TaintRules.bloomCleanses(TaintBiomes.isCleansableBiome(stored), d2);
+                final boolean fired = TaintManager.etherealBloomCleanse(level, bloom,
+                        new ScriptedRollRandom(dx, dz));
+                if (fired != expect && gateMismatch.length() < 400) {
+                    gateMismatch.append(' ').append(dx).append(',').append(dz)
+                            .append("(d2=").append(String.format("%.2f", d2))
+                            .append(",biome=").append(stored.getRegisteredName())
+                            .append(fired ? ",engine=fired)" : ",engine=skip)");
+                }
+                if (!fired) {
+                    continue;
+                }
+                sweptFires++;
+                sweptCells.add(cellKeyOf(bloom.getX() + dx, bloom.getZ() + dz));
+                if (d2 > TaintRules.BLOOM_RADIUS_SQUARED) {
+                    sweptBeyondRadius++;
+                }
+            }
+        }
+        System.out.println("TC-B2-DIAG sweep bloom=" + bloom.toShortString()
+                + " x&15=" + (bloom.getX() & 15) + " z&15=" + (bloom.getZ() & 15)
+                + " cell=" + cellKeyOf(bloom.getX(), bloom.getZ())
+                + " offsets=225 fires=" + sweptFires + " cellsFired=" + sweptCells.size()
+                + " derived=" + cells + " MISSING=" + missing(derived, sweptCells)
+                + " gateMismatches=" + (gateMismatch.length() == 0 ? 0 : gateMismatch));
+
+        helper.assertTrue(gateMismatch.length() == 0,
+                "the bloom's fire decision must equal TaintRules.bloomCleanses at EVERY offset"
+                        + " of the ±" + limit + " box (biome gate + squared radius), mismatches:"
+                        + gateMismatch);
+        helper.assertTrue(sweptBeyondRadius == 0,
+                "the sweep fired " + sweptBeyondRadius + " times on offsets past the squared"
+                        + " radius " + TaintRules.BLOOM_RADIUS_SQUARED);
+        helper.assertTrue(sweptCells.equals(derived),
+                "the exhaustive sweep of all " + (2 * limit + 1) * (2 * limit + 1) + " offsets must"
+                        + " cleanse every cell the disc admits (" + cells + " of them): fired"
+                        + " " + sweptCells.size() + " cells; FIRED=" + sweptCells
+                        + " DERIVED=" + derived + " MISSING=" + missing(derived, sweptCells));
+
+        // ------------------------------------------------- (B) the seeded roll stream
+        // The fixture the probe is known for, and the one the 2026-10-29 run
+        // misread: the rolls are the bloom's own draws over ROLLS seeds, and the
+        // per-cell telemetry below names the cells that fired. Seeds are
+        // decorrelated (rollSeed) — with consecutive seeds the x offset never
+        // reaches -5..-7 and this leg misses exactly four cells.
+        paintBiome(level, bloom, PAINT_RADIUS, TaintBiomes.taintBiomeHolder(level), false);
+
         int fired = 0;
         int beyondScanBox = 0;
         int beyondRadius = 0;
         final java.util.Set<String> firedCells = new java.util.TreeSet<>();
-        // TC-M5-04-s-b2 per-cell telemetry: how many rolls LANDED on each cell,
-        // how many of those reads were not the taint biome (so the engine's
-        // biome gate refused them), and how many fired. The probe reads the
-        // same palette the engine is about to read, on the same offset, so a
-        // cell that shows rolls > 0 and fires == 0 is a gate story, not luck.
         final java.util.Map<String, int[]> perCell = new java.util.TreeMap<>();
         final java.util.Map<String, StringBuilder> detail = new java.util.TreeMap<>();
-        for (long seed = 1; seed <= ROLLS; seed++) {
+        int minTx = Integer.MAX_VALUE;
+        int maxTx = Integer.MIN_VALUE;
+        int minTz = Integer.MAX_VALUE;
+        int maxTz = Integer.MIN_VALUE;
+        int negativeSide = 0;
+        for (long index = 1; index <= ROLLS; index++) {
+            final long seed = rollSeed(index);
             final BlockPos off = mirroredBloomOffset(seed);
             final String cell = cellKeyOf(bloom.getX() + off.getX(), bloom.getZ() + off.getZ());
-            final Holder<Biome> read = TaintBiomes.biomeAt(level, bloom.offset(off.getX(), 0, off.getZ()));
-            final boolean rollFired = TaintManager.etherealBloomCleanse(level, bloom, RandomSource.create(seed));
+            final Holder<Biome> read =
+                    TaintBiomes.biomeAt(level, bloom.offset(off.getX(), 0, off.getZ()));
+            final boolean rollFired = TaintManager.etherealBloomCleanse(level, bloom,
+                    RandomSource.create(seed));
+            minTx = Math.min(minTx, off.getX());
+            maxTx = Math.max(maxTx, off.getX());
+            minTz = Math.min(minTz, off.getZ());
+            maxTz = Math.max(maxTz, off.getZ());
+            if (off.getX() <= -(TaintRules.BLOOM_SCAN_MOD - 2)) {
+                negativeSide++;
+            }
             final int[] st = perCell.computeIfAbsent(cell, k -> new int[3]);
             st[0]++;
             if (!TaintBiomes.isTaintBiome(read)) {
@@ -219,7 +428,7 @@ public final class TaintCleansingGameTest {
             }
             final StringBuilder d = detail.computeIfAbsent(cell, k -> new StringBuilder());
             if (d.length() < 260) {
-                d.append(" r").append(seed).append('(').append(off.getX()).append(',').append(off.getZ())
+                d.append(" r").append(index).append('(').append(off.getX()).append(',').append(off.getZ())
                         .append(")=").append(read.getRegisteredName()
                                 .replace("minecraft:", "").replace("thaumcraft:biome.", ""))
                         .append(rollFired ? "*" : "");
@@ -237,9 +446,15 @@ public final class TaintCleansingGameTest {
                 beyondRadius++;
             }
         }
-        System.out.println("TC-B2-DIAG disc bloom=" + bloom.toShortString()
+        // The diagnostic that settles a "cell never cleanses" report: the span of
+        // the stream decides coverage, so the log states it next to the cell list.
+        System.out.println("TC-B2-DIAG seeded bloom=" + bloom.toShortString()
                 + " x&15=" + (bloom.getX() & 15) + " z&15=" + (bloom.getZ() & 15)
-                + " cell=" + cellKeyOf(bloom.getX(), bloom.getZ()));
+                + " cell=" + cellKeyOf(bloom.getX(), bloom.getZ())
+                + " rolls=" + ROLLS + " tx=[" + minTx + "," + maxTx + "] tz=[" + minTz + "," + maxTz + "]"
+                + " rollsAtTx<=-5=" + negativeSide + " cellsExercised=" + perCell.size()
+                + " fired=" + fired + " cellsFired=" + firedCells.size()
+                + " MISSING=" + missing(derived, firedCells));
         for (final java.util.Map.Entry<String, int[]> e : perCell.entrySet()) {
             final int[] st = e.getValue();
             System.out.println("TC-B2-DIAG cell " + e.getKey() + " rolls=" + st[0]
@@ -257,9 +472,7 @@ public final class TaintCleansingGameTest {
         // (2) the disc is a disc: the radius gate trims scan-box corners off it
         // ((7,7) is 98.25 > 81), and the cells it does admit all get cleansed —
         // exactly once each, because one restore rewrites a whole 4x4 cell.
-        final int cells = reachableCellCount(bloom);
         int trimmedCorners = 0;
-        final int limit = TaintRules.BLOOM_SCAN_MOD - 1;
         for (int dx = -limit; dx <= limit; dx++) {
             for (int dz = -limit; dz <= limit; dz++) {
                 if (TaintRules.bloomDistanceSquared(dx, dz) > TaintRules.BLOOM_RADIUS_SQUARED) {
@@ -270,15 +483,23 @@ public final class TaintCleansingGameTest {
         helper.assertTrue(trimmedCorners > 0,
                 "the squared-radius gate must trim scan-box corners (7,7) off the disc, got "
                         + trimmedCorners + " trimmed offsets");
+        helper.assertTrue(minTx == -limit && maxTx == limit && minTz == -limit && maxTz == limit,
+                "the seeded roll stream must span the whole ±" + limit + " scan box on BOTH axes"
+                        + " (a stream that does not cannot cover the disc): tx=[" + minTx + "," + maxTx
+                        + "] tz=[" + minTz + "," + maxTz + "] over " + ROLLS
+                        + " rolls; rolls with tx <= -5: " + negativeSide
+                        + " — see rollSeed(), Java's LCG freezes the first draw across"
+                        + " consecutive seeds");
         helper.assertTrue(fired == cells && firedCells.size() == cells,
                 "the disc is " + cells + " biome palette cells (the scan box is " + limit
                         + ", so 4x4 cells of 4x4 blocks, and one restore cleanses a whole cell): "
                         + "the bloom fired " + fired + " times over " + firedCells.size()
                         + " distinct cells in " + ROLLS + " rolls; FIRED=" + firedCells
-                        + " DERIVED=" + reachableCells(bloom)
-                        + " MISSING=" + missing(reachableCells(bloom), firedCells)
-                        + " (each derived cell has >=6 qualifying offsets of 225, so a miss"
-                        + " over " + ROLLS + " rolls is not a coverage accident)");
+                        + " DERIVED=" + derived
+                        + " MISSING=" + missing(derived, firedCells)
+                        + " | tx=[" + minTx + "," + maxTx + "] tz=[" + minTz + "," + maxTz
+                        + "] rollsAtTx<=-5=" + negativeSide + " cellsExercised=" + perCell.size()
+                        + " (coverage of the stream, not of the engine: see rollSeed)");
 
         // (3) the core of the disc is genuinely cleansed: every column within
         // |offset| <= CORE_RADIUS reads something other than taint.
@@ -298,29 +519,39 @@ public final class TaintCleansingGameTest {
                 "every column of the bloom's core (|offset| <= " + CORE_RADIUS + ", " + core
                         + " columns, " + ROLLS + " rolls) must be cleansed; still taint:" + coreMisses);
 
-        // (4) NEVER at |offset| > 8: every painted column whose palette cell no
-        // ±7 offset can reach is still the taint biome.
+        // (4) NEVER beyond the disc, stated at CELL granularity: a painted
+        // column whose palette cell no qualifying ±7 offset reaches must still be
+        // the taint biome. Cell granularity is the honest unit because a biome
+        // write is 4x4 blocks (BD-15): one 4x4 cell spans the bloom's negative
+        // side (x offsets -7..-5, chunk-local index 1 of the bloom's chunk) AND
+        // columns 8..11 blocks on its POSITIVE side (index 1 of the next chunk
+        // shares the same palette index). Those columns share a cell with a
+        // legitimate fire, so a fire there is the documented BD-15 footprint, not
+        // a leak. Column-offset filtering hid that for a whole investigation.
         int ring = 0;
         int ringCleansed = 0;
         final StringBuilder leak = new StringBuilder();
         for (int dx = -PAINT_RADIUS; dx <= PAINT_RADIUS; dx++) {
             for (int dz = -PAINT_RADIUS; dz <= PAINT_RADIUS; dz++) {
-                if (Math.abs(dx) < TaintRules.BLOOM_SCAN_MOD && Math.abs(dz) < TaintRules.BLOOM_SCAN_MOD) {
-                    continue; // inside the scan box — not this assertion
+                final String cell = cellKeyOf(bloom.getX() + dx, bloom.getZ() + dz);
+                if (derived.contains(cell)) {
+                    continue; // the disc admits this cell: cleansing it is correct
                 }
                 ring++;
                 final Holder<Biome> at = TaintBiomes.biomeAt(level, bloom.offset(dx, 0, dz));
                 if (!TaintBiomes.isTaintBiome(at)) {
                     ringCleansed++;
                     if (leak.length() < 400) {
-                        leak.append(' ').append(dx).append(',').append(dz).append('=').append(at.getRegisteredName());
+                        leak.append(' ').append(dx).append(',').append(dz).append("(cell ").append(cell)
+                                .append('=').append(at.getRegisteredName()).append(')');
                     }
                 }
             }
         }
         helper.assertTrue(ringCleansed == 0,
-                "the bloom must never cleanse a column at |offset| >= " + TaintRules.BLOOM_SCAN_MOD
-                        + ": " + ringCleansed + " of " + ring + " ring columns were rewritten to" + leak);
+                "the bloom must never cleanse a column whose palette cell NO qualifying ±"
+                        + limit + " offset reaches: " + ringCleansed + " of " + ring
+                        + " such columns were rewritten to" + leak);
         helper.succeed();
     }
 
@@ -350,7 +581,8 @@ public final class TaintCleansingGameTest {
         int firedA = 0;
         int toForest = 0;
         final StringBuilder recordFails = new StringBuilder();
-        for (long seed = 1; seed <= ROLLS; seed++) {
+        for (long index = 1; index <= ROLLS; index++) {
+            final long seed = rollSeed(index);
             final BlockPos off = mirroredBloomOffset(seed);
             if (!TaintManager.etherealBloomCleanse(level, bloomA, RandomSource.create(seed))) {
                 continue;
@@ -387,7 +619,8 @@ public final class TaintCleansingGameTest {
         int firedB = 0;
         int toPlains = 0;
         final StringBuilder fallbackFails = new StringBuilder();
-        for (long seed = 1; seed <= ROLLS; seed++) {
+        for (long index = 1; index <= ROLLS; index++) {
+            final long seed = rollSeed(index);
             final BlockPos off = mirroredBloomOffset(seed);
             if (!TaintManager.etherealBloomCleanse(level, bloomB, RandomSource.create(seed))) {
                 continue;
@@ -530,20 +763,20 @@ public final class TaintCleansingGameTest {
 
     // ------------------------------------------------ TC-M5-04-s-b2 write cell
     //
-    // Where does ONE biome write land, in palette-cell space?
+    // VERDICT (kept as a standing probe, not scratch): where does ONE biome write
+    // land, in palette-cell space?
     //
-    // The disc probe reports 12 of its 16 disc cells firing, with the whole x
-    // column of cells at key 2 (the bloom's negative x side) missing, while
-    // its core assertion — every column at |offset| <= 3 reads cleansed, which
-    // INCLUDES the key-2 columns x offsets -3..-1 — passes. Those two facts
-    // are only compatible if the write path and the read path do not agree on
-    // which palette cell a column lives in. So measure it: reset a strip to
-    // plains, write FOREST to ONE column, read the strip back, and print the
-    // run of columns that answer forest. That run IS the footprint of the
-    // write, and the palette cell of the source column is `(x >> 2) & 3` —
-    // a correct write answers for exactly the 4 columns x & ~3 .. x & ~3 + 3.
-    // Swept across a chunk boundary (dx -20..20) so a negative-offset,
-    // section-base-disagreeing case cannot hide.
+    // The disc probe reported 12 of 16 disc cells firing and blamed the write
+    // path. Measured here, the write path is clean: every single-column write
+    // answers for exactly the 4 columns (x & ~3)..(x & ~3)+3 of ITS OWN column
+    // (41/41 offsets swept across two chunk boundaries, negative offsets
+    // included), and painting the disc probe's field taints 625 of 625 columns.
+    // The write and the read agree on the cell. The disc probe's missing cells
+    // were its own roll stream (see rollSeed).
+    //
+    // This probe is the mutation guard for the OTHER side of the claim: the
+    // quart-space cell index in TaintBiomes.setBiomeAt (BD-15). Revert that index
+    // to the 1.7.10 `x & 3` byte write and the footprint lines go off-grid.
     @GameTest(template = "gametest_pad_32", timeoutTicks = 600)
     public static void diagnoseWhereASingleBiomeWriteLands(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
