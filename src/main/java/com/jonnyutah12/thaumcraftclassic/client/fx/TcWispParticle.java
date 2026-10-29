@@ -37,7 +37,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * {@code yd -= 0.04 * gravity} is the same expression the 1.7.10 {@code EntityFX}
  * base tick has. The wisp's art is the vanilla {@code /misc/fx.png} sheet in
  * the original, which the reference tree does not ship, so it renders on the
- * Thaumcraft glow frames — see BD-17 in docs/BEHAVIORAL_DEVIATIONS.md.</p>
+ * Thaumcraft glow frames — see BD-18 in docs/BEHAVIORAL_DEVIATIONS.md.</p>
  */
 @OnlyIn(Dist.CLIENT)
 public final class TcWispParticle extends TextureSheetParticle {
@@ -90,7 +90,7 @@ public final class TcWispParticle extends TextureSheetParticle {
         if (this.hasPhysics) {
             // FXWisp.java:180-182 — the original's own pushOutOfBlocks, ported
             // in FxWispPush; the original assigns the outward velocity right
-            // before the move, this tick applies it for the next one (BD-17).
+            // before the move, this tick applies it for the next one (BD-18).
             this.pushOutOfBlocks();
         }
         if (target != null) {
@@ -105,7 +105,7 @@ public final class TcWispParticle extends TextureSheetParticle {
                 // FXWisp.java:155-163. The original divides unguarded and gets
                 // NaN at distance 0; a wisp already on its target keeps its
                 // velocity instead (the only visible difference, documented in
-                // BD-17 — a NaN velocity makes the 1.21.1 particle engine drop
+                // BD-18 — a NaN velocity makes the 1.21.1 particle engine drop
                 // the whole spawn).
                 this.xd += dx / distance * FxWispRules.SEEK_ACCELERATION;
                 this.yd += dy / distance * FxWispRules.SEEK_ACCELERATION;

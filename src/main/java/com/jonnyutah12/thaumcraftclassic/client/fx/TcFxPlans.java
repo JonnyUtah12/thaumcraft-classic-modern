@@ -371,6 +371,175 @@ public final class TcFxPlans {
         return plan;
     }
 
+    // ---- TC-M7-02-c-s-f1: the wisp family's client senders ----
+
+    /**
+     * The scale of {@code FXWisp}'s entity-target constructor
+     * ({@code FXWisp(world, d, d1, d2, tar, int type)} delegating to
+     * {@code this(world, d, d1, d2, 0.4F, type)}, FXWisp.java:115-118).
+     */
+    public static final float WISP_TYPE_SCALE = 0.4F;
+
+    /** The base count every wisp sender hands to {@code particleCount} (the wispFX family). */
+    public static final int WISP_BASE_COUNT = 1;
+
+    /** {@code ClientProxy.wispFX}'s gravity knob, the 0.02 the payload documents. */
+    public static final float WISP_GRAVITY = 0.02F;
+
+    /**
+     * The wisp sender: one {@code FXWisp} per {@code particleCount(1)}
+     * iteration from the sender's explicit colour triple — the original's
+     * 8-argument constructor (FXWisp.java:20-60) and, when {@code target} is
+     * not the spawn point, its 9-argument point-target sibling
+     * (FXWisp.java:117-125), which divides the delta to the target by the
+     * rolled lifetime and hands that in as the initial velocity.
+     *
+     * <p>An entity target ({@code targetEntityId != TcWispOptions.NO_TARGET})
+     * switches the mote onto the original's homing branch ({@code target !=
+     * null} in {@code onUpdate}, FXWisp.java:150-164) and leaves the velocity
+     * at zero, which is what the entity-target constructor does.</p>
+     *
+     * @param spawn  the sender's spawn point (the mote's initial position)
+     * @param target the point the mote travels to, or {@code spawn} for the
+     *               colour constructor's free-drifting mote
+     * @param culled true when the spawn point is past the sender's render
+     *               distance: the original zeroes the lifetime there, so no
+     *               mote appears (FXWisp.java:40-48)
+     */
+    public static List<ParticleSpawn> wisp(final Vec3 spawn, final Vec3 target, final float scale,
+            final int color, final boolean additive, final int targetEntityId,
+            final boolean shrink, final float gravity, final boolean clip, final boolean culled,
+            final int particleSetting, final RandomSource rand) {
+        final List<ParticleSpawn> plan = new ArrayList<>();
+        final boolean homing = targetEntityId != TcWispOptions.NO_TARGET;
+        final int count = FxParticleCounts.particleCount(WISP_BASE_COUNT, particleSetting);
+        for (int i = 0; i < count; i++) {
+            // The lifetime rolls before the cull test in the original — the
+            // constructor computes it and then zeroes it — so the draw is
+            // consumed either way.
+            final int lifetime = FxWispRules.wispLifetime(rand);
+            if (culled) {
+                continue;
+            }
+            final double vx = homing ? 0.0 : (target.x - spawn.x) / lifetime;
+            final double vy = homing ? 0.0 : (target.y - spawn.y) / lifetime;
+            final double vz = homing ? 0.0 : (target.z - spawn.z) / lifetime;
+            plan.add(new ParticleSpawn(ModParticles.WISP.get(),
+                    new TcWispOptions(fixZeroRed(color), scale, lifetime, targetEntityId, homing,
+                            shrink, gravity, clip, additive),
+                    spawn.x, spawn.y, spawn.z, vx, vy, vz));
+        }
+        return plan;
+    }
+
+    /**
+     * The wisp sender's type branch: the original's entity-target constructor
+     * {@code FXWisp(world, d, d1, d2, Entity tar, int type)} →
+     * {@code this(world, d, d1, d2, 0.4F, type)} (FXWisp.java:115-118), whose
+     * colour case also picks the blend layer (case 5 → additive,
+     * FXWisp.java:100). The type is the sender's flavour: 0 wisp purple,
+     * 1 amber, 2/3/4 the prim, 5 the additive dark mote, 6 white, 7 fiery
+     * (FXWisp.java:66-115).
+     */
+    public static List<ParticleSpawn> wispByType(final Vec3 spawn, final int type,
+            final int targetEntityId, final boolean shrink, final float gravity,
+            final boolean clip, final boolean culled, final int particleSetting,
+            final RandomSource rand) {
+        final List<ParticleSpawn> plan = new ArrayList<>();
+        final boolean homing = targetEntityId != TcWispOptions.NO_TARGET;
+        final int count = FxParticleCounts.particleCount(WISP_BASE_COUNT, particleSetting);
+        for (int i = 0; i < count; i++) {
+            final int lifetime = FxWispRules.wispLifetime(rand);
+            // The colour switch runs after the delegated constructor, so its
+            // rolls come after the lifetime's (FXWisp.java:63-115).
+            final FxWispRules.WispColor rolled = FxWispRules.wispColor(type, rand);
+            if (culled) {
+                continue;
+            }
+            plan.add(new ParticleSpawn(ModParticles.WISP.get(),
+                    new TcWispOptions(rgb(rolled.r(), rolled.g(), rolled.b()), WISP_TYPE_SCALE,
+                            lifetime, targetEntityId, homing, shrink, gravity, clip,
+                            rolled.additive()),
+                    spawn.x, spawn.y, spawn.z, 0.0, 0.0, 0.0));
+        }
+        return plan;
+    }
+
+    /**
+     * {@code ClientProxy.wispFXEG}: the dark additive EG mote that falls onto
+     * an entity (FXWispEG.java:18-49). The constructor rolls its own x/z
+     * gaussians, its lifetime and its colour, so the loop is the
+     * {@code particleCount} gate around those rolls, in the constructor's
+     * order (motion → lifetime → colour, FXWispEG.java:24-46).
+     *
+     * @param spawn          the spawn point the sender hands the constructor
+     * @param targetEntityId the entity the mote falls onto and rides
+     * @param culled         true past the sender's render distance
+     *                       (FXWispEG.java:35-41)
+     */
+    public static List<ParticleSpawn> wispEg(final Vec3 spawn, final int targetEntityId,
+            final boolean culled, final int particleSetting, final RandomSource rand) {
+        final List<ParticleSpawn> plan = new ArrayList<>();
+        final int count = FxParticleCounts.particleCount(WISP_BASE_COUNT, particleSetting);
+        for (int i = 0; i < count; i++) {
+            final double vx = rand.nextGaussian() * FxWispRules.EG_SPREAD;
+            final double vz = rand.nextGaussian() * FxWispRules.EG_SPREAD;
+            final int lifetime = FxWispRules.wispEgLifetime(rand);
+            final FxWispRules.WispColor rolled = FxWispRules.wispEgColor(rand);
+            if (culled) {
+                continue;
+            }
+            plan.add(new ParticleSpawn(ModParticles.WISP_EG.get(),
+                    new TcWispEgOptions(rgb(rolled.r(), rolled.g(), rolled.b()), lifetime,
+                            targetEntityId),
+                    spawn.x, spawn.y, spawn.z, vx, FxWispRules.EG_RISE, vz));
+        }
+        return plan;
+    }
+
+    /**
+     * {@code ClientProxy.sourceStreamFX}: the arcing wisp of an essentia
+     * stream. The original's 11-argument constructor parks the mote on the
+     * TARGET point and stores the delta to the source in its motion fields
+     * (FXWispArcing.java:51-59); {@code onUpdate} re-derives the position from
+     * the spawn anchor plus that delta every tick, so the delta is payload and
+     * the spawn velocity is zero.
+     *
+     * @param source the point the mote flies back toward (the stream's source)
+     * @param target the spawn anchor, i.e. the target the stream runs to
+     * @param color  the sender's aspect-tag colour, packed 0x00RRGGBB
+     * @param culled true past the sender's render distance
+     *               (FXWispArcing.java:40-48)
+     */
+    public static List<ParticleSpawn> wispArcing(final Vec3 source, final Vec3 target,
+            final int color, final boolean culled, final int particleSetting,
+            final RandomSource rand) {
+        final List<ParticleSpawn> plan = new ArrayList<>();
+        final int count = FxParticleCounts.particleCount(WISP_BASE_COUNT, particleSetting);
+        for (int i = 0; i < count; i++) {
+            final int lifetime = FxWispRules.wispLifetime(rand);
+            if (culled) {
+                continue;
+            }
+            plan.add(new ParticleSpawn(ModParticles.WISP_ARCING.get(),
+                    new TcWispArcingOptions(fixZeroRed(color), FxWispRules.ARCING_SCALE, lifetime,
+                            source.x - target.x, source.y - target.y, source.z - target.z),
+                    target.x, target.y, target.z, 0.0, 0.0, 0.0));
+        }
+        return plan;
+    }
+
+    /**
+     * The red-channel fix both {@code FXWisp} and {@code FXWispArcing} apply at
+     * the top of their colour constructors ({@code if (red == 0.0F) red =
+     * 1.0F;}, FXWisp.java:25-27 and FXWispArcing.java:22-24): a sender that
+     * passes no red channel gets a fully red one rather than a black mote.
+     * Packed form, so the test is against the red byte.
+     */
+    private static int fixZeroRed(final int color) {
+        return (color >> 16 & 0xFF) == 0 ? color | 0xFF0000 : color;
+    }
+
     /** Packs three 0..1 channels into the 0x00RRGGBB form the 1.21.1 tint uses. */
     public static int rgb(final float r, final float g, final float b) {
         return (Mth.clamp((int) (r * 255.0F), 0, 255) << 16)

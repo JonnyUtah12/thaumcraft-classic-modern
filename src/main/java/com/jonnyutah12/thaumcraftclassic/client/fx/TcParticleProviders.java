@@ -44,7 +44,7 @@ public final class TcParticleProviders {
         // the VANILLA /misc/fx.png sheet (FXWisp.java:148-151 u 0..0.125
         // v 0.875..1; FXWispArcing.java:74-77 u 0..0.875 v 0.875..1), which
         // the reference tree does not ship, so they stand in on the Thaumcraft
-        // glow sparkle frame (sparkle_0) — BD-17 in
+        // glow sparkle frame (sparkle_0) — BD-18 in
         // docs/BEHAVIORAL_DEVIATIONS.md.
         event.registerSpriteSet(ModParticles.WISP.get(), TcWispParticle.Provider::new);
         event.registerSpriteSet(ModParticles.WISP_EG.get(), TcWispEgParticle.Provider::new);

@@ -19,7 +19,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * neighbour face and gets a small outward velocity on that axis (the caller
  * owns the roll constants, exactly as the original's two local vars).</p>
  *
- * <p>The two simplifications from the 1.21.1 API are recorded in BD-17:
+ * <p>The two simplifications from the 1.21.1 API are recorded in BD-18:
  * the water test reads the mote's own cell (the original sweeps its bounding
  * box, and these motes measure 0.1F/0.01F — sub-cell), and the solid test is
  * the collision-shape full-block check (the original's {@code isBlockSolid(…,

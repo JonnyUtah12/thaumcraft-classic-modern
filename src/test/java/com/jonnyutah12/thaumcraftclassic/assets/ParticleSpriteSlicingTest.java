@@ -68,7 +68,7 @@ class ParticleSpriteSlicingTest {
      * TC-M7-02-c-s-f1b: the wisp and the arcing wisp draw regions of the
      * VANILLA /misc/fx.png sheet (FXWisp.java:148-151, FXWispArcing.java:
      * 74-77), which the reference tree does not ship. They stand in on the
-     * sliced Thaumcraft glow frame (BD-17), so their definitions must name
+     * sliced Thaumcraft glow frame (BD-18), so their definitions must name
      * exactly that one sprite.
      */
     private static final Map<String, String> SUBSTITUTE_PARTICLES = Map.of(
@@ -155,7 +155,7 @@ class ParticleSpriteSlicingTest {
         for (Map.Entry<String, String> entry : SUBSTITUTE_PARTICLES.entrySet()) {
             List<String> textures = texturesOf(Files.readString(definition(entry.getKey())));
             assertEquals(1, textures.size(),
-                    entry.getKey() + ": the fx.png stand-in is one frame (BD-17)");
+                    entry.getKey() + ": the fx.png stand-in is one frame (BD-18)");
             assertEquals("thaumcraft:particle/" + entry.getValue(), textures.get(0),
                     entry.getKey() + ": the definition must name the glow frame it stands in on");
         }

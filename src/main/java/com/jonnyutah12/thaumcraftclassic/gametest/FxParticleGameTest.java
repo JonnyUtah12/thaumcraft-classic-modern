@@ -2,19 +2,27 @@ package com.jonnyutah12.thaumcraftclassic.gametest;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.client.fx.FxParticleCounts;
+import com.jonnyutah12.thaumcraftclassic.client.fx.FxWispRules;
 import com.jonnyutah12.thaumcraftclassic.client.fx.ParticleSpawn;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcBubbleOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcEffects;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcFxPlans;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcSparkleOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispArcingOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispEgOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispOptions;
 import com.jonnyutah12.thaumcraftclassic.registration.ModParticles;
+import io.netty.buffer.Unpooled;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -224,6 +232,213 @@ public final class FxParticleGameTest {
         helper.assertTrue(sparkles == 14, "the sparkle hand-off must request 14 particles, got " + sparkles);
         helper.assertTrue(bubbles == 4, "the bubble hand-off must request 4 particles, got " + bubbles);
         helper.succeed();
+    }
+
+    /**
+     * TC-M7-02-c-s-f1b: the wisp family's wire codecs. The wisp payload carries
+     * NINE fields and 1.21.1's {@code StreamCodec.composite} overloads cap at
+     * SIX (javap over the mapped {@code StreamCodec}: arities 1..6), so
+     * {@code TcWispOptions.STREAM_CODEC} composites a nested six-field core
+     * group with the remaining three — the arity limit is the exact defect that
+     * made this family fail to compile, and the nesting is where a field can
+     * silently land in the wrong slot. Every sample therefore carries values
+     * that make a pair swap visible: the two wisp samples are complements in
+     * all four boolean slots, and each family is sampled both with a real
+     * target id and with the {@link TcWispOptions#NO_TARGET} sentinel (a
+     * negative, so it pins the zig-zag varint read too).
+     */
+    @GameTest(template = "empty")
+    public static void wispPayloadCodecsRoundTrip(GameTestHelper helper) {
+        assertWireRoundTrip(helper, TcWispOptions.STREAM_CODEC,
+                new TcWispOptions(0x112233, 0.75F, 31, 17, true, false, 0.02F, false, true));
+        assertWireRoundTrip(helper, TcWispOptions.STREAM_CODEC,
+                new TcWispOptions(0x778899, 0.1F, 40, TcWispOptions.NO_TARGET, false, true, 0.0F, true, false));
+        assertWireRoundTrip(helper, TcWispEgOptions.STREAM_CODEC,
+                new TcWispEgOptions(0x050505, 52, 12));
+        assertWireRoundTrip(helper, TcWispEgOptions.STREAM_CODEC,
+                new TcWispEgOptions(0x0A0B0C, 36, TcWispOptions.NO_TARGET));
+        assertWireRoundTrip(helper, TcWispArcingOptions.STREAM_CODEC,
+                new TcWispArcingOptions(0x332211, 0.1F, 36, 1.5, -2.25, 3.0));
+
+        // The registered types must decode through these codecs — the same pin
+        // the sparkle/bubble and beam probes use.
+        helper.assertTrue(ModParticles.WISP.get().codec() == TcWispOptions.MAP_CODEC,
+                "wisp type must decode through TcWispOptions.MAP_CODEC");
+        helper.assertTrue(ModParticles.WISP_EG.get().codec() == TcWispEgOptions.MAP_CODEC,
+                "wisp_eg type must decode through TcWispEgOptions.MAP_CODEC");
+        helper.assertTrue(ModParticles.WISP_ARCING.get().codec() == TcWispArcingOptions.MAP_CODEC,
+                "wisp_arcing type must decode through TcWispArcingOptions.MAP_CODEC");
+        helper.succeed();
+    }
+
+    /**
+     * TC-M7-02-c-s-f1c: the wisp family's three senders. These are the
+     * original's client-side proxy calls ({@code ClientProxy.wispFX} family,
+     * {@code wispFXEG}, {@code sourceStreamFX}) — not packet handlers — so the
+     * plan below is what a game-test server can prove: the burst gate, the
+     * constructor's roll order, the point-target initial velocity, the homing
+     * branch, the cull, and the arcing mote's anchor/delta swap.
+     */
+    @GameTest(template = "empty")
+    public static void wispFamilySendersMatchOriginalGeometry(GameTestHelper helper) {
+        final Vec3 spawn = new Vec3(1.0, 64.0, 2.0);
+        final Vec3 target = new Vec3(5.0, 68.0, 6.0);
+
+        // ClientProxy.wispFX, the point-target form: particleCount(1) on "all"
+        // is 2 motes, each with the constructor's own lifetime roll and the
+        // (target - spawn) / lifetime initial velocity (FXWisp.java:39,117-125).
+        final List<ParticleSpawn> travelled = TcFxPlans.wisp(spawn, target, 1.0F, 0x00FF00,
+                false, TcWispOptions.NO_TARGET, false, TcFxPlans.WISP_GRAVITY, true, false,
+                FxParticleCounts.SETTING_ALL, RandomSource.create(20261029L));
+        helper.assertTrue(travelled.size() == 2,
+                "wispFX on 'all' must be particleCount(1) * 2 = 2 motes, got " + travelled.size());
+        for (final ParticleSpawn mote : travelled) {
+            helper.assertTrue(mote.type() == ModParticles.WISP.get(),
+                    "the wisp plan must use the registered wisp type");
+            final TcWispOptions options = (TcWispOptions) mote.options();
+            helper.assertTrue(options.lifetime() >= 36 && options.lifetime() <= 51,
+                    "wisp lifetime must be 36 / (rand*0.3 + 0.7), got " + options.lifetime());
+            helper.assertTrue(!options.homing() && options.targetEntityId() == TcWispOptions.NO_TARGET,
+                    "a free wisp must not carry a homing target");
+            helper.assertTrue(Math.abs(mote.vx() - (target.x - spawn.x) / options.lifetime()) < 1.0E-9
+                            && Math.abs(mote.vy() - (target.y - spawn.y) / options.lifetime()) < 1.0E-9
+                            && Math.abs(mote.vz() - (target.z - spawn.z) / options.lifetime()) < 1.0E-9,
+                    "the point-target wisp must start at (target - spawn) / lifetime, got "
+                            + mote.vx() + "," + mote.vy() + "," + mote.vz());
+            helper.assertTrue(TcFxPlans.red(options.color()) > 0.99F
+                            && TcFxPlans.green(options.color()) > 0.99F,
+                    "the sender's (0,1,0) colour must survive packing, got 0x"
+                            + Integer.toHexString(options.color()));
+        }
+
+        // The red-channel fix: FXWisp's colour constructor forces a zero red
+        // channel to 1.0 (FXWisp.java:25-27), so a (0,0,0) sender is red.
+        final List<ParticleSpawn> blackSender = TcFxPlans.wisp(spawn, spawn, 1.0F, 0x000000, false,
+                TcWispOptions.NO_TARGET, false, TcFxPlans.WISP_GRAVITY, true, false,
+                FxParticleCounts.SETTING_DECREASED, RandomSource.create(11L));
+        helper.assertTrue(blackSender.size() == 1,
+                "the 'decreased' setting must be particleCount(1) * 1 = 1 mote");
+        helper.assertTrue(TcFxPlans.red(((TcWispOptions) blackSender.get(0).options()).color()) > 0.99F,
+                "a zero red channel must be forced to 1.0, not left black");
+        // The free form: target == spawn means a standstill, and the cull and
+        // the minimal setting both gate the spawn away entirely.
+        helper.assertTrue(!((TcWispOptions) blackSender.get(0).options()).homing()
+                        && blackSender.get(0).vx() == 0.0,
+                "the colour constructor's mote starts at a standstill");
+        helper.assertTrue(TcFxPlans.wisp(spawn, spawn, 1.0F, 0xFFFFFF, false,
+                TcWispOptions.NO_TARGET, false, 0.0F, true, true,
+                FxParticleCounts.SETTING_ALL, RandomSource.create(11L)).isEmpty(),
+                "a culled wisp must not spawn (the original zeroes its lifetime)");
+        helper.assertTrue(TcFxPlans.wisp(spawn, spawn, 1.0F, 0xFFFFFF, false,
+                TcWispOptions.NO_TARGET, false, 0.0F, true, false,
+                FxParticleCounts.SETTING_MINIMAL, RandomSource.create(11L)).isEmpty(),
+                "the 'minimal' setting must gate the whole wisp burst away");
+
+        // The homing form: an entity target switches the mote onto the 0.985
+        // drag / 0.2 seek branch and leaves the velocity at zero.
+        final List<ParticleSpawn> homing = TcFxPlans.wisp(spawn, target, 0.4F, 0x00FF00, false,
+                42, false, 0.0F, true, false, FxParticleCounts.SETTING_ALL,
+                RandomSource.create(3L));
+        for (final ParticleSpawn mote : homing) {
+            final TcWispOptions options = (TcWispOptions) mote.options();
+            helper.assertTrue(options.homing() && options.targetEntityId() == 42,
+                    "an entity target must set the homing branch and keep the id");
+            helper.assertTrue(mote.vx() == 0.0 && mote.vy() == 0.0 && mote.vz() == 0.0,
+                    "the entity-target constructor hands in no velocity");
+        }
+
+        // The type branch: case 0 is wisp purple (0.75..1 red, 0.25..0.5 green,
+        // 0.75..1 blue, alpha layer), case 5 is the additive dark mote
+        // (FXWisp.java:66-115), both at the 0.4 the constructor hard-codes.
+        final List<ParticleSpawn> purple = TcFxPlans.wispByType(spawn, 0, TcWispOptions.NO_TARGET,
+                false, 0.0F, true, false, FxParticleCounts.SETTING_DECREASED,
+                RandomSource.create(5L));
+        helper.assertTrue(purple.size() == 1, "a typed wisp on 'decreased' must be one mote");
+        final TcWispOptions purpleOptions = (TcWispOptions) purple.get(0).options();
+        helper.assertTrue(purpleOptions.scale() == TcFxPlans.WISP_TYPE_SCALE
+                        && !purpleOptions.additive()
+                        && within(TcFxPlans.red(purpleOptions.color()), 0.75, 1.0)
+                        && within(TcFxPlans.green(purpleOptions.color()), 0.25, 0.5)
+                        && within(TcFxPlans.blue(purpleOptions.color()), 0.75, 1.0),
+                "type 0 must be the 0.4-scale wisp-purple mote on the alpha layer, got 0x"
+                        + Integer.toHexString(purpleOptions.color()));
+        final TcWispOptions darkOptions = (TcWispOptions) TcFxPlans.wispByType(spawn, 5,
+                TcWispOptions.NO_TARGET, false, 0.0F, true, false,
+                FxParticleCounts.SETTING_DECREASED, RandomSource.create(5L)).get(0).options();
+        helper.assertTrue(darkOptions.additive()
+                        && TcFxPlans.red(darkOptions.color()) < 0.1F
+                        && TcFxPlans.green(darkOptions.color()) < 0.1F
+                        && TcFxPlans.blue(darkOptions.color()) < 0.1F,
+                "type 5 must be the additive near-black mote (FXWisp.java:100)");
+
+        // ClientProxy.wispFXEG: the gaussian x/z spread, the -0.05 fall and the
+        // dark additive colour, all rolled inside the constructor
+        // (FXWispEG.java:24-46).
+        final List<ParticleSpawn> eg = TcFxPlans.wispEg(spawn, 7, false,
+                FxParticleCounts.SETTING_ALL, RandomSource.create(9L));
+        helper.assertTrue(eg.size() == 2, "wispFXEG on 'all' must spawn two motes");
+        for (final ParticleSpawn mote : eg) {
+            helper.assertTrue(mote.type() == ModParticles.WISP_EG.get(),
+                    "the EG plan must use the registered wisp_eg type");
+            final TcWispEgOptions options = (TcWispEgOptions) mote.options();
+            helper.assertTrue(options.lifetime() >= 40 && options.lifetime() <= 57,
+                    "EG lifetime must be 40 / (rand*0.3 + 0.7), got " + options.lifetime());
+            helper.assertTrue(options.targetEntityId() == 7,
+                    "the EG mote must carry the entity it falls onto");
+            helper.assertTrue(mote.vy() == FxWispRules.EG_RISE && mote.vy() == -0.05,
+                    "the EG mote must fall at -0.05, got " + mote.vy());
+            helper.assertTrue(Math.abs(mote.vx()) <= 0.03 * 4 && Math.abs(mote.vz()) <= 0.03 * 4,
+                    "the EG x/z spread is a rand*0.03 gaussian, got "
+                            + mote.vx() + "," + mote.vz());
+            helper.assertTrue(TcFxPlans.red(options.color()) <= 0.05F
+                            && TcFxPlans.green(options.color()) <= 0.05F
+                            && TcFxPlans.blue(options.color()) <= 0.05F,
+                    "the EG colour must be rand*0.05 per channel, got 0x"
+                            + Integer.toHexString(options.color()));
+        }
+
+        // ClientProxy.sourceStreamFX: the mote parks on the TARGET with the
+        // delta to the source in its motion fields (FXWispArcing.java:51-59),
+        // at the sender's fixed 0.1 scale and the shared lifetime roll.
+        final List<ParticleSpawn> arcing = TcFxPlans.wispArcing(spawn, target, 0x7F3F1F, false,
+                FxParticleCounts.SETTING_DECREASED, RandomSource.create(13L));
+        helper.assertTrue(arcing.size() == 1, "the arcing wisp on 'decreased' must be one mote");
+        final ParticleSpawn arcMote = arcing.get(0);
+        final TcWispArcingOptions arcOptions = (TcWispArcingOptions) arcMote.options();
+        helper.assertTrue(arcMote.type() == ModParticles.WISP_ARCING.get(),
+                "the arcing plan must use the registered wisp_arcing type");
+        helper.assertTrue(arcMote.x() == target.x && arcMote.y() == target.y
+                        && arcMote.z() == target.z,
+                "the arcing mote spawns on the target anchor");
+        helper.assertTrue(arcMote.vx() == spawn.x - target.x && arcMote.vy() == spawn.y - target.y
+                        && arcMote.vz() == spawn.z - target.z,
+                "the arcing payload must carry source - target as its delta");
+        helper.assertTrue(arcOptions.dx() == arcMote.vx() && arcOptions.scale() == 0.1F,
+                "the delta must reach the payload and the scale must be the sender's 0.1");
+        helper.assertTrue(arcOptions.lifetime() >= 36 && arcOptions.lifetime() <= 51,
+                "the arcing lifetime is the shared 36 / (rand*0.3 + 0.7) roll");
+
+        // Draw order is part of the fidelity claim: the same seed must give the
+        // same burst.
+        helper.assertTrue(eg.toString().equals(TcFxPlans.wispEg(spawn, 7, false,
+                        FxParticleCounts.SETTING_ALL, RandomSource.create(9L)).toString()),
+                "a wisp burst must be reproducible from the same random seed");
+        helper.succeed();
+    }
+
+    private static <T> void assertWireRoundTrip(final GameTestHelper helper,
+            final StreamCodec<RegistryFriendlyByteBuf, T> codec, final T sample) {
+        final RegistryFriendlyByteBuf buffer =
+                new RegistryFriendlyByteBuf(Unpooled.buffer(), helper.getLevel().registryAccess());
+        try {
+            codec.encode(buffer, sample);
+            final T decoded = codec.decode(buffer);
+            helper.assertTrue(sample.equals(decoded),
+                    "wire round-trip mismatch: " + sample + " != " + decoded);
+            helper.assertTrue(buffer.readableBytes() == 0, "trailing bytes for " + sample);
+        } finally {
+            buffer.release();
+        }
     }
 
     private static boolean within(final double value, final double min, final double max) {

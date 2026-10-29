@@ -5,6 +5,7 @@ import com.jonnyutah12.thaumcraftclassic.client.fx.TcBeamGeometry;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcBeamParticle;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcEffects;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcFxPlans;
+import com.jonnyutah12.thaumcraftclassic.client.fx.FxWispRules;
 import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -153,6 +154,115 @@ public final class ClientEffectHooks {
      */
     private static int particleSetting() {
         return Minecraft.getInstance().options.particles().get().getId();
+    }
+
+    // --- the wisp family (original ClientProxy.wispFX / wispFXEG / sourceStreamFX) ---
+    // TC-M7-02-c-s-f1c wires them. These three senders are NOT packet handlers
+    // in the original: they are client proxy calls the aura-node renderer, the
+    // essentia sources and the wisp entity make directly
+    // (ClientProxy.java:715-757), so there is no payload to route and nothing
+    // to receive. The hooks below are the seam those client-side senders call;
+    // their plan is {@code TcFxPlans.wisp}/{@code wispByType}/{@code wispEg}/
+    // {@code wispArcing} and the spawn is {@link TcEffects#spawn}.
+
+    /**
+     * TC-M7-02-c-s-f1c WIRED: the original's {@code ClientProxy.wispFX}
+     * explicit-colour sender, i.e. {@code new FXWisp(world, x, y, z, scale, r,
+     * g, b)} and its point-target sibling (FXWisp.java:20-60, 117-125). The
+     * mote is spawned at {@code spawn}; passing {@code spawn} as {@code target}
+     * gives the free-drifting form, a different point gives the original's
+     * {@code (target - spawn) / lifetime} initial velocity, and a
+     * {@code targetEntityId} other than {@code TcWispOptions.NO_TARGET} gives
+     * the homing form.
+     */
+    static void wispFx(final Vec3 spawn, final Vec3 target, final float scale, final int color,
+            final boolean additive, final int targetEntityId, final boolean shrink,
+            final float gravity, final boolean clip) {
+        LOGGER.debug("fx wisp at {} scale={} color={}", spawn, scale, Integer.toHexString(color));
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        TcEffects.spawn(mc.level, TcFxPlans.wisp(spawn, target, scale, color, additive,
+                targetEntityId, shrink, gravity, clip, wispCulled(spawn), particleSetting(),
+                RandomSource.create()));
+    }
+
+    /**
+     * TC-M7-02-c-s-f1c WIRED: the original's typed wisp sender — the
+     * {@code Entity}-target constructor {@code new FXWisp(world, x, y, z, tar,
+     * type)} (FXWisp.java:115-118), whose type switch picks both the colour and
+     * the blend layer. {@code type} is the sender's flavour (0 wisp purple …
+     * 7 fiery); {@code TcWispOptions.NO_TARGET} spawns it without a homing
+     * target.
+     */
+    static void wispFxType(final Vec3 spawn, final int type, final int targetEntityId,
+            final boolean shrink, final float gravity, final boolean clip) {
+        LOGGER.debug("fx typed wisp at {} type={} target={}", spawn, type, targetEntityId);
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        TcEffects.spawn(mc.level, TcFxPlans.wispByType(spawn, type, targetEntityId, shrink, gravity,
+                clip, wispCulled(spawn), particleSetting(), RandomSource.create()));
+    }
+
+    /**
+     * TC-M7-02-c-s-f1c WIRED: the original's {@code ClientProxy.wispFXEG}
+     * sender — the dark additive mote that falls onto an entity
+     * ({@code new FXWispEG(world, x, y, z, target)}, FXWispEG.java:18-49).
+     */
+    static void wispFxEg(final Vec3 spawn, final int targetEntityId) {
+        LOGGER.debug("fx EG wisp at {} target={}", spawn, targetEntityId);
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        TcEffects.spawn(mc.level, TcFxPlans.wispEg(spawn, targetEntityId, wispCulled(spawn),
+                particleSetting(), RandomSource.create()));
+    }
+
+    /**
+     * TC-M7-02-c-s-f1c WIRED: the original's {@code ClientProxy.sourceStreamFX}
+     * sender — the arcing wisp of an essentia stream, built from the target
+     * point and the delta back to the source
+     * (ClientProxy.java:752-757, FXWispArcing.java:51-59). {@code color} is the
+     * aspect tag's colour, packed 0x00RRGGBB.
+     */
+    static void sourceStreamFx(final Vec3 source, final Vec3 target, final int color) {
+        LOGGER.debug("fx source stream from {} to {} color={}", source, target,
+                Integer.toHexString(color));
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        TcEffects.spawn(mc.level, TcFxPlans.wispArcing(source, target, color, wispCulled(target),
+                particleSetting(), RandomSource.create()));
+    }
+
+    /**
+     * The wisp family's spawn cull: the original reads the render view entity's
+     * distance to the spawn point against a 50 (fancy) / 25 (fast) visible
+     * distance and zeroes the lifetime beyond it, so nothing appears
+     * (FXWisp.java:40-48, FXWispEG.java:35-41, FXWispArcing.java:40-48).
+     */
+    private static boolean wispCulled(final Vec3 spawn) {
+        final Vec3 viewer = viewerPosition();
+        return FxWispRules.culledAtSpawn(spawn.x, spawn.y, spawn.z, viewer.x, viewer.y, viewer.z,
+                FxWispRules.visibleDistance(TcBeamParticle.fancyGraphics()));
+    }
+
+    /**
+     * The render view entity's position — the original's {@code renderentity}
+     * for the wisp cull and its {@code getDistance}-based gates
+     * (FXWisp.java:41-47). 1.21.1's camera entity is the same view point.
+     */
+    private static Vec3 viewerPosition() {
+        final Minecraft mc = Minecraft.getInstance();
+        final Entity viewEntity = mc.getCameraEntity() == null ? mc.player : mc.getCameraEntity();
+        return viewEntity == null
+                ? Vec3.ZERO
+                : new Vec3(viewEntity.getX(), viewEntity.getY(), viewEntity.getZ());
     }
 
     /**
