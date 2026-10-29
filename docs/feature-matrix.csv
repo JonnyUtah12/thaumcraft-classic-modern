@@ -43,7 +43,7 @@ Per-variant block display names (`tile.<id>.<meta>.name`),107 keys over 13 mega-
 Models / textures / item+block models,1107 asset files (models subset),INVESTIGATED,TC-M7-01; asset inventory + local overlay (D-004),"overlay present, playback guarded",—,dispatch TC-M7-01,,,
 Particles / beams / fx,client/fx set,INVESTIGATED,TC-M7-02,none,—,dispatch TC-M7-02,,,
 Entity renderers,renderers/entity set,INVESTIGATED,TC-M7-03,none,—,dispatch TC-M7-03,,,
-GUI parity (non-research),client/gui set,INVESTIGATED,TC-M7-04,none,—,dispatch TC-M7-04,,,
+GUI parity (non-research) — 1 of N screens authored,client/gui set,TESTED (PARTIAL),TC-M7-04 (t_52cdd02c) → TC-M7-04-s-cr1 (t_a49c8ee2),"`client/TrunkScreen` + `client/ModClientScreens` (`RegisterMenuScreensEvent`, mod bus, client-only) bound to `CatalogTrinketsLoot.GUI_TRUNK`; `TrunkScreenRegistrationTest` 4 assertions",—,"author the remaining menu-type screens (cr2+): the mod has menu types with no screen today, so opening them is a blank screen",,,
 Build / load foundation,—,VERIFIED,t_e81a4a3b → 8058029/575c1b6,"5 unit + smoke gametest, CI",—,—,,,
 ATM10 startup,496/470 mods,VERIFIED (startup only),t_bd0c30d2 → f86a444/ff962ed,load in disposable instance,—,—,,,
 ATM10 gameplay,representative loops,NOT INVESTIGATED,TC-M9-02 (gated on TC-M6-03),none,—,gated; dispatch after M6,,,
