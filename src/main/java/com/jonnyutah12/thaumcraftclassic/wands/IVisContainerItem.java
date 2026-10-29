@@ -20,8 +20,15 @@ public interface IVisContainerItem {
     /** Aspects the stack can still accept (original getAspectsWithRoom). */
     AspectList getAspectsWithRoom(ItemStack stack);
 
-    /** Add vis to the stack (original addVis(stack, aspect, amount, doUpdate)). */
-    void addVis(ItemStack stack, Aspect aspect, int amount, boolean doUpdate);
+    /**
+     * Add vis to the stack (original {@code addVis(stack, aspect, amount, doUpdate)},
+     * {@code ItemWandCasting.java:352-363}): whole vis in, the amount that did
+     * not fit returned in whole vis (the original returned
+     * {@code leftover / 100}). The wand pedestal's charging loop ignores the
+     * return value; ItemWandCasting (TC-M6-01) returns it so the same method
+     * also satisfies the TC-M8-02 {@code VisContainerItem} surface.
+     */
+    int addVis(ItemStack stack, Aspect aspect, int amount, boolean doUpdate);
 
     /** Cap component tag, e.g. "iron" (original getCap(stack).getTag()). */
     String getCapTag(ItemStack stack);

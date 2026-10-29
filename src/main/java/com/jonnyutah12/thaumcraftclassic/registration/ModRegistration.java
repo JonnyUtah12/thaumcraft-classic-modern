@@ -10,6 +10,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogWands;
 import net.neoforged.bus.api.IEventBus;
 
 /**
@@ -64,6 +65,7 @@ public final class ModRegistration {
         // Feature content holders (append-only): each registers into the
         // shared ModItems holder; class-init trigger only, no new bus wiring.
         CatalogBaubles.init(); // TC-M8-02 bauble items
+        CatalogWands.init(modEventBus); // TC-M6-01 wand items + thaumcraft:wand_component registry
 
         ModDataComponents.DATA_COMPONENT_TYPES.register(modEventBus);
         ModBlocks.BLOCKS.register(modEventBus);
