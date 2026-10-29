@@ -157,7 +157,11 @@ public final class TaintCleansingGameTest {
         // "must stay tainted" ring at |offset| >= 8 is a whole cell away from the
         // farthest cell a ±7 offset can touch: the 4-block granularity of a
         // biome write (BD-15) cannot blur the gate.
-        final BlockPos bloom = helper.absolutePos(new BlockPos(16, 8, 16));
+        final BlockPos origin = helper.absolutePos(new BlockPos(16, 8, 16));
+        // The template origin is NOT 4-aligned in world space (observed: 6183709,
+        // 8526245 -> both ≡1 mod 4), so snap to the palette-cell grid instead of
+        // assuming the structure placement is aligned.
+        final BlockPos bloom = new BlockPos(origin.getX() & ~3, origin.getY(), origin.getZ() & ~3);
         helper.assertTrue((bloom.getX() & 3) == 0 && (bloom.getZ() & 3) == 0,
                 "the fixture bloom must sit on a biome palette cell origin, got " + bloom.toShortString());
 
