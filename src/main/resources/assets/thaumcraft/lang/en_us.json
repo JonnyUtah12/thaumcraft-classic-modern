@@ -142,6 +142,8 @@
   "container.thaumcraft.gui_trunk": "Traveling Trunk",
   "container.thaumcraft.magicbox": "Magic Box",
   "container.thaumcraft.spa": "Arcane Spa",
+  "enchantment.thaumcraft.ench_haste": "Haste",
+  "enchantment.thaumcraft.ench_repair": "Repair",
   "entity.thaumcraft.specialitemgrate": "Magic Item",
   "item.ItemAmuletVis.text": "Slowly recharges held wands",
   "item.capacity.text": "Capacity",
