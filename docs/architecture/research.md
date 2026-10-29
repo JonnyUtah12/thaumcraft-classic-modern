@@ -100,6 +100,39 @@ this port's trigger wiring per the TC-M3-02 card, reusing the original
 matcher unchanged. Entity/aspect trigger entry points (`createClue(player,
 entityName, aspects)`) are ready for the M6 entity and M5 wand wiring.
 
+## Note puzzle (TC-M3-04-s)
+
+The research-note minigame's rules, ported from
+`ResearchManager.createNote` / `checkResearchCompletion` / `checkConnections`
+and `thaumcraft.common.lib.utils.HexUtils` (TC 4.2.3.5). Pure Java, no
+Minecraft types, so a headless server exercises all of it:
+
+| File | Role | Original counterpart |
+|---|---|---|
+| `research/HexUtils` | axial/cubic hex math: the `NEIGHBOURS` direction table, `getRing`/`generateHexes` (the disc of radius r = `1 + 3r(r+1)` cells), distance, pixel/cubic rounding, the `"q:r"` map key | `common/lib/utils/HexUtils` |
+| `research/ResearchNoteData` | the note state: `key`, `color`, `complete`, `copies` and the grid map; hex entry types 0 empty / 1 required / 2 player-placed; codec writes the original `hexgrid` compounds with byte numerics | `common/lib/research/ResearchNoteData` + `ResearchManager.HexEntry` |
+| `research/NotePuzzle` | `generate` (radius `1 + min(3, complexity)`, required aspects on the outer ring, `complexity * 2` interior blanks behind the `cc < 2` guard) and `checkCompletion` (the walk that needs both aspects discovered and one a direct component of the other) | `ResearchManager.createNote` / `checkResearchCompletion` |
+
+Fidelity notes that shape the code:
+
+- **Required-aspect order is the original's.** `createNote` assigned
+  `rr.tags.getAspects()[count]` around the ring and `AspectList.aspects` is a
+  `LinkedHashMap`, so `getAspects()` is the insertion order `ConfigResearch`
+  used — the order the TC-M3-01 extractor preserved in `entries.json`. The port
+  reads `entry.tags()` directly; this is not an approximation.
+- **The blank-removal draw order is behaviour.** The original rebuilt its
+  candidate array from the `HashMap` of cells after every removal and drew one
+  `nextInt` per attempt, so the port keeps `HashMap`-backed structures and the
+  same rebuild. `NotePuzzleOriginalParityTest` replays the decompiled
+  `createNote` and demands an identical grid for all 201 shipped entries across
+  fixed seeds; a `LinkedHashMap`-ordered port removes different cells and fails.
+- **`distributeRingRandomly` consumes one draw it never uses** (the original's
+  `int start = random.nextInt(ring.size())`). Keeping the draw is what holds
+  every later pick on the original's random stream.
+- The note **item** (`thaumcraft:itemresearchnotes`) and the note screen are
+  not part of this slice (BD-13); the state record already carries the
+  `thaumcraft:research_note` component codec they will use.
+
 ## Testing
 
 - Unit (`src/test/.../research/`): `ResearchProgressionRulesTest` — starting
@@ -115,3 +148,12 @@ entityName, aspects)`) are ready for the M6 entity and M5 wand wiring.
   knowledge + warp survive death via `copyOnDeath`; hidden reveal picks a
   valid entry and persists. Death+reload persistence of the stored data is
   covered by the TC-M2-02 persistence gametests.
+- Note puzzle (`research/HexUtilsTest` 9, `NotePuzzleTest` 12,
+  `NotePuzzleOriginalParityTest` 3, `ResearchNoteDataTest` 8,
+  `ResearchGraphResourceGuardTest` 3; game `gametest/NotePuzzleGameTest` 2):
+  the hex table read back out of the decompiled file, the ring/disc closed
+  forms, the discarded start draw, the original NBT layout, the radius and
+  blank rules, the completion gate, and a replay of the decompiled `createNote`
+  over every shipped entry × 8 seeds. The game probes generate over the whole
+  shipped 201-entry graph on a server and drive completion through the TC-M3-02
+  knowledge record.
