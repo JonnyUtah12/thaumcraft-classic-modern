@@ -36,21 +36,23 @@ import net.neoforged.api.distmarker.OnlyIn;
 @OnlyIn(Dist.CLIENT)
 public final class TcShieldRunesParticle extends TextureSheetParticle {
 
+    /** The 15 hemis/ripple frames of the strip (FXShieldRunes.java:59-67). */
+    static final int FRAMES = 15;
+
     private final SpriteSet sprites;
     private final TcShieldOptions options;
-    private final int frameCount;
+    private final int frameCount = FRAMES;
 
     TcShieldRunesParticle(final ClientLevel level, final TcShieldOptions options,
             final SpriteSet sprites) {
         super(level, 0.0, 0.0, 0.0);
         this.sprites = sprites;
         this.options = options;
-        this.frameCount = sprites.size();
         this.lifetime = options.lifetime();
         this.gravity = 0.0F;
         this.friction = 1.0F;
         this.hasPhysics = false;                        // noClip true (FXShieldRunes.java:34)
-        this.quadAlpha = 1.0F;
+        this.alpha = 1.0F;
         this.setSprite(sprites.get(0, this.frameCount));
     }
 
@@ -58,7 +60,7 @@ public final class TcShieldRunesParticle extends TextureSheetParticle {
     public void tick() {
         final Entity target = this.level.getEntity(this.options.targetEntityId());
         if (target == null || this.age++ >= this.lifetime) {
-            this.kill();
+            this.remove();
             return;
         }
         // Ctor anchor (lines 41-43): x/z are the entity's, y the AABB centre.
@@ -72,7 +74,7 @@ public final class TcShieldRunesParticle extends TextureSheetParticle {
         this.rCol = b;
         this.gCol = b;
         this.bCol = b;
-        this.quadAlpha = Math.min(1.0F, (1.0F - fade) * 3.0F);
+        this.alpha = Math.min(1.0F, (1.0F - fade) * 3.0F);
         this.quadSize = 0.4F * target.getBbHeight();        // render line 75
     }
 

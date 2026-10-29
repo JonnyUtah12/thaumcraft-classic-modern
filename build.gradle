@@ -241,9 +241,11 @@ def originalParticlePatches = [
 // (FXShieldRunes.java:59-67, FXSonic.java:57-59); the particle atlas needs
 // them as sprites, so the files are copied under frame-indexed names.
 def originalParticleFiles = [
-        'shield_runes'    : (1..15).collect { "${originalAssetsDir}/thaumcraft/textures/models/hemis${it}.png" },
-        'shield_runes_mob': (1..15).collect { "${originalAssetsDir}/thaumcraft/textures/models/ripple${it}.png" },
-        'sonic'           : (1..15).collect { "${originalAssetsDir}/thaumcraft/textures/models/ripple${it}.png" },
+        'shield_runes': (1..15).collect { "${originalAssetsDir}/thaumcraft/textures/models/hemis${it}.png" },
+        // FXShieldRunes' mob branch and FXSonic bind the SAME rippleN frames
+        // (FXShieldRunes.java:61-64, FXSonic.java:59), so one sliced frame set
+        // serves both particle definitions — thaumcraft:particle/ripple_0..14.
+        'ripple'      : (1..15).collect { "${originalAssetsDir}/thaumcraft/textures/models/ripple${it}.png" },
 ]
 
 def sliceOriginalParticleSprites = tasks.register("sliceOriginalParticleSprites") {
@@ -258,6 +260,10 @@ def sliceOriginalParticleSprites = tasks.register("sliceOriginalParticleSprites"
     doLast {
         def out = originalParticleSpritesDir.get().asFile
         def spriteDir = new File(out, 'assets/thaumcraft/textures/particle')
+        // The maps above are the source of truth: clear the directory first so a
+        // frame set that gets renamed/merged cannot leave orphan sprites in the
+        // jar (ParticleSpriteSlicingTest fails on any orphan).
+        if (spriteDir.exists()) { spriteDir.deleteDir() }
         spriteDir.mkdirs()
         def image = javax.imageio.ImageIO.read(originalParticleSheet)
         if (image == null) { throw new GradleException("cannot decode ${originalParticleSheet}") }
@@ -354,6 +360,8 @@ tasks.named('test', Test).configure {
             file('src/main/resources/assets/thaumcraft/particles').absolutePath
     systemProperty 'tc.originalParticleSpritesDir',
             layout.buildDirectory.dir('generated/resources/original-particles').get().asFile.absolutePath
+    systemProperty 'tc.originalParticleSourceDir',
+            file("${originalAssetsDir}/thaumcraft/textures").absolutePath
     systemProperty 'tc.configReferenceFile',
             file('docs/config-reference.md').absolutePath
     systemProperty 'tc.contentMappingFile',

@@ -4,8 +4,8 @@ import com.jonnyutah12.thaumcraftclassic.registration.ModParticles;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.BlockParticleOptions;
-import net.minecraft.core.particles.ItemParticleOptions;
+import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.Mth;
@@ -459,7 +459,7 @@ public final class TcFxPlans {
      * <p>1.21.1 mapping: block crumbs ride the vanilla {@code block}
      * particle ({@link ParticleTypes#BLOCK}), items the vanilla {@code item}
      * particle ({@link ParticleTypes#ITEM}) — the original's own texture-paged
-     * 2D crumb has no 1.21.1 billboard equivalent (BD row). The original's
+     * 2D crumb has no 1.21.1 billboard equivalent (BD-18). The original's
      * block metadata (1.7 side-tinted icons) selects the modern
      * {@link BlockState} directly.</p>
      */
@@ -487,10 +487,10 @@ public final class TcFxPlans {
             final double vz = rand.nextGaussian() * BORE_DRIFT;
             if (stack == null || stack.isEmpty()) {
                 plan.add(new ParticleSpawn(ParticleTypes.BLOCK,
-                        new BlockParticleOptions(state), x, y, z, vx, vy, vz));
+                        new BlockParticleOption(ParticleTypes.BLOCK, state), x, y, z, vx, vy, vz));
             } else {
                 plan.add(new ParticleSpawn(ParticleTypes.ITEM,
-                        new ItemParticleOptions(stack), x, y, z, vx, vy, vz));
+                        new ItemParticleOption(ParticleTypes.ITEM, stack), x, y, z, vx, vy, vz));
             }
             if (lifetime < 0) {
                 break; // unreachable; keeps the draw count honest
@@ -591,8 +591,8 @@ public final class TcFxPlans {
      * scale, lifetime, 3 drift gaussians, ctor green roll, setColor green
      * roll. The particle scale is 0.3 absolute via
      * {@code func_82338_g(0.3F)} — the 1.21.1 quad has no OBJ model,
-     * documented as the billboard approximation (BD row, shared with the
-     * shield runes).</p>
+     documented as the billboard approximation (BD-17, shared with
+          * the shield runes).
      */
     public static List<ParticleSpawn> infusionPlayerTick(final int mx, final int my, final int mz,
             final double px, final double pyMinY, final double pz, final double width,
@@ -674,10 +674,10 @@ public final class TcFxPlans {
                 vy = rand.nextGaussian() * BORE_ITEM_DRIFT;
                 vz = rand.nextGaussian() * BORE_ITEM_DRIFT;
                 plan.add(new ParticleSpawn(ParticleTypes.ITEM,
-                        new ItemParticleOptions(pedestalStack), x, y, z, vx, vy, vz));
+                        new ItemParticleOption(ParticleTypes.ITEM, pedestalStack), x, y, z, vx, vy, vz));
             } else {
                 plan.add(new ParticleSpawn(ParticleTypes.BLOCK,
-                        new BlockParticleOptions(pedestalBlockState), x, y, z, vx, vy, vz));
+                        new BlockParticleOption(ParticleTypes.BLOCK, pedestalBlockState), x, y, z, vx, vy, vz));
             }
         }
         return plan;
@@ -732,7 +732,7 @@ public final class TcFxPlans {
      * <p>The mob branch (ripple frames, b 0.5, FXShieldRunes.java:61-64) is
      * the {@code thaumcraft:shield_runes_mob} type; the 1.7.10 tree renders
      * the hemis/ripple frames on an OBJ shell (hemis.obj) — the billboard
-     * quad is the documented approximation (BD row).</p>
+     * quad is the documented approximation (BD-17).</p>
      */
     public static List<ParticleSpawn> shieldRune(final int targetEntityId, final float yaw,
             final float pitch, final boolean mob) {
@@ -751,6 +751,34 @@ public final class TcFxPlans {
         return List.of(new ParticleSpawn(ModParticles.SONIC.get(),
                 new TcSonicOptions(targetEntityId, SONIC_LIFETIME),
                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0));
+    }
+
+    // ----- the bolt senders (PacketFXZap / PacketFXWispZap) -----
+
+    /** {@code new FXLightningBolt(..., 6, 0.5F, 8)}: the segment count (PacketFXZap.java:53-55). */
+    public static final int BOLT_SEGMENTS = 6;
+    /** The bolt's diameter param, the {@code 0.5F} of the same ctor call. */
+    public static final float BOLT_DIAMETER = 0.5F;
+    /** The bolt's lifetime, the {@code 8} of the same ctor call. */
+    public static final int BOLT_LIFETIME = 8;
+    /** {@code bolt.setType(2)} (PacketFXZap.java:59). */
+    public static final int BOLT_TYPE = 2;
+    /** {@code bolt.setWidth(0.125F)} (PacketFXZap.java:60). */
+    public static final float BOLT_WIDTH = 0.125F;
+
+    /**
+     * {@code PacketFXZap.onMessage} / {@code PacketFXWispZap.onMessage}
+     * (PacketFXZap.java:44-62, PacketFXWispZap.java:41-46 -> {@code ClientProxy.bolt}):
+     * the bolt between two entities, endpoints at
+     * {@code (x, AABB.minY + height/2, z)} of each, seed drawn from the world
+     * random ({@code world.rand.nextLong()}) inside the argument list. The bolt
+     * is world-rendered geometry, not a particle: the plan is the testable
+     * half, the fractal strip is TC-M7-02-b-s's renderer.
+     */
+    public static TcBoltPlan boltPlan(final double fromX, final double fromY, final double fromZ,
+            final double toX, final double toY, final double toZ, final long seed) {
+        return new TcBoltPlan(fromX, fromY, fromZ, toX, toY, toZ, seed,
+                BOLT_SEGMENTS, BOLT_DIAMETER, BOLT_LIFETIME, BOLT_TYPE, BOLT_WIDTH);
     }
 
     /** Extracts the 0..1 red channel of a packed colour. */

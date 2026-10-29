@@ -13,7 +13,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * The ported vis-drain sparkle (TC-M7-02-c-s): one {@code FXVisSparkle}
  * (reference/decompiled/thaumcraft/thaumcraft/client/fx/particles/FXVisSparkle.java).
  *
- * <p>{@code tick()} transcribes {@code onUpdate} (lines 47-83): 0.985 drag
+ * <p>{@code tick()} transcribes {@code onUpdate} (lines 68-96): 0.985 drag
  * and a 0.1/tick attraction toward the target clamped to ±0.1 (the drain
  * motes stream slowly in), the 0.95 scale shrink inside 2 blocks, the
  * "arrival" kill at distance &lt; 0.2, and the growth ramp
@@ -21,11 +21,13 @@ import net.neoforged.api.distmarker.OnlyIn;
  * ctor's 1000-tick cap (the mote's real end is arrival). No-clip
  * ({@code field_70145_X = true}, line 32).</p>
  *
- * <p>Render (lines 44-84): fullbright 16-frame strip (particles.png cells
- * 128..143, {@code age % 16}), quad half-extent {@code 0.1 * scale} times a
- * {@code sin(age/3)*0.3 + 6} vertical bob — reproduced with the modern
- * per-axis quad extents (the spark renders 6.3× taller than wide).
- * The 64/32 render-distance cull rides the platform's culling (BD-15).</p>
+ * <p>Render (lines 45-66): fullbright 16-frame strip (particles.png cells
+ * 128..143, {@code part = age % 16}, {@code u = part/16}, {@code v = 0.5}),
+ * vertex alpha 0.5, and a square billboard whose half-extent is
+ * {@code 0.1 * particleScale * bob} with {@code bob = sin(age/3)*0.3 + 6} —
+ * the bob scales the whole spark, not one axis (all four corners use the same
+ * {@code var12}). The 64/32 render-distance cull of lines 38-43 rides the
+ * platform's culling (BD-15 precedent).</p>
  */
 @OnlyIn(Dist.CLIENT)
 public final class TcVisSparkleParticle extends TextureSheetParticle {
@@ -39,6 +41,9 @@ public final class TcVisSparkleParticle extends TextureSheetParticle {
     /** {@code sizeMod} range: 45 + nextInt(15) (FXVisSparkle.java:29). */
     static final int SIZE_MOD_BASE = 45;
     static final int SIZE_MOD_SPAN = 15;
+
+    /** The 16 frames of the strip (FXVisSparkle.java:49-53). */
+    static final int FRAMES = 16;
 
     private final SpriteSet sprites;
     private final TcVisSparkleOptions options;
@@ -57,17 +62,17 @@ public final class TcVisSparkleParticle extends TextureSheetParticle {
         this.rCol = TcFxPlans.red(options.color());
         this.gCol = TcFxPlans.green(options.color());
         this.bCol = TcFxPlans.blue(options.color());
-        this.quadAlpha = 0.5F;
-        this.setSprite(sprites.get(0, sprites.size()));
+        this.alpha = 0.5F;                     // tessellator color alpha (line 60)
+        this.setSpriteFromAge(sprites);
     }
 
     @Override
     public void tick() {
-        this.xOld = this.x;
-        this.yOld = this.y;
-        this.zOld = this.z;
+        this.xo = this.x;
+        this.yo = this.y;
+        this.zo = this.z;
         if (this.age++ >= this.lifetime) {
-            this.kill();
+            this.remove();
             return;
         }
         this.move(this.xd, this.yd, this.zd);
@@ -82,7 +87,7 @@ public final class TcVisSparkleParticle extends TextureSheetParticle {
             this.scale *= 0.95F;
         }
         if (d < 0.2) {
-            this.kill();                       // FXVisSparkle.java:63-65: lifetime = age
+            this.remove();                     // FXVisSparkle.java:63-65: lifetime = age
             return;
         }
         if (this.age < 10) {
@@ -93,14 +98,13 @@ public final class TcVisSparkleParticle extends TextureSheetParticle {
             this.yd = clamp01(this.yd + dy / d * 0.1);
             this.zd = clamp01(this.zd + dz / d * 0.1);
         }
+        // Render-side bob and frame (FXVisSparkle.java:46, 49, 52).
         final float bob = (float) Math.sin(this.age / 3.0) * 0.3F + 6.0F;
-        final float extent = 0.1F * this.scale;
-        this.quadSizeU = extent;
-        this.quadSizeV = extent * bob;
-        this.setSprite(this.sprites.get(this.age % 16, 16));
+        this.quadSize = 0.1F * this.scale * bob;
+        this.setSprite(this.sprites.get(this.age % FRAMES, FRAMES));
     }
 
-    /** {@code MathHelper.clampFloat(v, -0.1, 0.1)} (FXVisSparkle.java:78-80). */
+    /** {@code MathHelper.clampFloat(v, -0.1, 0.1)} (FXVisSparkle.java:94-96). */
     private static double clamp01(final double v) {
         return Math.max(-0.1, Math.min(0.1, v));
     }

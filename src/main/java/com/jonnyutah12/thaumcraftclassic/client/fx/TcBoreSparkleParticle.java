@@ -42,25 +42,24 @@ public final class TcBoreSparkleParticle extends TextureSheetParticle {
         this.rCol = TcFxPlans.red(options.color());
         this.gCol = TcFxPlans.green(options.color());
         this.bCol = TcFxPlans.blue(options.color());
-        this.quadAlpha = 0.75F;
-        this.setSprite(sprites.get(0, sprites.size()));
+        this.alpha = 0.75F;
+        this.setSpriteFromAge(sprites);
     }
 
     @Override
     public void tick() {
-        this.xOld = this.x;
-        this.yOld = this.y;
-        this.zOld = this.z;
+        this.xo = this.x;
+        this.yo = this.y;
+        this.zo = this.z;
         // FXBoreSparkle.java:94-97: alive only while age < life AND some axis's
         // block coord still differs from the target's.
         if (this.age++ >= this.lifetime
                 || (Math.floor(this.x) == Math.floor(this.options.targetX())
                         && Math.floor(this.y) == Math.floor(this.options.targetY())
                         && Math.floor(this.z) == Math.floor(this.options.targetZ()))) {
-            this.kill();
+            this.remove();
             return;
         }
-        this.pushOutOfBlocks(this.x, this.y, this.z);
         this.move(this.xd, this.yd, this.zd);
         this.xd *= 0.985;
         this.yd *= 0.985;

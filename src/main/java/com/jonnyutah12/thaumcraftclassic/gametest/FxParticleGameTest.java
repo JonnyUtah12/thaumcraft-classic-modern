@@ -3,10 +3,18 @@ package com.jonnyutah12.thaumcraftclassic.gametest;
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.client.fx.FxParticleCounts;
 import com.jonnyutah12.thaumcraftclassic.client.fx.ParticleSpawn;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcBoreSparkleOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcBubbleOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcEffects;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcEssentiaTrailOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcFxPlans;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcShieldOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcSonicOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcSparkleOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcVisSparkleOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispArcingOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispEgOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispOptions;
 import com.jonnyutah12.thaumcraftclassic.registration.ModParticles;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -40,25 +48,40 @@ public final class FxParticleGameTest {
     private FxParticleGameTest() {
     }
 
-    /** The two ported particle types must be live in the registry. */
+    /** Every ported particle type must be live in the registry. */
     @GameTest(template = "empty")
     public static void portedParticleTypesRegistered(GameTestHelper helper) {
-        for (String path : new String[] {"sparkle", "bubble"}) {
+        for (String path : new String[] {"sparkle", "bubble",
+                "wisp", "wisp_eg", "wisp_arcing",
+                "vis_sparkle", "bore_sparkle", "essentia_trail",
+                "shield_runes", "shield_runes_mob", "sonic"}) {
             ResourceLocation id = ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, path);
             helper.assertTrue(BuiltInRegistries.PARTICLE_TYPE.containsKey(id),
                     "particle type " + id + " is not in the registry");
         }
-        // The whole slice: the mod registers exactly the two particle types this
-        // card scopes, no more (on the pre-change tree this is 0).
+        // The whole slice (TC-M7-02-s + TC-M7-02-c-s): the mod registers exactly
+        // these particle types, no more (on the pre-slice tree this was 0).
         long registered = BuiltInRegistries.PARTICLE_TYPE.holders()
                 .filter(key -> ThaumcraftClassic.MOD_ID.equals(key.key().location().getNamespace()))
                 .count();
-        helper.assertTrue(registered == 2,
-                "thaumcraft-namespace particle types must be the 2 ported ones, found " + registered);
+        helper.assertTrue(registered == 11,
+                "thaumcraft-namespace particle types must be the 11 ported ones, found " + registered);
         helper.assertTrue(ModParticles.SPARCLE.get().codec() == TcSparkleOptions.MAP_CODEC,
                 "sparkle type must decode through TcSparkleOptions.MAP_CODEC");
         helper.assertTrue(ModParticles.BUBBLE.get().codec() == TcBubbleOptions.MAP_CODEC,
                 "bubble type must decode through TcBubbleOptions.MAP_CODEC");
+        // The codec identity check is the wire contract: a packet that ships a
+        // wisp payload must decode back into the same record the plan built.
+        helper.assertTrue(ModParticles.WISP.get().codec() == TcWispOptions.MAP_CODEC
+                        && ModParticles.WISP_EG.get().codec() == TcWispEgOptions.MAP_CODEC
+                        && ModParticles.WISP_ARCING.get().codec() == TcWispArcingOptions.MAP_CODEC
+                        && ModParticles.VIS_SPARKLE.get().codec() == TcVisSparkleOptions.MAP_CODEC
+                        && ModParticles.BORE_SPARKLE.get().codec() == TcBoreSparkleOptions.MAP_CODEC
+                        && ModParticles.ESSENTIA_TRAIL.get().codec() == TcEssentiaTrailOptions.MAP_CODEC
+                        && ModParticles.SHIELD_RUNES.get().codec() == TcShieldOptions.MAP_CODEC
+                        && ModParticles.SHIELD_RUNES_MOB.get().codec() == TcShieldOptions.MAP_CODEC
+                        && ModParticles.SONIC.get().codec() == TcSonicOptions.MAP_CODEC,
+                "every ported type must decode through its own options record");
         helper.succeed();
     }
 

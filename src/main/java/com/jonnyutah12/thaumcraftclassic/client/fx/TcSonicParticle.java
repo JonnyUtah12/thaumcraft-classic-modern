@@ -22,21 +22,23 @@ import net.neoforged.api.distmarker.OnlyIn;
  * particle billboard at the render's {@code 0.25 * bbHeight} scale (line
  * 67) — the original's OBJ plane, offset {@code 2 * bbHeight + width/2}
  * along the entity's facing (line 66), is the same documented billboard
- * approximation as the shield runes (BD row).</p>
+ * approximation as the shield runes (BD-17).</p>
  */
 @OnlyIn(Dist.CLIENT)
 public final class TcSonicParticle extends TextureSheetParticle {
 
+    /** The 15 ripple frames of the strip (FXSonic.java:57-59). */
+    static final int FRAMES = 15;
+
     private final SpriteSet sprites;
     private final TcSonicOptions options;
-    private final int frameCount;
+    private final int frameCount = FRAMES;
 
     TcSonicParticle(final ClientLevel level, final TcSonicOptions options,
             final SpriteSet sprites) {
         super(level, 0.0, 0.0, 0.0);
         this.sprites = sprites;
         this.options = options;
-        this.frameCount = sprites.size();
         this.lifetime = options.lifetime();
         this.gravity = 0.0F;
         this.friction = 1.0F;
@@ -44,7 +46,7 @@ public final class TcSonicParticle extends TextureSheetParticle {
         this.rCol = 0.5F;                               // render line 60: b = 0.5
         this.gCol = 0.5F;
         this.bCol = 0.5F;
-        this.quadAlpha = 1.0F;                          // render line 68: alpha 1
+        this.alpha = 1.0F;                          // render line 68: alpha 1
         this.setSprite(sprites.get(0, this.frameCount));
     }
 
@@ -52,7 +54,7 @@ public final class TcSonicParticle extends TextureSheetParticle {
     public void tick() {
         final Entity target = this.level.getEntity(this.options.targetEntityId());
         if (target == null || this.age++ >= this.lifetime) {
-            this.kill();
+            this.remove();
             return;
         }
         // Ctor anchor (FXSonic.java:37-39): the eye height.

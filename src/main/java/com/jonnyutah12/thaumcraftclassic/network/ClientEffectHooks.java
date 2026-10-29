@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
@@ -314,12 +315,51 @@ public final class ClientEffectHooks {
                 pos.getX(), pos.getY(), pos.getZ(), color, RandomSource.create());
     }
 
+    /**
+     * TC-M7-02-c-s WIRED (sender half): the original's
+     * {@code PacketFXWispZap.onMessage} (PacketFXWispZap.java:41-46) resolves
+     * the source and target entities and calls
+     * {@code Thaumcraft.proxy.bolt(world, source, target)} — the same
+     * {@code FXLightningBolt} the zap packet builds (PacketFXZap.java:44-62).
+     * The bolt is world-rendered line-strip geometry, so the plan (endpoints +
+     * bolt parameters, the reference-measurable half) goes to
+     * {@link TcEffects#bolt} and the strip itself is TC-M7-02-b-s's renderer.
+     */
     static void fxWispZap(final int sourceEntityId, final int targetEntityId) {
         LOGGER.debug("fx wisp zap {} -> {}", sourceEntityId, targetEntityId);
+        boltBetween(sourceEntityId, targetEntityId);
     }
 
+    /**
+     * TC-M7-02-c-s WIRED (sender half): {@code PacketFXZap.onMessage}
+     * (PacketFXZap.java:44-62) — the entity-to-entity lightning bolt, the same
+     * {@code proxy.bolt} call as the wisp zap. See {@link #fxWispZap}.
+     */
     static void fxZap(final int sourceEntityId, final int targetEntityId) {
         LOGGER.debug("fx zap {} -> {}", sourceEntityId, targetEntityId);
+        boltBetween(sourceEntityId, targetEntityId);
+    }
+
+    /**
+     * {@code Thaumcraft.proxy.bolt}: both entities' AABB centres
+     * ({@code e.posX, e.getEntityBoundingBox().minY + e.height / 2, e.posZ})
+     * plus a {@code world.rand.nextLong()} seed. The original bails when either
+     * entity is missing.
+     */
+    private static void boltBetween(final int sourceEntityId, final int targetEntityId) {
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        final Entity source = mc.level.getEntity(sourceEntityId);
+        final Entity target = mc.level.getEntity(targetEntityId);
+        if (source == null || target == null) {
+            return;
+        }
+        TcEffects.bolt(mc.level, TcFxPlans.boltPlan(
+                source.getX(), source.getBoundingBox().minY + source.getBbHeight() / 2.0, source.getZ(),
+                target.getX(), target.getBoundingBox().minY + target.getBbHeight() / 2.0, target.getZ(),
+                mc.level.getRandom().nextLong()));
     }
 
     static void fxBeamPulse(final int sourceEntityId, final int targetEntityId, final int color) {

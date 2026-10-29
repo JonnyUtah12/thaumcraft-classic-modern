@@ -44,18 +44,18 @@ public final class TcWispArcingParticle extends TextureSheetParticle {
         this.rCol = TcFxPlans.red(options.color());
         this.gCol = TcFxPlans.green(options.color());
         this.bCol = TcFxPlans.blue(options.color());
-        this.quadAlpha = 0.5F;
+        this.alpha = 0.5F;
         this.hasPhysics = false;   // parametric position: no collision, no motion
         this.friction = 1.0F;
         this.gravity = 0.0F;
-        this.setSprite(sprites.get(0, sprites.size()));
+        this.setSpriteFromAge(sprites);
     }
 
     @Override
     public void tick() {
-        this.xOld = this.x;
-        this.yOld = this.y;
-        this.zOld = this.z;
+        this.xo = this.x;
+        this.yo = this.y;
+        this.zo = this.z;
         // FXWispArcing.java:96-102, transcribed (note: computed with the
         // pre-increment age, then the post-increment kill check runs).
         double var1 = 1.0 - (double) this.age / this.lifetime;
@@ -65,7 +65,7 @@ public final class TcWispArcingParticle extends TextureSheetParticle {
         this.y = this.startY + this.options.deltaY() * var1 - var2 + 1.0;
         this.z = this.startZ + this.options.deltaZ() * var1;
         if (this.age++ >= this.lifetime) {
-            this.kill();
+            this.remove();
             return;
         }
         float agescale = (float) this.age / this.halfLife;

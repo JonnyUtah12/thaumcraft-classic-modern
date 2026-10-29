@@ -74,20 +74,20 @@ public final class TcWispParticle extends TextureSheetParticle {
         this.gCol = TcFxPlans.green(options.color());
         this.bCol = TcFxPlans.blue(options.color());
         // FXWisp renders with vertex alpha 0.5 under the sheet's 0.75 glColor4f.
-        this.quadAlpha = 0.5F;
+        this.alpha = 0.5F;
         // The original is a colliding EntityFX (noClip false, FXWisp.java:49);
         // wispFX2 sets noClip = clip (ClientProxy.java:706, field_70145_X).
         this.hasPhysics = !options.clip();
         this.friction = 1.0F;    // the drag lives in tick(): the base tick must not double it
         this.gravity = (float) options.gravity();
-        this.setSprite(sprites.get(0, sprites.size()));
+        this.setSpriteFromAge(sprites);
     }
 
     @Override
     public void tick() {
-        this.xOld = this.x;
-        this.yOld = this.y;
-        this.zOld = this.z;
+        this.xo = this.x;
+        this.yo = this.y;
+        this.zo = this.z;
         if (this.age == 0 && this.options.tinkle() && this.random.nextInt(3) == 0) {
             // FXWisp.java:168-173: world rand, volume 0.02, pitch 0.5*((r-r)*0.6+2).
             final float pitch = 0.5F * ((this.random.nextFloat() - this.random.nextFloat()) * 0.6F + 2.0F);
@@ -97,13 +97,14 @@ public final class TcWispParticle extends TextureSheetParticle {
                     net.minecraft.sounds.SoundSource.PLAYERS, 0.02F, pitch, true);
         }
         if (this.age++ >= this.lifetime) {
-            this.kill();
+            this.remove();
             return;
         }
         this.yd -= 0.04 * this.gravity;
-        if (this.hasPhysics) {
-            this.pushOutOfBlocks(this.x, this.y, this.z);
-        }
+        // FXWisp.java:180-182 pushOutOfBlocks has no 1.21.1 counterpart: the
+        // Particle base class is not an Entity and carries no block-collision
+        // push-out (BD-16 in docs/BEHAVIORAL_DEVIATIONS.md). The collision of
+        // the integration below is the platform's own (hasPhysics).
         this.move(this.xd, this.yd, this.zd);
         if (this.target != null) {
             this.xd *= 0.985;

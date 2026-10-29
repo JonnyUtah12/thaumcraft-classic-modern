@@ -48,18 +48,18 @@ public final class TcWispEgParticle extends TextureSheetParticle {
         this.gCol = TcFxPlans.green(options.color());
         this.bCol = TcFxPlans.blue(options.color());
         this.quadSize = 0.5F * 0.1F * TcWispEgOptions.SCALE;  // particleScale = 0.1 * 0.4
-        this.quadAlpha = 0.2F;                                 // ctor alpha base (agescale applied per tick)
+        this.alpha = 0.2F;                                 // ctor alpha base (agescale applied per tick)
         this.hasPhysics = true;                                // noClip false (FXWispEG.java:27)
         this.friction = 1.0F;
         this.gravity = 0.0F;
-        this.setSprite(sprites.get(0, sprites.size()));
+        this.setSpriteFromAge(sprites);
     }
 
     @Override
     public void tick() {
-        this.xOld = this.x;
-        this.yOld = this.y;
-        this.zOld = this.z;
+        this.xo = this.x;
+        this.yo = this.y;
+        this.zo = this.z;
         final Entity target = this.targetId == TcWispOptions.NO_TARGET
                 ? null : this.level.getEntity(this.targetId);
         if (target != null && !this.onGround) {
@@ -67,7 +67,6 @@ public final class TcWispEgParticle extends TextureSheetParticle {
             this.x += target.getDeltaMovement().x;
             this.z += target.getDeltaMovement().z;
         }
-        this.pushOutOfBlocks(this.x, this.y, this.z);
         this.move(this.xd, this.yd, this.zd);
         this.xd *= 0.98;
         this.yd *= 0.98;
@@ -77,12 +76,12 @@ public final class TcWispEgParticle extends TextureSheetParticle {
             this.zd *= 0.85;
         }
         if (this.age++ >= this.lifetime) {
-            this.kill();
+            this.remove();
             return;
         }
         // Render-side age fade + 13-frame strip (FXWispEG.java:47, 53, 59).
         final float agescale = 1.0F - (float) this.age / this.lifetime;
-        this.quadAlpha = 0.2F * Math.max(0.0F, agescale);
+        this.alpha = 0.2F * Math.max(0.0F, agescale);
         this.setSprite(this.sprites.get(this.age % 13, 13));
     }
 

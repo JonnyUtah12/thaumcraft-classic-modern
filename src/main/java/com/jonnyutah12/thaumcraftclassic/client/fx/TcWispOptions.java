@@ -62,22 +62,40 @@ public record TcWispOptions(int color, float scale, double gravity, int lifetime
                     Codec.BOOL.fieldOf("clip").forGetter(TcWispOptions::clip))
                     .apply(instance, TcWispOptions::new));
 
-    /** The wire shape of the spawn, in the same field order as {@link #MAP_CODEC}. */
+    /**
+     * The wire shape of the spawn, in the same field order as
+     * {@link #MAP_CODEC}. Written by hand because {@code StreamCodec.composite}
+     * only ships overloads up to six fields and this payload has twelve.
+     */
     public static final StreamCodec<RegistryFriendlyByteBuf, TcWispOptions> STREAM_CODEC =
-            StreamCodec.composite(
-                    ByteBufCodecs.INT, TcWispOptions::color,
-                    ByteBufCodecs.FLOAT, TcWispOptions::scale,
-                    ByteBufCodecs.DOUBLE, TcWispOptions::gravity,
-                    ByteBufCodecs.VAR_INT, TcWispOptions::lifetime,
-                    ByteBufCodecs.DOUBLE, TcWispOptions::motX,
-                    ByteBufCodecs.DOUBLE, TcWispOptions::motY,
-                    ByteBufCodecs.DOUBLE, TcWispOptions::motZ,
-                    ByteBufCodecs.VAR_INT, TcWispOptions::targetEntityId,
-                    ByteBufCodecs.BOOL, TcWispOptions::shrink,
-                    ByteBufCodecs.BOOL, TcWispOptions::tinkle,
-                    ByteBufCodecs.BOOL, TcWispOptions::additive,
-                    ByteBufCodecs.BOOL, TcWispOptions::clip,
-                    TcWispOptions::new);
+            StreamCodec.of(
+                    (buf, options) -> {
+                        buf.writeInt(options.color());
+                        buf.writeFloat(options.scale());
+                        buf.writeDouble(options.gravity());
+                        buf.writeVarInt(options.lifetime());
+                        buf.writeDouble(options.motX());
+                        buf.writeDouble(options.motY());
+                        buf.writeDouble(options.motZ());
+                        buf.writeVarInt(options.targetEntityId());
+                        buf.writeBoolean(options.shrink());
+                        buf.writeBoolean(options.tinkle());
+                        buf.writeBoolean(options.additive());
+                        buf.writeBoolean(options.clip());
+                    },
+                    buf -> new TcWispOptions(
+                            buf.readInt(),
+                            buf.readFloat(),
+                            buf.readDouble(),
+                            buf.readVarInt(),
+                            buf.readDouble(),
+                            buf.readDouble(),
+                            buf.readDouble(),
+                            buf.readVarInt(),
+                            buf.readBoolean(),
+                            buf.readBoolean(),
+                            buf.readBoolean(),
+                            buf.readBoolean()));
 
     /** The 36-tick lifetime base of {@code FXWisp}'s ctor (FXWisp.java:45). */
     public static final int LIFETIME_BASE = 36;

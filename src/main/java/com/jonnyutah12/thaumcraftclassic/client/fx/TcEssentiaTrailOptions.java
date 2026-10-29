@@ -40,17 +40,30 @@ public record TcEssentiaTrailOptions(int color, double targetX, double targetY,
                     Codec.INT.fieldOf("lifetime").forGetter(TcEssentiaTrailOptions::lifetime))
                     .apply(instance, TcEssentiaTrailOptions::new));
 
-    /** The wire shape of the spawn, in the same field order as {@link #MAP_CODEC}. */
+    /**
+     * The wire shape of the spawn, in the same field order as
+     * {@link #MAP_CODEC}. Written by hand because {@code StreamCodec.composite}
+     * only ships overloads up to six fields and this payload has seven.
+     */
     public static final StreamCodec<RegistryFriendlyByteBuf, TcEssentiaTrailOptions> STREAM_CODEC =
-            StreamCodec.composite(
-                    ByteBufCodecs.INT, TcEssentiaTrailOptions::color,
-                    ByteBufCodecs.DOUBLE, TcEssentiaTrailOptions::targetX,
-                    ByteBufCodecs.DOUBLE, TcEssentiaTrailOptions::targetY,
-                    ByteBufCodecs.DOUBLE, TcEssentiaTrailOptions::targetZ,
-                    ByteBufCodecs.VAR_INT, TcEssentiaTrailOptions::count,
-                    ByteBufCodecs.FLOAT, TcEssentiaTrailOptions::scale,
-                    ByteBufCodecs.VAR_INT, TcEssentiaTrailOptions::lifetime,
-                    TcEssentiaTrailOptions::new);
+            StreamCodec.of(
+                    (buf, options) -> {
+                        buf.writeInt(options.color());
+                        buf.writeDouble(options.targetX());
+                        buf.writeDouble(options.targetY());
+                        buf.writeDouble(options.targetZ());
+                        buf.writeVarInt(options.count());
+                        buf.writeFloat(options.scale());
+                        buf.writeVarInt(options.lifetime());
+                    },
+                    buf -> new TcEssentiaTrailOptions(
+                            buf.readInt(),
+                            buf.readDouble(),
+                            buf.readDouble(),
+                            buf.readDouble(),
+                            buf.readVarInt(),
+                            buf.readFloat(),
+                            buf.readVarInt()));
 
     /** The ctor's lifetime distance factor {@code (int)(dist * 30.0F)} (line 28). */
     public static final double LIFETIME_DIST_FACTOR = 30.0;

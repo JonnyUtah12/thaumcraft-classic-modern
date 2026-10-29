@@ -156,9 +156,39 @@ to the sheet cell the original indexes — an off-by-one in `col = idx % 16` /
 `row = idx / 16` fails the test rather than shipping a wrong-looking particle,
 (3) no sliced sprite is left unnamed by a definition.
 
-The sheet's other 246 cells stay untouched: the FX families that index them
-(`FXBoreParticles`, `FXVisSparkle`, the wisp and beam art) are on their own
-cards, and slicing a cell no particle names would put dead art in every jar.
+The sheet's remaining cells stay untouched: the beam art and the cells no
+ported particle indexes are on their own cards, and slicing a cell no particle
+names would put dead art in every jar.
+
+### TC-M7-02-c-s: the other two slicing shapes (9 more particles, 66 more sprites)
+
+The rest of the FX families do not all read the sheet by cell number, so the
+build task gained two more shapes (all three are pixel-checked by
+`ParticleSpriteSlicingTest`, and the task clears its output directory first so
+a renamed frame set cannot leave orphan sprites):
+
+| Shape | Ported particle | Original address site | Sliced sprites |
+| --- | --- | --- | --- |
+| sheet cell | `thaumcraft:vis_sparkle` | `FXVisSparkle` pages the sheet at `u = part/16, v = 0.5`, `part = age % 16` (FXVisSparkle.java) → cells 128..143 | `vis_sparkle_0..15` (16) |
+| sheet cell | `thaumcraft:bore_sparkle` | `FXBoreSparkle` at `u = part/16, v = 0.25`, `part = age % 4` → cells 64..67 | `bore_sparkle_0..3` (4) |
+| sheet cell | `thaumcraft:essentia_trail` | `FXEssentiaTrail` binds one fixed cell: `u = 0.5625, v = 0.0625` (FXEssentiaTrail.java:63-81) → cell 25; the FX has **no** frame animation (its `part` local, line 69, is dead code) | `essentia_trail_0` (1) |
+| sheet cell | `thaumcraft:wisp_arcing` | `FXWispArcing` at `u = 0, v = 0.875` → cell 224 (row 14, col 0) | `wisp_arcing_0` (1) |
+| rectangle inside a standalone texture | `thaumcraft:wisp` | `FXWisp` pages `textures/misc/wisp.png` (256×256) at `u 0..0.125, v 0.875..1.0` = a 32×32 cell at (0, 224) (FXWisp.java:152-154) | `wisp_0` (1) |
+| rectangles inside a standalone texture | `thaumcraft:wisp_eg` | `FXWispEG` pages `textures/misc/wispy.png` (512×128) at `u = (age % 13)/16 .. +0.0624`, `v 0.1875..0.25` = 13 strips of 32×8 at y = 24 (FXWispEG.java:60-62) | `wisp_eg_0..12` (13) |
+| whole-texture frame | `thaumcraft:shield_runes` | `FXShieldRunes` binds `textures/models/hemis<N>.png` per frame, N = 1..15 (FXShieldRunes.java:59-67) | `shield_runes_0..14` (15) |
+| whole-texture frame (shared) | `thaumcraft:shield_runes_mob` **and** `thaumcraft:sonic` | the `FXShieldRunes` mob branch (FXShieldRunes.java:61-64) and `FXSonic` (FXSonic.java:57-59) bind the **same** `textures/models/ripple<N>.png`, N = 1..15 — one sliced set serves both definitions | `ripple_0..14` (15) |
+
+Jar effect at this commit: `thaumcraft-0.1.0-alpha.4.jar` carries 11 particle
+definitions and 77 sliced sprites (9 sparkle + 2 bubble + 66 new). The four
+source textures the new families read (`misc/wisp.png`, `misc/wispy.png`,
+`models/hemis1..15.png`, `models/ripple1..15.png`) were already inventoried in
+`asset-mapping.csv` (they are referenced by the original's code path literals),
+so that CSV needs no new rows; `content-mapping.csv` has no fx/particle kind
+(closed 1048-row whitelist) and is untouched.
+
+The 1.7.10 mesh/OBJ side of these families (the `hemis`/`ripple` shells the
+runes and pulse are drawn on, the `RenderItem` crumb) is not part of the
+slicing — see BD-17/BD-18.
 
 ## Unused assets (42) — explicit, with reason
 

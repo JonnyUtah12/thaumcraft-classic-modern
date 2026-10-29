@@ -131,6 +131,19 @@ public final class TcEffects {
         return spawn(level, TcFxPlans.sonicPulse(targetEntityId));
     }
 
+    /**
+     * {@code Thaumcraft.proxy.bolt} (PacketFXZap.java:44-62,
+     * PacketFXWispZap.java:41-46): the zap / wisp-zap bolt between two
+     * entities. The 1.7.10 effect is a fractal line strip drawn by a world
+     * renderer ({@code FXLightningBolt.defaultFractal/finalizeBolt}), so it is
+     * not a {@code Level#addParticle} hand-off: the geometry travels as a
+     * {@link TcBoltPlan} and the beam/bolt lane (TC-M7-02-b-s) renders it.
+     * This is the seam the sender calls; it returns the plan unchanged.
+     */
+    public static TcBoltPlan bolt(final Level level, final TcBoltPlan plan) {
+        return plan;
+    }
+
     /** Spawns every planned particle and returns how many were requested. */
     public static int spawn(final Level level, final List<ParticleSpawn> plan) {
         for (final ParticleSpawn spawn : plan) {
