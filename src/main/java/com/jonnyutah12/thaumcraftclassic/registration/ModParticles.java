@@ -9,6 +9,9 @@ import com.jonnyutah12.thaumcraftclassic.client.fx.TcGlowSparkleOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcGolemBeamOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcParticleType;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcSparkleOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispArcingOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispEgOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispOptions;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.registries.Registries;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -57,23 +60,11 @@ public final class ModParticles {
             DeferredRegister.create(Registries.PARTICLE_TYPE, ThaumcraftClassic.MOD_ID);
 
     /**
-     * TC-M7-02-s: the ported generic sparkle. {@code isVelocityRelevant} is
-     * false because the original integrates the motion it was handed itself
-     * (FXGeneric sets its own motion fields), so the platform must not add
-     * relative velocity on top.
-     */
-    /**
      * TC-M7-02-c-s-f1: the wisp (the original's {@code FXWisp}, spawned by
      * {@code ClientProxy.wispFX/wispFX2/wispFX3/wispFX4}). Motion is fully
      * self-integrated: the original applies its own drags (0.985 homing /
      * 0.98 free / 0.7 ground) inside {@code onUpdate}, so the platform must
      * not add relative velocity on top.
-     */
-    /**
-     * TC-M7-02-s: the ported generic sparkle. {@code isVelocityRelevant} is
-     * false because the original integrates the motion it was handed itself
-     * (FXGeneric sets its own motion fields), so the platform must not add
-     * relative velocity on top.
      */
     public static final DeferredHolder<ParticleType<?>, ParticleType<TcWispOptions>> WISP =
             PARTICLE_TYPES.register("wisp",
@@ -94,6 +85,12 @@ public final class ModParticles {
                     () -> new TcParticleType<>(false, TcWispArcingOptions.MAP_CODEC,
                             TcWispArcingOptions.STREAM_CODEC));
 
+    /**
+     * TC-M7-02-s: the ported generic sparkle. {@code isVelocityRelevant} is
+     * false because the original integrates the motion it was handed itself
+     * (FXGeneric sets its own motion fields), so the platform must not add
+     * relative velocity on top.
+     */
     public static final DeferredHolder<ParticleType<?>, ParticleType<TcSparkleOptions>> SPARCLE =
             PARTICLE_TYPES.register("sparkle",
                     () -> new TcParticleType<>(false, TcSparkleOptions.MAP_CODEC, TcSparkleOptions.STREAM_CODEC));

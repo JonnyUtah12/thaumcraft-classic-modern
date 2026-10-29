@@ -38,6 +38,7 @@ public final class TcWispEgParticle extends TextureSheetParticle {
     /** {@code FXWispEG.java:57}: 13 frame indices, wrapping. */
     static final int FRAME_CYCLE = 13;
 
+    private final SpriteSet sprites;
     private final int targetEntityId;
 
     TcWispEgParticle(final ClientLevel level, final double x, final double y, final double z,
@@ -49,6 +50,7 @@ public final class TcWispEgParticle extends TextureSheetParticle {
         this.xd = vx;
         this.yd = vy;
         this.zd = vz;
+        this.sprites = sprites;
         this.targetEntityId = options.targetEntityId();
         this.rCol = TcFxPlans.red(options.color());
         this.gCol = TcFxPlans.green(options.color());
@@ -69,17 +71,17 @@ public final class TcWispEgParticle extends TextureSheetParticle {
         // FXWispEG.onUpdate (FXWispEG.java:62-83).
         if (this.targetEntityId != TcWispOptions.NO_TARGET) {
             final Entity target = this.level.getEntity(this.targetEntityId);
-            if (target != null && !this.onGround()) {
+            if (target != null && !this.onGround) {
                 // The mote rides the target's own velocity (lines 65-68).
                 this.setPos(this.x + target.getDeltaMovement().x, this.y,
                         this.z + target.getDeltaMovement().z);
             }
         }
-        this.pushOutOfBlocks(this.x, this.y, this.z);
+        this.pushOutOfBlocks();
         this.xd *= FxWispRules.FREE_DRAG;
         this.yd *= FxWispRules.FREE_DRAG;
         this.zd *= FxWispRules.FREE_DRAG;
-        if (this.onGround()) {
+        if (this.onGround) {
             this.xd *= FxWispRules.EG_GROUND_DRAG;
             this.zd *= FxWispRules.EG_GROUND_DRAG;
         }
@@ -90,13 +92,60 @@ public final class TcWispEgParticle extends TextureSheetParticle {
         final float base = this.cameraFade();
         final float ageScale = 1.0F - (float) this.age / (float) Math.max(1, this.lifetime);
         this.alpha = 0.75F * base * 0.2F * ageScale * base;
-        // FXWispEG.java:58: the frame index is age % 13 over the 13-frame cycle.
-        this.setSprite((this.age % FRAME_CYCLE) * spritesCount(sprites) / FRAME_CYCLE % Math.max(1, spritesCount(sprites)));
-        this.setSpriteFromAge(sprites);
+        // FXWispEG.java:59: the frame index is age % 13 over the 13-frame cycle
+        // (u = age%13/16, v = 0.1875 -> a 13-cell strip). SpriteSet.get(age,
+        // 13) indexes exactly that cycle over the wisp_eg.json frame list.
+        this.setSprite(this.sprites.get(this.age % FRAME_CYCLE, FRAME_CYCLE));
     }
 
-    private static int spritesCount(final SpriteSet sprites) {
-        return sprites.size();
+    /**
+     * The original's own push-out-of-blocks (FXWispEG.java:84, method at
+     * 99-183): the EG mote is unconditionally pushed out of a solid non-water
+     * cell (its {@code ignorePhysics} is never set), with the same
+     * rand*0.05+0.025 outward kick and (rand-rand)*0.1 side jitter as the
+     * base wisp — see {@link FxWispPush}.
+     */
+    private void pushOutOfBlocks() {
+        final int direction = FxWispPush.pushDirection(this.level, this.x, this.y, this.z);
+        if (direction == FxWispPush.NONE) {
+            return;
+        }
+        final double push = this.random.nextFloat() * 0.05 + 0.025;   // FXWispEG.java:147
+        final double jitter = (this.random.nextFloat() - this.random.nextFloat()) * 0.1;
+        switch (direction) {                                          // FXWispEG.java:149-177
+            case FxWispPush.WEST -> {
+                this.xd = -push;
+                this.yd = jitter;
+                this.zd = jitter;
+            }
+            case FxWispPush.EAST -> {
+                this.xd = push;
+                this.yd = jitter;
+                this.zd = jitter;
+            }
+            case FxWispPush.DOWN -> {
+                this.yd = -push;
+                this.xd = jitter;
+                this.zd = jitter;
+            }
+            case FxWispPush.UP -> {
+                this.yd = push;
+                this.xd = jitter;
+                this.zd = jitter;
+            }
+            case FxWispPush.NORTH -> {
+                this.zd = -push;
+                this.xd = jitter;
+                this.yd = jitter;
+            }
+            case FxWispPush.SOUTH -> {
+                this.zd = push;
+                this.xd = jitter;
+                this.yd = jitter;
+            }
+            default -> {
+            }
+        }
     }
 
     /** {@code 1 - min(1024, distanceSquaredToCamera)) / 1024} (FXWispEG.java:51-52). */

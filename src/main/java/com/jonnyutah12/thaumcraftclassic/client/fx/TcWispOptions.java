@@ -69,19 +69,42 @@ public record TcWispOptions(int color, float scale, int lifetime, int targetEnti
                     Codec.BOOL.fieldOf("additive").forGetter(TcWispOptions::additive))
                     .apply(instance, TcWispOptions::new));
 
+    /**
+     * The first six fields as a nested wire group. 1.21.1's
+     * {@code StreamCodec.composite} overloads cap at SIX fields (javap over
+     * the mapped {@code StreamCodec}: arities 1..6), and this payload has
+     * nine, so the wire shape composites this group with the last three
+     * fields. The byte order stays the {@link #MAP_CODEC} field order.
+     */
+    private record Core(int color, float scale, int lifetime, int targetEntityId,
+            boolean homing, boolean shrink) {
+    }
+
+    private Core core() {
+        return new Core(this.color, this.scale, this.lifetime, this.targetEntityId,
+                this.homing, this.shrink);
+    }
+
+    private static final StreamCodec<RegistryFriendlyByteBuf, Core> CORE_STREAM_CODEC =
+            StreamCodec.composite(
+                    ByteBufCodecs.INT, Core::color,
+                    ByteBufCodecs.FLOAT, Core::scale,
+                    ByteBufCodecs.VAR_INT, Core::lifetime,
+                    ByteBufCodecs.VAR_INT, Core::targetEntityId,
+                    ByteBufCodecs.BOOL, Core::homing,
+                    ByteBufCodecs.BOOL, Core::shrink,
+                    Core::new);
+
     /** The wire shape of the spawn, in the same field order as {@link #MAP_CODEC}. */
     public static final StreamCodec<RegistryFriendlyByteBuf, TcWispOptions> STREAM_CODEC =
             StreamCodec.composite(
-                    ByteBufCodecs.INT, TcWispOptions::color,
-                    ByteBufCodecs.FLOAT, TcWispOptions::scale,
-                    ByteBufCodecs.VAR_INT, TcWispOptions::lifetime,
-                    ByteBufCodecs.VAR_INT, TcWispOptions::targetEntityId,
-                    ByteBufCodecs.BOOL, TcWispOptions::homing,
-                    ByteBufCodecs.BOOL, TcWispOptions::shrink,
+                    CORE_STREAM_CODEC, TcWispOptions::core,
                     ByteBufCodecs.FLOAT, TcWispOptions::gravity,
                     ByteBufCodecs.BOOL, TcWispOptions::clip,
                     ByteBufCodecs.BOOL, TcWispOptions::additive,
-                    TcWispOptions::new);
+                    (core, gravity, clip, additive) -> new TcWispOptions(
+                            core.color(), core.scale(), core.lifetime(), core.targetEntityId(),
+                            core.homing(), core.shrink(), gravity, clip, additive));
 
     @Override
     public ParticleType<?> getType() {

@@ -37,7 +37,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * {@code yd -= 0.04 * gravity} is the same expression the 1.7.10 {@code EntityFX}
  * base tick has. The wisp's art is the vanilla {@code /misc/fx.png} sheet in
  * the original, which the reference tree does not ship, so it renders on the
- * Thaumcraft glow frames — see BD-16 in docs/BEHAVIORAL_DEVIATIONS.md.</p>
+ * Thaumcraft glow frames — see BD-17 in docs/BEHAVIORAL_DEVIATIONS.md.</p>
  */
 @OnlyIn(Dist.CLIENT)
 public final class TcWispParticle extends TextureSheetParticle {
@@ -88,8 +88,10 @@ public final class TcWispParticle extends TextureSheetParticle {
         super.tick();
         final Entity target = this.homing ? this.level.getEntity(this.targetEntityId) : null;
         if (this.hasPhysics) {
-            // FXWisp.java:146-148 — the same-named platform method.
-            this.pushOutOfBlocks(this.x, this.y, this.z);
+            // FXWisp.java:180-182 — the original's own pushOutOfBlocks, ported
+            // in FxWispPush; the original assigns the outward velocity right
+            // before the move, this tick applies it for the next one (BD-17).
+            this.pushOutOfBlocks();
         }
         if (target != null) {
             this.xd *= FxWispRules.HOMING_DRAG;
@@ -103,7 +105,7 @@ public final class TcWispParticle extends TextureSheetParticle {
                 // FXWisp.java:155-163. The original divides unguarded and gets
                 // NaN at distance 0; a wisp already on its target keeps its
                 // velocity instead (the only visible difference, documented in
-                // BD-16 — a NaN velocity makes the 1.21.1 particle engine drop
+                // BD-17 — a NaN velocity makes the 1.21.1 particle engine drop
                 // the whole spawn).
                 this.xd += dx / distance * FxWispRules.SEEK_ACCELERATION;
                 this.yd += dy / distance * FxWispRules.SEEK_ACCELERATION;
@@ -116,7 +118,7 @@ public final class TcWispParticle extends TextureSheetParticle {
             this.xd *= FxWispRules.FREE_DRAG;
             this.yd *= FxWispRules.FREE_DRAG;
             this.zd *= FxWispRules.FREE_DRAG;
-            if (this.onGround()) {
+            if (this.onGround) {
                 this.xd *= FxWispRules.GROUND_DRAG;
                 this.zd *= FxWispRules.GROUND_DRAG;
             }
@@ -124,6 +126,57 @@ public final class TcWispParticle extends TextureSheetParticle {
         // The render-time scale envelope (FXWisp.java:176-183).
         this.quadSize = 0.5F * this.moteScale * this.ageScale();
         this.setSpriteFromAge(this.sprites);
+    }
+
+    /**
+     * The original's own push-out-of-blocks (FXWisp.java:214-297): inside a
+     * solid non-water cell, the mote gets a small outward velocity
+     * (rand*0.05+0.025 on the push axis, a (rand-rand)*0.1 jitter on the two
+     * others — the original zeroes the other axes to the jitter). 1.21.1's
+     * {@code Particle} has no such method; the decision lives in
+     * {@link FxWispPush}, and the roll constants are the original's vars.
+     */
+    private void pushOutOfBlocks() {
+        final int direction = FxWispPush.pushDirection(this.level, this.x, this.y, this.z);
+        if (direction == FxWispPush.NONE) {
+            return;
+        }
+        final double push = this.random.nextFloat() * 0.05 + 0.025;   // FXWisp.java:262
+        final double jitter = (this.random.nextFloat() - this.random.nextFloat()) * 0.1;
+        switch (direction) {                                          // FXWisp.java:264-292
+            case FxWispPush.WEST -> {
+                this.xd = -push;
+                this.yd = jitter;
+                this.zd = jitter;
+            }
+            case FxWispPush.EAST -> {
+                this.xd = push;
+                this.yd = jitter;
+                this.zd = jitter;
+            }
+            case FxWispPush.DOWN -> {
+                this.yd = -push;
+                this.xd = jitter;
+                this.zd = jitter;
+            }
+            case FxWispPush.UP -> {
+                this.yd = push;
+                this.xd = jitter;
+                this.zd = jitter;
+            }
+            case FxWispPush.NORTH -> {
+                this.zd = -push;
+                this.xd = jitter;
+                this.yd = jitter;
+            }
+            case FxWispPush.SOUTH -> {
+                this.zd = push;
+                this.xd = jitter;
+                this.yd = jitter;
+            }
+            default -> {
+            }
+        }
     }
 
     /** {@code shrink ? (lifetime-age)/lifetime : min(age/halfLife, 2 - age/halfLife)}. */
