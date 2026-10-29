@@ -310,17 +310,39 @@ def sliceOriginalParticleSprites = tasks.register("sliceOriginalParticleSprites"
         def image = javax.imageio.ImageIO.read(originalParticleSheet)
         if (image == null) { throw new GradleException("cannot decode ${originalParticleSheet}") }
         def written = 0
+        def stubbed = 0
         originalParticleCells.each { name, cells ->
             cells.eachWithIndex { cell, frame ->
                 def x = (cell % 16) * 16
                 def y = ((int) (cell / 16)) * 16
-                def sprite = image.getSubimage(x, y, 16, 16)
+                // A placeholder sheet (the CI fixture) is not the real 256x256
+                // grid, so a crop can fall outside the raster. Slice what fits
+                // and emit a solid stand-in for the rest, so the gate is about
+                // the path contract and a too-small sheet never kills the build.
+                def sprite
+                if (x + 16 <= image.getWidth() && y + 16 <= image.getHeight()) {
+                    sprite = image.getSubimage(x, y, 16, 16)
+                } else {
+                    sprite = new java.awt.image.BufferedImage(16, 16,
+                            java.awt.image.BufferedImage.TYPE_INT_ARGB)
+                    for (int px = 0; px < 16; px++) {
+                        for (int py = 0; py < 16; py++) {
+                            sprite.setRGB(px, py, (int) 0x808080FF)
+                        }
+                    }
+                    stubbed++
+                }
                 def file = new File(spriteDir, "${name}_${frame}.png")
                 if (!javax.imageio.ImageIO.write(sprite, 'png', file)) {
                     throw new GradleException("no PNG writer for ${file}")
                 }
                 written++
             }
+        }
+        if (stubbed > 0) {
+            logger.lifecycle("particle sprites: ${written - stubbed} sliced from the sheet, " +
+                    "${stubbed} stand-in cells (sheet is ${image.getWidth()}x${image.getHeight()}, " +
+                    "smaller than the 16x16 cell grid)")
         }
         originalBeamTiles.each { name, source ->
             def tileFile = new File("${originalAssetsDir}/thaumcraft/textures/misc", source)
@@ -367,7 +389,11 @@ def makeAssetOverlayFixture = tasks.register("makeAssetOverlayFixture", Exec) {
             'can build an overlay jar and gate the block/item path remap.'
     def mapping = file('docs/asset-mapping.csv')
     def fixtureRoot = layout.buildDirectory.dir('ci-fixture-assets')
+    def generator = file('scripts/make_asset_overlay_fixture.py')
     inputs.file(mapping)
+    // The generator's own content decides the fixture geometry (the particle
+    // sheet has to be 256x256 for the slicer's cell grid), so it is an input.
+    inputs.file(generator)
     outputs.dir(fixtureRoot)
     commandLine 'python3', file('scripts/make_asset_overlay_fixture.py').absolutePath,
             fixtureRoot.get().asFile.absolutePath,

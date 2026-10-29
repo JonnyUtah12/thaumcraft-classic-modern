@@ -30,6 +30,33 @@ PNG_1X1 = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
 )
 
+
+def _png_rgba(width: int, height: int, rgba=(128, 128, 128, 255)) -> bytes:
+    """A solid RGBA PNG, built with zlib so the fixture needs no image library."""
+    import struct
+    import zlib
+
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        return (struct.pack(">I", len(data)) + tag + data
+                + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF))
+
+    row = b"\x00" + bytes(rgba) * width
+    raw = row * height
+    return (b"\x89PNG\r\n\x1a\n"
+            + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(raw, 6))
+            + chunk(b"IEND", b""))
+
+
+# The particle sheet is not a leaf asset: sliceOriginalParticleSprites crops a
+# 16x16 grid of 16 px cells out of it (cells 16, 17, 80..95, 112..120), so a 1x1
+# placeholder puts every crop outside the raster and the build dies with
+# "(x + width) is outside of Raster". The fixture therefore gives THIS one file
+# the geometry the build consumes (256x256, the 1.7.10 sheet's layout) and keeps
+# 1x1 placeholders everywhere else. Solid grey: placeholder content, no original
+# bytes (D-004).
+SHEET_GEOMETRY = {"textures/misc/particles.png": 256}
+
 # The sound transform reads this file; the fixture gives it the two camelCase
 # ids the build normalizes so the rename path is exercised too.
 SOUNDS_JSON = {
@@ -54,7 +81,11 @@ def main():
                 continue
             path = os.path.join(root, source.replace("/", os.sep))
             os.makedirs(os.path.dirname(path), exist_ok=True)
-            data = PNG_1X1 if path.endswith(".png") else (json.dumps({}) + "\n").encode()
+            if path.endswith(".png"):
+                size = SHEET_GEOMETRY.get(source)
+                data = _png_rgba(size, size) if size else PNG_1X1
+            else:
+                data = (json.dumps({}) + "\n").encode()
             with open(path, "wb") as out:
                 out.write(data)
             written[source] = target
