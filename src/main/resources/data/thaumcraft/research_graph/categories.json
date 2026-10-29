@@ -5,7 +5,7 @@
     {
       "key": "BASICS",
       "order": 0,
-      "icon": "thaumcraft:textures/items/thaumonomiconcheat.png",
+      "icon": "thaumcraft:textures/item/thaumonomiconcheat.png",
       "background": "thaumcraft:textures/gui/gui_researchback.png",
       "nameKey": "tc.research_category.BASICS",
       "nameEnUs": "Basic Information"

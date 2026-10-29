@@ -28,7 +28,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 /**
  * TC-M5-04-s-b1: the in-world acceptance for the taint CLEANSING slice — the
  * three things the cleansing half of TC-M5-04-s has to prove in a live world
- * (design record docs/architecture/taint.md, deviations BD-15 / BD-16).
+ * (design record docs/architecture/taint.md, deviations BD-17 / BD-18).
  *
  * <ol><li><b>The disc gate.</b> The bloom cleanses the columns inside its
  * radius and NEVER one beyond it: the scan box is {@code nextInt(8) -
@@ -37,7 +37,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
  * so the cleansed area is a disc of radius ~9 — not an 81-block field, and not
  * the square the scan box draws.</li>
  * <li><b>The pre-taint record.</b> The restore writes back the biome the column
- * held BEFORE taint overwrote it ({@link TaintBiomes#takeGeneratedBiome}, BD-16);
+ * held BEFORE taint overwrote it ({@link TaintBiomes#takeGeneratedBiome}, BD-18);
  * plains is the fallback for a column with no record, which is exactly
  * the case {@code TileEtherealBloom.java:37} documents.</li>
  * <li><b>Variant 4 only.</b> The plant family is one id with six metas, and only
@@ -61,7 +61,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
  * assert the geometry of every roll that fired, so the ±7 modulus and the
  * squared radius are pinned exactly, not as a statistics band. (2) The 4-block
  * palette cell: one restore rewrites the whole cell of the column it fired on
- * (BD-15), so the disc is a set of CELLS, a cell is cleansed at most once, and
+ * (BD-17), so the disc is a set of CELLS, a cell is cleansed at most once, and
  * "never cleansed beyond the disc" is a statement about cells, not columns —
  * one 4×4 cell spans the bloom's own column and a column 8 blocks out on the
  * other side, so the disc gate is evaluated on the cell, and the
@@ -237,7 +237,7 @@ public final class TaintCleansingGameTest {
      *
      * @param record true to go through {@code setBiomeAtAndSync} — the shipped
      *               conversion path, which records the biome the column had
-     *               first (BD-16); false for the raw palette write, which leaves
+     *               first (BD-18); false for the raw palette write, which leaves
      *               the column with NO record, the state the plains fallback is
      *               documented for.
      */
@@ -308,7 +308,7 @@ public final class TaintCleansingGameTest {
         final ServerLevel level = helper.getLevel();
         // The bloom sits on a palette-cell origin (16 is a multiple of 4) so the
         // "must stay tainted" ring is a whole cell away from the farthest cell a
-        // ±7 offset can touch: the 4-block granularity of a biome write (BD-15)
+        // ±7 offset can touch: the 4-block granularity of a biome write (BD-17)
         // cannot blur the gate.
         final BlockPos origin = helper.absolutePos(new BlockPos(16, 8, 16));
         // The template origin is NOT 4-aligned in world space (observed: 6183709,
@@ -522,11 +522,11 @@ public final class TaintCleansingGameTest {
         // (4) NEVER beyond the disc, stated at CELL granularity: a painted
         // column whose palette cell no qualifying ±7 offset reaches must still be
         // the taint biome. Cell granularity is the honest unit because a biome
-        // write is 4x4 blocks (BD-15): one 4x4 cell spans the bloom's negative
+        // write is 4x4 blocks (BD-17): one 4x4 cell spans the bloom's negative
         // side (x offsets -7..-5, chunk-local index 1 of the bloom's chunk) AND
         // columns 8..11 blocks on its POSITIVE side (index 1 of the next chunk
         // shares the same palette index). Those columns share a cell with a
-        // legitimate fire, so a fire there is the documented BD-15 footprint, not
+        // legitimate fire, so a fire there is the documented BD-17 footprint, not
         // a leak. Column-offset filtering hid that for a whole investigation.
         int ring = 0;
         int ringCleansed = 0;
@@ -555,7 +555,7 @@ public final class TaintCleansingGameTest {
         helper.succeed();
     }
 
-    // ------------------------------------------------ 2. the pre-taint record (BD-16)
+    // ------------------------------------------------ 2. the pre-taint record (BD-18)
 
     @GameTest(template = "gametest_pad_32", timeoutTicks = 600)
     public static void bloomRestoresThePreTaintBiomeFromTheRecord(final GameTestHelper helper) {
@@ -598,7 +598,7 @@ public final class TaintCleansingGameTest {
             }
         }
         helper.assertTrue(firedA > 0 && toForest == firedA,
-                "BD-16: every cleansing roll must write back the biome recorded when taint converted "
+                "BD-18: every cleansing roll must write back the biome recorded when taint converted "
                         + "the column (forest here), got " + toForest + '/' + firedA
                         + " columns restored to forest; the restore answered" + recordFails
                         + " (plains=" + plains.getRegisteredName() + ", taint=" + taint.getRegisteredName() + ")");
@@ -775,7 +775,7 @@ public final class TaintCleansingGameTest {
     // were its own roll stream (see rollSeed).
     //
     // This probe is the mutation guard for the OTHER side of the claim: the
-    // quart-space cell index in TaintBiomes.setBiomeAt (BD-15). Revert that index
+    // quart-space cell index in TaintBiomes.setBiomeAt (BD-17). Revert that index
     // to the 1.7.10 `x & 3` byte write and the footprint lines go off-grid.
     @GameTest(template = "gametest_pad_32", timeoutTicks = 600)
     public static void diagnoseWhereASingleBiomeWriteLands(final GameTestHelper helper) {

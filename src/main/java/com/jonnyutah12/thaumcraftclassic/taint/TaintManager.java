@@ -442,7 +442,7 @@ public final class TaintManager {
      * GENERATES at that column — the original reads it from the chunk manager
      * ({@code getBiomesToGenerateAt}), which in 1.7.10 was a separate generated
      * biome array and in 1.21.1 is the biome recorded at the moment taint
-     * overwrote the palette ({@link TaintBiomes#takeGeneratedBiome}, BD-16).
+     * overwrote the palette ({@link TaintBiomes#takeGeneratedBiome}, BD-18).
      * Plains is the original's fallback, used when even the generated answer is
      * a thaumic biome (a column that has been taint for so long that nothing
      * recorded a pre-taint biome).

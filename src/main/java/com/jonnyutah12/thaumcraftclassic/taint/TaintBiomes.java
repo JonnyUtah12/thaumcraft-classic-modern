@@ -33,7 +33,7 @@ import net.minecraft.world.level.chunk.PalettedContainer;
  * cell of the column in every section of the chunk — the exact modern
  * equivalent of "this chunk column is the taint biome". A biome cell is 4
  * blocks wide, so the write is 4-block granular: it taints the 4×4-block
- * footprint that contains the column (BD-15 in docs/architecture/taint.md).
+ * footprint that contains the column (BD-17 in docs/architecture/taint.md).
  * The chunk is marked unsaved so the region file persists it.</p>
  *
  * <p>Client sync: the original broadcast {@code PacketBiomeChange}; the port's
@@ -151,7 +151,7 @@ public final class TaintBiomes {
      * it (a chunk data attachment, persisted with the chunk) and answers from
      * that record. An untouched column has no record and answers from the
      * palette, which is its generated biome. Both cases give the original's
-     * observable result: the biome that was there before the taint. See BD-16
+     * observable result: the biome that was there before the taint. See BD-18
      * in docs/architecture/taint.md.</p>
      */
     public static Holder<Biome> generatedBiomeAt(final LevelReader level, final int x, final int y,
