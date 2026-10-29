@@ -48,13 +48,13 @@ public final class FxParticleGameTest {
             helper.assertTrue(BuiltInRegistries.PARTICLE_TYPE.containsKey(id),
                     "particle type " + id + " is not in the registry");
         }
-        // The whole slice: the mod registers exactly the two particle types this
-        // card scopes, no more (on the pre-change tree this is 0).
+        // The whole slice: the mod registers exactly the particle types the
+        // M7-02 cards scope — 2 (TC-M7-02-s) + 6 beams/bolts (TC-M7-02-b-s).
         long registered = BuiltInRegistries.PARTICLE_TYPE.holders()
                 .filter(key -> ThaumcraftClassic.MOD_ID.equals(key.key().location().getNamespace()))
                 .count();
-        helper.assertTrue(registered == 2,
-                "thaumcraft-namespace particle types must be the 2 ported ones, found " + registered);
+        helper.assertTrue(registered == 8,
+                "thaumcraft-namespace particle types must be the 8 ported ones, found " + registered);
         helper.assertTrue(ModParticles.SPARCLE.get().codec() == TcSparkleOptions.MAP_CODEC,
                 "sparkle type must decode through TcSparkleOptions.MAP_CODEC");
         helper.assertTrue(ModParticles.BUBBLE.get().codec() == TcBubbleOptions.MAP_CODEC,

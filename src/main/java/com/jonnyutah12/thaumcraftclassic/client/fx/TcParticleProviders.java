@@ -27,6 +27,16 @@ public final class TcParticleProviders {
     public static void onRegisterParticleProviders(final RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(ModParticles.SPARCLE.get(), TcSparkleParticle.Provider::new);
         event.registerSpriteSet(ModParticles.BUBBLE.get(), TcBubbleParticle.Provider::new);
+        // TC-M7-02-b-s: the world-rendered bolt/beam family. Every type is a
+        // sprite-set provider; the JSON frame lists carry the original sheets
+        // (bolt_small/bolt_large, beam0..beam3, impact_0..15, arc,
+        // sparkle_glow_0..3), sliced at build time (D-004).
+        event.registerSpriteSet(ModParticles.BOLT.get(), TcBoltParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.BEAM.get(), TcBeamParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.BEAM_IMPACT.get(), TcBeamImpactParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.BEAM_GOLEM_BOSS.get(), TcGolemBeamParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.ARC.get(), TcArcParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.SPARKLE_GLOW.get(), TcGlowSparkleParticle.Provider::new);
     }
 
     private TcParticleProviders() {

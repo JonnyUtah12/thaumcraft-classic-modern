@@ -214,15 +214,33 @@ def transformOriginalSoundsJson = tasks.register("transformOriginalSoundsJson") 
 def originalParticleSheet = file("${originalAssetsDir}/thaumcraft/textures/misc/particles.png")
 def originalParticleSpritesDir = layout.buildDirectory.dir('generated/resources/original-particles')
 // cell index -> <sprite base name, frame order>; cell (col, row) = (idx % 16, idx / 16)
+// TC-M7-02-b-s adds the golem-boss impact strip (FXBeamGolemBoss.java:253-255:
+// cells 80..95, u = part/16, v = 0.3125 -> row 5) and the arc's glow sparkle
+// frames (FXSparkle type 6 baseFrame=0 -> cells 112..115, ClientProxy.java:1302).
 def originalParticleCells = [
-        'sparkle': (112..120).toList(),
-        'bubble' : [16, 17],
+        'sparkle'     : (112..120).toList(),
+        'bubble'      : [16, 17],
+        'impact'      : (80..95).toList(),
+        'sparkle_glow': (112..115).toList(),
+]
+// TC-M7-02-b-s: the beam/bolt family draws whole sheet tiles, not grid cells
+// (FXBeam.java:77-81 /misc/beam*.png; FXLightningBolt.java:178-182
+// /misc/p_large.png + /misc/p_small.png) — copied whole-file into the
+// particle texture folder so 1.21.1's atlas can bake them.
+def originalBeamTiles = [
+        'beam0'    : 'beam.png',
+        'beam1'    : 'beam1.png',
+        'beam2'    : 'beam2.png',
+        'beam3'    : 'beam3.png',
+        'bolt_glow': 'p_large.png',
+        'bolt_core': 'p_small.png',
 ]
 
 def sliceOriginalParticleSprites = tasks.register("sliceOriginalParticleSprites") {
     onlyIf { originalParticleSheet.exists() }
     inputs.file(originalParticleSheet)
     inputs.property('cells', originalParticleCells)
+    inputs.property('beamTiles', originalBeamTiles)
     outputs.dir(originalParticleSpritesDir)
     doLast {
         def out = originalParticleSpritesDir.get().asFile
@@ -242,6 +260,17 @@ def sliceOriginalParticleSprites = tasks.register("sliceOriginalParticleSprites"
                 }
                 written++
             }
+        }
+        originalBeamTiles.each { name, source ->
+            def tileFile = new File("${originalAssetsDir}/thaumcraft/textures/misc", source)
+            if (!tileFile.exists()) { throw new GradleException("missing beam tile ${tileFile}") }
+            def tile = javax.imageio.ImageIO.read(tileFile)
+            if (tile == null) { throw new GradleException("cannot decode ${tileFile}") }
+            def file = new File(spriteDir, "${name}.png")
+            if (!javax.imageio.ImageIO.write(tile, 'png', file)) {
+                throw new GradleException("no PNG writer for ${file}")
+            }
+            written++
         }
         logger.lifecycle("sliced ${written} particle sprites from ${originalParticleSheet.name}")
     }
@@ -300,6 +329,8 @@ tasks.named('test', Test).configure {
             layout.buildDirectory.file('generated/resources/original-sounds/assets/thaumcraft/sounds.json').get().asFile.absolutePath
     systemProperty 'tc.originalParticleSheet',
             file("${originalAssetsDir}/thaumcraft/textures/misc/particles.png").absolutePath
+    systemProperty 'tc.originalMiscTexturesDir',
+            file("${originalAssetsDir}/thaumcraft/textures/misc").absolutePath
     systemProperty 'tc.particleDefinitionDir',
             file('src/main/resources/assets/thaumcraft/particles').absolutePath
     systemProperty 'tc.originalParticleSpritesDir',
