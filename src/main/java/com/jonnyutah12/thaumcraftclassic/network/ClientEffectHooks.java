@@ -224,19 +224,19 @@ public final class ClientEffectHooks {
 
     /**
      * TC-M7-02-c-s-f1c WIRED: the original's {@code ClientProxy.sourceStreamFX}
-     * sender — the arcing wisp of an essentia stream, built from the target
-     * point and the delta back to the source
-     * (ClientProxy.java:752-757, FXWispArcing.java:51-59). {@code color} is the
+     * sender — the arcing wisp of an essentia stream, constructed from two
+     * points and the aspect tag's colour (ClientProxy.java:752-757,
+     * FXWispArcing.java:51-59). {@code from} is where the mote appears,
+     * {@code to} the point it converges on as it ages; {@code color} is the
      * aspect tag's colour, packed 0x00RRGGBB.
      */
-    static void sourceStreamFx(final Vec3 source, final Vec3 target, final int color) {
-        LOGGER.debug("fx source stream from {} to {} color={}", source, target,
-                Integer.toHexString(color));
+    static void sourceStreamFx(final Vec3 from, final Vec3 to, final int color) {
+        LOGGER.debug("fx source stream {} -> {} color={}", from, to, Integer.toHexString(color));
         final Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) {
             return;
         }
-        TcEffects.spawn(mc.level, TcFxPlans.wispArcing(source, target, color, wispCulled(target),
+        TcEffects.spawn(mc.level, TcFxPlans.wispArcing(to, from, color, wispCulled(to),
                 particleSetting(), RandomSource.create()));
     }
 

@@ -499,19 +499,25 @@ public final class TcFxPlans {
 
     /**
      * {@code ClientProxy.sourceStreamFX}: the arcing wisp of an essentia
-     * stream. The original's 11-argument constructor parks the mote on the
-     * TARGET point and stores the delta to the source in its motion fields
-     * (FXWispArcing.java:51-59); {@code onUpdate} re-derives the position from
-     * the spawn anchor plus that delta every tick, so the delta is payload and
-     * the spawn velocity is zero.
+     * stream. The original's 11-argument constructor
+     * {@code FXWispArcing(world, d, d1, d2, x, y, z, f, r, g, b)}
+     * (FXWispArcing.java:51-59) leaves the mote's <em>anchor</em>
+     * ({@code field_70568_aq/ar/as}, set by the delegated constructor) on the
+     * first triple, repositions it to the second ({@code func_70012_b(x, y,
+     * z)}), and puts {@code second - first} in its motion fields; the tick then
+     * re-derives the position as {@code anchor + motion * (1 - age/lifetime)}
+     * (FXWispArcing.java:96-103), so the mote starts at {@code start} and
+     * converges on {@code anchor} as it ages. The port keeps that motion triple
+     * in the payload ({@link TcWispArcingOptions}) because its particle writes
+     * absolute positions, so the spawn velocity is zero.
      *
-     * @param source the point the mote flies back toward (the stream's source)
-     * @param target the spawn anchor, i.e. the target the stream runs to
+     * @param anchor the first triple: the point the mote converges on (the
+     *               cull is measured against it, FXWispArcing.java:40-48)
+     * @param start  the second triple: the mote's initial position
      * @param color  the sender's aspect-tag colour, packed 0x00RRGGBB
      * @param culled true past the sender's render distance
-     *               (FXWispArcing.java:40-48)
      */
-    public static List<ParticleSpawn> wispArcing(final Vec3 source, final Vec3 target,
+    public static List<ParticleSpawn> wispArcing(final Vec3 anchor, final Vec3 start,
             final int color, final boolean culled, final int particleSetting,
             final RandomSource rand) {
         final List<ParticleSpawn> plan = new ArrayList<>();
@@ -523,8 +529,8 @@ public final class TcFxPlans {
             }
             plan.add(new ParticleSpawn(ModParticles.WISP_ARCING.get(),
                     new TcWispArcingOptions(fixZeroRed(color), FxWispRules.ARCING_SCALE, lifetime,
-                            source.x - target.x, source.y - target.y, source.z - target.z),
-                    target.x, target.y, target.z, 0.0, 0.0, 0.0));
+                            start.x - anchor.x, start.y - anchor.y, start.z - anchor.z),
+                    anchor.x, anchor.y, anchor.z, 0.0, 0.0, 0.0));
         }
         return plan;
     }

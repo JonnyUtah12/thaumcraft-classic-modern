@@ -5,6 +5,44 @@ Format: Keep a Changelog; versioning: Semantic Versioning (see
 `docs/release-process.md`). Project versions are independent of the pinned
 Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
+## [Unreleased]
+
+### Added
+- **Wisp FX family — the last three effects of the M7-02 visual slice**
+  (TC-M7-02-c-s-f1c, card `t_7fe21fbf`, branch `wt/fx-f1`, stacked on
+  `wt/m7-beams`; not merged to `main`). `thaumcraft:wisp`,
+  `thaumcraft:wisp_eg` and `thaumcraft:wisp_arcing` (`FXWisp`/`FXWispEG`/
+  `FXWispArcing`) now compile on 1.21.1, register and spawn through the same
+  plan/effects seam the sparkle, bubble and beam families use. Nine of the
+  port's eleven particle types resolve through codec payload records
+  (`TcWispOptions` 9 fields, `TcWispEgOptions` 3, `TcWispArcingOptions` 6),
+  the per-tick bodies are the original's own arithmetic (0.985 homing drag
+  with the 0.2 seek and ±0.2 clamp, 0.98 free drag, 0.7 ground drag, the
+  up-then-down/`shrink` scale envelope, the EG −0.05 fall with its `rand*0.03`
+  gaussian spread and 13-frame strip, the arcing anchor+motion re-derived
+  position with its arc term), and the senders (`TcFxPlans.wisp`/`wispByType`/
+  `wispEg`/`wispArcing`, `ClientEffectHooks.wispFx`/`wispFxType`/`wispFxEg`/
+  `sourceStreamFx`) carry the original's `particleCount` gate and 50/25
+  render-distance cull. The three original senders are client proxy calls
+  (aura nodes, essentia sources, the wisp entity), not packet handlers, so no
+  payload routes to them; their callers arrive with their own cards.
+- **Measured gates on this branch** (literal, `--no-daemon`): `compileJava
+  compileTestJava` exit 0 from a cleared `build/classes/java`; `./gradlew
+  test` **371 tests / 0 failures / 0 errors / 1 pre-existing skip** (49
+  result files); `runGameTestServer` **"All 118 required tests passed :)"**;
+  `-Ptc.noCurios runGameTestServer` **118/118** with `curios … -> MISSING`.
+- **Art stand-in recorded as BD-18** (`docs/BEHAVIORAL_DEVIATIONS.md`): the
+  original's wisp and arcing-wisp quads sample the **vanilla** `/misc/fx.png`
+  sheet, which the reference tree does not ship, so those two draw the sliced
+  Thaumcraft glow frame; the EG mote steps its real 13-cell strip. Colour,
+  size, scale envelope, motion, lifetime and blend layer are exact.
+- **No localization or inventory rows were added, deliberately**: particle
+  types carry no translation key in vanilla and the localization probe reds
+  the build on any key that maps to no shipped content, so a
+  `particle.thaumcraft.*` entry would be a *dead* key (`en_us.json` stays at
+  241 keys); `docs/content-mapping.csv` has no FX/particle rows and its
+  `kind` whitelist is closed, so the inventory stays at 1048 rows.
+
 ## [0.1.0-alpha.4] - 2026-10-28
 
 Fourth pre-release. Still deliberately a pre-release, not playable end-to-end:

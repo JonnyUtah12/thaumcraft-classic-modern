@@ -397,9 +397,10 @@ public final class FxParticleGameTest {
                             + Integer.toHexString(options.color()));
         }
 
-        // ClientProxy.sourceStreamFX: the mote parks on the TARGET with the
-        // delta to the source in its motion fields (FXWispArcing.java:51-59),
-        // at the sender's fixed 0.1 scale and the shared lifetime roll.
+        // ClientProxy.sourceStreamFX: the mote's anchor is the first triple (the
+        // point it converges on), it starts at the second, and the reference's
+        // motion triple (second - first) rides the payload because the ported
+        // particle writes absolute positions (FXWispArcing.java:51-59, 96-103).
         final List<ParticleSpawn> arcing = TcFxPlans.wispArcing(spawn, target, 0x7F3F1F, false,
                 FxParticleCounts.SETTING_DECREASED, RandomSource.create(13L));
         helper.assertTrue(arcing.size() == 1, "the arcing wisp on 'decreased' must be one mote");
@@ -407,14 +408,18 @@ public final class FxParticleGameTest {
         final TcWispArcingOptions arcOptions = (TcWispArcingOptions) arcMote.options();
         helper.assertTrue(arcMote.type() == ModParticles.WISP_ARCING.get(),
                 "the arcing plan must use the registered wisp_arcing type");
-        helper.assertTrue(arcMote.x() == target.x && arcMote.y() == target.y
-                        && arcMote.z() == target.z,
-                "the arcing mote spawns on the target anchor");
-        helper.assertTrue(arcMote.vx() == spawn.x - target.x && arcMote.vy() == spawn.y - target.y
-                        && arcMote.vz() == spawn.z - target.z,
-                "the arcing payload must carry source - target as its delta");
-        helper.assertTrue(arcOptions.dx() == arcMote.vx() && arcOptions.scale() == 0.1F,
-                "the delta must reach the payload and the scale must be the sender's 0.1");
+        helper.assertTrue(arcMote.x() == spawn.x && arcMote.y() == spawn.y
+                        && arcMote.z() == spawn.z,
+                "the arcing mote spawns on its anchor triple, the point it converges on");
+        helper.assertTrue(arcMote.vx() == 0.0 && arcMote.vy() == 0.0 && arcMote.vz() == 0.0,
+                "the arcing mote re-derives its position every tick, so its spawn velocity is zero");
+        helper.assertTrue(arcOptions.dx() == target.x - spawn.x
+                        && arcOptions.dy() == target.y - spawn.y
+                        && arcOptions.dz() == target.z - spawn.z,
+                "the payload must carry the reference's motion triple (start - anchor), got "
+                        + arcOptions.dx() + "," + arcOptions.dy() + "," + arcOptions.dz());
+        helper.assertTrue(arcOptions.scale() == 0.1F,
+                "the sender's arcing scale is the fixed 0.1, got " + arcOptions.scale());
         helper.assertTrue(arcOptions.lifetime() >= 36 && arcOptions.lifetime() <= 51,
                 "the arcing lifetime is the shared 36 / (rand*0.3 + 0.7) roll");
 
