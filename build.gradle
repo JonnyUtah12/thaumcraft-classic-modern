@@ -128,7 +128,18 @@ dependencies {
 // overlays it into the output JAR so local/release artifacts carry the original
 // visuals; CI (no reference tree) builds a code-only JAR and the unit tests
 // assert the asset mapping instead of the assets themselves.
-def originalAssetsDir = file("${rootDir}/../reference/assets")
+// -Ptc.referenceAssets=<dir> retargets the overlay at a tree of the same LAYOUT.
+// CI has no reference tree, so it points this at the placeholder fixture
+// scripts/make_asset_overlay_fixture.py builds from docs/asset-mapping.csv
+// (no original bytes), and the asset path contract then runs its overlay gates
+// there. With no property, behaviour is exactly as before: overlay iff the
+// developer's reference tree exists, code-only jar in CI (artifact policy).
+def referenceAssetsOverride = project.findProperty('tc.referenceAssets')
+def originalAssetsDir = referenceAssetsOverride != null
+        ? file(referenceAssetsOverride as String)
+        : file("${rootDir}/../reference/assets")
+// True when the overlay source is the generated fixture (CI), not a real tree.
+def assetOverlayIsFixture = referenceAssetsOverride != null
 
 // The original 1.7.10 sounds.json is not platform-valid as-is: its file
 // references carry no namespace, and 1.21.1 resolves unnamespaced references
@@ -268,6 +279,82 @@ tasks.named('processResources') {
             }
         }
     }
+}
+
+def makeAssetOverlayFixture = tasks.register("makeAssetOverlayFixture", Exec) {
+    group = 'build'
+    description = 'Rebuilds the 1.7.10 plural-layout asset tree as placeholder ' +
+            'files from docs/asset-mapping.csv, so CI (no reference tree, D-004) ' +
+            'can build an overlay jar and gate the block/item path remap.'
+    def mapping = file('docs/asset-mapping.csv')
+    def fixtureRoot = layout.buildDirectory.dir('ci-fixture-assets')
+    inputs.file(mapping)
+    outputs.dir(fixtureRoot)
+    commandLine 'python3', file('scripts/make_asset_overlay_fixture.py').absolutePath,
+            fixtureRoot.get().asFile.absolutePath,
+            '--asset-mapping', mapping.absolutePath
+}
+
+def overlayAssetJar = tasks.register("overlayAssetJar", Jar) {
+    group = 'build'
+    description = 'Jar packaged through the asset overlay — the real reference tree ' +
+            'when present, and with -Ptc.referenceAssets=build/ci-fixture-assets the ' +
+            'generated fixture, which is how CI exercises the overlay path. NOT a ' +
+            'release artifact (classifier overlay-check): the public jar stays code-only.'
+    dependsOn tasks.named('processResources'), tasks.named('classes')
+    if (assetOverlayIsFixture) {
+        dependsOn makeAssetOverlayFixture
+    }
+    archiveBaseName = mod_id
+    archiveVersion = mod_version
+    archiveClassifier = 'overlay-check'
+    destinationDirectory = layout.buildDirectory.dir('libs')
+    from(sourceSets.main.output)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+def checkAssetPathsCodeOnlyJar = tasks.register("checkAssetPathsCodeOnlyJar", Exec) {
+    group = 'verification'
+    description = 'Asset path contract over the code-only jar (the public artifact): ' +
+            'scripts/check_asset_paths.py --code-only.'
+    def jarTask = tasks.named('jar').get()
+    def jarFile = jarTask.archiveFile
+    dependsOn jarTask
+    inputs.files(jarFile)
+    inputs.file(file('docs/asset-mapping.csv'))
+    commandLine 'python3', file('scripts/check_asset_paths.py').absolutePath,
+            jarFile.get().asFile.absolutePath, '--code-only',
+            '--asset-mapping', file('docs/asset-mapping.csv').absolutePath
+}
+
+def checkAssetPathsOverlayJar = tasks.register("checkAssetPathsOverlayJar", Exec) {
+    group = 'verification'
+    description = 'Asset path contract over the overlay jar: textures/block + ' +
+            'textures/item published, no plural directories, every model/blockstate ' +
+            'reference resolving to a PNG in the jar.'
+    def jarTask = overlayAssetJar.get()
+    def jarFile = jarTask.archiveFile
+    dependsOn jarTask
+    inputs.files(jarFile)
+    inputs.file(file('docs/asset-mapping.csv'))
+    // The overlay is what publishes textures; with no overlay source there is no
+    // overlay jar to gate (same guard as overlayOriginalAssets).
+    onlyIf { originalAssetsDir.exists() }
+    commandLine 'python3', file('scripts/check_asset_paths.py').absolutePath,
+            jarFile.get().asFile.absolutePath,
+            '--asset-mapping', file('docs/asset-mapping.csv').absolutePath
+}
+
+if (assetOverlayIsFixture) {
+    // The overlay tasks read the tree at execution time, so the fixture has to
+    // be generated before they snapshot it.
+    overlayOriginalAssets.configure { dependsOn makeAssetOverlayFixture }
+    transformOriginalSoundsJson.configure { dependsOn makeAssetOverlayFixture }
+    overlayAssetJar.configure { dependsOn makeAssetOverlayFixture }
+}
+
+tasks.named('check') {
+    dependsOn checkAssetPathsCodeOnlyJar, checkAssetPathsOverlayJar
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
