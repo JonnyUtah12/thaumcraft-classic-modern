@@ -396,21 +396,81 @@ public final class TaintManager {
     // ------------------------------------------------------------- cleansing
 
     /**
-     * The biome-restore half of the Ethereal Bloom (caller
-     * {@code thaumcraft:tileetherealbloom}, TC-M6-05): the original re-reads
-     * the generated biome of each column in range and, for a taint column,
-     * writes plains. The taint→plains branch is the observable half (the bloom
-     * only runs where taint reached); a column the taint never touched
-     * regenerates to what it already holds, so the port leaves it alone
-     * (docs/architecture/taint.md, BD-14).
+     * TC-M5-04-s-b: the server branch of {@code TileEtherealBloom.update}
+     * (TileEtherealBloom.java:16-45), called from the tile every
+     * {@code counter % 20 == 0}. One column per roll:
+     *
+     * <ol><li>a {@code nextInt(8) - nextInt(8)} offset on each horizontal axis
+     * (the original draws x first, then z — the order is the seeded
+     * sequence);</li>
+     * <li>the column's <b>stored</b> biome must be one of the three thaumic
+     * biomes the original lists ({@link TaintBiomes#CLEANSABLE_BIOMES}: taint,
+     * eerie, magical forest — the original's {@code Config.biomeTaintID},
+     * {@code biomeEerieID}, {@code biomeMagicalForestID});</li>
+     * <li>the column must be inside the radius gate
+     * ({@link TaintRules#bloomDistanceSquared} — the original's squared
+     * {@code TileEntity#getDistance}, so the disc is radius ~9, not 81);</li>
+     * <li>then the column's biome is replaced by the biome the world generates
+     * there, i.e. the biome the taint overwrote (plains when even that answer
+     * is a thaumic biome) — {@link #restoreBiome}.</li></ol>
+     *
+     * <p>Returns true when a column was rewritten, which is what a probe
+     * asserts (the bloom is a one-column-per-20-ticks machine: over 400 rolls
+     * it cleanses repeatedly inside its disc and never outside it).</p>
+     */
+    public static boolean etherealBloomCleanse(final ServerLevel level, final BlockPos bloomPos,
+                                               final net.minecraft.util.RandomSource random) {
+        final int tx = TaintRules.bloomOffset(random.nextInt(TaintRules.BLOOM_SCAN_MOD),
+                random.nextInt(TaintRules.BLOOM_SCAN_MOD));
+        final int tz = TaintRules.bloomOffset(random.nextInt(TaintRules.BLOOM_SCAN_MOD),
+                random.nextInt(TaintRules.BLOOM_SCAN_MOD));
+        final int x = bloomPos.getX() + tx;
+        final int z = bloomPos.getZ() + tz;
+        final Holder<Biome> stored = TaintBiomes.biomeAt(level, new BlockPos(x, bloomPos.getY(), z));
+        if (!TaintRules.bloomCleanses(TaintBiomes.isCleansableBiome(stored),
+                TaintRules.bloomDistanceSquared(tx, tz))) {
+            return false;
+        }
+        restoreBiome(level, x, bloomPos.getY(), z);
+        return true;
+    }
+
+    /**
+     * TC-M5-04-s-b: the restore-to-original-biome half of the cleansing path,
+     * the port's {@code Utils.setBiomeAt(world, x, z, biome)} call from
+     * {@code TileEtherealBloom.update}. The biome written is the one the world
+     * GENERATES at that column — the original reads it from the chunk manager
+     * ({@code getBiomesToGenerateAt}), which in 1.7.10 was a separate generated
+     * biome array and in 1.21.1 is the biome recorded at the moment taint
+     * overwrote the palette ({@link TaintBiomes#takeGeneratedBiome}, BD-16).
+     * Plains is the original's fallback, used when even the generated answer is
+     * a thaumic biome (a column that has been taint for so long that nothing
+     * recorded a pre-taint biome).
+     *
+     * <p>Not config-gated: the original's bloom path has no config check, and
+     * {@code general/biome_taint_from_flux} gates the flux→taint direction, not
+     * the way back.</p>
      */
     public static void restoreBiome(final ServerLevel level, final int x, final int z) {
-        if (!TaintBiomes.isTaintBiome(TaintBiomes.biomeAt(level, BlockPos.containing(x, 0, z)))) {
-            return;
-        }
-        final Holder<Biome> plains = level.registryAccess().registryOrThrow(Registries.BIOME)
-                .getHolderOrThrow(Biomes.PLAINS);
-        TaintBiomes.setBiomeAtAndSync(level, x, z, plains);
+        restoreBiome(level, x, level.getMinBuildHeight() + 1, z);
+    }
+
+    /**
+     * The restore rule at an explicit height (the quart the biome is read at).
+     * See {@link #restoreBiome(ServerLevel, int, int)} for the rule.
+     */
+    public static void restoreBiome(final ServerLevel level, final int x, final int y, final int z) {
+        final Holder<Biome> generated = TaintBiomes.takeGeneratedBiome(level, x, y, z);
+        // Fidelity: the original substitutes plains ONLY when the generated
+        // answer is the taint biome (TileEtherealBloom.java:37 —
+        // `biome.field_76756_M == ThaumcraftWorldGenerator.biomeTaint.field_76756_M`),
+        // never for an Eerie / Magical Forest answer. So this is
+        // isTaintBiome, not the three-biome cleansable set used for the gate.
+        final Holder<Biome> target = TaintRules.cleansingFallsBackToPlains(
+                TaintBiomes.isTaintBiome(generated))
+                ? level.registryAccess().registryOrThrow(Registries.BIOME).getHolderOrThrow(Biomes.PLAINS)
+                : generated;
+        TaintBiomes.setBiomeAtAndSync(level, x, z, target);
     }
 
     /**

@@ -2,6 +2,7 @@ package com.jonnyutah12.thaumcraftclassic.nodes;
 
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.aspect.AspectList;
+import com.jonnyutah12.thaumcraftclassic.taint.TaintRules;
 import com.jonnyutah12.thaumcraftclassic.world.WorldMagicData;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -480,24 +481,40 @@ public final class NodeRuntime implements INode {
         }
     }
 
-    /** Original {@code handleTaintNode} (TileNode L773-801); fibre spread deferred to M5-04. */
+    /**
+     * Original {@code handleTaintNode} (TileNode L773-801); the {@code
+     * Config.hardNode} fibre spread is deferred to the fibres card. TC-M5-04-s-b:
+     * the gates and the ±7 scan are the pure rules in {@link TaintRules}
+     * (periods 50/100, flip on {@code nextInt(500)}), so a threshold change is
+     * one line and one unit test, and the draws keep the original's order
+     * ({@code x} pair, then {@code z} pair; the 500-roll is drawn only after
+     * every earlier gate passes, exactly as the original's {@code &&} chain
+     * short-circuits).
+     */
     boolean handleTaintNode(final Context context, final Random random) {
         if (type == NodeType.TAINTED) {
-            if (count % BIOME_EFFECT_TICKS == 0 && context.hasTaintBiome()) {
-                final int tx = x + random.nextInt(8) - random.nextInt(8);
-                final int tz = z + random.nextInt(8) - random.nextInt(8);
+            if (TaintRules.nodePaintsTaintBiome(count, context.hasTaintBiome())) {
+                final int tx = x + TaintRules.nodeTaintScanOffset(
+                        random.nextInt(TaintRules.NODE_TAINT_SCAN_MOD),
+                        random.nextInt(TaintRules.NODE_TAINT_SCAN_MOD));
+                final int tz = z + TaintRules.nodeTaintScanOffset(
+                        random.nextInt(TaintRules.NODE_TAINT_SCAN_MOD),
+                        random.nextInt(TaintRules.NODE_TAINT_SCAN_MOD));
                 if (!context.isTaintBiomeAt(tx, tz)) {
                     context.paintTaintBiome(tx, y, tz);
                 }
             }
             return false;
         }
-        if (type != NodeType.PURE && count % STABILITY_TICKS == 0
-                && context.hasTaintBiome() && context.isTaintBiomeAt(x, z)
-                && random.nextInt(500) == 0) {
-            type = NodeType.TAINTED;
-            nodeChange();
-            return true;
+        if (type != NodeType.PURE && count % TaintRules.NODE_STABILITY_PERIOD == 0
+                && context.hasTaintBiome() && context.isTaintBiomeAt(x, z)) {
+            final int roll = random.nextInt(TaintRules.NODE_TAINT_FLIP_MOD);
+            if (TaintRules.nodeBecomesTainted(count, type == NodeType.PURE, context.hasTaintBiome(),
+                    context.isTaintBiomeAt(x, z), roll)) {
+                type = NodeType.TAINTED;
+                nodeChange();
+                return true;
+            }
         }
         return false;
     }

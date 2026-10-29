@@ -69,6 +69,32 @@ public final class TaintBiomes {
     /** Display name key of the biome (the original's {@code biome.Tainted Land} label). */
     public static final String BIOME_NAME_KEY = "biome." + ThaumcraftClassic.MOD_ID + ".biome.biomegentaint";
 
+    /**
+     * TC-M5-04-s-b: the biomes the Ethereal Bloom and the flux→taint restore
+     * path are allowed to rewrite. The original lists exactly three ids in
+     * {@code TileEtherealBloom.update} — {@code Config.biomeTaintID},
+     * {@code Config.biomeEerieID}, {@code Config.biomeMagicalForestID} — so the
+     * set is those three registry keys under the D-001 id contract
+     * ({@code content-mapping.csv} {@code new_id} column, rows
+     * {@code biome.BiomeGenTaint}, {@code biome.BiomeGenEerie},
+     * {@code biome.BiomeGenMagicalForest}). Eerie and the Magical Forest are
+     * other cards' rows and are not registered yet; the predicate simply never
+     * matches a biome that does not exist, so the gate is the original's the
+     * moment those cards land.
+     */
+    public static final java.util.Set<ResourceKey<Biome>> CLEANSABLE_BIOMES = java.util.Set.of(
+            TAINT_BIOME,
+            ResourceKey.create(Registries.BIOME,
+                    ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "biome.biomegeneerie")),
+            ResourceKey.create(Registries.BIOME,
+                    ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "biome.biomegenmagicalforest")));
+
+    /**
+     * Chunk NBT key holding the biome a column had <em>before</em> taint
+     * overwrote it (see {@link #generatedBiomeAt}).
+     */
+    public static final String BIOME_RECORD_KEY = "thaumcraft:taint_biome_record";
+
     private TaintBiomes() {
     }
 
@@ -95,6 +121,121 @@ public final class TaintBiomes {
 
     public static boolean isTaintBiome(final Holder<Biome> biome) {
         return biome.is(TAINT_BIOME);
+    }
+
+    /**
+     * TC-M5-04-s-b: is this biome one the cleansing path may rewrite? Reads the
+     * registry key, so an unregistered biome (eerie, magical forest) can never
+     * match — the gate is inert until those rows land, and exact once they do.
+     */
+    public static boolean isCleansableBiome(final Holder<Biome> biome) {
+        for (final ResourceKey<Biome> key : CLEANSABLE_BIOMES) {
+            if (biome.is(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * TC-M5-04-s-b: the biome a column would hold if taint had never touched
+     * it — the modern stand-in for the original's
+     * {@code WorldChunkManager#getBiomesToGenerateAt} (the chunk PRIMER's
+     * generated biome array, which 1.7.10 kept separate from the editable
+     * per-column byte the taint write overwrote).
+     *
+     * <p>1.21.1 has ONE biome palette per section: the biome the generator put
+     * there and the biome a taint tick wrote there are the same stored value,
+     * so the generated answer is not readable after a conversion. The port
+     * therefore records the biome a column had at the moment taint overwrites
+     * it (a chunk data attachment, persisted with the chunk) and answers from
+     * that record. An untouched column has no record and answers from the
+     * palette, which is its generated biome. Both cases give the original's
+     * observable result: the biome that was there before the taint. See BD-16
+     * in docs/architecture/taint.md.</p>
+     */
+    public static Holder<Biome> generatedBiomeAt(final LevelReader level, final int x, final int y,
+                                                 final int z) {
+        final Holder<Biome> recorded = readRecord(level, x, z, false);
+        if (recorded != null) {
+            return recorded;
+        }
+        return biomeAt(level, BlockPos.containing(x, y, z));
+    }
+
+    /**
+     * TC-M5-04-s-b: the recorded pre-taint biome of a column, consuming the
+     * record (a restore uses it up, so a second restore on the same column
+     * falls back to the palette / plains rule). Returns null when the column
+     * was never converted by taint.
+     */
+    public static Holder<Biome> takeGeneratedBiome(final LevelReader level, final int x, final int y,
+                                                   final int z) {
+        final Holder<Biome> recorded = readRecord(level, x, z, true);
+        return recorded != null ? recorded : biomeAt(level, BlockPos.containing(x, y, z));
+    }
+
+    /** The chunk-local key of the 4×4 biome footprint containing a column. */
+    private static String cellKey(final int x, final int z) {
+        return ((x >> 2) & 3) + "_" + ((z >> 2) & 3);
+    }
+
+    private static Holder<Biome> readRecord(final LevelReader level, final int x, final int z,
+                                            final boolean consume) {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return null;
+        }
+        final ChunkAccess chunk = serverLevel.getChunk(BlockPos.containing(x, 0, z));
+        final java.util.Map<String, String> record = chunk.getExistingDataOrNull(
+                com.jonnyutah12.thaumcraftclassic.player.ModAttachments.BIOME_RECORD.get());
+        if (record == null || record.isEmpty()) {
+            return null;
+        }
+        final String key = cellKey(x, z);
+        final String id = record.get(key);
+        if (id == null) {
+            return null;
+        }
+        if (consume) {
+            // A restore uses the cell up, so a second cleanse of the same
+            // footprint falls back to the palette / plains rule.
+            record.remove(key);
+            chunk.setData(com.jonnyutah12.thaumcraftclassic.player.ModAttachments.BIOME_RECORD.get(), record);
+        }
+        final var registry = serverLevel.registryAccess().registryOrThrow(Registries.BIOME);
+        final Biome biome = registry.get(ResourceLocation.parse(id));
+        return biome == null ? null : registry.wrapAsHolder(biome);
+    }
+
+    /**
+     * TC-M5-04-s-b: remember what a column's biome was, just before taint
+     * overwrites it, so the cleansing path can put it back. Only the FIRST
+     * conversion of a footprint records (a re-conversion of an already-tainted
+     * column must not overwrite the original with taint); a column that was
+     * already a cleansable biome keeps no record, which routes the restore
+     * through the original's plains fallback.
+     */
+    private static void recordBeforeConversion(final ServerLevel level, final int x, final int z) {
+        final ChunkAccess chunk = level.getChunk(BlockPos.containing(x, 0, z));
+        final var type = com.jonnyutah12.thaumcraftclassic.player.ModAttachments.BIOME_RECORD.get();
+        final java.util.Map<String, String> record = chunk.getExistingDataOrNull(type);
+        final String key = cellKey(x, z);
+        if (record != null && record.containsKey(key)) {
+            return;
+        }
+        final Holder<Biome> previous = biomeAt(level,
+                BlockPos.containing(x, level.getMinBuildHeight() + 1, z));
+        if (isCleansableBiome(previous)) {
+            return;
+        }
+        final ResourceLocation id = level.registryAccess().registryOrThrow(Registries.BIOME).getKey(previous.value());
+        if (id == null) {
+            return;
+        }
+        final java.util.Map<String, String> updated = record == null
+                ? new java.util.HashMap<>() : new java.util.HashMap<>(record);
+        updated.put(key, id.toString());
+        chunk.setData(type, updated);
     }
 
     /**
@@ -138,6 +279,12 @@ public final class TaintBiomes {
      */
     public static void setBiomeAtAndSync(final ServerLevel level, final int x, final int z,
                                          final Holder<Biome> biome) {
+        // TC-M5-04-s-b: a write of a cleansable (taint-side) biome is a
+        // conversion — remember what the column had first so the bloom /
+        // restore path can put it back.
+        if (isCleansableBiome(biome)) {
+            recordBeforeConversion(level, x, z);
+        }
         setBiomeAt(level, x, z, biome);
         final ResourceLocation id = level.registryAccess()
                 .registryOrThrow(Registries.BIOME).getKey(biome.value());

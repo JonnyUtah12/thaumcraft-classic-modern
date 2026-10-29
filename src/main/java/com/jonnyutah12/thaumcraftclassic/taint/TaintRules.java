@@ -139,6 +139,60 @@ public final class TaintRules {
     /** {@code applyTaintPoison(el, 100)} on every non-tainted mob in the splash. */
     public static final int BOTTLE_POISON_DURATION_TICKS = 100;
 
+    // --- cleansing: the Ethereal Bloom (TileEtherealBloom.java:11-46) -------
+    // TC-M5-04-s-b. The original's bloom is a TileEntity that updates every
+    // game tick; its counter is seeded once and the cleansing roll runs on
+    // `counter % 20 == 0`. The scan offset is `nextInt(8) - nextInt(8)` on each
+    // horizontal axis (so -7..7, i.e. a 15×15 box), and the target column must
+    // lie inside `getDistanceTo(...) <= 81.0` — TileEntity#getDistanceTo is the
+    // SQUARED distance, so the gate is a radius of 9, not 81.
+
+    /** {@code counter = world.rand.nextInt(100)} when the counter is 0. */
+    public static final int BLOOM_PHASE_MOD = 100;
+    /** The cleansing roll runs on {@code counter % 20 == 0}. */
+    public static final int BLOOM_PERIOD = 20;
+    /** {@code rand.nextInt(8) - rand.nextInt(8)} per horizontal axis. */
+    public static final int BLOOM_SCAN_MOD = 8;
+    /** {@code getDistance(x + tx + 0.5, ty, z + tz + 0.5) <= 81.0} (squared). */
+    public static final double BLOOM_RADIUS_SQUARED = 81.0D;
+    /** The bloom's client roots cue: {@code playSound("thaumcraft:roots", 1.0F, 0.6F)}. */
+    public static final float BLOOM_ROOTS_VOLUME = 1.0F;
+    public static final float BLOOM_ROOTS_PITCH = 0.6F;
+
+    // --- flux → taint thresholds, the rest of BlockFluxGoo.updateTick -------
+    // TC-M5-04-s-b pins the whole goo tick so the thresholds exist in one place
+    // for the flux row (TC-M5-03) and the slime entity (TC-M6-06) to call.
+
+    /** The thaumic-slime branch below the taint gate: {@code meta >= 2 && meta < 6}. */
+    public static final int FLUX_SLIME_SMALL_MIN_QUANTA = 2;
+    public static final int FLUX_SLIME_SMALL_MAX_QUANTA = 5;
+    /** Size-1 slime: {@code rand.nextInt(25) == 0}. */
+    public static final int FLUX_SLIME_SMALL_MOD = 25;
+    /** Goo decay: {@code rand.nextInt(30) == 0} → one quanta less (meta 0 → removed). */
+    public static final int FLUX_DECAY_MOD = 30;
+    /** A decayed goo column vents gas above on {@code rand.nextBoolean()}. */
+    public static final int FLUX_GAS_ABOVE_CHANCES = 2;
+
+    // --- aura: taint's contribution to the biome aura (TC-M5-04-s-b) --------
+
+    /**
+     * {@code baura = (int)(baura * 1.5F)} for a non-PURE node generated in a
+     * taint biome, and ×1.5 again when the coin flip makes it TAINTED
+     * (ThaumcraftWorldGenerator.java:272-279).
+     */
+    public static final float TAINT_AURA_MULTIPLIER = 1.5F;
+    /**
+     * {@code TileNode.handleTaintNode}: the taint biome repainted on
+     * {@code count % 50 == 0} in a {@code nextInt(8) - nextInt(8)} box; a
+     * non-PURE node standing in a taint biome flips to TAINTED on
+     * {@code nextInt(500) == 0} every {@code count % 100 == 0}
+     * (TileNode.java:773-801).
+     */
+    public static final int NODE_TAINT_PAINT_PERIOD = 50;
+    public static final int NODE_STABILITY_PERIOD = 100;
+    public static final int NODE_TAINT_SCAN_MOD = 8;
+    public static final int NODE_TAINT_FLIP_MOD = 500;
+
     // --- sounds and client FX (original volumes, verbatim) ------------------
 
     /** {@code playSoundEffect(..., "thaumcraft:roots", 0.1F, 0.9F + rand*0.2F)}. */
@@ -268,5 +322,159 @@ public final class TaintRules {
     /** A goo column of quanta >= 4 is solid enough to stop falling crust. */
     public static boolean gooBlocksFall(final int quanta) {
         return quanta >= FALL_BLOCKING_GOO_QUANTA;
+    }
+
+    // ---------------------------------------------------------- cleansing rules
+
+    /**
+     * Does the bloom's update run its cleansing roll this tick? The original
+     * seeds {@code counter} with {@code nextInt(100)} when it reads 0, then
+     * increments, then tests {@code counter % 20 == 0} — so the phase is the
+     * seed, and the roll is one draw per {@link #BLOOM_PERIOD} ticks.
+     */
+    public static boolean bloomCleansesThisTick(final long counterAfterIncrement) {
+        return counterAfterIncrement % BLOOM_PERIOD == 0;
+    }
+
+    /**
+     * The bloom's gate (TileEtherealBloom.java:26-31): the column it picked
+     * must be a biome taint can occupy — the original lists the Tainted Land,
+     * Eerie and Magical Forest ids — and must sit inside the radius. The
+     * distance is the original's squared {@code TileEntity#getDistanceTo}, so
+     * the caller passes the square and the gate is {@link #BLOOM_RADIUS_SQUARED}.
+     */
+    public static boolean bloomCleanses(final boolean targetIsCleansableBiome,
+                                        final double distanceSquared) {
+        return targetIsCleansableBiome && distanceSquared <= BLOOM_RADIUS_SQUARED;
+    }
+
+    /**
+     * One axis of the bloom's scan offset: {@code rand.nextInt(8) -
+     * rand.nextInt(8)}, i.e. -7..7, so the bloom reaches a 15×15 box around
+     * itself and the radius gate trims it to a disc.
+     */
+    public static int bloomOffset(final int rollA, final int rollB) {
+        return rollA - rollB;
+    }
+
+    /**
+     * The distance term of the bloom's radius gate, transcribed from the
+     * original's call
+     * {@code getDistance(x + tx + 0.5, y, z + tz + 0.5)} — the {@code double}
+     * overload of {@code TileEntity#getDistance}, which measures from the
+     * tile's own centre {@code (x + 0.5, y + 0.5, z + 0.5)} and returns the
+     * SQUARE of the distance. The deltas are therefore {@code (-tx, 0.5, -tz)}
+     * (the y delta is 0.5 because the original passes the tile's own {@code y}
+     * un-offset), so:
+     *
+     * <pre>d² = tx² + 0.5² + tz²</pre>
+     *
+     * <p>With the ±7 scan box that admits offsets up to |tx| = 8 (the box
+     * tops out at 7), trims the corners ((7,7) → 98.25 &gt; 81), and makes the
+     * cleansed area a disc of radius ~9 — not the 81-block radius the literal
+     * constant suggests, and not a square. Feeds {@link #bloomCleanses}.</p>
+     */
+    public static double bloomDistanceSquared(final int tx, final int tz) {
+        return (double) tx * tx + 0.25D + (double) tz * tz;
+    }
+
+    /**
+     * The biome the cleansed column goes back to (TileEtherealBloom.java:32-41).
+     * The original asks the <em>chunk manager</em> — {@code
+     * WorldChunkManager#getBiomesToGenerateAt} — for the biome that GENERATES
+     * at that column, i.e. the biome the world would have placed there, and
+     * substitutes plains when even the generator says taint. So "restore the
+     * original biome" is not a stored record: it is the generator's own answer,
+     * and the plains write is only the fallback for a taint-plumbed world.
+     *
+     * @param generatedIsTaint whether the generator's biome is the taint biome
+     * @return true — write plains; false — write the generated biome itself
+     */
+    public static boolean cleansingFallsBackToPlains(final boolean generatedIsTaint) {
+        return generatedIsTaint;
+    }
+
+    /**
+     * The bloom only rewrites a column whose stored biome is one of the three
+     * thaumic biomes it lists (see {@link #bloomCleanses}); a column that holds
+     * any other biome is left exactly as it is.
+     */
+    public static boolean cleansingSkipsColumn(final boolean storedIsCleansableBiome) {
+        return !storedIsCleansableBiome;
+    }
+
+    // -------------------------------------------------- flux goo tick (the rest)
+
+    /**
+     * The thaumic-slime branch under the taint gate: {@code meta >= 2 && meta <
+     * 6 && air above && rand.nextInt(25) == 0} spawns a size-1 slime
+     * (BlockFluxGoo.java:88-96). The slime itself is TC-M6-06's row; the
+     * threshold is pinned here.
+     */
+    public static boolean fluxGooSpawnsSmallSlime(final int quanta, final boolean airAbove,
+                                                  final int roll) {
+        return quanta >= FLUX_SLIME_SMALL_MIN_QUANTA && quanta <= FLUX_SLIME_SMALL_MAX_QUANTA
+                && airAbove && roll == 0;
+    }
+
+    /** The size-2 slime above the taint gate: {@code meta >= 6 && nextInt(25) == 0}. */
+    public static boolean fluxGooSpawnsLargeSlime(final int quanta, final boolean airAbove,
+                                                  final int roll) {
+        return quanta >= FLUX_TAINT_MIN_QUANTA && airAbove && roll == 0;
+    }
+
+    /**
+     * The goo's own decay: {@code rand.nextInt(30) == 0} removes the last
+     * quanta, and a surviving column vents flux gas above on a coin flip
+     * (BlockFluxGoo.java:110-118).
+     */
+    public static boolean fluxGooDecays(final int roll) {
+        return roll == 0;
+    }
+
+    // ------------------------------------------------- aura / vis interaction
+
+    /**
+     * The biome-aura value the node generator uses in a taint biome: {@code
+     * (int)(baura * 1.5F)} for a non-PURE node, and ×1.5 again once the coin
+     * flip has made the node TAINTED (ThaumcraftWorldGenerator.java:272-279).
+     * The float cast truncates, exactly as the original's {@code (int)} does:
+     * aura 100 → 150, 150 → 225 (not 225.5 rounded).
+     */
+    public static int taintBiomeAura(final int biomeAura) {
+        return (int) (biomeAura * TAINT_AURA_MULTIPLIER);
+    }
+
+    /**
+     * The node rule that spreads the taint biome: {@code count % 50 == 0} and a
+     * ±7 scan box (TileNode.java:775-783). Gated on the taint biome being
+     * registered: {@code BiomeAura.hasTaintBiome()} is the port's stand-in for
+     * the original's identity compare against {@code biomeTaint}, which was
+     * never null in a world that had Thaumcraft loaded.
+     */
+    public static boolean nodePaintsTaintBiome(final long count, final boolean taintBiomeRegistered) {
+        return taintBiomeRegistered && count % NODE_TAINT_PAINT_PERIOD == 0;
+    }
+
+    /**
+     * The node rule that takes taint over: a non-PURE node standing in a taint
+     * biome flips to TAINTED on {@code nextInt(500) == 0}, checked every
+     * {@code count % 100 == 0} (TileNode.java:792-798).
+     */
+    public static boolean nodeBecomesTainted(final long count, final boolean pure,
+                                             final boolean taintBiomeRegistered,
+                                             final boolean standingInTaintBiome, final int roll) {
+        return !pure && taintBiomeRegistered && standingInTaintBiome
+                && count % NODE_STABILITY_PERIOD == 0 && roll == 0;
+    }
+
+    /**
+     * One axis of the taint node's scan offset: {@code rand.nextInt(8) -
+     * rand.nextInt(8)} (TileNode.java:778-779), i.e. -7..7. The caller draws
+     * the two rolls in the original's order (x pair, then z pair) so a seeded
+     * world reproduces the original's sequence.
+     */
+    public static int nodeTaintScanOffset(final int rollA, final int rollB) {
+        return rollA - rollB;
     }
 }
