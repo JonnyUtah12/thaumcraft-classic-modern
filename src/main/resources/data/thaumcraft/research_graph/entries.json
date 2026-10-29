@@ -8149,7 +8149,7 @@
       ],
       "icon": {
         "kind": "texture",
-        "texture": "thaumcraft:textures/blocks/alchemyblock.png"
+        "texture": "thaumcraft:textures/block/alchemyblock.png"
       },
       "flags": {
         "concealed": true

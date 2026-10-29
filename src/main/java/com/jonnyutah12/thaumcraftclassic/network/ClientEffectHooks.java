@@ -1,11 +1,17 @@
 package com.jonnyutah12.thaumcraftclassic.network;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcBeamGeometry;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcBeamParticle;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcEffects;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcFxPlans;
 import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
@@ -101,36 +107,107 @@ public final class ClientEffectHooks {
     }
 
     // --- visual effects (original common/lib/network/fx handlers) ---
-    // TODO(M4 client effects): replace every stub with the ported particle/beam
-    // system; the payload shapes below already carry everything the original
-    // onMessage methods used.
+    // TC-M7-02-s wires the two block-position particle effects whose original
+    // shape is a particle cloud (sparkle, crucible bubble). The beam/bolt
+    // family below is not a particle effect in the original (FXLightningBolt,
+    // FXBeam* and the wisp family are world-rendered beams), and the
+    // dig/essentia/vis/infusion families ride the same plan+spawn seam, so
+    // they keep their own follow-up cards.
 
+    /**
+     * TC-M7-02-s WIRED: the original's {@code PacketFXBlockBubble} client
+     * handler runs four jittered {@code ClientProxy.crucibleBubble} calls per
+     * {@code particleCount(1)} iteration and hands each to the particle engine
+     * (PacketFXBlockBubble.java:44-79). The plan is
+     * {@code TcFxPlans.blockBubble}, the spawn is {@code TcEffects}.
+     */
     static void fxBlockBubble(final BlockPos pos, final int color) {
         LOGGER.debug("fx block bubble at {} color={}", pos, color);
-    }
-
-    static void fxBlockSparkle(final BlockPos pos, final int color) {
-        LOGGER.debug("fx block sparkle at {} color={}", pos, color);
-    }
-
-    static void fxBlockArc(final BlockPos pos, final int sourceEntityId) {
-        LOGGER.debug("fx block arc at {} source={}", pos, sourceEntityId);
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        TcEffects.blockBubble(mc.level, pos, color, particleSetting(), RandomSource.create());
     }
 
     /**
-     * TC-M7-05 sound half WIRED: the original PacketFXBlockZap client handler
-     * plays {@code thaumcraft:zap} at the block position (volume 0.1, pitch
-     * 1.0 + rand*0.2) alongside the node-bolt particle. The particle/beam
-     * half remains TODO(M4 client effects → TC-M7-02).
+     * TC-M7-02-s WIRED: the original's {@code PacketFXBlockSparkle} client
+     * handler is one {@code ClientProxy.blockSparkle(world, x, y, z, c, 7)}
+     * call (PacketFXBlockSparkle.java:40-42, ClientProxy.java:576-608) — the
+     * generic sparkle every vis sender in the original routes through.
+     */
+    static void fxBlockSparkle(final BlockPos pos, final int color) {
+        LOGGER.debug("fx block sparkle at {} color={}", pos, color);
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        TcEffects.blockSparkle(mc.level, pos, color, particleSetting(), RandomSource.create());
+    }
+
+    /**
+     * The vanilla particle setting the original reads as
+     * {@code Minecraft.getMinecraft().gameSettings.field_74362_aa}
+     * (ClientProxy.java:949-955): ALL=0, DECREASED=1, MINIMAL=2, same ids in
+     * 1.21.1's {@code ParticleStatus}.
+     */
+    private static int particleSetting() {
+        return Minecraft.getInstance().options.particles().get().getId();
+    }
+
+    /**
+     * TC-M7-02-b-s WIRED: the original's {@code PacketFXBlockArc} client
+     * handler resolves the source entity, rolls the arc colour (the
+     * {@code EntityCultistPortal} branch stays plan-visible; the boss family
+     * is on another card, so the port passes false), and runs
+     * {@code proxy.arcLightning} — the glow sparkle at the target plus the
+     * jittered arc (PacketFXBlockArc.java:41-66, ClientProxy.java:1301-1309).
+     */
+    static void fxBlockArc(final BlockPos pos, final int sourceEntityId) {
+        LOGGER.debug("fx block arc at {} source={}", pos, sourceEntityId);
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        final Entity source = mc.level.getEntity(sourceEntityId);
+        if (source == null) {
+            return;
+        }
+        // Handler source point: entity x/z, bounding-box bottom + width/2
+        // (PacketFXBlockArc.java:56-58).
+        final Vec3 sourcePoint = new Vec3(source.getX(),
+                source.getBoundingBox().minY + source.getBbWidth() / 2.0, source.getZ());
+        // Target point: block center, pos.getY() + 1 (PacketFXBlockArc.java:61-63).
+        TcEffects.spawn(mc.level, TcFxPlans.blockArc(sourcePoint,
+                pos.getX() + 0.5, pos.getY() + ARC_TARGET_Y, pos.getZ() + 0.5,
+                mc.level.getRandom(), false));
+    }
+
+    /** The arc target's Y offset of {@code PacketFXBlockArc} (message.y + 1). */
+    private static final double ARC_TARGET_Y = 1.0;
+
+    /**
+     * TC-M7-05 sound half WIRED + TC-M7-02-b-s particle half WIRED: the
+     * original PacketFXBlockZap client handler runs {@code proxy.nodeBolt}
+     * (the seed draw) and then plays {@code thaumcraft:zap} at the block
+     * position (volume 0.1, pitch 1.0 + rand*0.2) — the draw order of the
+     * original handler (PacketFXBlockZap.java:45-50).
      */
     static void fxBlockZap(final Vec3 pos, final Vec3 direction) {
         LOGGER.debug("fx block zap at {} dir={}", pos, direction);
         final Minecraft mc = Minecraft.getInstance();
-        if (mc.level != null) {
-            mc.level.playLocalSound(pos.x, pos.y, pos.z,
-                    ModSounds.ZAP.value(), SoundSource.MASTER,
-                    0.1F, 1.0F + mc.level.getRandom().nextFloat() * 0.2F, false);
+        if (mc.level == null) {
+            return;
         }
+        // nodeBolt first: world.rand.nextLong() seeds the fractal
+        // (ClientProxy.java:789-796), before the sound's pitch draw.
+        final long seed = mc.level.getRandom().nextLong();
+        TcEffects.spawn(mc.level, TcFxPlans.blockZapBolt(pos,
+                pos.add(direction.x, direction.y, direction.z), seed,
+                viewDistance(pos), TcBeamParticle.fancyGraphics()));
+        mc.level.playLocalSound(pos.x, pos.y, pos.z,
+                ModSounds.ZAP.value(), SoundSource.MASTER,
+                0.1F, 1.0F + mc.level.getRandom().nextFloat() * 0.2F, false);
     }
 
     static void fxBlockDig(final BlockPos targetPos, final ResourceLocation blockOrItemId, final int data,
@@ -166,11 +243,67 @@ public final class ClientEffectHooks {
         LOGGER.debug("fx zap {} -> {}", sourceEntityId, targetEntityId);
     }
 
+    /**
+     * TC-M7-02-b-s WIRED: the original's {@code PacketFXBeamPulse} client
+     * handler builds one {@code FXBeam} at the source entity's eye position
+     * aimed at the live target (PacketFXBeamPulse.java:38-58). The 50/25
+     * view-distance gate (FXBeam.java:66-73) is applied in the plan.
+     */
     static void fxBeamPulse(final int sourceEntityId, final int targetEntityId, final int color) {
         LOGGER.debug("fx beam pulse {} -> {} color={}", sourceEntityId, targetEntityId, color);
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        final Entity source = mc.level.getEntity(sourceEntityId);
+        if (source == null || mc.level.getEntity(targetEntityId) == null) {
+            // The original forces particleMaxAge = 0 for a dead target
+            // (FXBeam.java:55-64); the beam never appears.
+            return;
+        }
+        // Source eye position (PacketFXBeamPulse.java:40-42).
+        final Vec3 sourceEye = new Vec3(source.getX(), source.getY() + source.getEyeHeight(),
+                source.getZ());
+        TcEffects.spawn(mc.level, TcFxPlans.beamPulse(sourceEye, targetEntityId, color,
+                viewDistance(sourceEye), TcBeamParticle.fancyGraphics()));
     }
 
+    /**
+     * TC-M7-02-b-s WIRED: the original's {@code PacketFXBeamPulseGolemBoss}
+     * client handler builds the two-boss-beam pair from the boss's head
+     * anchor (PacketFXBeamPulseGolemBoss.java:38-60, FXBeamGolemBoss.java:39-52).
+     */
     static void fxBeamPulseGolemBoss(final int sourceEntityId, final int targetEntityId) {
         LOGGER.debug("fx golem boss beam pulse {} -> {}", sourceEntityId, targetEntityId);
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        final Entity boss = mc.level.getEntity(sourceEntityId);
+        if (boss == null || mc.level.getEntity(targetEntityId) == null) {
+            return;
+        }
+        final double[] head = TcBeamGeometry.headAnchor(boss.getX(), boss.getY(), boss.getZ(),
+                boss.getYRot(), boss.getXRot(), boss.getEyeHeight());
+        final Vec3 headAnchor = new Vec3(head[0], head[1], head[2]);
+        TcEffects.spawn(mc.level, TcFxPlans.beamPulseGolemBoss(headAnchor, sourceEntityId,
+                targetEntityId, viewDistance(headAnchor), TcBeamParticle.fancyGraphics()));
+    }
+
+    /**
+     * The render view entity's distance to a point — the original reads
+     * {@code renderentity.getDistance(...)} for the beam/bolt gates
+     * (FXBeam.java:66-73, FXLightningBolt.java:155-159); 1.21.1's camera
+     * entity is the same view point.
+     */
+    private static double viewDistance(final Vec3 point) {
+        final Minecraft mc = Minecraft.getInstance();
+        final Entity viewEntity = mc.getCameraEntity() == null ? mc.player : mc.getCameraEntity();
+        if (viewEntity == null) {
+            return 0.0;
+        }
+        return Math.sqrt(Math.pow(viewEntity.getX() - point.x, 2)
+                + Math.pow(viewEntity.getY() - point.y, 2)
+                + Math.pow(viewEntity.getZ() - point.z, 2));
     }
 }

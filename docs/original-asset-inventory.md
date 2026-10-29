@@ -26,6 +26,39 @@ in the code, then resolving it to a file:
 | `sounds.json` event keys + `playSound("thaumcraft:<event>")` call sites | `sounds/<file>.ogg` |
 | OBJ `mtllib` | `.mtl` (see model section — not loaded at runtime) |
 
+### Published layout (1.21.1)
+
+The reference tree keeps the 1.7.10 directory names, and 1.21.1 resolves block
+and item sprites under **singular** directories — the plural names were dropped
+in 1.14. Measured against `minecraft_1.21.1_client.jar`
+(`assets/minecraft/textures/`: `block` 1061, `item` 605, `gui` 502,
+`particle` 229, `misc` 19, `models` 15 — there is no `blocks`/`items`), each
+directory is handled on its own evidence:
+
+| 1.7.10 source dir | published at | why |
+| --- | --- | --- |
+| `textures/blocks/` | `textures/block/` | 1.21.1 block sprite directory; a model sprite `thaumcraft:block/amberore` resolves only there |
+| `textures/items/` | `textures/item/` | 1.21.1 item sprite directory; same reasoning |
+| `textures/models/` | unchanged | vanilla ships `textures/models`; the OBJ files are addressed by literal path (`mtllib`) |
+| `textures/misc/` | unchanged | vanilla ships `textures/misc`; bound by literal path (research `<IMG>`, TESR `bindTexture`) |
+| `textures/gui/` | unchanged | vanilla ships `textures/gui`; bound by literal path in the GUI classes |
+| `textures/aspects/` | unchanged | literal path built by `Aspect#iconTexture` (`thaumcraft:textures/aspects/<tag>.png`) |
+| `textures/foci/` | unchanged | literal path from `ItemFocus*` / `ConfigResearch` |
+
+The rename happens at copy time in `overlayOriginalAssets` (build.gradle) —
+the ARR source tree is never modified (D-004) — and the `new_asset` column of
+`docs/asset-mapping.csv` records the 1.21.1 target, so the recorded contract
+matches the pipeline. Committed references split on how they are consumed:
+**structured** locations (the research graph's `texture`/`icon`/`background`
+fields) name the modern path, because they are read as resource locations;
+`<IMG>` paths inside research page **text** keep the original 1.7.10 path,
+because that text is byte-identical to the original `en_US.lang` (guarded by
+`ResearchGraphDataTest.langStringsAreVerbatimFromTheOriginalFile`) — the
+research renderer therefore applies this same rename to `<IMG>` paths at draw
+time. `OriginalTextureOverlayTest` guards the CSV targets, the overlay output,
+every `thaumcraft:` sprite referenced by the committed models, and the
+structured research locations.
+
 `used_by` in the CSV lists the decompiled classes that reference the asset,
 tagged by kind: `(block) (item) (block-entity) (entity-render) (entity)
 (gui) (effect) (model) (wand-component) (aspect-system) (registration)
@@ -128,6 +161,37 @@ export leftovers; colors in them do not match in-game appearance);
 `alchemyblock.mtl` is referenced by nothing; `hemis.obj` references a
 missing `hemis.mtl`. All are kept only as model-conversion source, not
 runtime assets.
+
+## PARTICLE-SPRITES — 1.7.10 cell grid → 1.21.1 per-frame sprites (TC-M7-02-s)
+
+The original has **no per-file particle textures**. Its FX art is one sheet,
+`textures/misc/particles.png` (16 columns × 16 rows of 16px cells = 256 cells),
+and the code addresses it by **flat cell number**:
+`ClientProxy.drawGenericParticles` takes `startParticle` / `numParticles` /
+`particleInc` and `FXGeneric.setParticleTextureIndex` writes that number
+straight into the tessellator UV maths, so a frame is `cell(start + k)`.
+1.21.1 has no cell arithmetic — a particle's frames are a **list of sprite ids**
+in `assets/<ns>/particles/<id>.json`, fed to the particle atlas (which collects
+every namespace's `textures/particle/` folder). The build therefore slices the
+cells the ported particles index into one sprite per cell
+(`sliceOriginalParticleSprites`, build.gradle). The sheet stays the source of
+truth and no original asset is committed (D-004); the *definition* JSONs are
+committed, because 1.21.1 treats the frame list as the particle's identity.
+
+| Ported particle | Original index site | Cells (draw order) | Sliced sprites (`textures/particle/`) |
+| --- | --- | --- | --- |
+| `thaumcraft:sparkle` | `ClientProxy.blockSparkle` → `drawGenericParticles(..., 112, 9, 1, ...)` (ClientProxy.java:592-606), sent by `PacketFXBlockSparkle` | 112, 113, 114, 115, 116, 117, 118, 119, 120 (row 7, cols 0-8) | `sparkle_0..sparkle_8` (9 frames, `setSpriteFromAge` walks them over life, which is what `FXGeneric`'s `start + min(num * age/maxAge, num-1)` does) |
+| `thaumcraft:bubble` | `FXBubble` frame counter (`particle++` on the last two ticks, FxBubble.java:63-65), fed by `ClientProxy.crucibleBubble` from `PacketFXBlockBubble` | 16 (body), 17 (pop) (row 1, cols 0-1) | `bubble_0` (body), `bubble_1` (pop) |
+
+Contract, pinned by `ParticleSpriteSlicingTest`: (1) each definition JSON names
+its frames in cell order, (2) each sliced PNG exists and is **pixel-identical**
+to the sheet cell the original indexes — an off-by-one in `col = idx % 16` /
+`row = idx / 16` fails the test rather than shipping a wrong-looking particle,
+(3) no sliced sprite is left unnamed by a definition.
+
+The sheet's other 246 cells stay untouched: the FX families that index them
+(`FXBoreParticles`, `FXVisSparkle`, the wisp and beam art) are on their own
+cards, and slicing a cell no particle names would put dead art in every jar.
 
 ## Unused assets (42) — explicit, with reason
 

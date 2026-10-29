@@ -5,6 +5,18 @@ Format: Keep a Changelog; versioning: Semantic Versioning (see
 `docs/release-process.md`). Project versions are independent of the pinned
 Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
+## [Unreleased]
+
+Work heading for `0.1.0-alpha.5`, gated per merge on `main`.
+
+- **First authored container screen** (`TC-M7-04-s-cr1`): `TrunkScreen` extends 1.21.1
+  `AbstractContainerScreen`; `ModClientScreens` registers it on the mod bus through
+  `RegisterMenuScreensEvent`, client-only, bound to the trunk menu type. Gate: 372 unit
+  tests / 0 failures, 103/103 game tests with and without Curios. This is **1 of N**
+  screens: the mod ships menu types with no screen today, and the board's premise that
+  screens exist in the wip tree is measured false (0 screen classes in `src`, 0 in
+  `wip-salvage`), so the rest are authoring work, not porting.
+
 ## [0.1.0-alpha.4] - 2026-10-28
 
 Fourth pre-release. Still deliberately a pre-release, not playable end-to-end:
