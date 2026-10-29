@@ -447,3 +447,50 @@ same class as the alpha.1 release still carrying a ~10.38 MB asset-included jar.
 **Recommendation:** option 2 deferred by one release, with option 1's wording
 correction done now (the notes should not claim the jar is free of original
 content while it carries 231 original strings).
+
+## D-017 — A golem card proposal was rejected for naming non-existent classes
+
+**Rejected 2026-10-28**, while adding the golem system to the board.
+
+**What was proposed.** A five-card golem breakdown naming, as the classes to port:
+`GolemGenerator`, `EntityGolem`, `GolemTasks`, `GolemAIBag`, `BlockGolem`,
+`ItemGolemHeart`, `ItemTabard`, `TileGolemBell`, `GolemFarmer`, `planterbell`.
+It also asserted specific balance values — "vis cost 25", "the per-player golem
+cap from the original is 10", "16-block radius", "40-tick scan", "3 damage",
+"100-tick planter bell cycle", "10 essentia points capped at 100", "2 vis/tick"
+— as if quoted from the original.
+
+**Checked against the tree.** `find ../reference/decompiled -ipath '*golem*'`
+returns **29 files**, and **not one** of those ten names appears anywhere in the
+885-file decompiled source. The real names are `EntityGolemBase` (1326 lines,
+which is what `EntityGolem` was being paraphrased into), `EnumGolemType`,
+`GolemHelper`, `ItemGolemPlacer`, `ItemGolemCore`, `ItemGolemUpgrade`,
+`ItemGolemBell`, `ItemGolemDecoration`, `ContainerGolem`, `GuiGolem`, `Marker`,
+`AIGolemAttackOnCollide`. There is no `GolemGenerator`, no `GolemTasks` file and
+no `GolemFarmer` class; there is no block-form golem, so no `BlockGolem`; the
+material item is a **placer** (`ItemGolemPlacer`, 8 variants), not a heart; and
+the research category is `GOLEMANCY`, not `thaumery.golem`.
+
+**Why it matters.** The invented names are not slow to discover — two `find`
+calls settle them. Every fabricated class in a card body is an import a worker
+will write and a compile error it will then debug, which is how the arcane
+workbench card burned roughly 92 errors on names like
+`world.inventory.BaseContainerStacks` and `gametest.framework.TestMessageItem`.
+The invented numbers are worse: they would have entered the port as *balance
+values that look like they were read from the original*, violating "Do not
+invent gameplay" and "Do not intentionally change gameplay balance" in a way no
+review would catch, because the card body would have read as sourced.
+
+**Rule.** A card body may only name a class, item, entity, research key or
+numeric constant after it has been located in `reference/decompiled/`,
+`docs/content-mapping.csv` or `docs/original-content-inventory.md`. Where a
+value must be pinned and has not yet been read, the card says **pin it from the
+source** and names the file to read — it does not supply a plausible figure.
+
+**Filed instead.** TC-M6-08-s (`t_7de99735`), TC-M6-08-s-b (`t_a7293d2c`) and
+TC-M6-08-s-c (`t_d0a98369`) — three serial cards grounded in the real class
+names, the real `EnumGolemType` (8 materials), the 6 primal upgrades, the 41
+golem research entries already shipped, and the 96 golem rows already in
+`content-mapping.csv`. Golems were also removed from TC-M6-06-s
+(`t_26136494`), which had been carrying "elemental + golem + taint mob" in one
+150-iteration budget.
