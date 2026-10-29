@@ -92,6 +92,12 @@ def walk_json(node, texture_refs, model_refs, parents):
         textures = node.get("textures")
         aliases = set()
         if isinstance(textures, dict):
+            # A face's "#name" resolves against the KEYS of this document's
+            # textures map (and against keys re-exported from the parent), so
+            # the key set is part of the alias namespace. Collecting only the
+            # "#..." values reported every self-contained elements-model as
+            # having a dangling alias.
+            aliases.update(k for k in textures if isinstance(k, str))
             for value in textures.values():
                 if isinstance(value, str):
                     if value.startswith("#"):
