@@ -24,11 +24,37 @@ import base64
 import csv
 import json
 import os
+import struct
+import zlib
 
 # A real 1x1 RGBA PNG. Placeholder content only: the gates care about paths.
 PNG_1X1 = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
 )
+
+# `textures/misc/particles.png` is not a plain texture: build.gradle's
+# `sliceOriginalParticleSprites` indexes it as a 16-column x 16-row grid of
+# 16 px cells (the original sheet is 256x256), so a 1x1 placeholder makes
+# `Image.getSubimage` throw "(x + width) is outside of Raster" and the
+# overlay-fixture gate cannot even run. The fixture reproduces the sheet's
+# DIMENSIONS (transparent placeholder content, no original bytes); every other
+# placeholder stays 1x1 because the gates only care about paths.
+PARTICLE_SHEET = "textures/misc/particles.png"
+PARTICLE_SHEET_SIZE = 256
+
+
+def transparent_png(width, height):
+    """A valid fully-transparent RGBA PNG of the given size (stdlib only)."""
+    def chunk(tag, payload):
+        body = tag + payload
+        return struct.pack(">I", len(payload)) + body + struct.pack(">I", zlib.crc32(body) & 0xFFFFFFFF)
+
+    header = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
+    scanlines = b"".join(b"\x00" + b"\x00\x00\x00\x00" * width for _ in range(height))
+    return (b"\x89PNG\r\n\x1a\n"
+            + chunk(b"IHDR", header)
+            + chunk(b"IDAT", zlib.compress(scanlines, 9))
+            + chunk(b"IEND", b""))
 
 # The sound transform reads this file; the fixture gives it the two camelCase
 # ids the build normalizes so the rename path is exercised too.
@@ -54,7 +80,12 @@ def main():
                 continue
             path = os.path.join(root, source.replace("/", os.sep))
             os.makedirs(os.path.dirname(path), exist_ok=True)
-            data = PNG_1X1 if path.endswith(".png") else (json.dumps({}) + "\n").encode()
+            if not path.endswith(".png"):
+                data = (json.dumps({}) + "\n").encode()
+            elif source == PARTICLE_SHEET:
+                data = transparent_png(PARTICLE_SHEET_SIZE, PARTICLE_SHEET_SIZE)
+            else:
+                data = PNG_1X1
             with open(path, "wb") as out:
                 out.write(data)
             written[source] = target
