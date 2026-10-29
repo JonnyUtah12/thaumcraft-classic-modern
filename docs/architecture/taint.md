@@ -199,3 +199,35 @@ Recorded as BD-15 in `docs/BEHAVIORAL_DEVIATIONS.md`:
 - **Numeric-id config options.** `config.biomes.biome_taint` (the original's
   numeric biome id) is not implemented, per BD-07 / D-010: 1.21.1 registries
   are name-keyed. The biome is the registry entry above.
+
+### Cleansing acceptance: the disc probe's roll fixture (TC-M5-04-s-b2)
+
+The bloom's roll is two `nextInt(8)` subtractions per axis, so the probe that
+accepts the disc has to reach every offset of the ±7 box. The seeded stream in
+the first version of that probe did not, and the "4 of 16 palette cells never
+cleanse" report was that fixture, not the write path:
+
+- `RandomSource.create(long)` is `LegacyRandomSource` over `java.util.Random`.
+  Consecutive seeds are *not* independent: `seed = seed * 0x5DEECE66D + 0xB
+  (mod 2^48)` amplifies a difference of one by 2.3e10 out of 2.8e14, so the
+  first draw changes roughly once every 1400 seeds. The bloom draws x's pair
+  first, so x's offset was pinned to [-3, +7] and the palette cells at x
+  offsets -7..-5 were never targets.
+- Therefore: spread the seeds (`rollSeed = index * 0x9E3779B97F4A7C15L`), and
+  accept the disc with a **sweep** over all 225 offsets of the scan box
+  (scripted `RandomSource`, one offset per roll, fresh paint per pass). A
+  coverage claim about a disc must be a sweep, not a seed sequence.
+- A palette-cell key in a probe must be the cell's **identity**, not its index:
+  `(coord >> 2) & 3` repeats every 16 blocks, so a probe that paints ±12
+  columns (two chunks) sees two different cells share a key. Use
+  `cx.cellIndexX|cz.cellIndexZ`.
+- The outer-disc assertion is stated at cell granularity because a biome write
+  is a 4×4 footprint (BD-15): cells inside the disc legitimately own columns at
+  |offset| ≥ 8, and only cells that contain **no** in-disc column may stay
+  taint. That is the same reachability definition the engine uses for its scan
+  box.
+
+`TaintCleansingRollCoverageTest` (unit) pins the stream's coverage — span ±7 on
+both axes, every disc cell of every bloom alignment reached, the -7..-5 band
+drawn — so a fixture that stops reaching part of the disc fails in `gradle test`
+in ~50 ms, without a world.

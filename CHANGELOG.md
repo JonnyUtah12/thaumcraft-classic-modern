@@ -5,6 +5,47 @@ Format: Keep a Changelog; versioning: Semantic Versioning (see
 `docs/release-process.md`). Project versions are independent of the pinned
 Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
+## [Unreleased]
+
+**Taint — the Ethereal Bloom's cleansing disc (TC-M5-04-s-b2).** The disc
+acceptance probe shipped on `wt/taint-b1` reported that 4 of the 16 biome
+palette cells under the bloom never cleansed (`MISSING=[2_0, 2_1, 2_2, 2_3]`).
+That was the probe's own fixture, not the mod. `RandomSource.create(long)` is
+`java.util.Random`, whose LCG amplifies a seed difference of one by only
+`0x5DEECE66D` ≈ 2.3e10 inside a 2^48 state, so its **first** `nextInt(8)` moves
+about once every 1400 consecutive seeds. Over the seeds 1..2500 that first draw
+took four values (4, 5, 6, 7); the bloom draws x's pair first, so the roll
+stream spanned x offsets −3..+7 and **never** −5..−7. 69 of the 225 offsets of
+the scan box were never drawn, and the cells that received zero rolls were
+exactly the four reported ones. The biome write path was cleared by
+measurement: 41/41 single-column writes answer for their own column's 4-block
+footprint, the paint taints 625/625 columns, and every disc cell that received
+a roll fired exactly once.
+
+- `rollSeed` spreads seeds by the golden-ratio constant, and the disc probe now
+  also sweeps **every offset of the scan box exactly once** with a scripted
+  `RandomSource` on a fresh paint: "the disc is cleansed" no longer depends on
+  which offsets a seed sequence happens to draw. The scripted queue is supplied
+  x-pair-then-z-pair, which pins the original's draw order.
+- `cellKeyOf` now returns the palette cell's full identity (chunk coord +
+  index). The index `(coord >> 2) & 3` repeats every chunk and the probe paints
+  ±12 columns = two chunks, so an index-only key merged two different cells and
+  made the "missing cell" reading ambiguous.
+- "Never cleanses beyond the disc" is stated at cell granularity, the
+  definition the code already used (`dx > 3 || dz > 3`): a 4×4 cell spans
+  columns at |offset| ≥ 8 as its own BD-15 footprint, so a column filter at
+  |offset| ≥ 8 would flag a correct cleanse.
+- New mutation guard `TaintCleansingRollCoverageTest` (unit, ~50 ms, no world):
+  the roll stream must span ±7 on both axes, every disc cell of every bloom
+  alignment must receive rolls, and the x band −7..−5 must be drawn. Revert the
+  seed spread → 3 of 4 red (`expected: <-7> but was: <-3>`); a fourth test
+  pins the `java.util.Random` degeneracy itself.
+- Gates on this branch: unit **386 / 0 failures / 1 pre-existing skip**;
+  required game tests **All 115 passed** (111 inherited from the taint slice +
+  3 cleansing probes + 1 write-location probe). No new behavioral deviation:
+  the 4×4-block biome footprint is already BD-15, and the original's
+  byte-per-column write shares no palette cell.
+
 ## [0.1.0-alpha.4] - 2026-10-28
 
 Fourth pre-release. Still deliberately a pre-release, not playable end-to-end:
