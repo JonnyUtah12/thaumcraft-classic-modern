@@ -135,6 +135,27 @@ public final class TaintCleansingGameTest {
      * that pass its own gate. One restore rewrites a whole cell, so this is also
      * the number of rolls that can fire — the disc, counted in 4×4 cells.
      */
+    /** The derived cell set, for the failure message (a parity pin should name cells). */
+    private static java.util.Set<String> reachableCells(final BlockPos bloom) {
+        final java.util.Set<String> cells = new java.util.TreeSet<>();
+        final int limit = TaintRules.BLOOM_SCAN_MOD - 1;
+        for (int dx = -limit; dx <= limit; dx++) {
+            for (int dz = -limit; dz <= limit; dz++) {
+                if (TaintRules.bloomDistanceSquared(dx, dz) <= TaintRules.BLOOM_RADIUS_SQUARED) {
+                    cells.add(cellKeyOf(bloom.getX() + dx, bloom.getZ() + dz));
+                }
+            }
+        }
+        return cells;
+    }
+
+    private static java.util.Set<String> missing(final java.util.Set<String> derived,
+                                                 final java.util.Set<String> fired) {
+        final java.util.Set<String> out = new java.util.TreeSet<>(derived);
+        out.removeAll(fired);
+        return out;
+    }
+
     private static int reachableCellCount(final BlockPos bloom) {
         final java.util.Set<String> cells = new java.util.TreeSet<>();
         final int limit = TaintRules.BLOOM_SCAN_MOD - 1;
@@ -220,7 +241,11 @@ public final class TaintCleansingGameTest {
                 "the disc is " + cells + " biome palette cells (the scan box is " + limit
                         + ", so 4x4 cells of 4x4 blocks, and one restore cleanses a whole cell): "
                         + "the bloom fired " + fired + " times over " + firedCells.size()
-                        + " distinct cells in " + ROLLS + " rolls");
+                        + " distinct cells in " + ROLLS + " rolls; FIRED=" + firedCells
+                        + " DERIVED=" + reachableCells(bloom)
+                        + " MISSING=" + missing(reachableCells(bloom), firedCells)
+                        + " (each derived cell has >=6 qualifying offsets of 225, so a miss"
+                        + " over " + ROLLS + " rolls is not a coverage accident)");
 
         // (3) the core of the disc is genuinely cleansed: every column within
         // |offset| <= CORE_RADIUS reads something other than taint.
