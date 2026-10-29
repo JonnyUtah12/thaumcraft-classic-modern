@@ -104,6 +104,25 @@ public final class ModDataComponents {
                             .build());
 
     /**
+     * Robe armour tint (TC-M6-07-s): the original wrote a 24-bit RGB int to the
+     * stack's {@code display.color} NBT — {@code ItemRobeArmor.setColor}
+     * ({@code common/items/armor/ItemRobeArmor.java:118-131}), read by
+     * {@code getColor} (lines 96-104, default {@code 6961280}) and written by
+     * {@code RecipesRobeArmorDyes}, which mixes two dyes into a blended colour.
+     * 1.21.1's {@code minecraft:base_color} carries a {@code DyeColor} (16
+     * values), so it cannot hold the original's blended colour; the port keeps
+     * the full int on its own component, same shape as {@link #BANNER_COLOR}.
+     * The client read (the dyeable layer tint) is the armour model pass,
+     * TC-M7-01.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> ARMOR_COLOR =
+            DATA_COMPONENT_TYPES.register("armor_color",
+                    () -> DataComponentType.<Integer>builder()
+                            .persistent(Codec.intRange(0, 0xFFFFFF))
+                            .networkSynchronized(ByteBufCodecs.VAR_INT)
+                            .build());
+
+    /**
      * Runic hardening bonus (TC-M8-02): the original's {@code "RS.HARDEN"}
      * ItemStack NBT int read by {@code EventHandlerRunic.getFinalCharge}
      * ({@code common/lib/events/EventHandlerRunic.java:347-350}); written by

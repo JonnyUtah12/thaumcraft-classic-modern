@@ -111,7 +111,11 @@ public final class LocalizationGameTest {
             Map.entry("tc.handmirrorlinkedto", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorlinked", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorerror", "ItemHandMirror link message"),
-            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"));
+            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"),
+            // TC-M6-07-s: the robe/goggles tooltip line, the original's own key
+            // (ItemRobeArmor.java:132-133, ItemGoggles.java:40-42), shipped verbatim.
+            Map.entry("tc.visdiscount",
+                    "ItemRobeArmor/ItemGoggles appendHoverText (the original's tc.visdiscount)"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always

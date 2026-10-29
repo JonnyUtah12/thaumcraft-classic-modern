@@ -1,6 +1,7 @@
 package com.jonnyutah12.thaumcraftclassic.registration;
 
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArcaneWorkbench;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArmor;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
@@ -143,6 +144,18 @@ public final class ModRegistration {
         // with their jar tiles, the glass phial and the filled-jar item. The
         // tube network that moves essentia between them stays on TC-M4-07.
         CatalogEssentiaStorage.init(modEventBus);
+
+        // TC-M6-07-s: thaumic armour + equipment effects — the two armour
+        // materials the original registers (armorMatThaumium / armorMatSpecial)
+        // as real ARMOR_MATERIAL registry entries, the four thaumium pieces,
+        // the three robe pieces and the goggles of revealing, and their effects
+        // through the already-merged contracts: IVisDiscountGear into
+        // wands/WornGearDiscounts, IRunicArmor into runic/RunicShielding's
+        // armour-slot scan, and IRevealer into nodes/NodeReveal. The boots of
+        // the traveller, the thaumostatic harness, the fortress/void/cult
+        // families, the robe dye mechanics and the armour models stay on
+        // TC-M6-07b / TC-M6-06 / TC-M7-01.
+        CatalogArmor.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-
