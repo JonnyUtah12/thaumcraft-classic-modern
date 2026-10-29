@@ -259,9 +259,88 @@ def transformOriginalSoundsJson = tasks.register("transformOriginalSoundsJson") 
     }
 }
 
+// TC-M7-02-s: the original's FX sprites are not per-file PNGs. They live in a
+// 16-column x 16-row cell grid inside textures/misc/particles.png (256x256),
+// and the FX code indexes that grid with a flat cell number:
+// ClientProxy.drawGenericParticles takes startParticle=112 / numParticles=9
+// (ClientProxy.java:592-606, passed by every ClientProxy.blockSparkle caller),
+// and FXBubble indexes cells 16 (body) and 17 (pop) through its own
+// particle-frame counter. 1.21.1 indexes a frame list of real sprites
+// (assets/<ns>/particles/<id>.json -> the particle atlas, which collects every
+// namespace's textures/particle/ folder), so the build slices the cells the
+// ported particles use into one sprite per cell. Slicing at build time keeps
+// the original sheet as the source of truth (D-004: no original asset is
+// committed); the particle JSONs committed in src/main/resources name the
+// sliced ids, and ParticleSpriteSlicingTest pins the cell -> sprite mapping.
+def originalParticleSheet = file("${originalAssetsDir}/thaumcraft/textures/misc/particles.png")
+def originalParticleSpritesDir = layout.buildDirectory.dir('generated/resources/original-particles')
+// cell index -> <sprite base name, frame order>; cell (col, row) = (idx % 16, idx / 16)
+// TC-M7-02-b-s adds the golem-boss impact strip (FXBeamGolemBoss.java:253-255:
+// cells 80..95, u = part/16, v = 0.3125 -> row 5) and the arc's glow sparkle
+// frames (FXSparkle type 6 baseFrame=0 -> cells 112..115, ClientProxy.java:1302).
+def originalParticleCells = [
+        'sparkle'     : (112..120).toList(),
+        'bubble'      : [16, 17],
+        'impact'      : (80..95).toList(),
+        'sparkle_glow': (112..115).toList(),
+]
+// TC-M7-02-b-s: the beam/bolt family draws whole sheet tiles, not grid cells
+// (FXBeam.java:77-81 /misc/beam*.png; FXLightningBolt.java:178-182
+// /misc/p_large.png + /misc/p_small.png) — copied whole-file into the
+// particle texture folder so 1.21.1's atlas can bake them.
+def originalBeamTiles = [
+        'beam0'    : 'beam.png',
+        'beam1'    : 'beam1.png',
+        'beam2'    : 'beam2.png',
+        'beam3'    : 'beam3.png',
+        'bolt_glow': 'p_large.png',
+        'bolt_core': 'p_small.png',
+]
+
+def sliceOriginalParticleSprites = tasks.register("sliceOriginalParticleSprites") {
+    onlyIf { originalParticleSheet.exists() }
+    inputs.file(originalParticleSheet)
+    inputs.property('cells', originalParticleCells)
+    inputs.property('beamTiles', originalBeamTiles)
+    outputs.dir(originalParticleSpritesDir)
+    doLast {
+        def out = originalParticleSpritesDir.get().asFile
+        def spriteDir = new File(out, 'assets/thaumcraft/textures/particle')
+        spriteDir.mkdirs()
+        def image = javax.imageio.ImageIO.read(originalParticleSheet)
+        if (image == null) { throw new GradleException("cannot decode ${originalParticleSheet}") }
+        def written = 0
+        originalParticleCells.each { name, cells ->
+            cells.eachWithIndex { cell, frame ->
+                def x = (cell % 16) * 16
+                def y = ((int) (cell / 16)) * 16
+                def sprite = image.getSubimage(x, y, 16, 16)
+                def file = new File(spriteDir, "${name}_${frame}.png")
+                if (!javax.imageio.ImageIO.write(sprite, 'png', file)) {
+                    throw new GradleException("no PNG writer for ${file}")
+                }
+                written++
+            }
+        }
+        originalBeamTiles.each { name, source ->
+            def tileFile = new File("${originalAssetsDir}/thaumcraft/textures/misc", source)
+            if (!tileFile.exists()) { throw new GradleException("missing beam tile ${tileFile}") }
+            def tile = javax.imageio.ImageIO.read(tileFile)
+            if (tile == null) { throw new GradleException("cannot decode ${tileFile}") }
+            def file = new File(spriteDir, "${name}.png")
+            if (!javax.imageio.ImageIO.write(tile, 'png', file)) {
+                throw new GradleException("no PNG writer for ${file}")
+            }
+            written++
+        }
+        logger.lifecycle("sliced ${written} particle sprites from ${originalParticleSheet.name}")
+    }
+}
+
 sourceSets.main.resources {
     srcDir(layout.buildDirectory.dir('generated/resources/original-assets'))
     srcDir(layout.buildDirectory.dir('generated/resources/original-sounds'))
+    srcDir(originalParticleSpritesDir)
 }
 // processResources is a Copy task and never prunes its destination: a directory
 // an earlier layout produced (the 1.7.10 textures/blocks|items) is packaged as a
@@ -269,7 +348,7 @@ sourceSets.main.resources {
 // so the jar shows only the published 1.21.1 layout.
 def processedTexturesDir = layout.buildDirectory.dir('resources/main/assets/thaumcraft/textures')
 tasks.named('processResources') {
-    dependsOn overlayOriginalAssets, transformOriginalSoundsJson
+    dependsOn overlayOriginalAssets, transformOriginalSoundsJson, sliceOriginalParticleSprites
     doLast {
         def textures = processedTexturesDir.get().asFile
         textureDirectoryRenames.keySet().each { legacyDir ->
@@ -351,6 +430,7 @@ if (assetOverlayIsFixture) {
     overlayOriginalAssets.configure { dependsOn makeAssetOverlayFixture }
     transformOriginalSoundsJson.configure { dependsOn makeAssetOverlayFixture }
     overlayAssetJar.configure { dependsOn makeAssetOverlayFixture }
+    sliceOriginalParticleSprites.configure { dependsOn makeAssetOverlayFixture }
 }
 
 tasks.named('check') {
@@ -383,7 +463,7 @@ neoForge.ideSyncTask generateModMetadata
 // gradle.properties stays the single source of truth (docs/release-process.md).
 tasks.named('test', Test).configure {
     useJUnitPlatform()
-    dependsOn generateModMetadata, overlayOriginalAssets, transformOriginalSoundsJson
+    dependsOn generateModMetadata, overlayOriginalAssets, transformOriginalSoundsJson, sliceOriginalParticleSprites
     systemProperty 'tc.modId', mod_id
     systemProperty 'tc.modName', mod_name
     systemProperty 'tc.modLicense', mod_license
@@ -399,10 +479,18 @@ tasks.named('test', Test).configure {
             layout.buildDirectory.dir('generated/resources/original-assets/assets').get().asFile.absolutePath
     systemProperty 'tc.originalSoundsJson',
             layout.buildDirectory.file('generated/resources/original-sounds/assets/thaumcraft/sounds.json').get().asFile.absolutePath
+    systemProperty 'tc.originalParticleSheet',
+            file("${originalAssetsDir}/thaumcraft/textures/misc/particles.png").absolutePath
     // OriginalTextureOverlayTest resolves the sprites of the committed models
     // against the overlay output; it needs the committed asset tree too.
     systemProperty 'tc.modAssetsDir',
             file('src/main/resources/assets').absolutePath
+    systemProperty 'tc.originalMiscTexturesDir',
+            file("${originalAssetsDir}/thaumcraft/textures/misc").absolutePath
+    systemProperty 'tc.particleDefinitionDir',
+            file('src/main/resources/assets/thaumcraft/particles').absolutePath
+    systemProperty 'tc.originalParticleSpritesDir',
+            layout.buildDirectory.dir('generated/resources/original-particles').get().asFile.absolutePath
     systemProperty 'tc.configReferenceFile',
             file('docs/config-reference.md').absolutePath
     systemProperty 'tc.contentMappingFile',

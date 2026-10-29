@@ -1,0 +1,20 @@
+{
+  "textures": [
+    "thaumcraft:particle/impact_0",
+    "thaumcraft:particle/impact_1",
+    "thaumcraft:particle/impact_2",
+    "thaumcraft:particle/impact_3",
+    "thaumcraft:particle/impact_4",
+    "thaumcraft:particle/impact_5",
+    "thaumcraft:particle/impact_6",
+    "thaumcraft:particle/impact_7",
+    "thaumcraft:particle/impact_8",
+    "thaumcraft:particle/impact_9",
+    "thaumcraft:particle/impact_10",
+    "thaumcraft:particle/impact_11",
+    "thaumcraft:particle/impact_12",
+    "thaumcraft:particle/impact_13",
+    "thaumcraft:particle/impact_14",
+    "thaumcraft:particle/impact_15"
+  ]
+}
