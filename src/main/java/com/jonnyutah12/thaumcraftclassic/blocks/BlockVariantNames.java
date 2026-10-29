@@ -108,6 +108,11 @@ public final class BlockVariantNames {
         put(table, "blockcrystal", "blockCrystal", range(0, 7));
         put(table, "blockcustomore", "blockCustomOre", range(0, 7));
         put(table, "blockcandle", "blockCandle", range(0, 15));
+        // The eldritch family: meta 6 (the doorway frame variant the
+        // original keyed 7) is unnamed; blockEldritchNothing has no
+        // tile.<id>.<meta>.name keys in the original at all.
+        put(table, "blockeldritch", "blockEldritch",
+                new int[] {0, 1, 2, 3, 4, 5, 7, 8, 9, 10});
         // The slabs: the original keyed these two families by name, not meta.
         putNamed(table, "blockcosmeticslabstone", "blockCosmeticSlabStone",
                 new String[] {"arcane", "eldritch"});

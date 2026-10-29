@@ -1,0 +1,7 @@
+{
+  "message_id": "thaumcraft.tentacle",
+  "exhaustion": 0.1,
+  "scaling": "when_caused_by_living_non_player",
+  "effects": "hurt",
+  "_comment": "Original DamageSourceThaumcraft.tentacle: plain source (no flags), delivered via causeTentacleDamage(killer). Used by the Crusted Trap (BlockEldritch variant 10) and the taintacles (TC-M6-06). 'hurt' is the vanilla effect profile (the original carried no flags); msgId 'thaumcraft.tentacle' resolves the original death.attack.tentacle string."
+}

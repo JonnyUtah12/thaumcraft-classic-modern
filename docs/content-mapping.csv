@@ -67,8 +67,8 @@ Thaumcraft:aspect.machina,thaumcraft:aspect.machina,aspect,MECHANISM,not_started
 Thaumcraft:aspect.vinculum,thaumcraft:aspect.vinculum,aspect,TRAP,not_started,not_tested,,components=none color=10125440
 Thaumcraft:blockFluxGoo,thaumcraft:blockfluxgoo,block,Flux Goo,not_started,not_tested,id case change only (D-001),class=BlockFluxGoo item_class=BlockFluxGooItem
 Thaumcraft:blockFluxGas,thaumcraft:blockfluxgas,block,Flux Gas,not_started,not_tested,id case change only (D-001),class=BlockFluxGas item_class=BlockFluxGasItem
-Thaumcraft:blockFluidPure,thaumcraft:blockfluidpure,block,Purifying Fluid,not_started,not_tested,id case change only (D-001),class=BlockFluidPure item_class=-
-Thaumcraft:blockFluidDeath,thaumcraft:blockfluiddeath,block,Liquid Death,not_started,not_tested,id case change only (D-001),class=BlockFluidDeath item_class=-
+Thaumcraft:blockFluidPure,thaumcraft:blockfluidpure,block,Purifying Fluid,done,tested,id case change only (D-001),class=BlockFluidPure item_class=-
+Thaumcraft:blockFluidDeath,thaumcraft:blockfluiddeath,block,Liquid Death,done,tested,id case change only (D-001),class=BlockFluidDeath item_class=-
 Thaumcraft:blockCustomOre,thaumcraft:blockcustomore,block,Cinnabar Ore / Air Infused Stone / Fire Infused Stone / Water Infused Stone / Earth Infused Stone / Order Infused Stone / Entropy Infused Stone / Amber Bearing Stone,done,tested,id case change only (D-001),class=BlockCustomOre item_class=BlockCustomOreItem per-variant display names + the item_class block item wired by TC-M7-01b (t_f40bbc0d)
 Thaumcraft:blockMagicalLog,thaumcraft:blockmagicallog,block,Greatwood Log / Silverwood Log,not_started,not_tested,id case change only (D-001),class=BlockMagicalLog item_class=BlockMagicalLogItem
 Thaumcraft:blockMagicalLeaves,thaumcraft:blockmagicalleaves,block,Greatwood Leaves / Silverwood Leaves,not_started,not_tested,id case change only (D-001),class=BlockMagicalLeaves item_class=BlockMagicalLeavesItem
@@ -91,7 +91,7 @@ Thaumcraft:blockMagicBox,thaumcraft:blockmagicbox,block,,done,tested,id case cha
 Thaumcraft:blockAlchemyFurnace,thaumcraft:blockalchemyfurnace,block,Advanced Alchemical Furnace,not_started,not_tested,id case change only (D-001),class=BlockAlchemyFurnace item_class=-
 Thaumcraft:blockJar,thaumcraft:blockjar,block,Warded Jar / Brain in a Jar / Node in a Jar / Void Jar,done,tested,id case change only (D-001),class=BlockJar item_class=BlockJarItem
 Thaumcraft:blockCandle,thaumcraft:blockcandle,block,White Tallow Candle / Orange Tallow Candle / Magenta Tallow Candle / Light Blue Tallow Candle / Yellow Tallow Candle / Lime Tallow Candle / Pink Tallow Candle / Gray Tallow Candle / Light Gray Tallow Candle / Cyan Tallow Candle / Purple Tallow Candle / Blue Tallow Candle / Brown Tallow Candle / Green Tallow Candle / Red Tallow Candle / Black Tallow Candle,done,tested,id case change only (D-001),class=BlockCandle item_class=BlockCandleItem per-variant display names + the item_class block item wired by TC-M7-01b (t_f40bbc0d)
-Thaumcraft:blockEldritch,thaumcraft:blockeldritch,block,Eldritch Altar / Eldritch Obelisk / Eldritch Obelisk / Eldritch Capstone / Glowing Crusted Stone / Glyphed Stone / Ancient Doorway / Ancient Locking Mechanism / Crusted Opening / Runed Stone,not_started,not_tested,id case change only (D-001),class=BlockEldritch item_class=BlockEldritchItem
+Thaumcraft:blockEldritch,thaumcraft:blockeldritch,block,Eldritch Altar / Eldritch Obelisk / Eldritch Obelisk / Eldritch Capstone / Glowing Crusted Stone / Glyphed Stone / Ancient Doorway / Ancient Locking Mechanism / Crusted Opening / Runed Stone,done,tested,id case change only (D-001),class=BlockEldritch item_class=BlockEldritchItem
 Thaumcraft:blockAiry,thaumcraft:blockairy,block,Aura Node / Nitor / Glimmer of Light / Glimmer of Light / Warding Aura / Energized Aura Node / Static Field / Sapping Field / Impassable,done,tested,id case change only (D-001),class=BlockAiry item_class=BlockAiryItem (vis-node host has no port-side block: TC-M5-02 nodes are record-driven per docs/architecture/node-behavior.md; nitor host registered by TC-M6-04c; warding-fence hosts pending their cards) per-variant display names + the item_class block item wired by TC-M7-01b (t_f40bbc0d)
 Thaumcraft:blockManaPod,thaumcraft:blockmanapod,block,,done,tested,id case change only (D-001),class=BlockManaPod item_class=-
 Thaumcraft:blockArcaneFurnace,thaumcraft:blockarcanefurnace,block,Infernal Furnace,done,tested,id case change only (D-001),class=BlockArcaneFurnace item_class=-
@@ -99,7 +99,7 @@ Thaumcraft:blockWarded,thaumcraft:blockwarded,block,,not_started,not_tested,id c
 Thaumcraft:blockHole,thaumcraft:blockhole,block,Empty Space,not_started,not_tested,id case change only (D-001),class=BlockHole item_class=-
 Thaumcraft:blockPortalEldritch,thaumcraft:blockportaleldritch,block,Eldritch Portal,not_started,not_tested,id case change only (D-001),class=BlockEldritchPortal item_class=-
 Thaumcraft:blockEssentiaReservoir,thaumcraft:blockessentiareservoir,block,Essentia Reservoir,not_started,not_tested,id case change only (D-001),class=BlockEssentiaReservoir item_class=BlockEssentiaReservoirItem
-Thaumcraft:blockEldritchNothing,thaumcraft:blockeldritchnothing,block,,not_started,not_tested,id case change only (D-001),class=BlockEldritchNothing item_class=-
+Thaumcraft:blockEldritchNothing,thaumcraft:blockeldritchnothing,block,,done,tested,id case change only (D-001),class=BlockEldritchNothing item_class=-
 Thaumcraft:blockStairsArcaneStone,thaumcraft:blockstairsarcanestone,block,Arcane Stone Stairs,done,tested,id case change only (D-001),class=BlockCosmeticStairs item_class=-
 Thaumcraft:blockStairsGreatwood,thaumcraft:blockstairsgreatwood,block,Greatwood Stairs,done,tested,id case change only (D-001),class=BlockCosmeticStairs item_class=-
 Thaumcraft:blockStairsSilverwood,thaumcraft:blockstairssilverwood,block,Silverwood Stairs,done,tested,id case change only (D-001),class=BlockCosmeticStairs item_class=-
@@ -112,8 +112,8 @@ Thaumcraft:blockLootUrn,thaumcraft:blocklooturn,block,Old Urn,done,tested,id cas
 Thaumcraft:blockLootCrate,thaumcraft:blocklootcrate,block,Abandoned Crate,done,tested,id case change only (D-001),class=BlockLoot item_class=BlockLootItem
 Thaumcraft:fluxGoo,thaumcraft:fluxgoo,fluid,fluxGoo,not_started,not_tested,,class=Fluid
 Thaumcraft:fluxGas,thaumcraft:fluxgas,fluid,fluxGas,not_started,not_tested,,class=Fluid
-Thaumcraft:fluidPure,thaumcraft:fluidpure,fluid,fluidPure,not_started,not_tested,,class=Fluid
-Thaumcraft:fluidDeath,thaumcraft:fluiddeath,fluid,fluidDeath,not_started,not_tested,,class=Fluid
+Thaumcraft:fluidPure,thaumcraft:fluidpure,fluid,fluidPure,done,tested,,class=Fluid
+Thaumcraft:fluidDeath,thaumcraft:fluiddeath,fluid,fluidDeath,done,tested,,class=Fluid
 Thaumcraft:TileHole,thaumcraft:tilehole,tile_entity,TileHole,not_started,not_tested,,class=TileHole
 Thaumcraft:TileArcaneFurnace,thaumcraft:tilearcanefurnace,tile_entity,TileArcaneFurnace,not_started,not_tested,,class=TileArcaneFurnace
 Thaumcraft:TileArcaneFurnaceNozzle,thaumcraft:tilearcanefurnacenozzle,tile_entity,TileArcaneFurnaceNozzle,not_started,not_tested,,class=TileArcaneFurnaceNozzle
@@ -174,16 +174,16 @@ Thaumcraft:TileNodeConverter,thaumcraft:tilenodeconverter,tile_entity,TileNodeCo
 Thaumcraft:TileMagicWorkbenchCharger,thaumcraft:tilemagicworkbenchcharger,tile_entity,TileMagicWorkbenchCharger,not_started,not_tested,,class=TileMagicWorkbenchCharger
 Thaumcraft:TileManaPod,thaumcraft:tilemanapod,tile_entity,TileManaPod,done,tested,,class=TileManaPod
 Thaumcraft:TileSpa,thaumcraft:tilespa,tile_entity,TileSpa,done,tested,,class=TileSpa
-Thaumcraft:TileEldritchAltar,thaumcraft:tileeldritchaltar,tile_entity,TileEldritchAltar,not_started,not_tested,,class=TileEldritchAltar
-Thaumcraft:TileEldritchObelisk,thaumcraft:tileeldritchobelisk,tile_entity,TileEldritchObelisk,not_started,not_tested,,class=TileEldritchObelisk
-Thaumcraft:TileEldritchCap,thaumcraft:tileeldritchcap,tile_entity,TileEldritchCap,not_started,not_tested,,class=TileEldritchCap
+Thaumcraft:TileEldritchAltar,thaumcraft:tileeldritchaltar,tile_entity,TileEldritchAltar,done,tested,,class=TileEldritchAltar
+Thaumcraft:TileEldritchObelisk,thaumcraft:tileeldritchobelisk,tile_entity,TileEldritchObelisk,done,tested,,class=TileEldritchObelisk
+Thaumcraft:TileEldritchCap,thaumcraft:tileeldritchcap,tile_entity,TileEldritchCap,done,tested,,class=TileEldritchCap
 Thaumcraft:TileBanner,thaumcraft:tilebanner,tile_entity,TileBanner,done,tested,,class=TileBanner
 Thaumcraft:TileEldritchPortal,thaumcraft:tileeldritchportal,tile_entity,TileEldritchPortal,not_started,not_tested,,class=TileEldritchPortal
 Thaumcraft:TileEssentiaReservoir,thaumcraft:tileessentiareservoir,tile_entity,TileEssentiaReservoir,not_started,not_tested,,class=TileEssentiaReservoir
 Thaumcraft:TileEssentiaCrystalizer,thaumcraft:tileessentiacrystalizer,tile_entity,TileEssentiaCrystalizer,not_started,not_tested,,class=TileEssentiaCrystalizer
-Thaumcraft:TileEldritchNothing,thaumcraft:tileeldritchnothing,tile_entity,TileEldritchNothing,not_started,not_tested,,class=TileEldritchNothing
-Thaumcraft:TileEldritchLock,thaumcraft:tileeldritchlock,tile_entity,TileEldritchLock,not_started,not_tested,,class=TileEldritchLock
-Thaumcraft:TileEldritchCrabSpawner,thaumcraft:tileeldritchcrabspawner,tile_entity,TileEldritchCrabSpawner,not_started,not_tested,,class=TileEldritchCrabSpawner
+Thaumcraft:TileEldritchNothing,thaumcraft:tileeldritchnothing,tile_entity,TileEldritchNothing,done,tested,,class=TileEldritchNothing
+Thaumcraft:TileEldritchLock,thaumcraft:tileeldritchlock,tile_entity,TileEldritchLock,done,tested,,class=TileEldritchLock
+Thaumcraft:TileEldritchCrabSpawner,thaumcraft:tileeldritchcrabspawner,tile_entity,TileEldritchCrabSpawner,done,tested,,class=TileEldritchCrabSpawner
 Thaumcraft:TileFocalManipulator,thaumcraft:tilefocalmanipulator,tile_entity,TileFocalManipulator,not_started,not_tested,,class=TileFocalManipulator
 Thaumcraft:TileFluxScrubber,thaumcraft:tilefluxscrubber,tile_entity,TileFluxScrubber,not_started,not_tested,,class=TileFluxScrubber
 Thaumcraft:TileEldritchTrap,thaumcraft:tileeldritchtrap,tile_entity,TileEldritchTrap,not_started,not_tested,,class=TileEldritchTrap
@@ -260,12 +260,12 @@ Thaumcraft:ItemSpawnerEgg,thaumcraft:itemspawneregg,item,,not_started,not_tested
 Thaumcraft:ItemZombieBrain,thaumcraft:itemzombiebrain,item,Zombie Brain,not_started,not_tested,id case change only (D-001),class=ItemZombieBrain
 Thaumcraft:ItemBathSalts,thaumcraft:itembathsalts,item,Purifying Bath Salts,not_started,not_tested,id case change only (D-001),class=ItemBathSalts
 Thaumcraft:ItemCrystalEssence,thaumcraft:itemcrystalessence,item,Crystallized Essence,done,tested,id case change only (D-001),class=ItemCrystalEssence
-Thaumcraft:ItemBucketDeath,thaumcraft:itembucketdeath,item,Bucket of Liquid Death,not_started,not_tested,id case change only (D-001),class=ItemBucketDeath
-Thaumcraft:ItemBucketPure,thaumcraft:itembucketpure,item,Bucket of Purifying Fluid,not_started,not_tested,id case change only (D-001),class=ItemBucketPure
+Thaumcraft:ItemBucketDeath,thaumcraft:itembucketdeath,item,Bucket of Liquid Death,done,tested,id case change only (D-001),class=ItemBucketDeath
+Thaumcraft:ItemBucketPure,thaumcraft:itembucketpure,item,Bucket of Purifying Fluid,done,tested,id case change only (D-001),class=ItemBucketPure
 Thaumcraft:ItemHelmetFortress,thaumcraft:itemhelmetfortress,item,Thaumium Fortress Helm,not_started,not_tested,id case change only (D-001),class=ItemFortressArmor
 Thaumcraft:ItemChestplateFortress,thaumcraft:itemchestplatefortress,item,Thaumium Fortress Cuirass,not_started,not_tested,id case change only (D-001),class=ItemFortressArmor
 Thaumcraft:ItemLeggingsFortress,thaumcraft:itemleggingsfortress,item,Thaumium Fortress Thigh Guards,not_started,not_tested,id case change only (D-001),class=ItemFortressArmor
-Thaumcraft:ItemEldritchObject,thaumcraft:itemeldritchobject,item,Eldritch Eye / Crimson Rites / Runed Tablet / Primordial Pearl / Eldritch Obelisk Placer,not_started,not_tested,id case change only (D-001),class=ItemEldritchObject
+Thaumcraft:ItemEldritchObject,thaumcraft:itemeldritchobject,item,Eldritch Eye / Crimson Rites / Runed Tablet / Primordial Pearl / Eldritch Obelisk Placer,done,tested,id case change only (D-001),class=ItemEldritchObject
 Thaumcraft:ItemHelmetVoid,thaumcraft:itemhelmetvoid,item,Void Helm,not_started,not_tested,id case change only (D-001),class=ItemVoidArmor
 Thaumcraft:ItemChestplateVoid,thaumcraft:itemchestplatevoid,item,Void Chestplate,not_started,not_tested,id case change only (D-001),class=ItemVoidArmor
 Thaumcraft:ItemLeggingsVoid,thaumcraft:itemleggingsvoid,item,Void Leggings,not_started,not_tested,id case change only (D-001),class=ItemVoidArmor
