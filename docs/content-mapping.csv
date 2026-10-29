@@ -208,7 +208,7 @@ Thaumcraft:ItemResource,thaumcraft:itemresource,item,Alumentum / Nitor / Thaumiu
 Thaumcraft:ItemShard,thaumcraft:itemshard,item,Air Shard / Fire Shard / Water Shard / Earth Shard / Order Shard / Entropy Shard / Balanced Shard,done,tested,id case change only (D-001),class=ItemShard
 Thaumcraft:ItemResearchNotes,thaumcraft:itemresearchnotes,item,Research Notes,not_started,not_tested,id case change only (D-001),class=ItemResearchNotes
 Thaumcraft:ItemInkwell,thaumcraft:iteminkwell,item,Scribing Tools,not_started,not_tested,id case change only (D-001),class=ItemInkwell
-Thaumcraft:ItemThaumonomicon,thaumcraft:itemthaumonomicon,item,Thaumonomicon,not_started,not_tested,id case change only (D-001),class=ItemThaumonomicon
+Thaumcraft:ItemThaumonomicon,thaumcraft:itemthaumonomicon,item,Thaumonomicon,done,tested,id case change only (D-001),class=ItemThaumonomicon
 Thaumcraft:ItemThaumometer,thaumcraft:itemthaumometer,item,Thaumometer,done,tested,id case change only (D-001),class=ItemThaumometer
 Thaumcraft:ItemGoggles,thaumcraft:itemgoggles,item,Goggles of Revealing,not_started,not_tested,id case change only (D-001),class=ItemGoggles
 Thaumcraft:ItemHelmetThaumium,thaumcraft:itemhelmetthaumium,item,Thaumium Helm,not_started,not_tested,id case change only (D-001),class=ItemThaumiumArmor
@@ -971,7 +971,7 @@ Thaumcraft:GUI_DECON_TABLE,thaumcraft:gui_decon_table,gui,GuiDeconstructionTable
 Thaumcraft:GUI_ALCHEMY_FURNACE,thaumcraft:gui_alchemy_furnace,gui,GuiAlchemyFurnace,not_started,not_tested,,gui_id=9 handler=GuiAlchemyFurnace
 Thaumcraft:GUI_RESEARCH_TABLE,thaumcraft:gui_research_table,gui,GuiResearchTable,not_started,not_tested,,gui_id=10 handler=GuiResearchTable
 Thaumcraft:GUI_CHEST_HUNGRY,thaumcraft:gui_chest_hungry,gui,-,not_started,not_tested,,gui_id=11 handler=-
-Thaumcraft:GUI_THAUMONOMICON,thaumcraft:gui_thaumonomicon,gui,GuiResearchBrowser,not_started,not_tested,,gui_id=12 handler=GuiResearchBrowser
+Thaumcraft:GUI_THAUMONOMICON,thaumcraft:gui_thaumonomicon,gui,GuiResearchBrowser,done,tested,,gui_id=12 handler=GuiResearchBrowser
 Thaumcraft:GUI_ARCANE_WORKBENCH,thaumcraft:gui_arcane_workbench,gui,GuiArcaneWorkbench,not_started,not_tested,,gui_id=13 handler=GuiArcaneWorkbench
 Thaumcraft:GUI_ARCANE_BORE,thaumcraft:gui_arcane_bore,gui,GuiArcaneBore,not_started,not_tested,,gui_id=15 handler=GuiArcaneBore
 Thaumcraft:GUI_HAND_MIRROR,thaumcraft:gui_hand_mirror,gui,GuiHandMirror,done,tested,,gui_id=16 handler=GuiHandMirror

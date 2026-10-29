@@ -239,5 +239,6 @@
   "item.thaumcraft.blockjarfilleditem": "Jar of Essentia",
   "item.thaumcraft.blockjarfilleditem.void": "Void Jar of Essentia",
   "item.thaumcraft.itemessence.0": "Glass Phial",
-  "item.thaumcraft.itemessence.1": "Phial of Essentia"
+  "item.thaumcraft.itemessence.1": "Phial of Essentia",
+  "item.thaumcraft.itemthaumonomicon": "Thaumonomicon"
 }
