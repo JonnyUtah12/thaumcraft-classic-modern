@@ -108,6 +108,17 @@ public final class BlockVariantNames {
         put(table, "blockcrystal", "blockCrystal", range(0, 7));
         put(table, "blockcustomore", "blockCustomOre", range(0, 7));
         put(table, "blockcandle", "blockCandle", range(0, 15));
+        // TC-M5-04-s taint: the original named metas 0-2 of blockTaint — the
+        // same three its getSubItems lists (BlockTaint.java:49-53) — and 0-4
+        // of blockTaintFibres, matching that class' five-state range.
+        put(table, "blocktaint", "blockTaint", new int[] {0, 1, 2});
+        put(table, "blocktaintfibres", "blockTaintFibres", range(0, 4));
+        // TC-M5-04-s-b: the thaumic plant family — the original named all six
+        // metas (en_US.lang:149-154, "Greatwood Sapling" … "Vishroom"), and its
+        // getSubItems lists exactly 0..5 (BlockCustomPlant.java:65-69). Meta 4,
+        // "Ethereal Bloom", is the cleansing agent; the icon of meta 5 is
+        // spelled manashroom while the original's display name is Vishroom.
+        put(table, "blockcustomplant", "blockCustomPlant", range(0, 5));
         // The slabs: the original keyed these two families by name, not meta.
         putNamed(table, "blockcosmeticslabstone", "blockCosmeticSlabStone",
                 new String[] {"arcane", "eldritch"});

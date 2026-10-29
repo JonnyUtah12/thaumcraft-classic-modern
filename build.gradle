@@ -264,6 +264,10 @@ tasks.named('test', Test).configure {
             file('docs/balance-values.md').absolutePath
     systemProperty 'tc.originalLangFile',
             file('../reference/assets/thaumcraft/lang/en_US.lang').absolutePath
+    // TC-M5-04-s: TaintRulesParityTest pins every taint threshold against the
+    // decompiled 1.7.10 originals; skips where the reference tree is absent (CI).
+    systemProperty 'tc.referenceDecompiledDir',
+            file('../reference/decompiled').absolutePath
 }
 
 publishing {

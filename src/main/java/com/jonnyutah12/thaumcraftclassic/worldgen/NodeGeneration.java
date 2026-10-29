@@ -3,6 +3,7 @@ package com.jonnyutah12.thaumcraftclassic.worldgen;
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.nodes.NodeModifier;
 import com.jonnyutah12.thaumcraftclassic.nodes.NodeType;
+import com.jonnyutah12.thaumcraftclassic.taint.TaintRules;
 import com.jonnyutah12.thaumcraftclassic.world.WorldMagicData;
 import java.util.ArrayList;
 import java.util.List;
@@ -214,13 +215,14 @@ public final class NodeGeneration {
             }
         }
 
-        // 3. Taint multiplier (original L348-355).
+        // 3. Taint multiplier (original L348-355) — the rule is
+        // TaintRules.taintBiomeAura (the truncating (int)(baura * 1.5F)).
         int baura = biomeAura;
         if (type != NodeType.PURE && inTaintBiome) {
-            baura = (int) (baura * 1.5F);
+            baura = TaintRules.taintBiomeAura(baura);
             if (random.nextBoolean()) {
                 type = NodeType.TAINTED;
-                baura = (int) (baura * 1.5F);
+                baura = TaintRules.taintBiomeAura(baura);
             }
         }
 

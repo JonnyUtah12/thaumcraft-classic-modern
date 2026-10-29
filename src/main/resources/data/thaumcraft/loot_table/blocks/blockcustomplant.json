@@ -1,0 +1,138 @@
+{
+  "type": "minecraft:block",
+  "_comment": "TC-M5-04-s-b: the original BlockCustomPlant drop table, transcribed from its hooks (1.7.10 BlockCustomPlant.java:84-86): func_149650_a returns Item.getByBlock(this) for EVERY metadata with no fortune and no quantity roll, i.e. the block drops itself, one, for all six metas. 1.21.x resolves block drops from this table, not a block hook, so each meta needs its own pool; each pool carries the minecraft:block_state component (the per-variant display name and the meta-preserving re-placement of VariantBlockItem) plus the ported thaumcraft:item_meta.",
+  "pools": [
+    {
+      "name": "thaumcraft:greatwood_sapling",
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "thaumcraft:blockcustomplant",
+          "properties": { "variant": "0" }
+        }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": {
+            "minecraft:block_state": { "variant": "0" },
+            "thaumcraft:item_meta": 0
+          }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockcustomplant" } ]
+    },
+    {
+      "name": "thaumcraft:silverwood_sapling",
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "thaumcraft:blockcustomplant",
+          "properties": { "variant": "1" }
+        }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": {
+            "minecraft:block_state": { "variant": "1" },
+            "thaumcraft:item_meta": 1
+          }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockcustomplant" } ]
+    },
+    {
+      "name": "thaumcraft:shimmerleaf",
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "thaumcraft:blockcustomplant",
+          "properties": { "variant": "2" }
+        }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": {
+            "minecraft:block_state": { "variant": "2" },
+            "thaumcraft:item_meta": 2
+          }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockcustomplant" } ]
+    },
+    {
+      "name": "thaumcraft:cinderpearl",
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "thaumcraft:blockcustomplant",
+          "properties": { "variant": "3" }
+        }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": {
+            "minecraft:block_state": { "variant": "3" },
+            "thaumcraft:item_meta": 3
+          }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockcustomplant" } ]
+    },
+    {
+      "name": "thaumcraft:ethereal_bloom",
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "thaumcraft:blockcustomplant",
+          "properties": { "variant": "4" }
+        }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": {
+            "minecraft:block_state": { "variant": "4" },
+            "thaumcraft:item_meta": 4
+          }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockcustomplant" } ]
+    },
+    {
+      "name": "thaumcraft:vishroom",
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "thaumcraft:blockcustomplant",
+          "properties": { "variant": "5" }
+        }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": {
+            "minecraft:block_state": { "variant": "5" },
+            "thaumcraft:item_meta": 5
+          }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockcustomplant" } ]
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import com.jonnyutah12.thaumcraftclassic.taint.TaintBiomes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -354,18 +355,20 @@ public final class NodeTickDriver {
             if (holder == null) {
                 return;
             }
-            final LevelChunk chunk = level.getChunkAt(new BlockPos(x, y, z));
-            final int section = Math.floorDiv(y, 16) - chunk.getMinSection();
-            if (section < 0 || section >= chunk.getSections().length) {
-                return;
-            }
-            // 1.21.1 exposes the section biome palette read-only; the live
-            // container is a PalettedContainer (the modded idiom).
-            @SuppressWarnings("unchecked")
-            final PalettedContainer<Holder<Biome>> biomes =
-                    (PalettedContainer<Holder<Biome>>) chunk.getSections()[section].getBiomes();
-            biomes.set(x & 3, y & 3, z & 3, holder);
-            chunk.setUnsaved(true);
+            // TC-M5-04-s-b: this call is the original's TileNode:877
+            // (setBiomeAt(x, y, z, biomeMagicalForestID)) — a node flipping its
+            // own biome, the TAINTED side of the pair whose taint half is
+            // TileNode:419. It used to write ONE palette cell of ONE section
+            // with the 1.7.10 byte-offset indices (x & 3, y & 3, z & 3): the
+            // biome palette is quart-space, so the write landed on the wrong
+            // cell for 3 of every 4 columns, and a 1.7.10 byte array covers one
+            // y per column where 1.21.1 has a palette cell per quart per
+            // SECTION — the half-1 fix to TaintBiomes.setBiomeAt (BD-15) missed
+            // this second call site. Route it through the same writer: every
+            // section of the column, (coord >> 2) & 3, chunk marked unsaved,
+            // client re-sent, and (BD-16) the biome the world generates there
+            // recorded before the overwrite so the purifier can restore it.
+            TaintBiomes.setBiomeAt(level, x, z, holder);
         }
 
         private static ResourceKey<Biome> first(final Set<ResourceKey<Biome>> keys) {
