@@ -27,6 +27,16 @@ public final class TcParticleProviders {
     public static void onRegisterParticleProviders(final RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(ModParticles.SPARCLE.get(), TcSparkleParticle.Provider::new);
         event.registerSpriteSet(ModParticles.BUBBLE.get(), TcBubbleParticle.Provider::new);
+        // TC-M7-02-c-s: wisp family, sender motes, and the entity-space shells.
+        event.registerSpriteSet(ModParticles.WISP.get(), TcWispParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.WISP_EG.get(), TcWispEgParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.WISP_ARCING.get(), TcWispArcingParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.VIS_SPARKLE.get(), TcVisSparkleParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.BORE_SPARKLE.get(), TcBoreSparkleParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.ESSENTIA_TRAIL.get(), TcEssentiaTrailParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.SHIELD_RUNES.get(), TcShieldRunesParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.SHIELD_RUNES_MOB.get(), TcShieldRunesParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.SONIC.get(), TcSonicParticle.Provider::new);
     }
 
     private TcParticleProviders() {

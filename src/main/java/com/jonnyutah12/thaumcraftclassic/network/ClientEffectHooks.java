@@ -2,12 +2,16 @@ package com.jonnyutah12.thaumcraftclassic.network;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcEffects;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcFxPlans;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcSourceFx;
 import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
@@ -171,29 +175,143 @@ public final class ClientEffectHooks {
         }
     }
 
+    /**
+     * TC-M7-02-c-s WIRED: the original's {@code PacketFXBlockDig} client
+     * handler (PacketFXBlockDig.java:61-116): the numeric 1.7 block/item id
+     * resolves to a modern registry object — an {@code ItemBlock} (block
+     * branch) spawns block crumbs, everything else item crumbs — plus the
+     * dig-face sounds. The reference tree has no server sender (the packet
+     * is registered but never sent), so this is the client seam + probe.
+     */
     static void fxBlockDig(final BlockPos targetPos, final ResourceLocation blockOrItemId, final int data,
             final BlockPos digFromPos) {
         LOGGER.debug("fx block dig at {} block={} data={} from={}", targetPos, blockOrItemId, data, digFromPos);
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        final net.minecraft.world.level.block.Block block =
+                net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(blockOrItemId);
+        final ItemStack stack;
+        final net.minecraft.world.level.block.state.BlockState state;
+        if (block != net.minecraft.world.level.block.Blocks.AIR) {
+            // The original's `item instanceof ItemBlock && metadata == 0` branch.
+            state = block.defaultBlockState();
+            stack = null;
+        } else {
+            state = null;
+            stack = new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(blockOrItemId));
+        }
+        TcEffects.blockDig(mc.level, targetPos, digFromPos, state, stack,
+                RandomSource.create(), particleSetting());
     }
 
+    /**
+     * TC-M7-02-c-s WIRED: the original's {@code PacketFXEssentiaSource}
+     * client handler (PacketFXEssentiaSource.java:41-64) keeps a client-side
+     * map of drain trails (source → consumer) that the client tick drains one
+     * mote per tick ({@code ClientTickEventsFML.java:218-261}); a packet
+     * lands/refreshes the entry with a 15-tick budget. The map lives in
+     * {@link TcSourceFx}; the tick geometry is
+     * {@link TcFxPlans#essentiaTrailTick}.
+     */
     static void fxEssentiaSource(final BlockPos pos, final BlockPos offset, final int color) {
         LOGGER.debug("fx essentia source at {} offset={} color={}", pos, offset, color);
+        TcSourceFx.onEssentiaSource(pos, offset, color);
     }
 
+    /**
+     * TC-M7-02-c-s WIRED: the original's {@code PacketFXInfusionSource}
+     * client handler (PacketFXInfusionSource.java:41-70) registers a
+     * per-matrix drain entry (15 ticks, 60 for a pedestal source) that the
+     * matrix's own client tick draws from (TileInfusionMatrix.java:864-947).
+     * Map + tick live in {@link TcSourceFx}.
+     */
     static void fxInfusionSource(final BlockPos pos, final BlockPos offset, final int color) {
         LOGGER.debug("fx infusion source at {} offset={} color={}", pos, offset, color);
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        TcSourceFx.onInfusionSource(mc.level, pos, offset, color);
     }
 
+    /**
+     * TC-M7-02-c-s WIRED: the original's {@code PacketFXShield} client
+     * handler (PacketFXShield.java:44-90): runes ride the source entity
+     * (the shielded one); {@code target >= 0} aims them from the source at
+     * the target entity's AABB centre, {@code -1} spawns a pair (pitch 90
+     * and 270), {@code -2}/{@code -3} one rune at 270/90. The mob branch
+     * (ripple frames) is the packet entity being a mob; the 1.7.10
+     * EntityCultist exception is pending the TC-M7-03 entity slice.
+     */
     static void fxShield(final int sourceEntityId, final int targetEntityId) {
         LOGGER.debug("fx shield {} -> {}", sourceEntityId, targetEntityId);
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        final net.minecraft.world.entity.Entity p = mc.level.getEntity(sourceEntityId);
+        if (p == null) {
+            return; // the original bails when the source entity is absent
+        }
+        final boolean mob = p instanceof net.minecraft.world.entity.Mob;
+        if (targetEntityId >= 0) {
+            float yaw = 0.0F;
+            float pitch = 90.0F;
+            final net.minecraft.world.entity.Entity t = mc.level.getEntity(targetEntityId);
+            if (t != null) {
+                final double d0 = p.getX() - t.getX();
+                final double d1 = (p.getBoundingBox().minY + p.getBoundingBox().maxY) / 2.0
+                        - (t.getBoundingBox().minY + t.getBoundingBox().maxY) / 2.0;
+                final double d2 = p.getZ() - t.getZ();
+                final double d3 = Mth.sqrt((float) (d0 * d0 + d2 * d2));
+                yaw = (float) (Math.atan2(d2, d0) * 180.0 / Math.PI) - 90.0F;
+                pitch = (float) (-Math.atan2(d1, d3) * 180.0 / Math.PI);
+            }
+            TcEffects.shieldRune(mc.level, sourceEntityId, yaw, pitch, mob);
+        } else if (targetEntityId == -1) {
+            TcEffects.shieldRune(mc.level, sourceEntityId, 0.0F, 90.0F, mob);
+            TcEffects.shieldRune(mc.level, sourceEntityId, 0.0F, 270.0F, mob);
+        } else if (targetEntityId == -2) {
+            TcEffects.shieldRune(mc.level, sourceEntityId, 0.0F, 270.0F, mob);
+        } else if (targetEntityId == -3) {
+            TcEffects.shieldRune(mc.level, sourceEntityId, 0.0F, 90.0F, mob);
+        }
     }
 
+    /**
+     * TC-M7-02-c-s WIRED: the original's {@code PacketFXSonic} client
+     * handler (PacketFXSonic.java:44-49): one 10-tick ripple pulse riding
+     * the source entity's head (the guardian/warden roar).
+     */
     static void fxSonic(final int sourceEntityId) {
         LOGGER.debug("fx sonic at {}", sourceEntityId);
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        if (mc.level.getEntity(sourceEntityId) == null) {
+            return; // the original bails when the source entity is absent
+        }
+        TcEffects.sonicPulse(mc.level, sourceEntityId);
     }
 
+    /**
+     * TC-M7-02-c-s WIRED: the original's {@code PacketFXVisDrain} client
+     * handler (PacketFXVisDrain.java:44-58): one vis mote from the source
+     * block corner (the packet's dx/dy/dz) homing at the consumer block
+     * (x/y/z) — the aura node vis siphon.
+     */
     static void fxVisDrain(final BlockPos pos, final BlockPos offset, final int color) {
         LOGGER.debug("fx vis drain at {} offset={} color={}", pos, offset, color);
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        // The packet's offset carries the source (dx,dy,dz), pos the target.
+        TcEffects.visDrain(mc.level, offset.getX(), offset.getY(), offset.getZ(),
+                pos.getX(), pos.getY(), pos.getZ(), color, RandomSource.create());
     }
 
     static void fxWispZap(final int sourceEntityId, final int targetEntityId) {

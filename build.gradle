@@ -215,14 +215,45 @@ def originalParticleSheet = file("${originalAssetsDir}/thaumcraft/textures/misc/
 def originalParticleSpritesDir = layout.buildDirectory.dir('generated/resources/original-particles')
 // cell index -> <sprite base name, frame order>; cell (col, row) = (idx % 16, idx / 16)
 def originalParticleCells = [
-        'sparkle': (112..120).toList(),
-        'bubble' : [16, 17],
+        'sparkle'       : (112..120).toList(),
+        'bubble'        : [16, 17],
+        // TC-M7-02-c-s: the FXXxx classes page the same sheet with their own
+        // UV maths; the cell lists below are those UV windows decoded to cells,
+        // in the order the particle advances frames (age % frameCount).
+        'vis_sparkle'   : (128..143).toList(),   // FXVisSparkle: u=part/16, v=0.5, part = age % 16
+        'bore_sparkle'  : (64..67).toList(),     // FXBoreSparkle: u=part/16, v=0.25, part = age % 4
+        'essentia_trail': [25],                  // FXEssentiaTrail: fixed u=0.5625, v=0.0625
+        'wisp_arcing'   : [224],                 // FXWispArcing: u=0, v=0.875 (col 0, row 14)
+]
+// Non-sheet sprites (TC-M7-02-c-s): rectangles inside the wisp textures —
+// FXWisp pages wisp.png (256x256) at u 0..0.125, v 0.875..1.0 (a 32x32 cell
+// at (0, 224), FXWisp.java:152-154); FXWispEG pages wispy.png (512x128) at
+// u = (age % 13)/16 .. +0.0624, v = 0.1875..0.25 — 13 strips of 32x8 px at
+// y = 24 (FXWispEG.java:60-62).
+def originalParticlePatches = [
+        'wisp'   : [source: "${originalAssetsDir}/thaumcraft/textures/misc/wisp.png",
+                    rects : [[0, 224, 32, 32]]],
+        'wisp_eg': [source: "${originalAssetsDir}/thaumcraft/textures/misc/wispy.png",
+                    rects : (0..12).collect { [it * 32, 24, 32, 8] }],
+]
+// Whole-texture sprites (TC-M7-02-c-s): the shield runes and the sonic pulse
+// bind models/hemis<N>.png / models/ripple<N>.png (N = 1..15) per frame
+// (FXShieldRunes.java:59-67, FXSonic.java:57-59); the particle atlas needs
+// them as sprites, so the files are copied under frame-indexed names.
+def originalParticleFiles = [
+        'shield_runes'    : (1..15).collect { "${originalAssetsDir}/thaumcraft/textures/models/hemis${it}.png" },
+        'shield_runes_mob': (1..15).collect { "${originalAssetsDir}/thaumcraft/textures/models/ripple${it}.png" },
+        'sonic'           : (1..15).collect { "${originalAssetsDir}/thaumcraft/textures/models/ripple${it}.png" },
 ]
 
 def sliceOriginalParticleSprites = tasks.register("sliceOriginalParticleSprites") {
     onlyIf { originalParticleSheet.exists() }
     inputs.file(originalParticleSheet)
     inputs.property('cells', originalParticleCells)
+    inputs.property('patches', originalParticlePatches)
+    inputs.property('files', originalParticleFiles)
+    inputs.files(originalParticlePatches.collect { new File(it.value.source as String) })
+    inputs.files(originalParticleFiles.collectMany { it.value })
     outputs.dir(originalParticleSpritesDir)
     doLast {
         def out = originalParticleSpritesDir.get().asFile
@@ -240,6 +271,25 @@ def sliceOriginalParticleSprites = tasks.register("sliceOriginalParticleSprites"
                 if (!javax.imageio.ImageIO.write(sprite, 'png', file)) {
                     throw new GradleException("no PNG writer for ${file}")
                 }
+                written++
+            }
+        }
+        originalParticlePatches.each { name, spec ->
+            def patchImage = javax.imageio.ImageIO.read(new File(spec.source as String))
+            if (patchImage == null) { throw new GradleException("cannot decode ${spec.source}") }
+            spec.rects.eachWithIndex { rect, frame ->
+                def sprite = patchImage.getSubimage(rect[0] as int, rect[1] as int, rect[2] as int, rect[3] as int)
+                def file = new File(spriteDir, "${name}_${frame}.png")
+                if (!javax.imageio.ImageIO.write(sprite, 'png', file)) {
+                    throw new GradleException("no PNG writer for ${file}")
+                }
+                written++
+            }
+        }
+        originalParticleFiles.each { name, sources ->
+            sources.eachWithIndex { src, frame ->
+                def file = new File(spriteDir, "${name}_${frame}.png")
+                file.bytes = new File(src as String).bytes
                 written++
             }
         }

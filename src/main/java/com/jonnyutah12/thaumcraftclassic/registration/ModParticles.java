@@ -1,9 +1,17 @@
 package com.jonnyutah12.thaumcraftclassic.registration;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcBoreSparkleOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcBubbleOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcEssentiaTrailOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcParticleType;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcShieldOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcSonicOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcSparkleOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcVisSparkleOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispArcingOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispEgOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispOptions;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.registries.Registries;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -52,6 +60,74 @@ public final class ModParticles {
     public static final DeferredHolder<ParticleType<?>, ParticleType<TcBubbleOptions>> BUBBLE =
             PARTICLE_TYPES.register("bubble",
                     () -> new TcParticleType<>(false, TcBubbleOptions.MAP_CODEC, TcBubbleOptions.STREAM_CODEC));
+
+    // ---- TC-M7-02-c-s: the wisp family ----
+
+    /**
+     * TC-M7-02-c-s: the wisp family member (FXWisp) — one type carries
+     * wispFX/wispFX2/wispFX3/wispFX4 via
+     * {@link TcWispOptions} (colour, gravity, lifetime, straight-line
+     * motion, tracking target, shrink/tinkle/additive).
+     */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcWispOptions>> WISP =
+            PARTICLE_TYPES.register("wisp",
+                    () -> new TcParticleType<>(false, TcWispOptions.MAP_CODEC, TcWispOptions.STREAM_CODEC));
+
+    /** TC-M7-02-c-s: the EnderGoo wisp (FXWispEG, rides its target's velocity). */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcWispEgOptions>> WISP_EG =
+            PARTICLE_TYPES.register("wisp_eg",
+                    () -> new TcParticleType<>(false, TcWispEgOptions.MAP_CODEC, TcWispEgOptions.STREAM_CODEC));
+
+    /** TC-M7-02-c-s: the arcing stream wisp (FXWispArcing, parametric flight). */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcWispArcingOptions>> WISP_ARCING =
+            PARTICLE_TYPES.register("wisp_arcing",
+                    () -> new TcParticleType<>(false, TcWispArcingOptions.MAP_CODEC,
+                            TcWispArcingOptions.STREAM_CODEC));
+
+    // ---- TC-M7-02-c-s: the sender-spawned motes ----
+
+    /** TC-M7-02-c-s: the vis-drain mote (FXVisSparkle, homes at 0.1/tick). */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcVisSparkleOptions>> VIS_SPARKLE =
+            PARTICLE_TYPES.register("vis_sparkle",
+                    () -> new TcParticleType<>(false, TcVisSparkleOptions.MAP_CODEC,
+                            TcVisSparkleOptions.STREAM_CODEC));
+
+    /** TC-M7-02-c-s: the infusion draw mote (FXBoreSparkle, homes at 0.3/0.6). */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcBoreSparkleOptions>> BORE_SPARKLE =
+            PARTICLE_TYPES.register("bore_sparkle",
+                    () -> new TcParticleType<>(false, TcBoreSparkleOptions.MAP_CODEC,
+                            TcBoreSparkleOptions.STREAM_CODEC));
+
+    /** TC-M7-02-c-s: the essentia drain trail mote (FXEssentiaTrail, rises). */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcEssentiaTrailOptions>> ESSENTIA_TRAIL =
+            PARTICLE_TYPES.register("essentia_trail",
+                    () -> new TcParticleType<>(false, TcEssentiaTrailOptions.MAP_CODEC,
+                            TcEssentiaTrailOptions.STREAM_CODEC));
+
+    // ---- TC-M7-02-c-s: the entity-space effects ----
+
+    /**
+     * TC-M7-02-c-s: the shield runes for a non-mob owner (hemis frames).
+     * The original picked hemis vs ripple at render time
+     * ({@code FXShieldRunes.java:61-66}); 1.21.1 binds a frame set at
+     * registration, so the branch is two particle types.
+     */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcShieldOptions>> SHIELD_RUNES =
+            PARTICLE_TYPES.register("shield_runes",
+                    () -> new TcParticleType<>(false, TcShieldOptions.MAP_CODEC,
+                            TcShieldOptions.STREAM_CODEC));
+
+    /** TC-M7-02-c-s: the shield runes for a mob owner (ripple frames, b 0.5). */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcShieldOptions>> SHIELD_RUNES_MOB =
+            PARTICLE_TYPES.register("shield_runes_mob",
+                    () -> new TcParticleType<>(false, TcShieldOptions.MAP_CODEC,
+                            TcShieldOptions.STREAM_CODEC));
+
+    /** TC-M7-02-c-s: the sonic pulse riding a mob's head (FXSonic). */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcSonicOptions>> SONIC =
+            PARTICLE_TYPES.register("sonic",
+                    () -> new TcParticleType<>(false, TcSonicOptions.MAP_CODEC,
+                            TcSonicOptions.STREAM_CODEC));
 
     private ModParticles() {
     }
