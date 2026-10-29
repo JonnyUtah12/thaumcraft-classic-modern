@@ -197,13 +197,38 @@ public final class TaintCleansingGameTest {
         int beyondScanBox = 0;
         int beyondRadius = 0;
         final java.util.Set<String> firedCells = new java.util.TreeSet<>();
+        // TC-M5-04-s-b2 per-cell telemetry: how many rolls LANDED on each cell,
+        // how many of those reads were not the taint biome (so the engine's
+        // biome gate refused them), and how many fired. The probe reads the
+        // same palette the engine is about to read, on the same offset, so a
+        // cell that shows rolls > 0 and fires == 0 is a gate story, not luck.
+        final java.util.Map<String, int[]> perCell = new java.util.TreeMap<>();
+        final java.util.Map<String, StringBuilder> detail = new java.util.TreeMap<>();
         for (long seed = 1; seed <= ROLLS; seed++) {
             final BlockPos off = mirroredBloomOffset(seed);
-            if (!TaintManager.etherealBloomCleanse(level, bloom, RandomSource.create(seed))) {
+            final String cell = cellKeyOf(bloom.getX() + off.getX(), bloom.getZ() + off.getZ());
+            final Holder<Biome> read = TaintBiomes.biomeAt(level, bloom.offset(off.getX(), 0, off.getZ()));
+            final boolean rollFired = TaintManager.etherealBloomCleanse(level, bloom, RandomSource.create(seed));
+            final int[] st = perCell.computeIfAbsent(cell, k -> new int[3]);
+            st[0]++;
+            if (!TaintBiomes.isTaintBiome(read)) {
+                st[2]++;
+            }
+            if (rollFired) {
+                st[1]++;
+            }
+            final StringBuilder d = detail.computeIfAbsent(cell, k -> new StringBuilder());
+            if (d.length() < 260) {
+                d.append(" r").append(seed).append('(').append(off.getX()).append(',').append(off.getZ())
+                        .append(")=").append(read.getRegisteredName()
+                                .replace("minecraft:", "").replace("thaumcraft:biome.", ""))
+                        .append(rollFired ? "*" : "");
+            }
+            if (!rollFired) {
                 continue;
             }
             fired++;
-            firedCells.add(cellKeyOf(bloom.getX() + off.getX(), bloom.getZ() + off.getZ()));
+            firedCells.add(cell);
             // The gate, measured on the offset the original's own draws picked.
             if (Math.max(Math.abs(off.getX()), Math.abs(off.getZ())) > TaintRules.BLOOM_SCAN_MOD - 1) {
                 beyondScanBox++;
@@ -211,6 +236,14 @@ public final class TaintCleansingGameTest {
             if (TaintRules.bloomDistanceSquared(off.getX(), off.getZ()) > TaintRules.BLOOM_RADIUS_SQUARED) {
                 beyondRadius++;
             }
+        }
+        System.out.println("TC-B2-DIAG disc bloom=" + bloom.toShortString()
+                + " x&15=" + (bloom.getX() & 15) + " z&15=" + (bloom.getZ() & 15)
+                + " cell=" + cellKeyOf(bloom.getX(), bloom.getZ()));
+        for (final java.util.Map.Entry<String, int[]> e : perCell.entrySet()) {
+            final int[] st = e.getValue();
+            System.out.println("TC-B2-DIAG cell " + e.getKey() + " rolls=" + st[0]
+                    + " fires=" + st[1] + " nonTaintReads=" + st[2] + " detail=" + detail.get(e.getKey()));
         }
 
         // (1) geometry of every roll that fired: |offset| > 8 is unreachable (the
@@ -492,6 +525,116 @@ public final class TaintCleansingGameTest {
         final Holder<Biome> at = level.getNoiseBiome(
                 QuartPos.fromBlock(pos.getX()), QuartPos.fromBlock(pos.getY()), QuartPos.fromBlock(pos.getZ()));
         helper.assertTrue(at.value() != null, "the palette read answers for the bloom column, got " + at);
+        helper.succeed();
+    }
+
+    // ------------------------------------------------ TC-M5-04-s-b2 write cell
+    //
+    // Where does ONE biome write land, in palette-cell space?
+    //
+    // The disc probe reports 12 of its 16 disc cells firing, with the whole x
+    // column of cells at key 2 (the bloom's negative x side) missing, while
+    // its core assertion — every column at |offset| <= 3 reads cleansed, which
+    // INCLUDES the key-2 columns x offsets -3..-1 — passes. Those two facts
+    // are only compatible if the write path and the read path do not agree on
+    // which palette cell a column lives in. So measure it: reset a strip to
+    // plains, write FOREST to ONE column, read the strip back, and print the
+    // run of columns that answer forest. That run IS the footprint of the
+    // write, and the palette cell of the source column is `(x >> 2) & 3` —
+    // a correct write answers for exactly the 4 columns x & ~3 .. x & ~3 + 3.
+    // Swept across a chunk boundary (dx -20..20) so a negative-offset,
+    // section-base-disagreeing case cannot hide.
+    @GameTest(template = "gametest_pad_32", timeoutTicks = 600)
+    public static void diagnoseWhereASingleBiomeWriteLands(final GameTestHelper helper) {
+        final ServerLevel level = helper.getLevel();
+        final BlockPos origin = helper.absolutePos(new BlockPos(16, 8, 16));
+        final BlockPos bloom = new BlockPos(origin.getX() & ~3, origin.getY(), origin.getZ() & ~3);
+        final net.minecraft.core.Registry<Biome> registry =
+                level.registryAccess().registryOrThrow(Registries.BIOME);
+        final Holder<Biome> forest = registry.getHolderOrThrow(Biomes.FOREST);
+        final Holder<Biome> plains = registry.getHolderOrThrow(Biomes.PLAINS);
+        final int y = bloom.getY();
+        System.out.println("TC-B2-DIAG bloom=" + bloom.toShortString()
+                + " x&15=" + (bloom.getX() & 15) + " z&15=" + (bloom.getZ() & 15)
+                + " cell=" + cellKeyOf(bloom.getX(), bloom.getZ())
+                + " build=" + level.getMinBuildHeight() + ".." + level.getMaxBuildHeight()
+                + " sections=" + level.getChunk(bloom).getSections().length);
+
+        final StringBuilder offGrid = new StringBuilder();
+        for (int dx = -20; dx <= 20; dx++) {
+            for (int rx = -24; rx <= 24; rx++) {
+                for (int rz = -4; rz <= 4; rz++) {
+                    TaintBiomes.setBiomeAt(level, bloom.getX() + rx, bloom.getZ() + rz, plains);
+                }
+            }
+            final int x = bloom.getX() + dx;
+            TaintBiomes.setBiomeAt(level, x, bloom.getZ(), forest);
+            int first = Integer.MAX_VALUE;
+            int last = Integer.MIN_VALUE;
+            int n = 0;
+            for (int rx = -24; rx <= 24; rx++) {
+                if (TaintBiomes.biomeAt(level, new BlockPos(bloom.getX() + rx, y, bloom.getZ()))
+                        .is(Biomes.FOREST)) {
+                    if (first == Integer.MAX_VALUE) {
+                        first = bloom.getX() + rx;
+                    }
+                    last = bloom.getX() + rx;
+                    n++;
+                }
+            }
+            final int expectFirst = x & ~3;
+            System.out.println("TC-B2-DIAG single-write dx=" + dx + " x=" + x
+                    + " chunk=" + (x >> 4) + " localx=" + (x & 15)
+                    + " cellX=" + ((x >> 2) & 3) + " cellZ=" + ((bloom.getZ() >> 2) & 3)
+                    + " expectFootprint=" + expectFirst + ".." + (expectFirst + 3)
+                    + " footprint=" + (n == 0 ? "NONE" : first + ".." + last) + " n=" + n);
+            if (n != 4 || first != expectFirst) {
+                offGrid.append(" dx=").append(dx).append(" n=").append(n)
+                        .append(" footprint=").append(n == 0 ? "NONE" : first + ".." + last)
+                        .append(" expected ").append(expectFirst).append("..").append(expectFirst + 3);
+            }
+        }
+        System.out.println("TC-B2-DIAG writes whose footprint is NOT the source column's own"
+                + " 4-block cell:" + (offGrid.length() == 0 ? " none" : offGrid));
+
+        // The disc probe's own paint, read back column by column: a column the
+        // paint did not taint can never be a fire target, which is what a
+        // missing disc cell looks like from the bloom's side.
+        for (int rx = -24; rx <= 24; rx++) {
+            for (int rz = -24; rz <= 24; rz++) {
+                TaintBiomes.setBiomeAt(level, bloom.getX() + rx, bloom.getZ() + rz, plains);
+            }
+        }
+        paintBiome(level, bloom, PAINT_RADIUS, TaintBiomes.taintBiomeHolder(level), false);
+        final StringBuilder notTaint = new StringBuilder();
+        int misses = 0;
+        for (int dx = -PAINT_RADIUS; dx <= PAINT_RADIUS; dx++) {
+            for (int dz = -PAINT_RADIUS; dz <= PAINT_RADIUS; dz++) {
+                final Holder<Biome> read = TaintBiomes.biomeAt(level,
+                        new BlockPos(bloom.getX() + dx, y, bloom.getZ() + dz));
+                if (!TaintBiomes.isTaintBiome(read)) {
+                    misses++;
+                    if (notTaint.length() < 900) {
+                        notTaint.append(' ').append(dx).append(',').append(dz)
+                                .append("(cell ").append(cellKeyOf(bloom.getX() + dx, bloom.getZ() + dz))
+                                .append('=').append(read.getRegisteredName()).append(')');
+                    }
+                }
+            }
+        }
+        System.out.println("TC-B2-DIAG pad paint read-back: " + misses + " of "
+                + (2 * PAINT_RADIUS + 1) * (2 * PAINT_RADIUS + 1)
+                + " painted columns do NOT read taint;" + notTaint);
+
+        helper.assertTrue(offGrid.length() == 0,
+                "every single-column biome write must land in the palette cell the read reads — the"
+                        + " 4 columns (x & ~3)..(x & ~3)+3 of the source column; off-grid writes:"
+                        + offGrid);
+        helper.assertTrue(misses == 0,
+                "painting the disc probe's field must make every painted column read the taint"
+                        + " biome (a column the paint missed can never be a bloom fire target): "
+                        + misses + " of " + (2 * PAINT_RADIUS + 1) * (2 * PAINT_RADIUS + 1)
+                        + " read something else;" + notTaint);
         helper.succeed();
     }
 }
