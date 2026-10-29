@@ -1,11 +1,13 @@
 package com.jonnyutah12.thaumcraftclassic.network;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcEffects;
 import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
@@ -101,16 +103,52 @@ public final class ClientEffectHooks {
     }
 
     // --- visual effects (original common/lib/network/fx handlers) ---
-    // TODO(M4 client effects): replace every stub with the ported particle/beam
-    // system; the payload shapes below already carry everything the original
-    // onMessage methods used.
+    // TC-M7-02-s wires the two block-position particle effects whose original
+    // shape is a particle cloud (sparkle, crucible bubble). The beam/bolt
+    // family below is not a particle effect in the original (FXLightningBolt,
+    // FXBeam* and the wisp family are world-rendered beams), and the
+    // dig/essentia/vis/infusion families ride the same plan+spawn seam, so
+    // they keep their own follow-up cards.
 
+    /**
+     * TC-M7-02-s WIRED: the original's {@code PacketFXBlockBubble} client
+     * handler runs four jittered {@code ClientProxy.crucibleBubble} calls per
+     * {@code particleCount(1)} iteration and hands each to the particle engine
+     * (PacketFXBlockBubble.java:44-79). The plan is
+     * {@code TcFxPlans.blockBubble}, the spawn is {@code TcEffects}.
+     */
     static void fxBlockBubble(final BlockPos pos, final int color) {
         LOGGER.debug("fx block bubble at {} color={}", pos, color);
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        TcEffects.blockBubble(mc.level, pos, color, particleSetting(), RandomSource.create());
     }
 
+    /**
+     * TC-M7-02-s WIRED: the original's {@code PacketFXBlockSparkle} client
+     * handler is one {@code ClientProxy.blockSparkle(world, x, y, z, c, 7)}
+     * call (PacketFXBlockSparkle.java:40-42, ClientProxy.java:576-608) — the
+     * generic sparkle every vis sender in the original routes through.
+     */
     static void fxBlockSparkle(final BlockPos pos, final int color) {
         LOGGER.debug("fx block sparkle at {} color={}", pos, color);
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        TcEffects.blockSparkle(mc.level, pos, color, particleSetting(), RandomSource.create());
+    }
+
+    /**
+     * The vanilla particle setting the original reads as
+     * {@code Minecraft.getMinecraft().gameSettings.field_74362_aa}
+     * (ClientProxy.java:949-955): ALL=0, DECREASED=1, MINIMAL=2, same ids in
+     * 1.21.1's {@code ParticleStatus}.
+     */
+    private static int particleSetting() {
+        return Minecraft.getInstance().options.particles().get().getId();
     }
 
     static void fxBlockArc(final BlockPos pos, final int sourceEntityId) {

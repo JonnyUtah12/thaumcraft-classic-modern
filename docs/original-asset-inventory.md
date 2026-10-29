@@ -129,6 +129,37 @@ export leftovers; colors in them do not match in-game appearance);
 missing `hemis.mtl`. All are kept only as model-conversion source, not
 runtime assets.
 
+## PARTICLE-SPRITES — 1.7.10 cell grid → 1.21.1 per-frame sprites (TC-M7-02-s)
+
+The original has **no per-file particle textures**. Its FX art is one sheet,
+`textures/misc/particles.png` (16 columns × 16 rows of 16px cells = 256 cells),
+and the code addresses it by **flat cell number**:
+`ClientProxy.drawGenericParticles` takes `startParticle` / `numParticles` /
+`particleInc` and `FXGeneric.setParticleTextureIndex` writes that number
+straight into the tessellator UV maths, so a frame is `cell(start + k)`.
+1.21.1 has no cell arithmetic — a particle's frames are a **list of sprite ids**
+in `assets/<ns>/particles/<id>.json`, fed to the particle atlas (which collects
+every namespace's `textures/particle/` folder). The build therefore slices the
+cells the ported particles index into one sprite per cell
+(`sliceOriginalParticleSprites`, build.gradle). The sheet stays the source of
+truth and no original asset is committed (D-004); the *definition* JSONs are
+committed, because 1.21.1 treats the frame list as the particle's identity.
+
+| Ported particle | Original index site | Cells (draw order) | Sliced sprites (`textures/particle/`) |
+| --- | --- | --- | --- |
+| `thaumcraft:sparkle` | `ClientProxy.blockSparkle` → `drawGenericParticles(..., 112, 9, 1, ...)` (ClientProxy.java:592-606), sent by `PacketFXBlockSparkle` | 112, 113, 114, 115, 116, 117, 118, 119, 120 (row 7, cols 0-8) | `sparkle_0..sparkle_8` (9 frames, `setSpriteFromAge` walks them over life, which is what `FXGeneric`'s `start + min(num * age/maxAge, num-1)` does) |
+| `thaumcraft:bubble` | `FXBubble` frame counter (`particle++` on the last two ticks, FxBubble.java:63-65), fed by `ClientProxy.crucibleBubble` from `PacketFXBlockBubble` | 16 (body), 17 (pop) (row 1, cols 0-1) | `bubble_0` (body), `bubble_1` (pop) |
+
+Contract, pinned by `ParticleSpriteSlicingTest`: (1) each definition JSON names
+its frames in cell order, (2) each sliced PNG exists and is **pixel-identical**
+to the sheet cell the original indexes — an off-by-one in `col = idx % 16` /
+`row = idx / 16` fails the test rather than shipping a wrong-looking particle,
+(3) no sliced sprite is left unnamed by a definition.
+
+The sheet's other 246 cells stay untouched: the FX families that index them
+(`FXBoreParticles`, `FXVisSparkle`, the wisp and beam art) are on their own
+cards, and slicing a cell no particle names would put dead art in every jar.
+
 ## Unused assets (42) — explicit, with reason
 
 | File | Reason |

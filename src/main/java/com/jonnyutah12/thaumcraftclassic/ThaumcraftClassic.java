@@ -3,6 +3,7 @@ package com.jonnyutah12.thaumcraftclassic;
 import com.jonnyutah12.thaumcraftclassic.accessory.AccessoryAttachments;
 import com.jonnyutah12.thaumcraftclassic.accessory.AccessoryService;
 import com.jonnyutah12.thaumcraftclassic.config.TcConfig;
+import com.jonnyutah12.thaumcraftclassic.gametest.FxParticleGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.AuraNodeGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.AccessoryGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.BaubleGameTest;
@@ -113,5 +114,6 @@ public final class ThaumcraftClassic {
         event.register(WorldGenGameTest.class);
         event.register(FluxGameTest.class);
         event.register(NodeBehaviorGameTest.class);
+        event.register(FxParticleGameTest.class);
     }
 }
