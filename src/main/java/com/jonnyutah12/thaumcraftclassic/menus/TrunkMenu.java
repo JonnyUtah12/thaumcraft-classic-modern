@@ -66,6 +66,17 @@ public class TrunkMenu extends AbstractContainerMenu {
         }
     }
 
+    /**
+     * Row count the trunk grid was built with (original
+     * {@code trunk.getRows()}). 1.21.1's container screen needs it to size its
+     * panel, exactly as {@code ChestMenu.getRowCount()} feeds
+     * {@code ContainerScreen}; a client menu whose trunk entity could not be
+     * resolved reports 0, so the screen draws only the player grid.
+     */
+    public int getRowCount() {
+        return this.numRows;
+    }
+
     private void build(final TrunkHost host, final Inventory playerInventory) {
         // Original trunk grid: 9 columns, rows at y = 15 + row*23.
         for (int row = 0; row < this.numRows; row++) {
