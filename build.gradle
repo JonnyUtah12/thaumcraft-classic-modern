@@ -128,7 +128,18 @@ dependencies {
 // overlays it into the output JAR so local/release artifacts carry the original
 // visuals; CI (no reference tree) builds a code-only JAR and the unit tests
 // assert the asset mapping instead of the assets themselves.
-def originalAssetsDir = file("${rootDir}/../reference/assets")
+// -Ptc.referenceAssets=<dir> retargets the overlay at a tree of the same LAYOUT.
+// CI has no reference tree, so it points this at the placeholder fixture
+// scripts/make_asset_overlay_fixture.py builds from docs/asset-mapping.csv
+// (no original bytes), and the asset path contract then runs its overlay gates
+// there. With no property, behaviour is exactly as before: overlay iff the
+// developer's reference tree exists, code-only jar in CI (artifact policy).
+def referenceAssetsOverride = project.findProperty('tc.referenceAssets')
+def originalAssetsDir = referenceAssetsOverride != null
+        ? file(referenceAssetsOverride as String)
+        : file("${rootDir}/../reference/assets")
+// True when the overlay source is the generated fixture (CI), not a real tree.
+def assetOverlayIsFixture = referenceAssetsOverride != null
 
 // The original 1.7.10 sounds.json is not platform-valid as-is: its file
 // references carry no namespace, and 1.21.1 resolves unnamespaced references
@@ -147,6 +158,34 @@ def soundEventRenames = [
         'runicShieldCharge' : 'runic_shield_charge',
 ]
 
+// The original 1.7.10 tree keeps block and item textures in the PLURAL
+// directories `blocks`/`items`; 1.14 renamed them and 1.21.1 resolves a model
+// sprite `thaumcraft:block/amberore` at
+// assets/thaumcraft/textures/block/amberore.png (SINGULAR) — measured against
+// minecraft_1.21.1_client.jar, which ships assets/minecraft/textures/block
+// (1061 files) and textures/item (605) and has no plural counterpart. Overlaid
+// unchanged, the original tree is therefore unreachable at the path every model
+// asks for: every block and item renders the missing-texture magenta
+// (kanban t_2c24f643, player screenshot 2026-10-28).
+//
+// Verified per directory rather than blanket-renamed, because most of them keep
+// their 1.7.10 name in 1.21.1: `gui`, `misc` and `models` are plural in the
+// vanilla jar too (textures/gui, textures/misc, textures/models), and `aspects`
+// and `foci` are Thaumcraft directories addressed by literal path
+// (Aspect#iconTexture builds `thaumcraft:textures/aspects/<tag>.png`), so
+// moving them would break the one reference that is not model-driven. Only
+// these two rename. docs/asset-mapping.csv records the same targets and
+// OriginalTextureOverlayTest guards both sides, like the sound overlay above.
+def textureDirectoryRenames = [
+        'blocks': 'block',
+        'items' : 'item',
+]
+
+// Captured as a provider so the copy-cleanup below can resolve it at execution
+// time — the configuration cache forbids touching `layout` inside a task action.
+def overlayTexturesOutDir =
+        layout.buildDirectory.dir('generated/resources/original-assets/assets/thaumcraft/textures')
+
 def overlayOriginalAssets = tasks.register("overlayOriginalAssets", Sync) {
     onlyIf { originalAssetsDir.exists() }
     from(originalAssetsDir) {
@@ -160,6 +199,28 @@ def overlayOriginalAssets = tasks.register("overlayOriginalAssets", Sync) {
             def renamed = soundEventRenames[path - 'thaumcraft/sounds/' - '.ogg']
             if (renamed != null) {
                 details.relativePath = new RelativePath(true, 'thaumcraft', 'sounds', renamed + '.ogg')
+            }
+        } else if (path.startsWith('thaumcraft/textures/')) {
+            // textures/<dir>/<file> -> textures/<modern dir>/<file>, including the
+            // paired .mcmeta. Copy-time only: the ARR source tree is never touched.
+            def parts = path.split('/')
+            def renamedDir = parts.length >= 4 ? textureDirectoryRenames[parts[2]] : null
+            if (renamedDir != null) {
+                def target = ['thaumcraft', 'textures', renamedDir] + parts.toList().drop(3)
+                details.relativePath = new RelativePath(true, target as String[])
+            }
+        }
+    }
+    doLast {
+        // Sync mirrors the source tree's directory structure before eachFile
+        // rewrites the paths, so the emptied 1.7.10 directories survive in the
+        // output and ship as jar entries under a path 1.21.1 never resolves.
+        // Drop them: an asset audit should show only the published layout.
+        def texturesOut = overlayTexturesOutDir.get().asFile
+        textureDirectoryRenames.keySet().each { legacyDir ->
+            def legacy = new File(texturesOut, legacyDir)
+            if (legacy.isDirectory() && (legacy.listFiles() == null || legacy.listFiles().length == 0)) {
+                legacy.delete()
             }
         }
     }
@@ -202,7 +263,99 @@ sourceSets.main.resources {
     srcDir(layout.buildDirectory.dir('generated/resources/original-assets'))
     srcDir(layout.buildDirectory.dir('generated/resources/original-sounds'))
 }
-tasks.named('processResources') { dependsOn overlayOriginalAssets, transformOriginalSoundsJson }
+// processResources is a Copy task and never prunes its destination: a directory
+// an earlier layout produced (the 1.7.10 textures/blocks|items) is packaged as a
+// jar entry forever. Drop those legacy texture directories from the destination
+// so the jar shows only the published 1.21.1 layout.
+def processedTexturesDir = layout.buildDirectory.dir('resources/main/assets/thaumcraft/textures')
+tasks.named('processResources') {
+    dependsOn overlayOriginalAssets, transformOriginalSoundsJson
+    doLast {
+        def textures = processedTexturesDir.get().asFile
+        textureDirectoryRenames.keySet().each { legacyDir ->
+            def legacy = new File(textures, legacyDir)
+            if (legacy.isDirectory() && (legacy.listFiles() == null || legacy.listFiles().length == 0)) {
+                legacy.delete()
+            }
+        }
+    }
+}
+
+def makeAssetOverlayFixture = tasks.register("makeAssetOverlayFixture", Exec) {
+    group = 'build'
+    description = 'Rebuilds the 1.7.10 plural-layout asset tree as placeholder ' +
+            'files from docs/asset-mapping.csv, so CI (no reference tree, D-004) ' +
+            'can build an overlay jar and gate the block/item path remap.'
+    def mapping = file('docs/asset-mapping.csv')
+    def fixtureRoot = layout.buildDirectory.dir('ci-fixture-assets')
+    inputs.file(mapping)
+    outputs.dir(fixtureRoot)
+    commandLine 'python3', file('scripts/make_asset_overlay_fixture.py').absolutePath,
+            fixtureRoot.get().asFile.absolutePath,
+            '--asset-mapping', mapping.absolutePath
+}
+
+def overlayAssetJar = tasks.register("overlayAssetJar", Jar) {
+    group = 'build'
+    description = 'Jar packaged through the asset overlay — the real reference tree ' +
+            'when present, and with -Ptc.referenceAssets=build/ci-fixture-assets the ' +
+            'generated fixture, which is how CI exercises the overlay path. NOT a ' +
+            'release artifact (classifier overlay-check): the public jar stays code-only.'
+    dependsOn tasks.named('processResources'), tasks.named('classes')
+    if (assetOverlayIsFixture) {
+        dependsOn makeAssetOverlayFixture
+    }
+    archiveBaseName = mod_id
+    archiveVersion = mod_version
+    archiveClassifier = 'overlay-check'
+    destinationDirectory = layout.buildDirectory.dir('libs')
+    from(sourceSets.main.output)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+def checkAssetPathsCodeOnlyJar = tasks.register("checkAssetPathsCodeOnlyJar", Exec) {
+    group = 'verification'
+    description = 'Asset path contract over the code-only jar (the public artifact): ' +
+            'scripts/check_asset_paths.py --code-only.'
+    def jarTask = tasks.named('jar').get()
+    def jarFile = jarTask.archiveFile
+    dependsOn jarTask
+    inputs.files(jarFile)
+    inputs.file(file('docs/asset-mapping.csv'))
+    commandLine 'python3', file('scripts/check_asset_paths.py').absolutePath,
+            jarFile.get().asFile.absolutePath, '--code-only',
+            '--asset-mapping', file('docs/asset-mapping.csv').absolutePath
+}
+
+def checkAssetPathsOverlayJar = tasks.register("checkAssetPathsOverlayJar", Exec) {
+    group = 'verification'
+    description = 'Asset path contract over the overlay jar: textures/block + ' +
+            'textures/item published, no plural directories, every model/blockstate ' +
+            'reference resolving to a PNG in the jar.'
+    def jarTask = overlayAssetJar.get()
+    def jarFile = jarTask.archiveFile
+    dependsOn jarTask
+    inputs.files(jarFile)
+    inputs.file(file('docs/asset-mapping.csv'))
+    // The overlay is what publishes textures; with no overlay source there is no
+    // overlay jar to gate (same guard as overlayOriginalAssets).
+    onlyIf { originalAssetsDir.exists() }
+    commandLine 'python3', file('scripts/check_asset_paths.py').absolutePath,
+            jarFile.get().asFile.absolutePath,
+            '--asset-mapping', file('docs/asset-mapping.csv').absolutePath
+}
+
+if (assetOverlayIsFixture) {
+    // The overlay tasks read the tree at execution time, so the fixture has to
+    // be generated before they snapshot it.
+    overlayOriginalAssets.configure { dependsOn makeAssetOverlayFixture }
+    transformOriginalSoundsJson.configure { dependsOn makeAssetOverlayFixture }
+    overlayAssetJar.configure { dependsOn makeAssetOverlayFixture }
+}
+
+tasks.named('check') {
+    dependsOn checkAssetPathsCodeOnlyJar, checkAssetPathsOverlayJar
+}
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
     var replaceProperties = [
@@ -246,6 +399,10 @@ tasks.named('test', Test).configure {
             layout.buildDirectory.dir('generated/resources/original-assets/assets').get().asFile.absolutePath
     systemProperty 'tc.originalSoundsJson',
             layout.buildDirectory.file('generated/resources/original-sounds/assets/thaumcraft/sounds.json').get().asFile.absolutePath
+    // OriginalTextureOverlayTest resolves the sprites of the committed models
+    // against the overlay output; it needs the committed asset tree too.
+    systemProperty 'tc.modAssetsDir',
+            file('src/main/resources/assets').absolutePath
     systemProperty 'tc.configReferenceFile',
             file('docs/config-reference.md').absolutePath
     systemProperty 'tc.contentMappingFile',

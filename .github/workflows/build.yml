@@ -24,6 +24,19 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build
 
+      # TC-M7-01-s-a: the asset path contract. `build` above runs
+      # checkAssetPathsCodeOnlyJar (over the public, code-only artifact) as part
+      # of `check`. CI has no reference tree (D-004), so the OVERLAY side of the
+      # gate packs the placeholder plural-layout tree that
+      # scripts/make_asset_overlay_fixture.py generates from
+      # docs/asset-mapping.csv through the REAL overlay task — proving the
+      # textures/blocks -> textures/block and textures/items -> textures/item
+      # copy-time rename and that every model/blockstate sprite resolves to a
+      # PNG inside the jar. That jar is classifier `overlay-check` and is never
+      # published: the release artifact stays code-only (D-004).
+      - name: Asset path contract (overlay jar)
+        run: ./gradlew -Ptc.referenceAssets=build/ci-fixture-assets checkAssetPathsOverlayJar
+
       # In-game tests on the NeoForge game test server (docs/testing.md).
       # Separate from `build` so the unit layer stays fast; a red run here
       # blocks release (docs/release-process.md).
