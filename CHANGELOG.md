@@ -20,7 +20,8 @@ Work heading for `0.1.0-alpha.5`, gated per merge on `main`.
   deferred register for it silently never populates). Gates: `EnchantmentRegistrationGameTest`
   asserts both ids in the live registry, both labels shipped, and both recipe rows resolving a holder;
   `EnchantmentIdsTest` pins the payload path/id, the codec shape, and that no infusion row names a
-  thaumcraft enchantment outside the pair. **Registration only**: neither payload carries an
+  thaumcraft enchantment outside the pair. `InfusionAltarGameTest` had pinned the old behaviour as an
+  invariant (the 2 rows load and resolve **no** holder); that assertion is flipped to resolvable. **Registration only**: neither payload carries an
   `enchantment_effects` component, so Repair does not mend and Haste does not speed anything up —
   the effect bodies are the next slice (`TC-M6-05-s-e2`).
 
