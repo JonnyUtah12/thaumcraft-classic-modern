@@ -10,6 +10,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaSto
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTaint;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
 import net.neoforged.bus.api.IEventBus;
 
@@ -156,6 +157,15 @@ public final class ModRegistration {
         // families, the robe dye mechanics and the armour models stay on
         // TC-M6-07b / TC-M6-06 / TC-M7-01.
         CatalogArmor.init(modEventBus);
+        // TC-M5-04-s: taint — the crust/soil/flesh and fibres mega-blocks and
+        // their variant items. The Tainted Land biome is a datapack entry
+        // (data/thaumcraft/worldgen/biome/), and the spread/conversion rules
+        // run in TaintManager; the config keys already live in
+        // TcConfigCatalog. Taint cleansing and aura restore stay on the
+        // sibling card TC-M5-04b, the taint creatures and the Taint Poison
+        // effect on TC-M6-06 / TC-M6-05, and the worldgen biome hook on
+        // TC-M5-05.
+        CatalogTaint.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-
