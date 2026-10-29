@@ -57,6 +57,17 @@ Work heading for `0.1.0-alpha.5`, gated per merge on `main`.
   `wip-salvage`), so the rest are authoring work, not porting.
 
 
+- **Build tooling: the CI asset fixture broke the particle slicer.** The fixture wrote
+  every placeholder PNG as 1x1, and `sliceOriginalParticleSprites` crops a 16x16 grid of
+  16 px cells out of `textures/misc/particles.png`, so every crop fell outside the raster
+  ("(x + width) is outside of Raster", CI run 40938034742). The fixture now generates a
+  real 256x256 solid sheet for that one file, the generator is a task input so a stale
+  fixture cannot survive, and cells outside the raster degrade to a solid stand-in sprite
+  with a logged summary instead of failing the build. Gate: fixture overlay-check
+  BUILD SUCCESSFUL (242 `textures/block`, 236 `textures/item`, 904 mapped targets, 0
+  missing); merged tree 411 unit tests / 0 failures, 134/134 game tests with and without
+  Curios.
+
 ## [0.1.0-alpha.4] - 2026-10-28
 
 Fourth pre-release. Still deliberately a pre-release, not playable end-to-end:
