@@ -59,7 +59,21 @@ class ParticleSpriteSlicingTest {
             new CellParticle("sparkle", "sparkle", cells(112, 120)),
             new CellParticle("bubble", "bubble", new int[] {16, 17}),
             new CellParticle("beam_impact", "impact", cells(80, 95)),
-            new CellParticle("sparkle_glow", "sparkle_glow", cells(112, 115)));
+            new CellParticle("sparkle_glow", "sparkle_glow", cells(112, 115)),
+            // TC-M7-02-c-s-f1b: the EG wisp steps u = age%13/16 at v = 0.1875
+            // (FXWispEG.java:59-62) — row 3, columns 0..12 of the sheet grid.
+            new CellParticle("wisp_eg", "wisp_eg", cells(48, 60)));
+
+    /**
+     * TC-M7-02-c-s-f1b: the wisp and the arcing wisp draw regions of the
+     * VANILLA /misc/fx.png sheet (FXWisp.java:148-151, FXWispArcing.java:
+     * 74-77), which the reference tree does not ship. They stand in on the
+     * sliced Thaumcraft glow frame (BD-17), so their definitions must name
+     * exactly that one sprite.
+     */
+    private static final Map<String, String> SUBSTITUTE_PARTICLES = Map.of(
+            "wisp", "sparkle_0",
+            "wisp_arcing", "sparkle_0");
 
     /**
      * A whole-tile particle: the committed JSON name and its sprite base names
@@ -92,6 +106,7 @@ class ParticleSpriteSlicingTest {
     private static List<String> particleJsonNames() {
         List<String> names = new ArrayList<>();
         CELL_PARTICLES.forEach(p -> names.add(p.json()));
+        names.addAll(SUBSTITUTE_PARTICLES.keySet().stream().sorted().toList());
         names.addAll(TILE_PARTICLES.keySet().stream().sorted().toList());
         return names;
     }
@@ -135,6 +150,14 @@ class ParticleSpriteSlicingTest {
                         particle.json() + ": frame order must follow the original cell order, cell "
                                 + particle.cells()[frame]);
             }
+        }
+
+        for (Map.Entry<String, String> entry : SUBSTITUTE_PARTICLES.entrySet()) {
+            List<String> textures = texturesOf(Files.readString(definition(entry.getKey())));
+            assertEquals(1, textures.size(),
+                    entry.getKey() + ": the fx.png stand-in is one frame (BD-17)");
+            assertEquals("thaumcraft:particle/" + entry.getValue(), textures.get(0),
+                    entry.getKey() + ": the definition must name the glow frame it stands in on");
         }
 
         for (Map.Entry<String, List<String>> entry : TILE_PARTICLES.entrySet()) {

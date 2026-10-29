@@ -37,12 +37,15 @@ public final class TcParticleProviders {
         event.registerSpriteSet(ModParticles.BEAM_GOLEM_BOSS.get(), TcGolemBeamParticle.Provider::new);
         event.registerSpriteSet(ModParticles.ARC.get(), TcArcParticle.Provider::new);
         event.registerSpriteSet(ModParticles.SPARKLE_GLOW.get(), TcGlowSparkleParticle.Provider::new);
-        // TC-M7-02-c-s-f1: the wisp family. The EG mote steps the 13-cell strip
-        // the original indexes (FXWispEG.java:58, u = age%13/16, v = 0.1875 ->
-        // cells 48..60); the wisp and the arcing wisp each draw one wide crop of
-        // the same sheet — the original's render quad samples u 0.125..0.875
-        // (FXWisp.java:184-190) and u 0..0.875 (FXWispArcing.java:79-86) of the
-        // whole sheet, so the build crops those rectangles (wisp, wisp_arcing).
+        // TC-M7-02-c-s-f1: the wisp family. The EG mote steps the 13-cell
+        // strip the original indexes (FXWispEG.java:59, u = age%13/16,
+        // v = 0.1875 -> cells 48..60 of the sheet grid), sliced at build time
+        // like the sparkle cells. The wisp and the arcing wisp draw regions of
+        // the VANILLA /misc/fx.png sheet (FXWisp.java:148-151 u 0..0.125
+        // v 0.875..1; FXWispArcing.java:74-77 u 0..0.875 v 0.875..1), which
+        // the reference tree does not ship, so they stand in on the Thaumcraft
+        // glow sparkle frame (sparkle_0) — BD-17 in
+        // docs/BEHAVIORAL_DEVIATIONS.md.
         event.registerSpriteSet(ModParticles.WISP.get(), TcWispParticle.Provider::new);
         event.registerSpriteSet(ModParticles.WISP_EG.get(), TcWispEgParticle.Provider::new);
         event.registerSpriteSet(ModParticles.WISP_ARCING.get(), TcWispArcingParticle.Provider::new);

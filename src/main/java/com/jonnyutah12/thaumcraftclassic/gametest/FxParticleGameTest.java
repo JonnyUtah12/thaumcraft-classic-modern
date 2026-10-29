@@ -43,18 +43,19 @@ public final class FxParticleGameTest {
     /** The two ported particle types must be live in the registry. */
     @GameTest(template = "empty")
     public static void portedParticleTypesRegistered(GameTestHelper helper) {
-        for (String path : new String[] {"sparkle", "bubble"}) {
+        for (String path : new String[] {"sparkle", "bubble", "wisp", "wisp_eg", "wisp_arcing"}) {
             ResourceLocation id = ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, path);
             helper.assertTrue(BuiltInRegistries.PARTICLE_TYPE.containsKey(id),
                     "particle type " + id + " is not in the registry");
         }
         // The whole slice: the mod registers exactly the particle types the
-        // M7-02 cards scope — 2 (TC-M7-02-s) + 6 beams/bolts (TC-M7-02-b-s).
+        // M7-02 cards scope — 2 (TC-M7-02-s) + 6 beams/bolts (TC-M7-02-b-s)
+        // + 3 wisp family (TC-M7-02-c-s-f1).
         long registered = BuiltInRegistries.PARTICLE_TYPE.holders()
                 .filter(key -> ThaumcraftClassic.MOD_ID.equals(key.key().location().getNamespace()))
                 .count();
-        helper.assertTrue(registered == 8,
-                "thaumcraft-namespace particle types must be the 8 ported ones, found " + registered);
+        helper.assertTrue(registered == 11,
+                "thaumcraft-namespace particle types must be the 11 ported ones, found " + registered);
         helper.assertTrue(ModParticles.SPARCLE.get().codec() == TcSparkleOptions.MAP_CODEC,
                 "sparkle type must decode through TcSparkleOptions.MAP_CODEC");
         helper.assertTrue(ModParticles.BUBBLE.get().codec() == TcBubbleOptions.MAP_CODEC,

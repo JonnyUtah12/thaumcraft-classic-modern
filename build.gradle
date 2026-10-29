@@ -222,6 +222,10 @@ def originalParticleCells = [
         'bubble'      : [16, 17],
         'impact'      : (80..95).toList(),
         'sparkle_glow': (112..115).toList(),
+        // TC-M7-02-c-s-f1b: the EG wisp's 13-frame cycle. FXWispEG renders at
+        // u = age%13/16, v = 0.1875 (FXWispEG.java:59-62) — row 3, columns
+        // 0..12 = cells 48..60 of the sheet grid it indexes.
+        'wisp_eg'     : (48..60).toList(),
 ]
 // TC-M7-02-b-s: the beam/bolt family draws whole sheet tiles, not grid cells
 // (FXBeam.java:77-81 /misc/beam*.png; FXLightningBolt.java:178-182
