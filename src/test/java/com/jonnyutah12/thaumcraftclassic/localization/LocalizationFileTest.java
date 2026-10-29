@@ -39,7 +39,10 @@ class LocalizationFileTest {
     /** 1.21.1 key conventions for the content this mod ships. */
     private static final List<String> CURRENT_PREFIXES = List.of(
             "item.thaumcraft.", "block.thaumcraft.", "container.thaumcraft.",
-            "entity.thaumcraft.", "itemGroup.thaumcraft.");
+            "entity.thaumcraft.", "itemGroup.thaumcraft.",
+            // 1.21.1 enchantments are datapack entries labelled by their own
+            // key shape (TC-M6-05-s-e1c: ench_repair, ench_haste).
+            "enchantment.thaumcraft.");
 
     /**
      * Keys the shipped code uses with the original 1.7.10 key shape, kept

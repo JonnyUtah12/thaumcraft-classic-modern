@@ -811,8 +811,8 @@ Thaumcraft:recipe.197.arcane_shapeless,thaumcraft:recipe.197.arcane_shapeless,re
 Thaumcraft:recipe.198.arcane_shapeless,thaumcraft:recipe.198.arcane_shapeless,recipe,"blockTube, 1, 3",done,tested,,type=arcane_shapeless research=TUBEFILTER
 Thaumcraft:recipe.199.arcane_shapeless,thaumcraft:recipe.199.arcane_shapeless,recipe,"blockTube, 1, 5",done,tested,,type=arcane_shapeless research=TUBEFILTER
 Thaumcraft:recipe.200.arcane_shapeless,thaumcraft:recipe.200.arcane_shapeless,recipe,"blockTube, 1, 6",done,tested,,type=arcane_shapeless research=TUBEFILTER
-Thaumcraft:recipe.201.infusion_enchantment,thaumcraft:recipe.201.infusion_enchantment,recipe,Enchantment.field_77331_b[ThaumcraftApi.enchantRepair],not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.202.infusion_enchantment,thaumcraft:recipe.202.infusion_enchantment,recipe,Enchantment.field_77331_b[ThaumcraftApi.enchantHaste],not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.201.infusion_enchantment,thaumcraft:recipe.201.infusion_enchantment,recipe,Repair [ThaumcraftApi.enchantRepair],done,tested,the applied enchantment has no effect body yet - registration slice TC-M6-05-s-e1c,type=infusion_enchantment research=INFUSIONENCHANTMENT enchantment=thaumcraft:ench_repair resolves a live holder
+Thaumcraft:recipe.202.infusion_enchantment,thaumcraft:recipe.202.infusion_enchantment,recipe,Haste [ThaumcraftApi.enchantHaste],done,tested,the applied enchantment has no effect body yet - registration slice TC-M6-05-s-e1c,type=infusion_enchantment research=INFUSIONENCHANTMENT enchantment=thaumcraft:ench_haste resolves a live holder
 Thaumcraft:recipe.203.infusion_enchantment,thaumcraft:recipe.203.infusion_enchantment,recipe,Enchantment.field_77332_c,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
 Thaumcraft:recipe.204.infusion_enchantment,thaumcraft:recipe.204.infusion_enchantment,recipe,Enchantment.field_77329_d,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
 Thaumcraft:recipe.205.infusion_enchantment,thaumcraft:recipe.205.infusion_enchantment,recipe,Enchantment.field_77327_f,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
@@ -979,8 +979,8 @@ Thaumcraft:GUI_HOVER_HARNESS,thaumcraft:gui_hover_harness,gui,GuiHoverHarness,no
 Thaumcraft:GUI_MAGIC_BOX,thaumcraft:gui_magic_box,gui,GuiMagicBox,done,tested,,gui_id=18 handler=GuiMagicBox
 Thaumcraft:GUI_SPA,thaumcraft:gui_spa,gui,GuiSpa,done,tested,,gui_id=19 handler=GuiSpa
 Thaumcraft:GUI_FOCAL_MANUPULATOR,thaumcraft:gui_focal_manupulator,gui,GuiFocalManipulator,not_started,not_tested,,gui_id=20 handler=GuiFocalManipulator
-Thaumcraft:ench_haste,thaumcraft:ench_haste,enchantment,,not_started,not_tested,,class=? config_key=ench_haste registered=yes
-Thaumcraft:ench_repair,thaumcraft:ench_repair,enchantment,,not_started,not_tested,,class=? config_key=ench_repair registered=yes
+Thaumcraft:ench_haste,thaumcraft:ench_haste,enchantment,Haste,done,tested,registration only - the effect body (walk speed on the wearer) is the next slice TC-M6-05-s-e2; no effects component,datapack payload data/thaumcraft/enchantment/ench_haste.json; slots=feet; supported_items=#minecraft:enchantable/foot_armor; weight=3; max_level=3; recipe.202.infusion_enchantment resolves a holder
+Thaumcraft:ench_repair,thaumcraft:ench_repair,enchantment,Repair,done,tested,registration only - the effect body (mend durability from XP) is the next slice TC-M6-05-s-e2; no effects component,datapack payload data/thaumcraft/enchantment/ench_repair.json; slots=any; supported_items=#minecraft:enchantable/durability; weight=2; max_level=2; recipe.201.infusion_enchantment resolves a holder
 Thaumcraft:EnchantmentFrugal,thaumcraft:enchantmentfrugal,enchantment,EnchantmentFrugal,not_started,not_tested,NOT registered in 4.2.3.5 (dead code),class exists in jar
 Thaumcraft:EnchantmentPotency,thaumcraft:enchantmentpotency,enchantment,EnchantmentPotency,not_started,not_tested,NOT registered in 4.2.3.5 (dead code),class exists in jar
 Thaumcraft:EnchantmentWandFortune,thaumcraft:enchantmentwandfortune,enchantment,EnchantmentWandFortune,not_started,not_tested,NOT registered in 4.2.3.5 (dead code),class exists in jar
