@@ -285,5 +285,18 @@
   "item.thaumcraft.wandcasting.primal": "Primal",
   "item.thaumcraft.wandcasting.wand": "Wand",
   "item.thaumcraft.wandcasting.sceptre": "Scepter",
-  "item.thaumcraft.wandcasting.staff": "Staff"
+  "item.thaumcraft.wandcasting.staff": "Staff",
+  "item.thaumcraft.focus.cost1": "Vis per cast",
+  "item.thaumcraft.focus.cost2": "Vis per tick",
+  "item.thaumcraft.focuspouch": "Focus Pouch",
+  "item.thaumcraft.focusfire": "Wand Focus: Fire",
+  "item.thaumcraft.focusshock": "Wand Focus: Shock",
+  "item.thaumcraft.focushellbat": "Wand Focus: Nine Hells",
+  "item.thaumcraft.focusfrost": "Wand Focus: Frost",
+  "item.thaumcraft.focustrade": "Wand Focus: Equal Trade",
+  "item.thaumcraft.focusexcavation": "Wand Focus: Excavation",
+  "item.thaumcraft.focusportablehole": "Wand Focus: Portable Hole",
+  "item.thaumcraft.focuspech": "Wand Focus: Pech's Curse",
+  "item.thaumcraft.focuswarding": "Wand Focus: Warding",
+  "item.thaumcraft.focusprimal": "Wand Focus: Primal"
 }

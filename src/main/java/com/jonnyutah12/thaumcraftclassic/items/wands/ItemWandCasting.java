@@ -1,10 +1,15 @@
 package com.jonnyutah12.thaumcraftclassic.items.wands;
 
+import com.jonnyutah12.thaumcraftclassic.api.foci.Focus;
 import com.jonnyutah12.thaumcraftclassic.api.wands.WandCap;
 import com.jonnyutah12.thaumcraftclassic.api.wands.WandRod;
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.aspect.AspectList;
+import com.jonnyutah12.thaumcraftclassic.casting.WandCasting;
+import com.jonnyutah12.thaumcraftclassic.foci.Focuses;
+import com.jonnyutah12.thaumcraftclassic.items.foci.ItemFocus;
 import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFoci;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogWands;
 import com.jonnyutah12.thaumcraftclassic.wands.IVisContainerItem;
 import com.jonnyutah12.thaumcraftclassic.wands.VisContainerItem;
@@ -19,12 +24,15 @@ import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.registries.DeferredItem;
 
 /**
  * The wand item (TC-M6-01; content-mapping.csv row {@code thaumcraft:wandcasting},
@@ -73,19 +81,21 @@ import net.minecraft.world.level.Level;
  *
  * <h2>Deliberately not here (other cards)</h2>
  * <ul>
- *   <li>foci (slot, upgrades, potency/frugal levels) — TC-M6-02
- *       {@code t_01f994cf}; the frugal term is therefore level 0, which is
- *       exactly the original's value without a focus;</li>
- *   <li>casting: {@code onItemUseFirst}/{@code onItemRightClick}/{@code onUsingTick}
- *       and {@code IArchitect} — the casting entry point does not exist yet
- *       (preflight note on this card);</li>
+ *   <li>per-focus spell bodies and the focus upgrade trees — TC-M6-03-s
+ *       ({@code casting/FocusBehavior} is the seam, registered empty here), so
+ *       {@link #frugalLevel} is 0 — exactly the original's value without a
+ *       fitted focus;</li>
+ *   <li>{@code IWandable} block/tile interaction and the architect overlay:
+ *       {@link #use} is the casting entry point only (the pedestal seam is
+ *       TC-M6-04d, the client overlay TC-M7-04);</li>
  *   <li>the staff rods' melee attribute modifier the original appended in
  *       {@code setRod} (+6 attack damage, {@code ItemWandCasting.java:503-514})</li>
- *   <li>the wand HUD/GUI and the client wand model renderer (rod/cap textures)
- *       — TC-M7-01/TC-M7-04;</li>
- *   <li>the tooltip's per-aspect consumption percent and focus cost lines: the
- *       original needed the wearer (worn-gear discounts) and a shift state,
- *       neither of which 1.21.1's {@code appendHoverText} receives.</li>
+ *   <li>the wand GUI and the client wand model renderer (rod/cap textures) —
+ *       TC-M7-01/TC-M7-04. Until the GUI lands, a focus is fitted through
+ *       {@link #setFocus};</li>
+ *   <li>the tooltip's per-aspect consumption percent line: the original needed
+ *       the wearer (worn-gear discounts) and a shift state, neither of which
+ *       1.21.1's {@code appendHoverText} receives.</li>
  * </ul>
  */
 public class ItemWandCasting extends Item implements VisContainerItem, IVisContainerItem {
@@ -167,6 +177,59 @@ public class ItemWandCasting extends Item implements VisContainerItem, IVisConta
         return stack(cap, rod, false);
     }
 
+    // ------------------------------------------------------------------ focus
+
+    /**
+     * The focus tag the wand carries, or null — the original's {@code "focus"}
+     * NBT key, kept as the focus's registered identity (see
+     * {@code ModDataComponents#WAND_FOCUS} for why a tag and not a stack).
+     */
+    public static String focusTag(final ItemStack stack) {
+        final String tag = stack.getOrDefault(ModDataComponents.WAND_FOCUS.get(), "");
+        return tag.isEmpty() ? null : tag;
+    }
+
+    /**
+     * The focus stack the wand carries, rebuilt from its stored tag — the
+     * original {@code getFocusItem} ({@code ItemWandCasting.java:462-469}).
+     * Empty when the wand carries no focus or when the tag names no registered
+     * focus item.
+     */
+    public static ItemStack focusItem(final ItemStack stack) {
+        final String tag = focusTag(stack);
+        if (tag == null) {
+            return ItemStack.EMPTY;
+        }
+        final DeferredItem<ItemFocus> item = CatalogFoci.item(tag);
+        return item == null ? ItemStack.EMPTY : new ItemStack(item.get());
+    }
+
+    /** The focus the wand carries, or null — the original {@code getFocus}. */
+    public static Focus focus(final ItemStack stack) {
+        return Focuses.byTag(focusTag(stack));
+    }
+
+    /**
+     * Sets the wand's focus, or clears it — the original {@code setFocus}
+     * ({@code ItemWandCasting.java:471-477}), whose {@code focus == null} branch
+     * removed the {@code "focus"} key. Anything that is not a focus clears the
+     * wand, which is the original's own guard (it cast the stored stack's item
+     * to {@code ItemFocusBasic} and would have thrown on anything else).
+     */
+    public static void setFocus(final ItemStack stack, final ItemStack focusStack) {
+        final String tag = ItemFocus.tagOf(focusStack);
+        if (tag == null) {
+            stack.remove(ModDataComponents.WAND_FOCUS.get());
+        } else {
+            stack.set(ModDataComponents.WAND_FOCUS.get(), tag);
+        }
+    }
+
+    /** Clears the wand's focus — the original's {@code setFocus(stack, null)}. */
+    public static void clearFocus(final ItemStack stack) {
+        setFocus(stack, ItemStack.EMPTY);
+    }
+
     // ------------------------------------------------------------ capacity
 
     /** Original {@code getMaxVis} in centi-vis. */
@@ -226,15 +289,43 @@ public class ItemWandCasting extends Item implements VisContainerItem, IVisConta
 
     /**
      * The original {@code getConsumptionModifier} (lines 254-274) for this
-     * stack's cap, through the TC-M4-02 engine. {@code frugalLevel} is 0
-     * (foci are TC-M6-02); the original skipped that term entirely when the
-     * wand had no focus, so the value is identical.
+     * stack's cap, through the TC-M4-02 engine. {@code frugalLevel} is
+     * {@link #frugalLevel} — 0 in this slice (see that method).
      */
     public float getConsumptionModifier(final ItemStack stack, final Player player,
                                         final Aspect aspect, final boolean crafting) {
         return VisCostRules.consumptionModifier(capOf(stack).costProfile(),
                 player == null ? null : WornGearDiscounts.sourceFor(player),
-                aspect, 0, isSceptre(stack), crafting);
+                aspect, frugalLevel(stack), isSceptre(stack), crafting);
+    }
+
+    /**
+     * The original {@code getFocusFrugal} ({@code ItemWandCasting.java:287-289}):
+     * the {@code frugal} upgrade level of the wand's focus, plus 0.
+     *
+     * <p>Foci upgrades — the {@code FocusUpgradeType} table and each focus's
+     * per-rank upgrade tree — are per-focus behaviour and land with TC-M6-03-s,
+     * so no shipped focus can carry a {@code frugal} upgrade yet and the level
+     * is 0. That is exactly the original's value for a wand with no focus
+     * ({@code getFocus(is) == null} returned 0), and it is the value the
+     * TC-M6-01 wand already used.</p>
+     */
+    public static int frugalLevel(final ItemStack stack) {
+        return 0;
+    }
+
+    /**
+     * The whole-price form of {@link #getConsumptionModifier}: the original
+     * {@code consumeAllVis} cost loop ({@code ItemWandCasting.java:327-331}),
+     * which modifies every aspect of a price before any of it is paid. The
+     * casting entry point prices a focus with this and pays with
+     * {@link #consumeAllVis}, so the two can never disagree.
+     */
+    public AspectList effectiveCost(final ItemStack stack, final Player player,
+                                    final AspectList baseCosts, final boolean crafting) {
+        return VisCostRules.effectiveCosts(baseCosts, capOf(stack).costProfile(),
+                player == null ? null : WornGearDiscounts.sourceFor(player),
+                frugalLevel(stack), isSceptre(stack), crafting);
     }
 
     /**
@@ -264,9 +355,7 @@ public class ItemWandCasting extends Item implements VisContainerItem, IVisConta
         if (centiCosts == null || centiCosts.size() == 0) {
             return false;
         }
-        final AspectList costs = VisCostRules.effectiveCosts(centiCosts, capOf(stack).costProfile(),
-                player == null ? null : WornGearDiscounts.sourceFor(player),
-                0, isSceptre(stack), crafting);
+        final AspectList costs = effectiveCost(stack, player, centiCosts, crafting);
         final VisPool paid = WandVis.consumeAllVis(WandVis.poolOf(stack), costs);
         if (paid == null) {
             return false;
@@ -359,6 +448,39 @@ public class ItemWandCasting extends Item implements VisContainerItem, IVisConta
         }
     }
 
+    // -------------------------------------------------------------- casting
+
+    /**
+     * The casting entry point (TC-M6-02): the original's {@code func_77659_a} →
+     * {@code ItemFocusBasic.onFocusRightClick} chain
+     * ({@code ItemWandCasting.java:526-560}), reduced to what this slice owns —
+     * focus resolution, the TC-M4-02 price, the vis payment, and the delegate
+     * call into the per-focus seam ({@code casting/FocusBehavior}, filled by
+     * TC-M6-03-s).
+     *
+     * <p>The original also handled {@code IWandable} blocks/tiles and the
+     * architect overlay in the same method; both belong to other cards (the
+     * wand-pedestal seam is TC-M6-04d, the client overlay TC-M7-04).</p>
+     *
+     * <p>Return shape: nothing to cast is a pass-through (the original fell
+     * through to {@code super}); a cast that could not be paid, or whose payment
+     * was refunded because the focus had no effect, fails <em>without</em> a side
+     * effect; a paid, effected cast succeeds. The mutating half is server-side
+     * only — {@link WandCasting#cast} reports {@link WandCasting.Status#CLIENT}
+     * on the client, which maps to a pass-through, matching the original's
+     * {@code world.isRemote} gates.</p>
+     */
+    @Override
+    public InteractionResultHolder<ItemStack> use(final Level level, final Player player, final InteractionHand hand) {
+        final ItemStack stack = player.getItemInHand(hand);
+        final WandCasting.CastResult result = WandCasting.cast(this, stack, player, level, hand);
+        return switch (result.status()) {
+            case CLIENT, NO_FOCUS, UNSUPPORTED -> InteractionResultHolder.pass(stack);
+            case UNPAID, NO_EFFECT -> InteractionResultHolder.fail(stack);
+            case CAST -> InteractionResultHolder.success(stack);
+        };
+    }
+
     // ---------------------------------------------------------------- display
 
     /**
@@ -401,6 +523,14 @@ public class ItemWandCasting extends Item implements VisContainerItem, IVisConta
                                         + AMOUNT_FORMAT.format(getVis(stack, aspect) / 100.0F))
                                 .withStyle(ChatFormatting.WHITE)));
             }
+        }
+        // Original ItemWandCasting.func_77624_a: the fitted focus's own display
+        // name, bold+italic green, appended after the charge lines. TC-M6-02.
+        final ItemStack focusStack = focusItem(stack);
+        if (!focusStack.isEmpty()) {
+            tooltip.add(Component.literal("")
+                    .withStyle(ChatFormatting.BOLD, ChatFormatting.ITALIC, ChatFormatting.GREEN)
+                    .append(focusStack.getHoverName()));
         }
     }
 

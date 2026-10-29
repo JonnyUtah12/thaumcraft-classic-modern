@@ -103,6 +103,8 @@ public final class LocalizationGameTest {
             Map.entry("item.thaumcraft.itemgolemupgrade.4", "ItemTrunkSpawner tooltip (TC-M6-06 trunk upgrades)"),
             Map.entry("item.thaumcraft.itemgolemupgrade.5", "ItemTrunkSpawner tooltip (TC-M6-06 trunk upgrades)"),
             Map.entry("item.capacity.text", "ItemAmuletVis capacity line (original key shape kept)"),
+            Map.entry("item.thaumcraft.focus.cost1", "ItemFocus.appendHoverText cost line (original item.Focus.cost1), TC-M6-02"),
+            Map.entry("item.thaumcraft.focus.cost2", "ItemFocus.appendHoverText cost line (original item.Focus.cost2), TC-M6-02"),
             Map.entry("item.ItemAmuletVis.text", "ItemAmuletVis helper line (original key shape kept)"),
             Map.entry("tc.discount", "ItemBaubleBlanks apprentice-ring tooltip"),
             Map.entry("tc.resonator1", "ItemResonator action bar"),

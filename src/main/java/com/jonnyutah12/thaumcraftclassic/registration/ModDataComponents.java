@@ -2,12 +2,14 @@ package com.jonnyutah12.thaumcraftclassic.registration;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.aspect.EssentiaContainer;
+import com.jonnyutah12.thaumcraftclassic.foci.FocusPouchContents;
 import com.jonnyutah12.thaumcraftclassic.wands.VisPool;
 import com.mojang.serialization.Codec;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -120,6 +122,45 @@ public final class ModDataComponents {
                     () -> DataComponentType.<Boolean>builder()
                             .persistent(Codec.BOOL)
                             .networkSynchronized(ByteBufCodecs.BOOL)
+                            .build());
+
+    /**
+     * The focus a wand stack carries (TC-M6-02): the original wrote the whole
+     * focus {@code ItemStack} into the wand's NBT under the {@code "focus"} key
+     * ({@code ItemWandCasting.setFocus}, {@code common/items/wands/
+     * ItemWandCasting.java:471-477}) and read it back with {@code getFocusItem}
+     * (lines 462-469).
+     *
+     * <p>The port stores the focus's <em>tag</em> — the focus's registered
+     * identity — exactly as {@link #WAND_ROD}/{@link #WAND_CAP} store their
+     * component tags, and rebuilds the stack on demand. A data component cannot
+     * hold an {@code ItemStack}: vanilla validates that a component value
+     * implements {@code equals}/{@code hashCode} and {@code ItemStack} does not
+     * ("Data components must implement equals and hashCode", the reason vanilla
+     * wraps stacks in {@code ItemContainerContents}). Focus <em>upgrades</em>
+     * are the only per-stack state a focus carries, and they are TC-M6-03-s, so
+     * the tag is the whole of what this slice needs. An absent component is the
+     * original's {@code null} focus.</p>
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> WAND_FOCUS =
+            DATA_COMPONENT_TYPES.register("wand_focus",
+                    () -> DataComponentType.<String>builder()
+                            .persistent(Codec.STRING)
+                            .networkSynchronized(ByteBufCodecs.STRING_UTF8)
+                            .build());
+
+    /**
+     * The contents of a focus pouch (TC-M6-02): the original's
+     * {@code "Inventory"} {@code NBTTagList} of {@code {Slot: byte, ...item}}
+     * compounds ({@code ItemFocusPouch.getInventory}/{@code setInventory},
+     * {@code common/items/wands/ItemFocusPouch.java:63-93}), kept as a
+     * positional bounded list so slot indices survive the save path.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<FocusPouchContents>> FOCUS_POUCH_CONTENTS =
+            DATA_COMPONENT_TYPES.register("focus_pouch_contents",
+                    () -> DataComponentType.<FocusPouchContents>builder()
+                            .persistent(FocusPouchContents.CODEC)
+                            .networkSynchronized(FocusPouchContents.STREAM_CODEC)
                             .build());
 
     /**

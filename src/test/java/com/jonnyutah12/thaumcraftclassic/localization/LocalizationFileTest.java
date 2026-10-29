@@ -66,6 +66,10 @@ class LocalizationFileTest {
             "item.thaumcraft.itemgolemupgrade.2", "item.thaumcraft.itemgolemupgrade.3",
             "item.thaumcraft.itemgolemupgrade.4", "item.thaumcraft.itemgolemupgrade.5",
             "item.capacity.text", "item.ItemAmuletVis.text",
+            // TC-M6-02: the per-cast / per-tick focus cost lines ItemFocus emits
+            // (the original item.Focus.cost1 / item.Focus.cost2 keys, kept in the
+            // port's one-suffix shape).
+            "item.thaumcraft.focus.cost1", "item.thaumcraft.focus.cost2",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
             "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror",
             // TC-M6-01: the wand display name composes one translatable per part (the
