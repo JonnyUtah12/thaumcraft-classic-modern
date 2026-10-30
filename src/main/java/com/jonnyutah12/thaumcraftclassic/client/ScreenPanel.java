@@ -26,16 +26,49 @@ final class ScreenPanel {
     /** The flat panel plus the vanilla player piece, for a player-grid origin. */
     static void drawBackground(final GuiGraphics guiGraphics, final int left, final int top,
                                final int playerGridTop) {
+        drawBackground(guiGraphics, left, top, playerGridTop,
+                ContainerLayout.PANEL_WIDTH, 0);
+    }
+
+    /**
+     * The same recipe for a panel that is wider than vanilla's 176 px, which is
+     * what the arcane workbench is ({@code GuiArcaneWorkbench} blits a 234 px
+     * sheet): the vanilla player piece is a fixed 176 px, so it is blitted at a
+     * caller-chosen x inside the panel and the strips of panel it does not cover
+     * are filled with the same vanilla tone.
+     *
+     * @param playerPieceX panel-relative x of the 176 px {@code generic_54.png} piece
+     */
+    static void drawBackground(final GuiGraphics guiGraphics, final int left, final int top,
+                               final int playerGridTop, final int panelWidth, final int playerPieceX) {
         final int playerPanelTop = ContainerLayout.playerPanelTop(playerGridTop);
         final int panelHeight = ContainerLayout.panelHeight(playerGridTop);
-        guiGraphics.fill(left, top, left + ContainerLayout.PANEL_WIDTH, top + playerPanelTop,
-                ContainerLayout.PANEL_FILL);
-        guiGraphics.renderOutline(left, top, ContainerLayout.PANEL_WIDTH, panelHeight,
-                ContainerLayout.PANEL_FRAME);
+        // The machine region, then the strips beside the fixed-width player piece.
+        // A vanilla-width panel (pieceX = 0, panelWidth = 176) has no strips; the
+        // arcane workbench (pieceX = 0, panelWidth = 190) has one 14 px strip on
+        // the right of the piece.
+        guiGraphics.fill(left, top, left + panelWidth, top + playerPanelTop, ContainerLayout.PANEL_FILL);
+        if (playerPieceX > 0) {
+            guiGraphics.fill(left, top + playerPanelTop, left + playerPieceX,
+                    top + panelHeight, ContainerLayout.PANEL_FILL);
+        }
+        fillRightStrip(guiGraphics, left, top, playerPieceX + ContainerLayout.PANEL_WIDTH,
+                panelWidth, playerPanelTop, panelHeight);
+        guiGraphics.renderOutline(left, top, panelWidth, panelHeight, ContainerLayout.PANEL_FRAME);
         guiGraphics.blit(ContainerLayout.PLAYER_PANEL,
-                left, top + playerPanelTop,
+                left + playerPieceX, top + playerPanelTop,
                 ContainerLayout.PLAYER_PANEL_U, ContainerLayout.PLAYER_PANEL_V,
                 ContainerLayout.PANEL_WIDTH, ContainerLayout.PLAYER_PANEL_HEIGHT);
+    }
+
+    /** The panel tone from {@code fromX} to the panel's right edge; skipped when empty. */
+    private static void fillRightStrip(final GuiGraphics guiGraphics, final int left, final int top,
+                                       final int fromX, final int panelWidth, final int fromY,
+                                       final int panelHeight) {
+        if (fromX < panelWidth) {
+            guiGraphics.fill(left + fromX, top + fromY, left + panelWidth, top + panelHeight,
+                    ContainerLayout.PANEL_FILL);
+        }
     }
 
     /** One vanilla slot square, one pixel up-left of the slot's item anchor. */
@@ -49,6 +82,17 @@ final class ScreenPanel {
     static void frameArea(final GuiGraphics guiGraphics, final int left, final int top,
                           final int x, final int y, final int width, final int height) {
         guiGraphics.renderOutline(left + x, top + y, width, height, ContainerLayout.PANEL_FRAME);
+    }
+
+    /**
+     * A flat filled rectangle at panel-relative coordinates — the primitive for
+     * the state a 1.7.10 GUI drew from a texture the port does not ship, e.g. the
+     * arcane workbench's vis-cost tags, where the aspect's own colour stands in
+     * for {@code UtilsFX.drawTag}'s 16x16 tag (BD-17: no invented art).
+     */
+    static void fillArea(final GuiGraphics guiGraphics, final int left, final int top,
+                         final int x, final int y, final int width, final int height, final int colour) {
+        guiGraphics.fill(left + x, top + y, left + x + width, top + y + height, colour);
     }
 
     private ScreenPanel() {

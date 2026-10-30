@@ -67,7 +67,13 @@ class LocalizationFileTest {
             "item.thaumcraft.itemgolemupgrade.4", "item.thaumcraft.itemgolemupgrade.5",
             "item.capacity.text", "item.ItemAmuletVis.text",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
-            "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror");
+            "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror",
+            // The arcane workbench window's own labels (TC-M7-04-m2): the vis
+            // notice the original hardcoded as "Insufficient vis"
+            // (GuiArcaneWorkbench.java:105) and the wand-slot tooltip the port
+            // added where the original drew an unlabelled slot. Neither names a
+            // content id, so they are code-authored, not registry keys.
+            "container.thaumcraft.insufficient_vis", "container.thaumcraft.wand_slot_hint");
 
     /**
      * The shipped multi-meta items and the original-metadata domain their

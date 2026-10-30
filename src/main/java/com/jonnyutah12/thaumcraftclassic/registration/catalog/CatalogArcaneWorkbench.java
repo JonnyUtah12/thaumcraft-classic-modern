@@ -1,10 +1,14 @@
 package com.jonnyutah12.thaumcraftclassic.registration.catalog;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.menus.ArcaneWorkbenchMenu;
 import com.jonnyutah12.thaumcraftclassic.recipes.ArcaneWorkbenchRecipe;
 import com.jonnyutah12.thaumcraftclassic.recipes.SimpleRecipeSerializer;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockArcaneWorkbench;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileArcaneWorkbench;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -13,6 +17,7 @@ import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -33,8 +38,10 @@ import javax.annotation.Nullable;
  * loaded as the 109 data files under {@code data/thaumcraft/recipe/} whose
  * {@code type} field resolves to {@code thaumcraft:arcane_workbench}.</p>
  *
- * <p>Out of this holder by design: {@code gui_arcane_workbench} (TC-M7-04) and
- * {@code thaumcraft:blockarcanefurnace} (TC-M6-04f).</p>
+ * <p>Out of this holder by design: {@code thaumcraft:blockarcanefurnace}
+ * (TC-M6-04f). {@code gui_arcane_workbench} landed here with TC-M7-04-m2: the
+ * {@link #MENU_ARCANE_WORKBENCH} type below, whose screen is wired in
+ * {@code client/ModClientScreens}.</p>
  */
 public final class CatalogArcaneWorkbench {
 
@@ -48,6 +55,8 @@ public final class CatalogArcaneWorkbench {
             DeferredRegister.createItems(ThaumcraftClassic.MOD_ID);
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, ThaumcraftClassic.MOD_ID);
+    public static final DeferredRegister<net.minecraft.world.inventory.MenuType<?>> MENUS =
+            DeferredRegister.create(Registries.MENU, ThaumcraftClassic.MOD_ID);
 
     // --- recipe type + serializer ------------------------------------------
 
@@ -76,6 +85,19 @@ public final class CatalogArcaneWorkbench {
                     () -> BlockEntityType.Builder.of(TileArcaneWorkbench::new,
                             ARCANE_WORKBENCH_BLOCK.get()).build(null));
 
+    // --- menu (content-mapping.csv thaumcraft:gui_arcane_workbench, TC-M7-04-m2) --
+
+    /**
+     * {@code gui_arcane_workbench} — named after the csv row it closes. The
+     * client-side factory reads the block pos, the same wire shape
+     * {@code CatalogFurniture}'s five menu types use.
+     */
+    public static final DeferredHolder<MenuType<?>, MenuType<ArcaneWorkbenchMenu>> MENU_ARCANE_WORKBENCH =
+            MENUS.register("gui_arcane_workbench", () -> IMenuTypeExtension.create(
+                    (final int windowId, final Inventory inv, final RegistryFriendlyByteBuf buf) ->
+                            new ArcaneWorkbenchMenu(windowId, inv,
+                                    (TileArcaneWorkbench) inv.player.level().getBlockEntity(buf.readBlockPos()))));
+
     private static ResourceLocation id(final String path) {
         return ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, path);
     }
@@ -86,6 +108,7 @@ public final class CatalogArcaneWorkbench {
         BLOCKS.register(bus);
         ITEMS.register(bus);
         BLOCK_ENTITY_TYPES.register(bus);
+        MENUS.register(bus);
     }
 
     private CatalogArcaneWorkbench() {

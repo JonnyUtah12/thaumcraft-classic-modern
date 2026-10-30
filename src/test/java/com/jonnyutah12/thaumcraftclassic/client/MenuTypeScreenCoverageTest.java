@@ -2,6 +2,7 @@ package com.jonnyutah12.thaumcraftclassic.client;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.jonnyutah12.thaumcraftclassic.menus.ArcaneWorkbenchMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.DeconstructionTableMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.HandMirrorMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.MagicBoxMenu;
@@ -76,12 +77,15 @@ class MenuTypeScreenCoverageTest {
                 MagicBoxMenu.class, "gui_magic_box"));
         SCREENS.put(SpaScreen.class, new ScreenUnderTest("CatalogFurniture", "MENU_SPA",
                 SpaMenu.class, "gui_spa"));
+        SCREENS.put(ArcaneWorkbenchScreen.class, new ScreenUnderTest("CatalogArcaneWorkbench",
+                "MENU_ARCANE_WORKBENCH", ArcaneWorkbenchMenu.class, "gui_arcane_workbench"));
 
         EXPECTED_HOLDERS.put("CatalogTrinketsLoot.GUI_TRUNK", "gui_trunk");
         EXPECTED_HOLDERS.put("CatalogTrinketsLoot.GUI_HAND_MIRROR", "gui_hand_mirror");
         EXPECTED_HOLDERS.put("CatalogFurniture.MENU_DECON_TABLE", "gui_decon_table");
         EXPECTED_HOLDERS.put("CatalogFurniture.MENU_MAGIC_BOX", "gui_magic_box");
         EXPECTED_HOLDERS.put("CatalogFurniture.MENU_SPA", "gui_spa");
+        EXPECTED_HOLDERS.put("CatalogArcaneWorkbench.MENU_ARCANE_WORKBENCH", "gui_arcane_workbench");
     }
 
     private record ScreenUnderTest(String catalog, String holder, Class<?> menu, String id) {
@@ -146,16 +150,18 @@ class MenuTypeScreenCoverageTest {
                     "a registered menu type with no screen registration: "
                             + expected.catalog() + "." + expected.holder());
         }
-        assertEquals(5, SCREENS.size(), "the five gui rows whose menus exist today");
+        assertEquals(6, SCREENS.size(), "the six gui rows whose menus exist today");
     }
 
     @Test
-    void catalogSourcesDeclareExactlyTheFiveScreensMenus() throws Exception {
+    void catalogSourcesDeclareExactlyTheSixScreensMenus() throws Exception {
         final Map<String, String> declared = new LinkedHashMap<>();
         collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogTrinketsLoot.java",
                 "CatalogTrinketsLoot", declared);
         collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogFurniture.java",
                 "CatalogFurniture", declared);
+        collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogArcaneWorkbench.java",
+                "CatalogArcaneWorkbench", declared);
         assertEquals(EXPECTED_HOLDERS, declared,
                 "the catalogs' MenuType declarations and this test's expectations must agree; a new menu type "
                         + "needs a screen and an entry here");

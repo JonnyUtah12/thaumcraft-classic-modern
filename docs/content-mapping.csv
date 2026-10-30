@@ -972,7 +972,7 @@ Thaumcraft:GUI_ALCHEMY_FURNACE,thaumcraft:gui_alchemy_furnace,gui,GuiAlchemyFurn
 Thaumcraft:GUI_RESEARCH_TABLE,thaumcraft:gui_research_table,gui,GuiResearchTable,not_started,not_tested,,gui_id=10 handler=GuiResearchTable
 Thaumcraft:GUI_CHEST_HUNGRY,thaumcraft:gui_chest_hungry,gui,-,not_started,not_tested,,gui_id=11 handler=-
 Thaumcraft:GUI_THAUMONOMICON,thaumcraft:gui_thaumonomicon,gui,GuiResearchBrowser,not_started,not_tested,,gui_id=12 handler=GuiResearchBrowser
-Thaumcraft:GUI_ARCANE_WORKBENCH,thaumcraft:gui_arcane_workbench,gui,GuiArcaneWorkbench,not_started,not_tested,,gui_id=13 handler=GuiArcaneWorkbench
+Thaumcraft:GUI_ARCANE_WORKBENCH,thaumcraft:gui_arcane_workbench,gui,GuiArcaneWorkbench,done,tested,,gui_id=13 handler=GuiArcaneWorkbench menu=menus/ArcaneWorkbenchMenu screen=client/ArcaneWorkbenchScreen panel=190x234 grid=24px pitch vis=14 data slots (TC-M7-04-m2)
 Thaumcraft:GUI_ARCANE_BORE,thaumcraft:gui_arcane_bore,gui,GuiArcaneBore,not_started,not_tested,,gui_id=15 handler=GuiArcaneBore
 Thaumcraft:GUI_HAND_MIRROR,thaumcraft:gui_hand_mirror,gui,GuiHandMirror,done,tested,,gui_id=16 handler=GuiHandMirror screen=client/HandMirrorScreen
 Thaumcraft:GUI_HOVER_HARNESS,thaumcraft:gui_hover_harness,gui,GuiHoverHarness,not_started,not_tested,,gui_id=17 handler=GuiHoverHarness

@@ -111,7 +111,17 @@ public final class LocalizationGameTest {
             Map.entry("tc.handmirrorlinkedto", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorlinked", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorerror", "ItemHandMirror link message"),
-            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"));
+            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"),
+            // Arcane workbench GUI (TC-M7-04-m2): the vis notice the original
+            // hardcoded as "Insufficient vis" (GuiArcaneWorkbench.java:105) and
+            // the wand-slot hint the port added where the original drew an
+            // unlabelled slot.
+            Map.entry("container.thaumcraft.gui_arcane_workbench",
+                    "TileArcaneWorkbench.getDisplayName — the open menu's title (TC-M7-04-m2)"),
+            Map.entry("container.thaumcraft.insufficient_vis",
+                    "GuiArcaneWorkbench insufficient-vis notice"),
+            Map.entry("container.thaumcraft.wand_slot_hint",
+                    "ArcaneWorkbenchScreen wand-slot tooltip"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always
