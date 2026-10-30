@@ -129,9 +129,46 @@ Fidelity notes that shape the code:
 - **`distributeRingRandomly` consumes one draw it never uses** (the original's
   `int start = random.nextInt(ring.size())`). Keeping the draw is what holds
   every later pick on the original's random stream.
-- The note **item** (`thaumcraft:itemresearchnotes`) and the note screen are
-  not part of this slice (BD-13); the state record already carries the
-  `thaumcraft:research_note` component codec they will use.
+- The note **item** (`thaumcraft:itemresearchnotes`) is its own slice
+  (TC-M3-04-s-ii, the section below); the interactive note screen is still
+  open (BD-13).
+
+## Research note item (TC-M3-04-s-ii)
+
+The user-facing half of the minigame: `thaumcraft:itemresearchnotes`
+(`items/ItemResearchNotes`, original `thaumcraft.common.items.ItemResearchNotes`)
+plus the `thaumcraft:research_note` component that carries the note state.
+
+| Piece | Role | Original counterpart |
+|---|---|---|
+| `registration/catalog/M3ResearchContent` | the card's own holder: registers the id (`stacksTo(1)`, registered rarity rare, `item_meta` 0 default) with one `ModRegistration.init` line | `ConfigItems.java:365-366` |
+| `registration/ModDataComponents.RESEARCH_NOTE` | `DataComponentType<ResearchNoteData>`: persistent `ResearchNoteData.CODEC`, network `ResearchNoteData.STREAM_CODEC` | the note's ItemStack NBT, which the original also synced to the client for free with the stack |
+| `items/ItemResearchNotes` | `use()` (both arms), `getName` (the meta-64 split on an id-derived key), `appendHoverText` (blank lines, research name/text, warp block clamped at 5) | `ItemResearchNotes.onItemRightClick` / `getItemDisplayName` / `getRarity` / `addInformation` |
+
+Rules the code pins:
+
+- **The arm order is the original's.** The complete-note arm (note present,
+  `complete`, entry not yet complete) is tested first, and its `hasRequisites`
+  gate answers `tc.researcherror` and returns *before* anything is completed.
+  The blank-discovery arm (metas 24/42) only runs when the first gate fails.
+- **Completion is a sweep.** `PacketResearchComplete` + `completeResearch` for
+  the note's key, then for every sibling that is incomplete and whose
+  requisitions the *new* knowledge satisfies. `GOLEMSTRAW` → `COREGATHER` +
+  `GOLEMBELL` is the shipped graph's probe for that.
+- **The FAIL arm's drop is the original's:** `7 + rand(3)` items of
+  `itemresource` meta 9 in one drop at the player, and the blank is consumed.
+  The success arm spends the blank *in place* — meta back to 0, the generated
+  grid set, no consumption — and is the original's `createNote` call site.
+- **The random stream is seeded, not shared** (BD-18): the port draws once from
+  `level.getRandom()` and seeds the generator's own `java.util.Random`, so the
+  generation rule (radius, ring order, blank count, the discarded start draw)
+  stays intact while the picks are per-world reproducible.
+- **The meta-64+ discovery family is name/rarity only.** `thaumcraft:item_meta`
+  is bounded at 63, so no shipped path can carry such a stack; the rule (the
+  `.discovery` suffix, epic rarity) is ported and the builders refuse foreign
+  metas, so the family works the moment the carrier is widened.
+- The per-meta icons and the glint overlay are item-model concerns and ride the
+  item models card; the interactive note screen is its own card.
 
 ## Testing
 
@@ -157,3 +194,18 @@ Fidelity notes that shape the code:
   over every shipped entry × 8 seeds. The game probes generate over the whole
   shipped 201-entry graph on a server and drive completion through the TC-M3-02
   knowledge record.
+
+- Research note item (`research/ResearchNoteItemRulesTest` 6; game
+  `gametest/ResearchNoteItemGameTest` 8): the meta 64 / blank 24+42 /
+  warp-clamp-5 / `7 + rand(3)` rules read out of the decompiled item, the
+  name/rarity table, the builder family guards, the tooltip label strings
+  against the original `en_US.lang` (the original's `%n` becomes a `%s`
+  argument), the arm order, and the id-derived display name. The probes drive
+  the shipped item through `ItemStack#use` — the call
+  `ServerPlayerGameMode#useItem` makes — on a real `ServerPlayer` with a
+  declared ad-hoc channel (the mock player is not a `ServerPlayer`, and the
+  completion path sends payloads): registration and both component codecs,
+  completion + sibling sweep + consumption, the unmet-requisites gate, the FAIL
+  arm's 7-9 fragments counted as `ItemEntity` drops, the success arm's stamped
+  meta-0 note, the tooltip keys with the warp clamp, and the note surviving its
+  NBT (byte-width `hexgrid` rows), wire and stack-save round trips.

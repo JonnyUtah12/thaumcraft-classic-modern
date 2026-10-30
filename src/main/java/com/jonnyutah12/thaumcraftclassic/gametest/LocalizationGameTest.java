@@ -111,6 +111,22 @@ public final class LocalizationGameTest {
             Map.entry("tc.handmirrorlinkedto", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorlinked", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorerror", "ItemHandMirror link message"),
+            // TC-M3-04-s-ii research notes (ItemResearchNotes): the discovery
+            // family label (the original's item.discovery.name, metas 64+), the
+            // two blank-note tooltip lines and the warp block — the last three
+            // keep the original 1.7.10 key shape verbatim.
+            Map.entry("item.thaumcraft.itemresearchnotes.discovery",
+                    "ItemResearchNotes.getName discovery family"),
+            Map.entry("item.researchnotes.unknown.1",
+                    "ItemResearchNotes blank-note tooltip (original key shape kept)"),
+            Map.entry("item.researchnotes.unknown.2",
+                    "ItemResearchNotes blank-note tooltip (original key shape kept)"),
+            Map.entry("tc.forbidden", "ItemResearchNotes warp tooltip"),
+            Map.entry("tc.forbidden.level.1", "ItemResearchNotes warp tooltip level 1"),
+            Map.entry("tc.forbidden.level.2", "ItemResearchNotes warp tooltip level 2"),
+            Map.entry("tc.forbidden.level.3", "ItemResearchNotes warp tooltip level 3"),
+            Map.entry("tc.forbidden.level.4", "ItemResearchNotes warp tooltip level 4"),
+            Map.entry("tc.forbidden.level.5", "ItemResearchNotes warp tooltip level 5"),
             Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"));
 
     /**

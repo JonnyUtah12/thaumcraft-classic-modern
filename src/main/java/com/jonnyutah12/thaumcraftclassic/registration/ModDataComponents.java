@@ -2,6 +2,7 @@ package com.jonnyutah12.thaumcraftclassic.registration;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.aspect.EssentiaContainer;
+import com.jonnyutah12.thaumcraftclassic.research.ResearchNoteData;
 import com.jonnyutah12.thaumcraftclassic.wands.VisPool;
 import com.mojang.serialization.Codec;
 import io.netty.buffer.ByteBuf;
@@ -115,6 +116,26 @@ public final class ModDataComponents {
                     () -> DataComponentType.<Integer>builder()
                             .persistent(Codec.INT)
                             .networkSynchronized(ByteBufCodecs.VAR_INT)
+                            .build());
+
+    /**
+     * The puzzle state of one research note (TC-M3-04-s-ii): replaces the
+     * original's {@code ResearchNoteData} ItemStack NBT written by
+     * {@code ResearchManager.createNote} and read by
+     * {@code ResearchManager.getData} ({@code common/lib/research/
+     * ResearchManager.java:110/191}, and the note item's own
+     * {@code onItemRightClick}/{@code addInformation}). Persistent codec is
+     * {@link ResearchNoteData#CODEC}, which writes the original
+     * {@code key}/{@code color}/{@code complete}/{@code copies}/{@code hexgrid}
+     * tag layout, and the network codec is its {@code STREAM_CODEC} — the
+     * original synced the whole note NBT to the client with the stack, which is
+     * what a synced component does here (the note's own screen is a later card).
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<ResearchNoteData>> RESEARCH_NOTE =
+            DATA_COMPONENT_TYPES.register("research_note",
+                    () -> DataComponentType.<ResearchNoteData>builder()
+                            .persistent(ResearchNoteData.CODEC)
+                            .networkSynchronized(ResearchNoteData.STREAM_CODEC)
                             .build());
 
     private ModDataComponents() {

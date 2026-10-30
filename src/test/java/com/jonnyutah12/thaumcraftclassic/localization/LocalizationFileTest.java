@@ -51,7 +51,12 @@ class LocalizationFileTest {
             "item.ItemAmuletVis.text", "item.capacity.text",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
             "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror",
-            "tc.researcherror");
+            "tc.researcherror",
+            // TC-M3-04-s-ii: the research note's blank-note tooltip lines and
+            // its warp block, kept in the original 1.7.10 key shape.
+            "item.researchnotes.unknown.1", "item.researchnotes.unknown.2",
+            "tc.forbidden", "tc.forbidden.level.1", "tc.forbidden.level.2",
+            "tc.forbidden.level.3", "tc.forbidden.level.4", "tc.forbidden.level.5");
 
     /** Registry-derived key shape: lower-case id plus an optional meta/tooltip suffix. */
     private static final Pattern KEY_SHAPE =
@@ -66,6 +71,10 @@ class LocalizationFileTest {
             "item.thaumcraft.itemgolemupgrade.2", "item.thaumcraft.itemgolemupgrade.3",
             "item.thaumcraft.itemgolemupgrade.4", "item.thaumcraft.itemgolemupgrade.5",
             "item.capacity.text", "item.ItemAmuletVis.text",
+            "item.thaumcraft.itemresearchnotes.discovery",
+            "item.researchnotes.unknown.1", "item.researchnotes.unknown.2",
+            "tc.forbidden", "tc.forbidden.level.1", "tc.forbidden.level.2",
+            "tc.forbidden.level.3", "tc.forbidden.level.4", "tc.forbidden.level.5",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
             "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror");
 
