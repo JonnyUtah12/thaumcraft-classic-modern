@@ -203,6 +203,95 @@ class MenuTypeScreenCoverageTest {
         }
     }
 
+    // ---------------------------------------- TC-M7-04-m4: synced channels
+
+    @Test
+    void theDeconAspectStateTravelsInAMenuDataSlot() throws Exception {
+        // BD-17 closure: the 1.7.10 GUI read tableInventory.aspect off the tile;
+        // the port ships it as the aspect registry id + 1 in data slot 1 (0 = none).
+        assertEquals(0, DeconstructionTableMenu.DATA_BREAK_TIME, "the original's own slot stays slot 0");
+        assertEquals(1, DeconstructionTableMenu.DATA_ASPECT, "the aspect joins beside it");
+        assertEquals(0, DeconstructionTableMenu.encodeAspectIndex(null), "no aspect encodes as 0");
+        org.junit.jupiter.api.Assertions.assertNull(DeconstructionTableMenu.decodeAspectIndex(0),
+                "0 decodes back to no aspect");
+        org.junit.jupiter.api.Assertions.assertNull(DeconstructionTableMenu.decodeAspectIndex(1 << 20),
+                "an id the registry never served decodes to no aspect");
+        final String menu = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/menus/"
+                + "DeconstructionTableMenu.java");
+        assertTrue(menu.contains("return 2;") && menu.contains("addDataSlots(data)"),
+                "the menu must carry two data slots to the client");
+        assertTrue(menu.contains("table.aspect = decodeAspectIndex(value)"),
+                "the client landing point writes the sync into the tile the getter reads");
+        final String screen = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/client/"
+                + "DeconstructionTableScreen.java");
+        assertTrue(screen.contains("menu.getRevealedAspect()") && screen.contains("drawAspectTag"),
+                "the screen draws the aspect only from the synced getter (BD-17)");
+    }
+
+    @Test
+    void theSpaTankAndMixStateTravelInMenuDataSlots() throws Exception {
+        assertEquals(0, SpaMenu.DATA_FLUID_ID);
+        assertEquals(1, SpaMenu.DATA_FLUID_AMOUNT);
+        assertEquals(2, SpaMenu.DATA_CAPACITY, "the original 5000 mB tank scales the 48 px column");
+        assertEquals(3, SpaMenu.DATA_MIX);
+        final String menu = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/menus/SpaMenu.java");
+        assertTrue(menu.contains("return 4;") && menu.contains("addDataSlots(data)"),
+                "the spa menu must carry four data slots to the client");
+        assertTrue(menu.contains("spa.setTankFromSync") && menu.contains("spa.setMixFromSync"),
+                "the client landing point writes the sync into the tile the getters read");
+        final String screen = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/client/SpaScreen.java");
+        assertTrue(screen.contains("ContainerLayout.scaledFluidHeight")
+                        && screen.contains("ContainerLayout.fluidTop"),
+                "the fluid column must use the original's floor-scaled bottom-up fill");
+        assertTrue(screen.contains("menu.getMix()"),
+                "the 8x8 mix indicator must draw from the synced flag, on filled / off framed");
+        assertTrue(screen.contains("ContainerLayout.SPA_MIX_TIP_X")
+                        && screen.contains("ContainerLayout.SPA_TANK_TIP_X"),
+                "the original's two tooltip boxes must be the hover boxes");
+    }
+
+    @Test
+    void theMagicBoxPageIsAMenuRebindWithSyncedState() throws Exception {
+        assertEquals(2, MagicBoxMenu.BUTTON_PAGE_PREV, "button 1 stays the original sort");
+        assertEquals(3, MagicBoxMenu.BUTTON_PAGE_NEXT);
+        assertEquals(0, MagicBoxMenu.DATA_PAGE);
+        assertEquals(1, MagicBoxMenu.DATA_BOX_SLOTS,
+                "the client can't flood-fill the cluster itself, so the size is synced");
+        final String menu = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/menus/MagicBoxMenu.java");
+        assertTrue(menu.contains(".index = start + i"),
+                "the rebind rewrites the bound slots' box-slot indices (the original's clear-and-rebind)");
+        assertTrue(menu.contains("ContainerLayout.MAGIC_BOX_PAGE_SLOTS"),
+                "the page size is the original's 3 rows of 9");
+        assertTrue(menu.contains("ContainerLayout.clampPage"),
+                "the window clamps to the box's page range");
+        final String screen = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/client/MagicBoxScreen.java");
+        assertTrue(screen.contains("MagicBoxMenu.BUTTON_PAGE_PREV")
+                        && screen.contains("MagicBoxMenu.BUTTON_PAGE_NEXT"),
+                "the arrows submit the page buttons");
+        assertTrue(screen.contains("menu.getPageCount()") && screen.contains("menu.getCurrentPage()"),
+                "the counter is synced state, not a client guess");
+        assertEquals("1/3", MagicBoxScreen.pageLabel(0, 3).getString());
+        assertEquals("8/8", MagicBoxScreen.pageLabel(7, 8).getString());
+    }
+
+    @Test
+    void theTrunkStayControlIsDrawnClickedAndSynced() throws Exception {
+        assertEquals(1, TrunkMenu.BUTTON_TOGGLE_STAY, "the original stay button id");
+        assertEquals(0, TrunkMenu.DATA_STAY, "the stay flag ships in the menu's data");
+        final String menu = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/menus/TrunkMenu.java");
+        assertTrue(menu.contains("trunk.trunkStay()") && menu.contains("addDataSlots(data)"),
+                "the server reads the host and the flag syncs to the client");
+        final String screen = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/client/TrunkScreen.java");
+        assertTrue(screen.contains("menu.isStaying()"),
+                "the stay control draws from the synced flag");
+        assertTrue(screen.contains("TrunkMenu.BUTTON_TOGGLE_STAY"),
+                "the click submits the stay-toggle menu button");
+        assertTrue(TrunkScreen.inStayButtonBox(9, 10) && !TrunkScreen.inStayButtonBox(10, 0),
+                "the original's inclusive row-10 edge, verbatim");
+        assertTrue(langKeyIsShipped(TrunkScreen.STAY_ON_KEY) && langKeyIsShipped(TrunkScreen.STAY_OFF_KEY),
+                "the two mode texts ship in en_us.json");
+    }
+
     // ---------------------------------------------------- harness helpers
 
     private static void collectDeclaredMenuTypes(final String relativePath, final String simpleCatalogName,

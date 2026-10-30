@@ -115,6 +115,67 @@ public final class ContainerLayout {
     public static final int SPA_FLUID_WIDTH = 10;
     public static final int SPA_FLUID_PIXELS = 48;
 
+    /**
+     * The original 8x8 mix indicator at {@code (89,35)}: {@code GuiSpa} blits
+     * sheet {@code (208,16)} when {@code getMix()} is true and {@code (208,32)}
+     * when it is false, so the port fills the box on and frames it off (BD-17:
+     * the sheet is overlay-only). Its tooltip hitbox is the 10x10 at
+     * {@code (88,34)}, and the tank's fluid tooltip hitbox is the 10x55 at
+     * {@code (104,10)} — both measured off {@code GuiSpa.func_73863_a}.
+     */
+    public static final int SPA_MIX_X = 89;
+    public static final int SPA_MIX_Y = 35;
+    public static final int SPA_MIX_SIZE = 8;
+    public static final int SPA_MIX_TIP_X = 88;
+    public static final int SPA_MIX_TIP_Y = 34;
+    public static final int SPA_MIX_TIP_SIZE = 10;
+    public static final int SPA_TANK_TIP_X = 104;
+    public static final int SPA_TANK_TIP_Y = 10;
+    public static final int SPA_TANK_TIP_WIDTH = 10;
+    public static final int SPA_TANK_TIP_HEIGHT = 55;
+
+    /** Authored stand-in for the original mix-on texel, which is overlay-only (BD-17). */
+    public static final int SPA_MIX_ON_FILL = 0xFF8A5CC8;
+
+    // ------------------------------------------------- magic-box paging
+
+    /**
+     * The authored page widget (the original container carried the row in
+     * {@code bindBoxInventory(row)}; its GUI had no paging control — the
+     * ClientHandler swapped in a {@code ContainerChest} over all rows, and
+     * this port keeps the container-rebind model instead, BD-17). Two 10x10
+     * arrows sit in the panel's title band above the third box row.
+     */
+    public static final int MAGIC_BOX_PAGE_PREV_X = 152;
+    public static final int MAGIC_BOX_PAGE_PREV_Y = 2;
+    public static final int MAGIC_BOX_PAGE_NEXT_X = 164;
+    public static final int MAGIC_BOX_PAGE_NEXT_Y = 2;
+    public static final int MAGIC_BOX_PAGE_BUTTON_SIZE = 10;
+
+    /** Page counter text, drawn between the title and the prev arrow. */
+    public static final int MAGIC_BOX_PAGE_LABEL_X = 118;
+    public static final int MAGIC_BOX_PAGE_LABEL_Y = 4;
+    public static final int MAGIC_BOX_PAGE_LABEL_COLOR = 0x404040;
+
+    /** The original {@code bindBoxInventory} row: 3 rows of 9 slots per page. */
+    public static final int MAGIC_BOX_PAGE_SLOTS = 27;
+
+    // ---------------------------------------------------- trunk stay
+
+    /**
+     * The original stay-toggle control: {@code GuiTravelingTrunk} blits the
+     * 10x10 {@code (176,0)} texel at {@code (112,0)} while {@code getStay()}
+     * is true (its base sits in the sheet) and its click box is
+     * {@code k1 < 10 && l1 <= 10} — an 11-px tall inclusive box, kept verbatim.
+     */
+    public static final int TRUNK_STAY_X = 112;
+    public static final int TRUNK_STAY_Y = 0;
+    public static final int TRUNK_STAY_WIDTH = 10;
+    public static final int TRUNK_STAY_HEIGHT = 10;
+
+    /** Authored stand-in for the original stay-on texel, which is overlay-only (BD-17). */
+    public static final int TRUNK_STAY_ON_FILL = 0xFF8A5CC8;
+
     // ------------------------------------------------------------- geometry
 
     /** Panel top for a given player-grid origin (vanilla's 13 px piece offset). */
@@ -195,6 +256,59 @@ public final class ContainerLayout {
     /** The original bar's top edge for a fill height (it drains downward). */
     public static int barTop(final int barTop, final int pixels, final int fill) {
         return barTop + pixels - fill;
+    }
+
+    /**
+     * The original spa fluid column height: {@code GuiSpa} computes
+     * {@code bar = fluidAmount / capacity} and leaves the top
+     * {@code (int)(48 - 48*bar)} px of the 48 px column blank, i.e. the
+     * column fills from the bottom with {@code floor(amount * 48 / capacity)}
+     * pixels. Clamped: an empty or over-full tank never paints outside the rail.
+     */
+    public static int scaledFluidHeight(final int amount, final int capacity, final int pixels) {
+        if (amount <= 0 || capacity <= 0) {
+            return 0;
+        }
+        if (amount >= capacity) {
+            return pixels;
+        }
+        return (int)((long)amount * pixels / capacity);
+    }
+
+    /** The original fluid column's top edge for a fill height (it fills from the bottom). */
+    public static int fluidTop(final int columnTop, final int pixels, final int fill) {
+        return columnTop + pixels - fill;
+    }
+
+    /**
+     * Pages the magic box spans: the original {@code ContainerMagicBox} binds
+     * 3 rows of 9 per {@code bindBoxInventory(row)} call, so a box of
+     * {@code boxSlotCount} contents spans {@code ceil(count / 27)} pages —
+     * at least one, so a lone 27-slot box has a page and no live arrows.
+     */
+    public static int magicBoxPageCount(final int boxSlotCount) {
+        if (boxSlotCount <= 0) {
+            return 1;
+        }
+        return (boxSlotCount + MAGIC_BOX_PAGE_SLOTS - 1) / MAGIC_BOX_PAGE_SLOTS;
+    }
+
+    /** The first box-slot index of a page (the original's {@code (j + row) * 9}). */
+    public static int magicBoxPageStart(final int page) {
+        return page * MAGIC_BOX_PAGE_SLOTS;
+    }
+
+    /** Clamp a page index into the box's page range. */
+    public static int clampPage(final int page, final int pageCount) {
+        return Math.max(0, Math.min(page, pageCount - 1));
+    }
+
+    /**
+     * The original stay-button box: {@code k1 >= 0 && l1 >= 0 && k1 < 10 &&
+     * l1 <= 10} — the {@code <=} keeps row 10 inside the box, reproduced verbatim.
+     */
+    public static boolean inTrunkStayBox(final int relX, final int relY) {
+        return relX >= 0 && relY >= 0 && relX < TRUNK_STAY_WIDTH && relY <= TRUNK_STAY_HEIGHT;
     }
 
     private ContainerLayout() {

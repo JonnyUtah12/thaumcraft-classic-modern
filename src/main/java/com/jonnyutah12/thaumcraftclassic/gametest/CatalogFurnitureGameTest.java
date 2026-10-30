@@ -1,14 +1,21 @@
 package com.jonnyutah12.thaumcraftclassic.gametest;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
+import com.jonnyutah12.thaumcraftclassic.menus.DeconstructionTableMenu;
+import com.jonnyutah12.thaumcraftclassic.menus.MagicBoxMenu;
+import com.jonnyutah12.thaumcraftclassic.menus.SpaMenu;
 import com.jonnyutah12.thaumcraftclassic.registration.ContentMappingCsv;
+import com.jonnyutah12.thaumcraftclassic.registration.ModAspects;
 import com.jonnyutah12.thaumcraftclassic.registration.TestProbeContent;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockDeviceBase;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockTable;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileChestHungry;
+import com.jonnyutah12.thaumcraftclassic.tiles.TileDeconstructionTable;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileMagicBox;
+import com.jonnyutah12.thaumcraftclassic.tiles.TileSpa;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -21,10 +28,14 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -46,6 +57,13 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
  *       serialize/load path, which is what the "inventory persistence" bar
  *       requires: the chest's slots keep their positions, the box keeps its
  *       item list.</li>
+ *   <li>{@link #deconstructionTableAspectReachesTheMenuDataSlot},
+ *       {@link #spaTankAndMixTravelInMenuDataSlots} and
+ *       {@link #magicBoxPagesRebindTheBoundSlots} — TC-M7-04-m4's screen
+ *       state: the revealed aspect, the spa tank + mix flag, and the magic
+ *       box's page all travel through the menus' container data (BD-17
+ *       closure), with the client-side {@code ContainerData#set} landing
+ *       proven write-through on each menu.</li>
  * </ol>
  *
  * <p>Needs the {@code gameTestServer} run configuration (build.gradle), which
@@ -276,6 +294,185 @@ public final class CatalogFurnitureGameTest {
         helper.assertTrue(restoredBox.getItem(0).getCount() + restoredBox.getItem(1).getCount() == 4,
                 "the box lost counts across the save/load round-trip: " + restoredBox.getItem(0)
                         + " / " + restoredBox.getItem(1));
+        helper.succeed();
+    }
+
+    /**
+     * TC-M7-04-m4: the deconstruction table's revealed aspect travels in the
+     * menu's container data (the 1.7.10 GUI read {@code tableInventory.aspect}
+     * off the tile it held; BD-17). The encoding is the aspect's id in the
+     * {@code thaumcraft:aspect} registry plus one, 0 = none, and the
+     * client-side landing point is {@code ContainerData#set}.
+     */
+    @GameTest(template = "empty")
+    public static void deconstructionTableAspectReachesTheMenuDataSlot(final GameTestHelper helper) {
+        // The tile lives on its own block state: BlockEntity validates the
+        // state against its type's valid blocks (blockTable variant 14 is the
+        // deconstruction table, CatalogFurniture.wireDeviceTiles).
+        final BlockPos tablePos = new BlockPos(0, 1, 0);
+        helper.setBlock(tablePos,
+                CatalogFurniture.BLOCK_TABLE.get().withVariant(BlockTable.VARIANT_DECONSTRUCTION));
+        final TileDeconstructionTable table = (TileDeconstructionTable) helper.getBlockEntity(tablePos);
+        final Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        final Inventory inventory = player.getInventory();
+        final DeconstructionTableMenu menu = new DeconstructionTableMenu(100, inventory, table);
+
+        final Aspect primal = Aspect.getPrimalAspects().get(0);
+        final int expected = ModAspects.registry().getId(primal) + 1;
+        helper.assertTrue(expected > 0, "the aspect registry must resolve a live id, got " + expected);
+        table.aspect = primal;
+        table.breaktime = 20;
+        helper.assertTrue(menu.containerData().get(DeconstructionTableMenu.DATA_ASPECT) == expected,
+                "the revealed aspect must reach data slot " + DeconstructionTableMenu.DATA_ASPECT
+                        + " as its registry id + 1");
+        helper.assertTrue(menu.getRevealedAspect() == primal,
+                "the screen's getter must expose the revealed aspect");
+        helper.assertTrue(menu.containerData().get(DeconstructionTableMenu.DATA_BREAK_TIME) == 20,
+                "the break timer keeps its own data slot");
+        helper.assertTrue(DeconstructionTableMenu.decodeAspectIndex(
+                        DeconstructionTableMenu.encodeAspectIndex(primal)) == primal,
+                "encode/decode must round-trip through the registry");
+        helper.assertTrue(DeconstructionTableMenu.encodeAspectIndex(null) == 0
+                        && DeconstructionTableMenu.decodeAspectIndex(0) == null,
+                "no aspect must encode as 0 and decode back to null");
+
+        // The client landing point: data-slot writes drive the tile the screen
+        // reads (this is what AbstractContainerMenu does on the client).
+        table.aspect = null;
+        menu.containerData().set(DeconstructionTableMenu.DATA_ASPECT, expected);
+        helper.assertTrue(menu.getRevealedAspect() == primal,
+                "a data-slot write (the sync landing) must surface through the getter");
+        menu.containerData().set(DeconstructionTableMenu.DATA_ASPECT, 0);
+        helper.assertTrue(menu.getRevealedAspect() == null,
+                "a cleared data slot must clear the revealed aspect");
+        helper.succeed();
+    }
+
+    /**
+     * TC-M7-04-m4: the spa tank (fluid id, amount, capacity) and the mix flag
+     * travel in the menu's container data (the 1.7.10 GUI read {@code spa.tank}
+     * and {@code spa.getMix()} off the tile; BD-17), and the mix toggle is the
+     * original's menu button 1.
+     */
+    @GameTest(template = "empty")
+    public static void spaTankAndMixTravelInMenuDataSlots(final GameTestHelper helper) {
+        // The tile lives on its own block state: BlockEntity validates the
+        // state against its type's valid blocks (blockStoneDevice variant 11
+        // is the arcane spa, CatalogFurniture.wireDeviceTiles).
+        final BlockPos spaPos = new BlockPos(0, 1, 0);
+        helper.setBlock(spaPos, CatalogDevices.BLOCK_STONE_DEVICE.get().withVariant(11));
+        final TileSpa spa = (TileSpa) helper.getBlockEntity(spaPos);
+        final Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        final SpaMenu menu = new SpaMenu(101, player.getInventory(), spa);
+
+        helper.assertTrue(menu.containerData().get(SpaMenu.DATA_FLUID_ID) == 0,
+                "an empty tank encodes as 0");
+        helper.assertTrue(menu.containerData().get(SpaMenu.DATA_FLUID_AMOUNT) == 0,
+                "an empty tank carries no amount");
+        helper.assertTrue(menu.containerData().get(SpaMenu.DATA_CAPACITY) == 5000,
+                "the tank keeps the original 5000 mB capacity in its data slot");
+        helper.assertTrue(menu.containerData().get(SpaMenu.DATA_MIX) == 1,
+                "the original's mix flag starts true (TileSpa: private boolean mix = true)");
+
+        final int filled = spa.fill(Fluids.WATER, 1200, true);
+        helper.assertTrue(filled == 1200, "the tank accepts the fill, got " + filled);
+        final int waterIdPlusOne = BuiltInRegistries.FLUID.getId(Fluids.WATER) + 1;
+        helper.assertTrue(menu.containerData().get(SpaMenu.DATA_FLUID_ID) == waterIdPlusOne,
+                "the tank fluid must reach data slot " + SpaMenu.DATA_FLUID_ID
+                        + " as its minecraft:fluid registry id + 1");
+        helper.assertTrue(menu.containerData().get(SpaMenu.DATA_FLUID_AMOUNT) == 1200,
+                "the mB amount travels beside it");
+        helper.assertTrue(menu.getTankFluid() == Fluids.WATER && menu.getTankAmount() == 1200,
+                "the screen's getters expose the live tank");
+
+        // The original's toggle: menu button 1 flips the mix and the data slot follows.
+        helper.assertTrue(menu.clickMenuButton(player, 1), "button 1 must be answered");
+        helper.assertTrue(menu.containerData().get(SpaMenu.DATA_MIX) == 0
+                && !menu.getMix(), "the mix flag must flip in the data slot");
+        menu.clickMenuButton(player, 1);
+        helper.assertTrue(menu.containerData().get(SpaMenu.DATA_MIX) == 1
+                && menu.getMix(), "and flip back");
+
+        // The client landing point: data-slot writes drive the tile the screen
+        // reads (AbstractContainerMenu#broadcastChanges lands every data slot
+        // through ContainerData#set on the client).
+        spa.drain(1200, true);
+        menu.containerData().set(SpaMenu.DATA_FLUID_ID, waterIdPlusOne);
+        menu.containerData().set(SpaMenu.DATA_FLUID_AMOUNT, 300);
+        menu.containerData().set(SpaMenu.DATA_MIX, 0);
+        helper.assertTrue(menu.getTankFluid() == Fluids.WATER && menu.getTankAmount() == 300,
+                "a data-slot write (the sync landing) must surface through the tank getters");
+        helper.assertTrue(!menu.getMix(), "and through the mix getter");
+        helper.succeed();
+    }
+
+    /**
+     * TC-M7-04-m4: the magic box binds one 3-row page (the original's
+     * {@code bindBoxInventory(row)}) and the page buttons rebind the window by
+     * rewriting the bound slots' box-slot indices, clamped to the box's page
+     * range; page and slot count are data slots, so the client sees synced state.
+     */
+    @GameTest(template = "empty")
+    public static void magicBoxPagesRebindTheBoundSlots(final GameTestHelper helper) {
+        final BlockPos first = new BlockPos(0, 1, 0);
+        final BlockPos second = new BlockPos(1, 1, 0);
+        helper.setBlock(first, CatalogFurniture.BLOCK_MAGIC_BOX.get());
+        helper.setBlock(second, CatalogFurniture.BLOCK_MAGIC_BOX.get());
+        final TileMagicBox box = (TileMagicBox) helper.getBlockEntity(first);
+        box.refreshLinks();
+        // The original refreshLinks()/findBoxes() collects NEIGHBOURS only and
+        // never seeds the origin, so a connected cluster's leaf re-adds the
+        // origin as its neighbour's neighbour: two touching boxes count 2, and
+        // the original's 27 * (linkedBoxes + 1) is 81, not 54. The port is
+        // bit-faithful to that walk (TileMagicBox.findBoxes), so the probe
+        // pins the original number rather than the intuitive one.
+        helper.assertTrue(box.getContainerSize() == 81,
+                "two touching boxes must yield the original's 27 * (2 + 1) = 81 slots "
+                        + "(findBoxes never seeds the origin), got " + box.getContainerSize());
+
+        final Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        final MagicBoxMenu menu = new MagicBoxMenu(102, player.getInventory(), box);
+        helper.assertTrue(menu.slots.size() == 27 + 36,
+                "the box binds one 27-slot page plus the 36 player slots, got " + menu.slots.size());
+        helper.assertTrue(menu.getPageCount() == 3 && menu.getCurrentPage() == 0,
+                "81 slots span three pages, starting at page 0");
+        helper.assertTrue(menu.containerData().get(MagicBoxMenu.DATA_BOX_SLOTS) == 81,
+                "the client learns the box size from its data slot");
+        helper.assertTrue(menu.slots.get(0).index == 0 && menu.slots.get(26).index == 26,
+                "page 0 binds box slots 0..26 (the original's (j + 0) * 9 + k)");
+
+        helper.assertTrue(menu.clickMenuButton(player, MagicBoxMenu.BUTTON_PAGE_NEXT),
+                "the next-page button must be answered");
+        helper.assertTrue(menu.getCurrentPage() == 1
+                        && menu.containerData().get(MagicBoxMenu.DATA_PAGE) == 1,
+                "the page moves and its data slot follows");
+        helper.assertTrue(menu.slots.get(0).index == 27 && menu.slots.get(26).index == 53,
+                "page 1 rebinds to box slots 27..53 (the original's refreshInventory)");
+
+        helper.assertTrue(menu.clickMenuButton(player, MagicBoxMenu.BUTTON_PAGE_NEXT),
+                "the third page must be reachable");
+        helper.assertTrue(menu.getCurrentPage() == 2 && menu.slots.get(0).index == 54
+                        && menu.slots.get(26).index == 80,
+                "page 2 rebinds to the box's last 27 slots, 54..80");
+
+        // Clamps at both ends: a press past the last page keeps it.
+        menu.clickMenuButton(player, MagicBoxMenu.BUTTON_PAGE_NEXT);
+        helper.assertTrue(menu.getCurrentPage() == 2, "the last page clamps the next button");
+        helper.assertTrue(menu.clickMenuButton(player, MagicBoxMenu.BUTTON_PAGE_PREV),
+                "the prev-page button must be answered");
+        helper.assertTrue(menu.getCurrentPage() == 1
+                        && menu.slots.get(0).index == 27 && menu.slots.get(26).index == 53,
+                "page 1 rebinds back to box slots 27..53");
+        menu.clickMenuButton(player, MagicBoxMenu.BUTTON_PAGE_PREV);
+        helper.assertTrue(menu.getCurrentPage() == 0
+                        && menu.slots.get(0).index == 0 && menu.slots.get(26).index == 26,
+                "page 0 rebinds back to box slots 0..26");
+        menu.clickMenuButton(player, MagicBoxMenu.BUTTON_PAGE_PREV);
+        helper.assertTrue(menu.getCurrentPage() == 0, "page 0 clamps the prev button");
+
+        // The client landing point: the synced page lands through ContainerData#set.
+        menu.containerData().set(MagicBoxMenu.DATA_PAGE, 2);
+        helper.assertTrue(menu.getCurrentPage() == 2, "the synced page surfaces on the client menu");
         helper.succeed();
     }
 }

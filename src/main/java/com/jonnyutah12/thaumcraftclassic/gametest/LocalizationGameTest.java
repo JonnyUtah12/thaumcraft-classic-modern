@@ -93,6 +93,9 @@ public final class LocalizationGameTest {
             Map.entry("container.thaumcraft.deconstructiontable", "TileDeconstructionTable.getDisplayName"),
             Map.entry("container.thaumcraft.magicbox", "TileMagicBox.getDisplayName"),
             Map.entry("container.thaumcraft.spa", "TileSpa.getDisplayName"),
+            // stay/follow mode texts on the trunk screen's stay control
+            Map.entry("container.thaumcraft.gui_trunk.stay_on", "TrunkScreen stay tooltip (TC-M7-04-m4)"),
+            Map.entry("container.thaumcraft.gui_trunk.stay_off", "TrunkScreen follow tooltip (TC-M7-04-m4)"),
             // tooltip / action lines
             Map.entry("item.thaumcraft.itemlootbag.tooltip", "ItemLootBag.appendHoverText"),
             Map.entry("item.thaumcraft.trunkspawner.tooltip", "ItemTrunkSpawner.appendHoverText"),

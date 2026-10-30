@@ -184,4 +184,94 @@ class ContainerLayoutTest {
         assertEquals(TrunkScreen.PANEL_FILL, ContainerLayout.PANEL_FILL);
         assertEquals(TrunkScreen.PANEL_FRAME, ContainerLayout.PANEL_FRAME);
     }
+
+    // ---------------------------------- TC-M7-04-m4: synced-state geometry
+
+    @Test
+    void spaFluidColumnScalesTheWayTheOriginalBlitDid() {
+        // GuiSpa: bar = fluidAmount / capacity, (int)(48 - 48*bar) px of the
+        // (107,15) 48 px column left blank at the top — the fill is
+        // floor(amount * 48 / capacity) px rising from the bottom.
+        assertEquals(0, ContainerLayout.scaledFluidHeight(0, 5000, 48), "an empty tank paints nothing");
+        assertEquals(9, ContainerLayout.scaledFluidHeight(1000, 5000, 48), "1000/5000 of 48 px");
+        assertEquals(47, ContainerLayout.scaledFluidHeight(4999, 5000, 48), "the fill floors");
+        assertEquals(48, ContainerLayout.scaledFluidHeight(5000, 5000, 48), "full paints the rail");
+        assertEquals(48, ContainerLayout.scaledFluidHeight(6000, 5000, 48), "clamped, never past the rail");
+        assertEquals(0, ContainerLayout.scaledFluidHeight(-5, 5000, 48), "a negative amount never paints");
+        assertEquals(0, ContainerLayout.scaledFluidHeight(5, 0, 48), "a zero capacity never paints");
+        assertEquals(15, ContainerLayout.fluidTop(15, 48, 48), "full starts at the column top");
+        assertEquals(54, ContainerLayout.fluidTop(15, 48, 9), "9 px sit at the column bottom");
+        assertEquals(63, ContainerLayout.fluidTop(15, 48, 0), "empty starts at the column floor");
+    }
+
+    @Test
+    void spaMixAndTooltipBoxesAreTheOriginalsBoxes() {
+        // GuiSpa: the 8x8 mix indicator at (89,35); its tooltip box is the
+        // 10x10 at (88,34) and the tank's tooltip box the 10x55 at (104,10).
+        assertEquals(89, ContainerLayout.SPA_MIX_X);
+        assertEquals(35, ContainerLayout.SPA_MIX_Y);
+        assertEquals(8, ContainerLayout.SPA_MIX_SIZE);
+        assertEquals(SpaScreen.MIX_X, ContainerLayout.SPA_MIX_X,
+                "the screen's click box and the shared geometry must not drift");
+        assertEquals(SpaScreen.MIX_Y, ContainerLayout.SPA_MIX_Y);
+        assertEquals(SpaScreen.MIX_SIZE, ContainerLayout.SPA_MIX_SIZE);
+        assertEquals(88, ContainerLayout.SPA_MIX_TIP_X);
+        assertEquals(34, ContainerLayout.SPA_MIX_TIP_Y);
+        assertEquals(10, ContainerLayout.SPA_MIX_TIP_SIZE);
+        assertEquals(104, ContainerLayout.SPA_TANK_TIP_X);
+        assertEquals(10, ContainerLayout.SPA_TANK_TIP_Y);
+        assertEquals(10, ContainerLayout.SPA_TANK_TIP_WIDTH);
+        assertEquals(55, ContainerLayout.SPA_TANK_TIP_HEIGHT);
+        assertEquals(0xFF8A5CC8, ContainerLayout.SPA_MIX_ON_FILL,
+                "the authored on-texel is the crate's indicator colour");
+    }
+
+    @Test
+    void magicBoxPageMathIsTheOriginalsRowBind() {
+        // ContainerMagicBox.bindBoxInventory(row): 3 rows of 9 = 27 slots per page.
+        assertEquals(27, ContainerLayout.MAGIC_BOX_PAGE_SLOTS);
+        assertEquals(1, ContainerLayout.magicBoxPageCount(0), "an empty box is one page");
+        assertEquals(1, ContainerLayout.magicBoxPageCount(27), "one box is one page");
+        assertEquals(2, ContainerLayout.magicBoxPageCount(28), "the 28th slot opens page 2");
+        assertEquals(2, ContainerLayout.magicBoxPageCount(54));
+        assertEquals(8, ContainerLayout.magicBoxPageCount(216), "the original 8-box cluster");
+        assertEquals(0, ContainerLayout.magicBoxPageStart(0));
+        assertEquals(27, ContainerLayout.magicBoxPageStart(1), "the original (j + row) * 9");
+        assertEquals(54, ContainerLayout.magicBoxPageStart(2));
+        assertEquals(1, ContainerLayout.clampPage(5, 2), "clamped to the last page");
+        assertEquals(0, ContainerLayout.clampPage(-1, 2), "clamped to page 0");
+        assertEquals(1, ContainerLayout.clampPage(1, 2), "an in-range page is untouched");
+    }
+
+    @Test
+    void magicBoxPageWidgetSitsInTheTitleBand() {
+        assertEquals(152, ContainerLayout.MAGIC_BOX_PAGE_PREV_X);
+        assertEquals(2, ContainerLayout.MAGIC_BOX_PAGE_PREV_Y);
+        assertEquals(164, ContainerLayout.MAGIC_BOX_PAGE_NEXT_X);
+        assertEquals(2, ContainerLayout.MAGIC_BOX_PAGE_NEXT_Y);
+        assertEquals(10, ContainerLayout.MAGIC_BOX_PAGE_BUTTON_SIZE);
+        assertTrue(ContainerLayout.MAGIC_BOX_PAGE_NEXT_X + ContainerLayout.MAGIC_BOX_PAGE_BUTTON_SIZE <= 176,
+                "the arrows stay inside the 176 px panel");
+        assertTrue(ContainerLayout.MAGIC_BOX_PAGE_NEXT_Y + ContainerLayout.MAGIC_BOX_PAGE_BUTTON_SIZE
+                        <= ContainerLayout.playerPanelTop(84),
+                "the title band is above the player panel piece");
+    }
+
+    @Test
+    void trunkStayBoxKeepsTheOriginalsInclusiveEdge() {
+        // GuiTravelingTrunk: k1 >= 0 && l1 >= 0 && k1 < 10 && l1 <= 10 at (112,0).
+        assertEquals(112, ContainerLayout.TRUNK_STAY_X);
+        assertEquals(0, ContainerLayout.TRUNK_STAY_Y);
+        assertEquals(10, ContainerLayout.TRUNK_STAY_WIDTH);
+        assertEquals(10, ContainerLayout.TRUNK_STAY_HEIGHT);
+        assertTrue(ContainerLayout.inTrunkStayBox(0, 0));
+        assertTrue(ContainerLayout.inTrunkStayBox(9, 0));
+        assertTrue(ContainerLayout.inTrunkStayBox(9, 10), "the <= 10 keeps row 10 inside");
+        assertFalse(ContainerLayout.inTrunkStayBox(10, 0), "the < 10 closes column 10");
+        assertFalse(ContainerLayout.inTrunkStayBox(0, 11), "row 11 is outside");
+        assertFalse(ContainerLayout.inTrunkStayBox(-1, 0), "left of the panel is outside");
+        assertFalse(ContainerLayout.inTrunkStayBox(0, -1), "above the panel is outside");
+        assertEquals(0xFF8A5CC8, ContainerLayout.TRUNK_STAY_ON_FILL,
+                "the authored on-texel is the crate's indicator colour");
+    }
 }

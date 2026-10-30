@@ -8,6 +8,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
@@ -29,21 +30,54 @@ import net.minecraft.world.item.ItemStack;
  * count so the client menu can resolve the live entity and lay out the same
  * slots (the original rebuilt its container from the openGui x/y args the same
  * way).</p>
+ *
+ * <p>Stay-flag sync (TC-M7-04-m4, BD-17): the 1.7.10 GUI read
+ * {@code themob.getStay()} because it held the mob; a 1.21.1 screen gets only
+ * the menu, so the stay flag travels in container data slot
+ * {@link #DATA_STAY} and {@link #isStaying()} feeds the screen's 10x10 stay
+ * control, its enabled box, and its click text. The stay flag itself is an
+ * entity field (registerTrunkSync); the mob's own network sync is the trunk
+ * entity card's job (TC-M6-06).</p>
  */
 public class TrunkMenu extends AbstractContainerMenu {
 
     /** Menu button id of the stay toggle (original buttonClicked(1)). */
     public static final int BUTTON_TOGGLE_STAY = 1;
 
+    /** Data slot carrying the stay flag (1 = staying, 0 = following), synced to the client. */
+    public static final int DATA_STAY = 0;
+
     private final TrunkHost trunk;
     private final int numRows;
+    private final boolean clientSide;
+    private int syncedStay;
+
+    private final ContainerData data = new ContainerData() {
+        @Override
+        public int get(final int index) {
+            return TrunkMenu.this.stayValue();
+        }
+
+        @Override
+        public void set(final int index, final int value) {
+            // Server -> client landing point; the screen reads isStaying().
+            TrunkMenu.this.syncedStay = value;
+        }
+
+        @Override
+        public int getCount() {
+            return 1;
+        }
+    };
 
     /** Server side: bound to the live trunk entity. */
     public TrunkMenu(final int id, final Inventory playerInventory, final TrunkHost trunk) {
         super(CatalogTrinketsLoot.GUI_TRUNK.get(), id);
         this.trunk = trunk;
         this.numRows = trunk.trunkRows();
+        this.clientSide = playerInventory.player.level().isClientSide;
         build(trunk, playerInventory);
+        addDataSlots(data);
         trunk.setTrunkOpen(true);
         playChest(trunk, SoundEvents.CHEST_OPEN);
     }
@@ -59,11 +93,41 @@ public class TrunkMenu extends AbstractContainerMenu {
         }
         this.trunk = resolved;
         this.numRows = resolved != null ? rows : 0;
+        this.clientSide = playerInventory.player.level().isClientSide;
         if (resolved != null) {
             build(resolved, playerInventory);
         } else {
             bindPlayerInventory(playerInventory);
         }
+        addDataSlots(data);
+    }
+
+    private int stayValue() {
+        if (this.clientSide) {
+            // The screen's source of truth on the client is the data slot; the
+            // entity's own stay sync is the trunk entity card's (TC-M6-06).
+            return this.syncedStay;
+        }
+        return this.trunk != null && this.trunk.trunkStay() ? 1 : 0;
+    }
+
+    /**
+     * The stay mode the GUI's 10x10 control shows: live entity state on the
+     * server, the data-slot-synced value on the client (TC-M7-04-m4, BD-17 —
+     * the original read {@code themob.getStay()} because its GUI held the mob).
+     */
+    public boolean isStaying() {
+        return stayValue() == 1;
+    }
+
+    /** The trunk this menu is bound to (the client's resolved entity), or null. */
+    public TrunkHost getTrunk() {
+        return this.trunk;
+    }
+
+    /** The container data slots of this menu, for probes that prove the sync lands. */
+    public ContainerData containerData() {
+        return this.data;
     }
 
     /**

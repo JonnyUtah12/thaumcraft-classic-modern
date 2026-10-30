@@ -140,6 +140,8 @@
   "container.thaumcraft.gui_magic_box": "Magic Box",
   "container.thaumcraft.gui_spa": "Arcane Spa",
   "container.thaumcraft.gui_trunk": "Traveling Trunk",
+  "container.thaumcraft.gui_trunk.stay_off": "Traveling Trunk: Follow mode",
+  "container.thaumcraft.gui_trunk.stay_on": "Traveling Trunk: Stay mode",
   "container.thaumcraft.magicbox": "Magic Box",
   "container.thaumcraft.spa": "Arcane Spa",
   "entity.thaumcraft.specialitemgrate": "Magic Item",
