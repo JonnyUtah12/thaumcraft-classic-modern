@@ -968,17 +968,18 @@ Thaumcraft:GUI_TRUNK,thaumcraft:gui_trunk,gui,GuiTravelingTrunk,done,tested,,gui
 Thaumcraft:GUI_THAUMATORIUM,thaumcraft:gui_thaumatorium,gui,GuiThaumatorium,not_started,not_tested,,gui_id=3 handler=GuiThaumatorium
 Thaumcraft:GUI_FOCUS_POUCH,thaumcraft:gui_focus_pouch,gui,GuiFocusPouch,not_started,not_tested,,gui_id=5 handler=GuiFocusPouch
 Thaumcraft:GUI_DECON_TABLE,thaumcraft:gui_decon_table,gui,GuiDeconstructionTable,done,tested,,gui_id=8 handler=GuiDeconstructionTable screen=client/DeconstructionTableScreen (46px break bar + collect hitbox at x=64 y=48)
-Thaumcraft:GUI_ALCHEMY_FURNACE,thaumcraft:gui_alchemy_furnace,gui,GuiAlchemyFurnace,not_started,not_tested,,gui_id=9 handler=GuiAlchemyFurnace
+Thaumcraft:GUI_ALCHEMY_FURNACE,thaumcraft:gui_alchemy_furnace,gui,GuiAlchemyFurnace,done,tested,menu+screen wired (TC-M7-04-m1); DeviceGuisGameTest+MenuTypeScreenCoverageTest; cook gauge synced via data slots; vis tank gauge not synced (BD-18); pixels unproved (no client),gui_id=9 handler=GuiAlchemyFurnace
 Thaumcraft:GUI_RESEARCH_TABLE,thaumcraft:gui_research_table,gui,GuiResearchTable,not_started,not_tested,,gui_id=10 handler=GuiResearchTable
 Thaumcraft:GUI_CHEST_HUNGRY,thaumcraft:gui_chest_hungry,gui,-,not_started,not_tested,,gui_id=11 handler=-
 Thaumcraft:GUI_THAUMONOMICON,thaumcraft:gui_thaumonomicon,gui,GuiResearchBrowser,not_started,not_tested,,gui_id=12 handler=GuiResearchBrowser
 Thaumcraft:GUI_ARCANE_WORKBENCH,thaumcraft:gui_arcane_workbench,gui,GuiArcaneWorkbench,not_started,not_tested,,gui_id=13 handler=GuiArcaneWorkbench
-Thaumcraft:GUI_ARCANE_BORE,thaumcraft:gui_arcane_bore,gui,GuiArcaneBore,not_started,not_tested,,gui_id=15 handler=GuiArcaneBore
+Thaumcraft:GUI_ARCANE_BORE,thaumcraft:gui_arcane_bore,gui,GuiArcaneBore,done,tested,menu+screen wired (TC-M7-04-m1); DeviceGuisGameTest+MenuTypeScreenCoverageTest; readouts synced via data slots; focus slot id-contract (TC-M6-02 item); pixels unproved (no client),gui_id=15 handler=GuiArcaneBore
 Thaumcraft:GUI_HAND_MIRROR,thaumcraft:gui_hand_mirror,gui,GuiHandMirror,done,tested,,gui_id=16 handler=GuiHandMirror screen=client/HandMirrorScreen
 Thaumcraft:GUI_HOVER_HARNESS,thaumcraft:gui_hover_harness,gui,GuiHoverHarness,not_started,not_tested,,gui_id=17 handler=GuiHoverHarness
 Thaumcraft:GUI_MAGIC_BOX,thaumcraft:gui_magic_box,gui,GuiMagicBox,done,tested,,gui_id=18 handler=GuiMagicBox screen=client/MagicBoxScreen (original is a vanilla generic_54 chest screen)
 Thaumcraft:GUI_SPA,thaumcraft:gui_spa,gui,GuiSpa,done,tested,,gui_id=19 handler=GuiSpa screen=client/SpaScreen (tank frame + mix hitbox at x=89 y=35)
 Thaumcraft:GUI_FOCAL_MANUPULATOR,thaumcraft:gui_focal_manupulator,gui,GuiFocalManipulator,not_started,not_tested,,gui_id=20 handler=GuiFocalManipulator
+Thaumcraft:GUI_CRUCIBLE,thaumcraft:gui_crucible,gui,-,not_started,tested,the 1.7.10 reference ships no GUI for the crucible: client/gui has 18 Gui* classes and none is a crucible; the crucible is blockMetalDevice meta 0 (reference BlockMetalDevice.java:356 createTileEntity) and that block's only openGui sites are metas 10/11 -> Thaumatorium gui_id 3 (BlockMetalDevice.java:717/725); the crucible opens no window (BD-20); absence proved by CrucibleGuiParityTest + DeviceGuisGameTest.crucibleGainsNoMenuInTheField; pixels unproved (no client),gui_id=- handler=-
 Thaumcraft:ench_haste,thaumcraft:ench_haste,enchantment,,not_started,not_tested,,class=? config_key=ench_haste registered=yes
 Thaumcraft:ench_repair,thaumcraft:ench_repair,enchantment,,not_started,not_tested,,class=? config_key=ench_repair registered=yes
 Thaumcraft:EnchantmentFrugal,thaumcraft:enchantmentfrugal,enchantment,EnchantmentFrugal,not_started,not_tested,NOT registered in 4.2.3.5 (dead code),class exists in jar

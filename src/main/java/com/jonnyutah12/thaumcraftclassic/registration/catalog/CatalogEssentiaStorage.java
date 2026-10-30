@@ -5,6 +5,7 @@ import com.jonnyutah12.thaumcraftclassic.blocks.BlockArcaneFurnace;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockJar;
 import com.jonnyutah12.thaumcraftclassic.items.ItemJarFilled;
 import com.jonnyutah12.thaumcraftclassic.items.ItemPhial;
+import com.jonnyutah12.thaumcraftclassic.menus.AlchemyFurnaceMenu;
 import com.jonnyutah12.thaumcraftclassic.recipes.SmeltingBonuses;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileArcaneFurnace;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileArcaneFurnaceNozzle;
@@ -12,6 +13,7 @@ import com.jonnyutah12.thaumcraftclassic.tiles.TileJarFillable;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileJarFillableVoid;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
@@ -19,6 +21,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -60,6 +63,21 @@ public final class CatalogEssentiaStorage {
             DeferredRegister.createItems(ThaumcraftClassic.MOD_ID);
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, ThaumcraftClassic.MOD_ID);
+
+    /**
+     * TC-M7-04-m1: the alchemical furnace window. The original opened it as
+     * {@code gui_id} 9 ({@code GuiAlchemyFurnace}, ClientProxy:372); the port
+     * ids GUI menu types by their content-mapping gui id, the convention the
+     * furniture catalog set with {@code gui_decon_table}/{@code gui_spa}.
+     */
+    public static final DeferredRegister<MenuType<?>> MENUS =
+            DeferredRegister.create(Registries.MENU, ThaumcraftClassic.MOD_ID);
+    public static final DeferredHolder<MenuType<?>, MenuType<AlchemyFurnaceMenu>> MENU_ALCHEMY_FURNACE =
+            MENUS.register("gui_alchemy_furnace", () -> IMenuTypeExtension.create(
+                    (windowId, inventory, buf) -> new AlchemyFurnaceMenu(
+                            windowId, inventory,
+                            (TileArcaneFurnace) inventory.player.level()
+                                    .getBlockEntity(buf.readBlockPos()))));
 
     // --- blocks ------------------------------------------------------------
 
@@ -118,6 +136,7 @@ public final class CatalogEssentiaStorage {
         BLOCKS.register(bus);
         ITEMS.register(bus);
         BLOCK_ENTITY_TYPES.register(bus);
+        MENUS.register(bus);
         // The original registers its smelting-bonus rows at load, from
         // ConfigRecipes; this is the mod's load-time equivalent.
         SmeltingBonuses.registerOriginalBonuses();

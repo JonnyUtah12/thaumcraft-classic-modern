@@ -51,6 +51,17 @@ final class ScreenPanel {
         guiGraphics.renderOutline(left + x, top + y, width, height, ContainerLayout.PANEL_FRAME);
     }
 
+    /**
+     * A flat fill at panel-relative coordinates: the authored stand-in for an
+     * original sheet's texels (gauge fills, status icons), which ship only in
+     * the overlay build (BD-17). Same convention as the deconstruction break
+     * bar's {@code DECON_BAR_FILL}.
+     */
+    static void fillArea(final GuiGraphics guiGraphics, final int left, final int top,
+                         final int x, final int y, final int width, final int height, final int color) {
+        guiGraphics.fill(left + x, top + y, left + x + width, top + y + height, color);
+    }
+
     private ScreenPanel() {
     }
 }

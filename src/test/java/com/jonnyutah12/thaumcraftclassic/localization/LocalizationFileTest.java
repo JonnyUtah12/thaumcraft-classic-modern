@@ -39,7 +39,11 @@ class LocalizationFileTest {
     /** 1.21.1 key conventions for the content this mod ships. */
     private static final List<String> CURRENT_PREFIXES = List.of(
             "item.thaumcraft.", "block.thaumcraft.", "container.thaumcraft.",
-            "entity.thaumcraft.", "itemGroup.thaumcraft.");
+            "entity.thaumcraft.", "itemGroup.thaumcraft.",
+            // Screen readout lines (TC-M7-04-m1): the bore's readout rows are
+            // hardcoded English strings in GuiArcaneBore:45-73, localized by
+            // the port, so they carry the 1.21.1 gui.<ns>.<screen>.<row> shape.
+            "gui.thaumcraft.");
 
     /**
      * Keys the shipped code uses with the original 1.7.10 key shape, kept
@@ -66,6 +70,9 @@ class LocalizationFileTest {
             "item.thaumcraft.itemgolemupgrade.2", "item.thaumcraft.itemgolemupgrade.3",
             "item.thaumcraft.itemgolemupgrade.4", "item.thaumcraft.itemgolemupgrade.5",
             "item.capacity.text", "item.ItemAmuletVis.text",
+            "gui.thaumcraft.arcane_bore.width", "gui.thaumcraft.arcane_bore.speed",
+            "gui.thaumcraft.arcane_bore.other", "gui.thaumcraft.arcane_bore.native",
+            "gui.thaumcraft.arcane_bore.fortune", "gui.thaumcraft.arcane_bore.silk",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
             "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror");
 

@@ -166,6 +166,96 @@ class ContainerLayoutTest {
         assertEquals(4, ContainerLayout.titleLabelY());
     }
 
+    // --------------------------------------------- alchemical furnace (gui_id 9)
+
+    @Test
+    void alchemicalFurnaceWidgetsAreTheOriginalsBlits() {
+        // ContainerAlchemyFurnace's two slots.
+        assertEquals(80, ContainerLayout.FURNACE_SLOT_INPUT_X);
+        assertEquals(8, ContainerLayout.FURNACE_SLOT_INPUT_Y);
+        assertEquals(80, ContainerLayout.FURNACE_SLOT_FUEL_X);
+        assertEquals(48, ContainerLayout.FURNACE_SLOT_FUEL_Y);
+        // GuiAlchemyFurnace's three scaled blits, at their rails.
+        assertEquals(80, ContainerLayout.FURNACE_FIRE_X);
+        assertEquals(26, ContainerLayout.FURNACE_FIRE_TOP);
+        assertEquals(16, ContainerLayout.FURNACE_FIRE_WIDTH);
+        assertEquals(20, ContainerLayout.FURNACE_FIRE_PIXELS, "getBurnTimeRemainingScaled(20)");
+        assertEquals(106, ContainerLayout.FURNACE_COOK_X);
+        assertEquals(13, ContainerLayout.FURNACE_COOK_TOP);
+        assertEquals(9, ContainerLayout.FURNACE_COOK_WIDTH);
+        assertEquals(46, ContainerLayout.FURNACE_COOK_PIXELS, "getCookProgressScaled(46)");
+        assertEquals(60, ContainerLayout.FURNACE_TANK_X);
+        assertEquals(8, ContainerLayout.FURNACE_TANK_TOP);
+        assertEquals(10, ContainerLayout.FURNACE_TANK_WIDTH);
+        assertEquals(55, ContainerLayout.FURNACE_TANK_HEIGHT);
+        assertEquals(61, ContainerLayout.FURNACE_VIS_X);
+        assertEquals(12, ContainerLayout.FURNACE_VIS_TOP);
+        assertEquals(8, ContainerLayout.FURNACE_VIS_WIDTH);
+        assertEquals(48, ContainerLayout.FURNACE_VIS_PIXELS, "getContentsScaled(48)");
+        assertEquals(200, ContainerLayout.FURNACE_FALLBACK_BURN_TIME, "the original's 0-burn guard");
+    }
+
+    @Test
+    void scaledProgressMatchesTheOriginalScaledGetters() {
+        // getCookProgressScaled(46): cook * 46 / smeltTime, bottom-anchored.
+        assertEquals(46, ContainerLayout.scaledProgress(100, 100, 46));
+        assertEquals(23, ContainerLayout.scaledProgress(50, 100, 46));
+        assertEquals(0, ContainerLayout.scaledProgress(0, 100, 46), "an idle furnace draws no fill");
+        assertEquals(0, ContainerLayout.scaledProgress(10, 0, 46), "a zero max reads as empty, no divide by zero");
+        assertEquals(46, ContainerLayout.scaledProgress(200, 100, 46), "the fill clamps at the rail height");
+        // The 1.7.10 furnace: cookTime 60 of a smeltTime 100 (the port's tile
+        // divides over its own furnaceMaxCookTime; the shape is the same).
+        assertEquals(27, ContainerLayout.scaledProgress(60, 100, 46));
+        assertEquals(13 + 46 - 27,
+                ContainerLayout.barTop(ContainerLayout.FURNACE_COOK_TOP, ContainerLayout.FURNACE_COOK_PIXELS,
+                        ContainerLayout.scaledProgress(60, 100, 46)),
+                "the fill's top edge sits so the bar grows from the rail bottom (13+46)");
+    }
+
+    // -------------------------------------------------- arcane bore (gui_id 15)
+
+    @Test
+    void arcaneBoreWidgetsAreTheOriginalsBlits() {
+        // ContainerArcaneBore: focus slot, pickaxe slot, short player grid.
+        assertEquals(26, ContainerLayout.BORE_SLOT_FOCUS_X);
+        assertEquals(18, ContainerLayout.BORE_SLOT_FOCUS_Y);
+        assertEquals(74, ContainerLayout.BORE_SLOT_PICKAXE_X);
+        assertEquals(18, ContainerLayout.BORE_SLOT_PICKAXE_Y);
+        assertEquals(59, ContainerLayout.BORE_PLAYER_GRID_TOP);
+        assertEquals(117, ContainerLayout.BORE_PLAYER_HOTBAR_TOP);
+        assertEquals(59 + 58, ContainerLayout.BORE_PLAYER_HOTBAR_TOP, "the original's 58 px grid→hotbar gap");
+        // GuiArcaneBore: the panel override and the readout block.
+        assertEquals(141, ContainerLayout.BORE_SHEET_HEIGHT, "the original's field_147000_g");
+        assertEquals(142, ContainerLayout.panelHeight(ContainerLayout.BORE_PLAYER_GRID_TOP),
+                "the vanilla derivation is 142; the 1 px sheet difference is the original's rounding");
+        assertEquals(74, ContainerLayout.BORE_BROKEN_X);
+        assertEquals(18, ContainerLayout.BORE_BROKEN_Y);
+        assertEquals(16, ContainerLayout.BORE_BROKEN_SIZE);
+        assertEquals(112, ContainerLayout.BORE_TEXT_X);
+        assertEquals(8, ContainerLayout.BORE_TEXT_Y);
+        assertEquals(0, ContainerLayout.BORE_TEXT_WIDTH_Y);
+        assertEquals(10, ContainerLayout.BORE_TEXT_SPEED_Y);
+        assertEquals(24, ContainerLayout.BORE_TEXT_OTHER_Y);
+        assertEquals(34, ContainerLayout.BORE_TEXT_ROWS_TOP);
+        assertEquals(9, ContainerLayout.BORE_TEXT_ROW_STEP);
+    }
+
+    @Test
+    void boreReadoutFormulasAreTheOriginals() {
+        // GuiArcaneBore: "Width: " + (1 + (area + maxRadius) * 2).
+        assertEquals(1, ContainerLayout.boreWidth(0, 0));
+        assertEquals(11, ContainerLayout.boreWidth(1, 4));
+        assertEquals(25, ContainerLayout.boreWidth(1, 11));
+        // The break icon gate: damage + 1 >= maxDamage.
+        assertTrue(ContainerLayout.borePickaxeNearBroken(150, 151));
+        assertTrue(ContainerLayout.borePickaxeNearBroken(151, 151));
+        assertEquals(false, ContainerLayout.borePickaxeNearBroken(149, 151));
+        // GuiArcaneBore's three decimal color literals.
+        assertEquals(0xFF000000 | 12632256, ContainerLayout.BORE_COLOR_NATIVE, "12632256 native");
+        assertEquals(0xFF000000 | 15648330, ContainerLayout.BORE_COLOR_FORTUNE, "15648330 fortune");
+        assertEquals(0xFF000000 | 8421631, ContainerLayout.BORE_COLOR_SILK, "8421631 silk");
+    }
+
     // ------------------------------------- no drift against cr1 (TrunkScreen)
 
     @Test

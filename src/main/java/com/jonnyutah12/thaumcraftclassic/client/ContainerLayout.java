@@ -115,6 +115,109 @@ public final class ContainerLayout {
     public static final int SPA_FLUID_WIDTH = 10;
     public static final int SPA_FLUID_PIXELS = 48;
 
+    // ------------------------------------------- alchemical furnace (gui_id 9)
+
+    /**
+     * The original alchemical-furnace screen and container:
+     * {@code GuiAlchemyFurnace} keeps the 1.7.10 {@code GuiContainer} default
+     * panel (176x166) over the vanilla player grid at {@code 84}/{@code 142}
+     * (the {@code PLAYER_GRID_TOP}/{@code PLAYER_HOTBAR_TOP} constants), and
+     * {@code ContainerAlchemyFurnace} places its two machine slots at
+     * {@code (80,8)} (the aspect-limited input) and {@code (80,48)} (the fuel
+     * slot). All three widgets are bottom-anchored fills:
+     * the 16x20 fire at {@code (80,26)}
+     * ({@code getBurnTimeRemainingScaled(20)} over {@code currentItemBurnTime},
+     * guard 200), the 9x46 cook rail at {@code (106,13)}
+     * ({@code getCookProgressScaled(46)} over {@code smeltTime}), and the 8x48
+     * vis column at {@code (61,12)} ({@code getContentsScaled(48)} over the
+     * 50-unit tank) inside the 10x55 tank frame at {@code (60,8)}.
+     */
+    public static final int FURNACE_SLOT_INPUT_X = 80;
+    public static final int FURNACE_SLOT_INPUT_Y = 8;
+    public static final int FURNACE_SLOT_FUEL_X = 80;
+    public static final int FURNACE_SLOT_FUEL_Y = 48;
+
+    public static final int FURNACE_FIRE_X = 80;
+    public static final int FURNACE_FIRE_TOP = 26;
+    public static final int FURNACE_FIRE_WIDTH = 16;
+    public static final int FURNACE_FIRE_PIXELS = 20;
+
+    public static final int FURNACE_COOK_X = 106;
+    public static final int FURNACE_COOK_TOP = 13;
+    public static final int FURNACE_COOK_WIDTH = 9;
+    public static final int FURNACE_COOK_PIXELS = 46;
+
+    public static final int FURNACE_TANK_X = 60;
+    public static final int FURNACE_TANK_TOP = 8;
+    public static final int FURNACE_TANK_WIDTH = 10;
+    public static final int FURNACE_TANK_HEIGHT = 55;
+
+    public static final int FURNACE_VIS_X = 61;
+    public static final int FURNACE_VIS_TOP = 12;
+    public static final int FURNACE_VIS_WIDTH = 8;
+    public static final int FURNACE_VIS_PIXELS = 48;
+
+    /** Original {@code getBurnTimeRemainingScaled} guard: a 0 burn max reads as 200. */
+    public static final int FURNACE_FALLBACK_BURN_TIME = 200;
+
+    /** Authored stand-in for the original cook-bar texels, overlay-only (BD-17). */
+    public static final int FURNACE_COOK_FILL = 0xFFE8AF5E;
+
+    // ------------------------------------------------- arcane bore (gui_id 15)
+
+    /**
+     * The original bore screen: {@code GuiArcaneBore} overrides the panel to
+     * 176x141 and {@code ContainerArcaneBore} binds the player grid at
+     * {@code 59} with the hotbar at {@code 117} — a short panel. The vanilla
+     * derivation from the player origin (this class's rule) gives 142; the
+     * 1 px sheet difference is the original's own rounding, recorded in the
+     * {@link #BORE_SHEET_HEIGHT} doc, not applied.
+     */
+    public static final int BORE_PLAYER_GRID_TOP = 59;
+    public static final int BORE_PLAYER_HOTBAR_TOP = 117;
+
+    /** The original's literal {@code field_147000_g = 141}; the derived panel is 142. */
+    public static final int BORE_SHEET_HEIGHT = 141;
+
+    /** {@code ContainerArcaneBore}: the excavation-focus slot at {@code (26,18)}. */
+    public static final int BORE_SLOT_FOCUS_X = 26;
+    public static final int BORE_SLOT_FOCUS_Y = 18;
+
+    /** {@code ContainerArcaneBore}: the pickaxe slot at {@code (74,18)}. */
+    public static final int BORE_SLOT_PICKAXE_X = 74;
+    public static final int BORE_SLOT_PICKAXE_Y = 18;
+
+    /**
+     * The 16x16 "about to break" icon {@code GuiArcaneBore} blits over the
+     * pickaxe slot when {@code damage + 1 >= maxDamage}.
+     */
+    public static final int BORE_BROKEN_X = 74;
+    public static final int BORE_BROKEN_Y = 18;
+    public static final int BORE_BROKEN_SIZE = 16;
+
+    /** Authored stand-in for the original broken-tool texels (BD-17). */
+    public static final int BORE_BROKEN_FILL = 0xFFB6412F;
+
+    /**
+     * The 0.5-scaled readout block: {@code GuiArcaneBore} translates to
+     * {@code (112,8)}, scales 0.5, and draws Width at {@code (0,0)}, Speed at
+     * {@code (0,10)}, "Other properties:" at {@code (0,24)}, then a property
+     * list starting at {@code y = 34} stepping 9.
+     */
+    public static final int BORE_TEXT_X = 112;
+    public static final int BORE_TEXT_Y = 8;
+    public static final int BORE_TEXT_WIDTH_Y = 0;
+    public static final int BORE_TEXT_SPEED_Y = 10;
+    public static final int BORE_TEXT_OTHER_Y = 24;
+    public static final int BORE_TEXT_ROWS_TOP = 34;
+    public static final int BORE_TEXT_ROW_STEP = 9;
+
+    /** The original's three property colours (GuiArcaneBore decimal literals). */
+    public static final int BORE_COLOR_NATIVE = 0xFFC0C0C0;   // 12632256
+    public static final int BORE_COLOR_FORTUNE = 0xFFEEC64A;  // 15648330
+    public static final int BORE_COLOR_SILK = 0xFF8080FF;     // 8421631
+    public static final int BORE_COLOR_TEXT = 0xFFFFFFFF;     // 16777215
+
     // ------------------------------------------------------------- geometry
 
     /** Panel top for a given player-grid origin (vanilla's 13 px piece offset). */
@@ -195,6 +298,39 @@ public final class ContainerLayout {
     /** The original bar's top edge for a fill height (it drains downward). */
     public static int barTop(final int barTop, final int pixels, final int fill) {
         return barTop + pixels - fill;
+    }
+
+    /**
+     * A bottom-anchored gauge fill, the original's scaled-getter shape shared by
+     * every alchemical-furnace widget: {@code getCookProgressScaled(46)},
+     * {@code getContentsScaled(48)} and {@code getBurnTimeRemainingScaled(20)}
+     * are all {@code value * pixels / max} clamped into the rail, with a
+     * non-positive max or value reading as empty. The fill's top edge is
+     * {@link #barTop(int, int, int)} of its rail, so every gauge grows upward
+     * from its rail bottom — exactly how the three furnace blits anchor.
+     */
+    public static int scaledProgress(final int value, final int max, final int pixels) {
+        if (value <= 0 || max <= 0) {
+            return 0;
+        }
+        final int fill = value * pixels / max;
+        return Math.min(fill, pixels);
+    }
+
+    /**
+     * The bore's drawn width, {@code GuiArcaneBore}'s
+     * {@code 1 + (area + maxRadius) * 2}.
+     */
+    public static int boreWidth(final int area, final int maxRadius) {
+        return 1 + (area + maxRadius) * 2;
+    }
+
+    /**
+     * The bore's break-icon gate: {@code GuiArcaneBore} blits the 16x16 icon
+     * when {@code damage + 1 >= maxDamage} on the pickaxe slot's stack.
+     */
+    public static boolean borePickaxeNearBroken(final int damage, final int maxDamage) {
+        return damage + 1 >= maxDamage;
     }
 
     private ContainerLayout() {

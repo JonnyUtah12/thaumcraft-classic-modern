@@ -93,6 +93,15 @@ public final class LocalizationGameTest {
             Map.entry("container.thaumcraft.deconstructiontable", "TileDeconstructionTable.getDisplayName"),
             Map.entry("container.thaumcraft.magicbox", "TileMagicBox.getDisplayName"),
             Map.entry("container.thaumcraft.spa", "TileSpa.getDisplayName"),
+            // Screen readout rows (TC-M7-04-m1): the original GuiArcaneBore
+            // draws hardcoded English strings (GuiArcaneBore:45-73); the port
+            // localizes them, so the keys ride the code-translatable rule.
+            Map.entry("gui.thaumcraft.arcane_bore.width", "ArcaneBoreScreen readout row"),
+            Map.entry("gui.thaumcraft.arcane_bore.speed", "ArcaneBoreScreen readout row"),
+            Map.entry("gui.thaumcraft.arcane_bore.other", "ArcaneBoreScreen readout row"),
+            Map.entry("gui.thaumcraft.arcane_bore.native", "ArcaneBoreScreen readout row"),
+            Map.entry("gui.thaumcraft.arcane_bore.fortune", "ArcaneBoreScreen readout row"),
+            Map.entry("gui.thaumcraft.arcane_bore.silk", "ArcaneBoreScreen readout row"),
             // tooltip / action lines
             Map.entry("item.thaumcraft.itemlootbag.tooltip", "ItemLootBag.appendHoverText"),
             Map.entry("item.thaumcraft.trunkspawner.tooltip", "ItemTrunkSpawner.appendHoverText"),

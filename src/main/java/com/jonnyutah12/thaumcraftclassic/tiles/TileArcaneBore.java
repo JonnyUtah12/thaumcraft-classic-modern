@@ -18,10 +18,14 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.common.util.FakePlayerFactory;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -29,6 +33,8 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -58,7 +64,8 @@ import java.util.UUID;
  * and the auto-repair vis bookkeeping (IRepairable, TC-M6-02). The
  * structure, NBT and dig loop are the original's.</p>
  */
-public class TileArcaneBore extends TileOwned implements BlockDeviceBase.TickingDeviceTile {
+public class TileArcaneBore extends TileOwned implements BlockDeviceBase.TickingDeviceTile,
+        net.minecraft.world.Container, MenuProvider, BlockDeviceBase.DeviceUseTile {
 
     public static final int SLOTS = 2;
 
@@ -216,9 +223,10 @@ public class TileArcaneBore extends TileOwned implements BlockDeviceBase.Ticking
         return level.registryAccess().registryOrThrow(Registries.ENCHANTMENT).getHolderOrThrow(key);
     }
 
-    /** The original checked {@code instanceof ItemFocusExcavation}; that item
-     *  is TC-M6-02's, so match its contract id lazily. */
-    private static boolean isExcavationFocus(final ItemStack stack) {
+    /** The original's {@code instanceof ItemFocusExcavation}; that item is
+     *  TC-M6-02's, so match its contract id. Shared with the bore menu's
+     *  focus slot (TC-M7-04-m1). */
+    public static boolean isExcavationFocus(final ItemStack stack) {
         if (stack.isEmpty()) {
             return false;
         }
@@ -461,6 +469,98 @@ public class TileArcaneBore extends TileOwned implements BlockDeviceBase.Ticking
         contents[slot] = stack == null ? ItemStack.EMPTY : stack;
         refreshTools();
         setChanged();
+    }
+
+    // --- Container surface for the gui_id 15 menu (TC-M7-04-m1) ------------
+
+    @Override
+    public int getContainerSize() {
+        return SLOTS;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return contents[0].isEmpty() && contents[1].isEmpty();
+    }
+
+    @Override
+    public ItemStack getItem(final int slot) {
+        return contents[slot];
+    }
+
+    @Override
+    public ItemStack removeItem(final int slot, final int count) {
+        final ItemStack stack = contents[slot];
+        if (stack.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        final ItemStack out = stack.getCount() <= count ? stack.copy() : stack.split(count);
+        refreshTools();
+        setChanged();
+        return out;
+    }
+
+    @Override
+    public ItemStack removeItemNoUpdate(final int slot) {
+        final ItemStack stack = contents[slot];
+        contents[slot] = ItemStack.EMPTY;
+        return stack;
+    }
+
+    @Override
+    public void clearContent() {
+        contents[0] = ItemStack.EMPTY;
+        contents[1] = ItemStack.EMPTY;
+        refreshTools();
+        setChanged();
+    }
+
+    @Override
+    public int getMaxStackSize() {
+        return 64;
+    }
+
+    @Override
+    public boolean canPlaceItem(final int slot, final ItemStack stack) {
+        // ContainerArcaneBore's slot classes: focus in 0, picks in 1.
+        return slot == 0 ? isExcavationFocus(stack)
+                : !stack.isEmpty() && stack.is(net.minecraft.tags.ItemTags.PICKAXES);
+    }
+
+    // --- MenuProvider (gui_id 15, TC-M7-04-m1) -----------------------------
+
+    @Override
+    public Component getDisplayName() {
+        // The original tile's window title is the literal "Arcane Bore"
+        // (TileArcaneBore.getInventoryName); the port keys GUI titles by gui
+        // id, the container.thaumcraft.gui_* convention.
+        return Component.translatable("container.thaumcraft.gui_arcane_bore");
+    }
+
+    @Override
+    public AbstractContainerMenu createMenu(final int windowId, final Inventory playerInventory,
+                                            final Player player) {
+        return new com.jonnyutah12.thaumcraftclassic.menus.ArcaneBoreMenu(
+                windowId, playerInventory, this);
+    }
+
+    /**
+     * The original's {@code BlockWoodenDevice:351} gate for the bore head
+     * (meta 5): right-click opens the bore GUI only when the hand holds no
+     * wand — a wand right-click is consumed with no GUI (the wand-aim path
+     * is TC-M6-01's). ItemWandCasting is not registered, so the gate is the
+     * id contract (the {@link #isExcavationFocus} convention); returning
+     * {@code PASS} hands the seam-less cases to {@link MenuProvider}.
+     */
+    @Override
+    public InteractionResult useWithoutItem(final ServerLevel level, final BlockPos pos,
+                                            final ServerPlayer player) {
+        final ItemStack held = player.getMainHandItem();
+        final ResourceLocation id = BuiltInRegistries.ITEM.getKey(held.getItem());
+        if (id.getNamespace().equals("thaumcraft") && id.getPath().equals("itemwand")) {
+            return InteractionResult.CONSUME;
+        }
+        return InteractionResult.PASS;
     }
 
     @Override

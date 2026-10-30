@@ -4,8 +4,12 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaSto
 import com.jonnyutah12.thaumcraftclassic.tiles.TileArcaneFurnace;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -17,6 +21,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
@@ -165,5 +170,28 @@ public class BlockArcaneFurnace extends Block implements EntityBlock {
     protected int getSignal(final BlockState state, final BlockGetter level, final BlockPos pos,
                             final Direction direction) {
         return direction == Direction.UP ? 1 : 0;
+    }
+
+    /**
+     * The alchemical furnace screen (original {@code gui_id} 9, TC-M7-04-m1):
+     * a right-click on the base plate opens its tile's menu — the
+     * {@link MenuProvider} seam the crate's furniture blocks ship
+     * (BlockMagicBox:50). The original opened the same window from
+     * {@code TileAlchemyFurnace}, the body this tile models; the nozzle (the
+     * original's metadata 10) has no window, so the seam exists on the base
+     * variant only.
+     */
+    @Override
+    protected InteractionResult useWithoutItem(final BlockState state, final Level level,
+                                               final BlockPos pos, final Player player,
+                                               final BlockHitResult hitResult) {
+        if (level.isClientSide) {
+            return InteractionResult.CONSUME;
+        }
+        if (level.getBlockEntity(pos) instanceof MenuProvider provider) {
+            player.openMenu(provider, pos);
+            return InteractionResult.CONSUME;
+        }
+        return InteractionResult.PASS;
     }
 }

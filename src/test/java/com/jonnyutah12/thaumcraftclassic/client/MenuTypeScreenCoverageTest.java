@@ -2,6 +2,8 @@ package com.jonnyutah12.thaumcraftclassic.client;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.jonnyutah12.thaumcraftclassic.menus.AlchemyFurnaceMenu;
+import com.jonnyutah12.thaumcraftclassic.menus.ArcaneBoreMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.DeconstructionTableMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.HandMirrorMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.MagicBoxMenu;
@@ -57,6 +59,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * dropped). A live check of the screen map needs a real client; the game-test
  * harness is a dedicated server and never sees the event. Rendered pixels are
  * not proved by anything in this repo's CI.</p>
+ *
+ * <p>TC-M7-04-m1 grew the table with the two device machines ({@code
+ * gui_alchemy_furnace} = original gui_id 9, {@code gui_arcane_bore} = gui_id
+ * 15), whose tiles gained {@code MenuProvider}s in that commit. The crucible
+ * is not in this table: the 1.7.10 crucible ships no GUI at all (no {@code
+ * GuiCrucible} in the reference {@code client/gui/}, and both proxy
+ * {@code getServerGuiElement}/{@code getClientGuiElement} switches return
+ * null for every crucible id), proved by {@code CrucibleGuiParityTest}.</p>
  */
 class MenuTypeScreenCoverageTest {
 
@@ -76,12 +86,19 @@ class MenuTypeScreenCoverageTest {
                 MagicBoxMenu.class, "gui_magic_box"));
         SCREENS.put(SpaScreen.class, new ScreenUnderTest("CatalogFurniture", "MENU_SPA",
                 SpaMenu.class, "gui_spa"));
+        // TC-M7-04-m1: the device machines (original gui ids 9 and 15).
+        SCREENS.put(AlchemyFurnaceScreen.class, new ScreenUnderTest("CatalogEssentiaStorage", "MENU_ALCHEMY_FURNACE",
+                AlchemyFurnaceMenu.class, "gui_alchemy_furnace"));
+        SCREENS.put(ArcaneBoreScreen.class, new ScreenUnderTest("CatalogDevices", "MENU_ARCANE_BORE",
+                ArcaneBoreMenu.class, "gui_arcane_bore"));
 
         EXPECTED_HOLDERS.put("CatalogTrinketsLoot.GUI_TRUNK", "gui_trunk");
         EXPECTED_HOLDERS.put("CatalogTrinketsLoot.GUI_HAND_MIRROR", "gui_hand_mirror");
         EXPECTED_HOLDERS.put("CatalogFurniture.MENU_DECON_TABLE", "gui_decon_table");
         EXPECTED_HOLDERS.put("CatalogFurniture.MENU_MAGIC_BOX", "gui_magic_box");
         EXPECTED_HOLDERS.put("CatalogFurniture.MENU_SPA", "gui_spa");
+        EXPECTED_HOLDERS.put("CatalogEssentiaStorage.MENU_ALCHEMY_FURNACE", "gui_alchemy_furnace");
+        EXPECTED_HOLDERS.put("CatalogDevices.MENU_ARCANE_BORE", "gui_arcane_bore");
     }
 
     private record ScreenUnderTest(String catalog, String holder, Class<?> menu, String id) {
@@ -134,6 +151,16 @@ class MenuTypeScreenCoverageTest {
         }
     }
 
+    @Test
+    void theBoreReadoutTextKeysAreShipped() throws Exception {
+        // GuiArcaneBore's six literals (the original hard-codes English; the
+        // port ships them as lang keys so the readout is translatable).
+        for (final String suffix : new String[] {"width", "speed", "other", "native", "fortune", "silk"}) {
+            final String key = "gui.thaumcraft.arcane_bore." + suffix;
+            assertTrue(langKeyIsShipped(key), key + " must ship (the bore readout rows)");
+        }
+    }
+
     // --------------------------------------------------- coverage level
 
     @Test
@@ -146,16 +173,21 @@ class MenuTypeScreenCoverageTest {
                     "a registered menu type with no screen registration: "
                             + expected.catalog() + "." + expected.holder());
         }
-        assertEquals(5, SCREENS.size(), "the five gui rows whose menus exist today");
+        assertEquals(7, SCREENS.size(), "the seven gui rows whose menus exist today "
+                + "(five from TC-M7-04-s, two device machines from TC-M7-04-m1)");
     }
 
     @Test
-    void catalogSourcesDeclareExactlyTheFiveScreensMenus() throws Exception {
+    void catalogSourcesDeclareExactlyTheWiredScreensMenus() throws Exception {
         final Map<String, String> declared = new LinkedHashMap<>();
         collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogTrinketsLoot.java",
                 "CatalogTrinketsLoot", declared);
         collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogFurniture.java",
                 "CatalogFurniture", declared);
+        collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogEssentiaStorage.java",
+                "CatalogEssentiaStorage", declared);
+        collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogDevices.java",
+                "CatalogDevices", declared);
         assertEquals(EXPECTED_HOLDERS, declared,
                 "the catalogs' MenuType declarations and this test's expectations must agree; a new menu type "
                         + "needs a screen and an entry here");
