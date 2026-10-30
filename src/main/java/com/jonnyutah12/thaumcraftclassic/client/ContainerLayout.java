@@ -299,6 +299,13 @@ public final class ContainerLayout {
     public static final int TAU_BAR_FILL_Y = 58;
     public static final int TAU_BAR_FILL_H = 4;
     public static final int TAU_BAR_FILL_SCALE = 12;
+    /**
+     * The bar fill <b>cell</b> in {@code gui_thaumatorium.png}: measured on the
+     * shipped sheet, the alpha-opaque run at {@code (176,0)} is exactly
+     * <b>12x4</b> (and the background cell at {@code (176,8)} is exactly 14x6),
+     * so the fill scale is the cell's own width.
+     */
+    public static final int TAU_BAR_FILL_CELL = TAU_BAR_FILL_SCALE;
     public static final int TAU_VISIBLE_ASPECTS = 6;
 
     /**
@@ -442,6 +449,26 @@ public final class ContainerLayout {
      * verbatim, uncapped: when the tile holds more than the recipe needs the
      * original's fill runs past its 14 px background, and the port reproduces
      * that rather than tidying it.
+     */
+    /**
+     * The fill width <b>as it is drawn</b>: the original's uncapped arithmetic,
+     * saturated at the 12-texel fill cell. The 1.7.10 blit
+     * ({@code GuiThaumatorium.java:150-152}) has no clamp and no zero guard, so
+     * an overfull bar (5 of a needed 4 → 15) sampled the sheet's pixels
+     * <i>right of</i> the fill cell — a 1.7.10 {@code drawTexturedModalRect}
+     * reads raw texture coordinates. A 1.21.1 {@code GuiGraphics#blit} samples a
+     * sprite's region, so asking for 15 texels from a 12-texel cell is not the
+     * same read and a 0-wide blit is degenerate; the port saturates at the cell
+     * and skips the empty bar. The arithmetic itself stays uncapped and pinned
+     * by {@link #thaumatoriumBarFill} (BD-18's render-state list).
+     */
+    public static int thaumatoriumBarFillDrawn(final int have, final int need) {
+        return Math.min(thaumatoriumBarFill(have, need), TAU_BAR_FILL_CELL);
+    }
+
+    /**
+     * The fill width <b>as the source computes it</b>, uncapped:
+     * {@code (int)(have / need * 12.0F)} — 5 of a needed 4 is 15.
      */
     public static int thaumatoriumBarFill(final int have, final int need) {
         if (need <= 0) {

@@ -60,7 +60,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * gate <b>reports</b> which side it took, so the fallback is documented
  * geometry rather than a silent path: the flat panel, the vanilla slot frames,
  * the outlined pager boxes and the aspect-coloured tag square of
- * TC-M7-04-m2c. {@code ThaumatoriumGameTest.thaumatoriumDisplayGlyphs} pins the
+ * TC-M7-04-m2c. {@code ThaumatoriumGameTest.theAspectDisplayCarriesTheAspectItself} pins the
  * mapped sheet, the 48 sprite paths and every UV this screen names. The original
  * drew no title (its foreground layer is empty), so the port draws one, as in
  * BD-18.</p>
@@ -289,18 +289,23 @@ public class ThaumatoriumScreen extends AbstractContainerScreen<ThaumatoriumMenu
                             ContainerLayout.TAU_BAR_W, ContainerLayout.TAU_BAR_H,
                             ContainerLayout.PANEL_FRAME);
                 }
-                // The original's uncapped fill: (int)(have / need * 12.0F) —
-                // 5 of a needed 4 runs 15 px of fill over a 14 px background.
-                if (!ScreenPanel.drawSheet(guiGraphics, ContainerLayout.TAU_SHEET,
-                        this.leftPos, this.topPos,
-                        ContainerLayout.thaumatoriumBarFillX(pos), ContainerLayout.TAU_BAR_FILL_Y,
-                        ContainerLayout.TAU_UV_BAR_FILL_U, ContainerLayout.TAU_UV_BAR_FILL_V,
-                        ContainerLayout.thaumatoriumBarFill(have, need), ContainerLayout.TAU_BAR_FILL_H,
-                        ContainerLayout.withAlpha(rgb, 1.0F))) {
-                    ScreenPanel.fillArea(guiGraphics, this.leftPos, this.topPos,
+                // The original's uncapped arithmetic — (int)(have / need *
+                // 12.0F), 5 of a needed 4 is 15 — drawn saturated at the
+                // 12-texel fill cell and skipped at zero
+                // (ContainerLayout#thaumatoriumBarFillDrawn).
+                final int fill = ContainerLayout.thaumatoriumBarFillDrawn(have, need);
+                if (fill > 0) {
+                    if (!ScreenPanel.drawSheet(guiGraphics, ContainerLayout.TAU_SHEET,
+                            this.leftPos, this.topPos,
                             ContainerLayout.thaumatoriumBarFillX(pos), ContainerLayout.TAU_BAR_FILL_Y,
-                            ContainerLayout.thaumatoriumBarFill(have, need), ContainerLayout.TAU_BAR_FILL_H,
-                            ContainerLayout.withAlpha(rgb, 1.0F));
+                            ContainerLayout.TAU_UV_BAR_FILL_U, ContainerLayout.TAU_UV_BAR_FILL_V,
+                            fill, ContainerLayout.TAU_BAR_FILL_H,
+                            ContainerLayout.withAlpha(rgb, 1.0F))) {
+                        ScreenPanel.fillArea(guiGraphics, this.leftPos, this.topPos,
+                                ContainerLayout.thaumatoriumBarFillX(pos), ContainerLayout.TAU_BAR_FILL_Y,
+                                fill, ContainerLayout.TAU_BAR_FILL_H,
+                                ContainerLayout.withAlpha(rgb, 1.0F));
+                    }
                 }
             }
             AspectTagRenderer.drawTag(guiGraphics, this.font,

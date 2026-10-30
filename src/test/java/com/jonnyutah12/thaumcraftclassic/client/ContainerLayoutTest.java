@@ -424,6 +424,22 @@ class ContainerLayoutTest {
         assertEquals(0, ContainerLayout.TAU_UV_BAR_FILL_V);
         assertEquals(4, ContainerLayout.TAU_BAR_FILL_H);
 
+        // The two bar cells MEASURED on the shipped sheet: the alpha-opaque run
+        // at (176,0) is exactly 12x4 and the one at (176,8) exactly 14x6, so the
+        // fill scale IS the cell's own width. The source clamps nothing
+        // (GuiThaumatorium.java:150-152) — 5 of a needed 4 is 15 texels read
+        // straight off raw texture coordinates — so the DRAWN width saturates at
+        // the cell (a 1.21.1 blit samples a sprite's region, not raw coordinates)
+        // while the arithmetic stays uncapped and pinned here (BD-18's
+        // render-state list; the empty bar is skipped, not blitted degenerate).
+        assertEquals(12, ContainerLayout.TAU_BAR_FILL_CELL);
+        assertEquals(15, ContainerLayout.thaumatoriumBarFill(5, 4));
+        assertEquals(12, ContainerLayout.thaumatoriumBarFillDrawn(5, 4));
+        assertEquals(12, ContainerLayout.thaumatoriumBarFillDrawn(14, 4));
+        assertEquals(9, ContainerLayout.thaumatoriumBarFillDrawn(3, 4));
+        assertEquals(0, ContainerLayout.thaumatoriumBarFillDrawn(0, 4));
+        assertEquals(12, ContainerLayout.thaumatoriumBarFillDrawn(144, 1));
+
         // The 24x24 queue box cell (176,56) and the 48x48 highlight (176,96).
         assertEquals(176, ContainerLayout.TAU_UV_PULSE_U);
         assertEquals(56, ContainerLayout.TAU_UV_PULSE_V);
