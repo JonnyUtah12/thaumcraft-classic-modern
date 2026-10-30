@@ -68,7 +68,7 @@ public final class ModRegistration {
         // shared ModItems holder; class-init trigger only, no new bus wiring.
         CatalogBaubles.init(); // TC-M8-02 bauble items
         CatalogWands.init(modEventBus); // TC-M6-01 wand items + thaumcraft:wand_component registry
-        CatalogFoci.init(); // TC-M6-02 focus items + the focus pouch
+        CatalogFoci.init(modEventBus); // TC-M6-02 focus items + the focus pouch; TC-M7-04-m3 adds its menu type
         FocusSpells.registerAll(); // TC-M6-03-s: the ten per-focus spell bodies on the casting seam
 
         ModDataComponents.DATA_COMPONENT_TYPES.register(modEventBus);

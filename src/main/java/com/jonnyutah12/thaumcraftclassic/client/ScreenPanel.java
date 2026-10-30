@@ -26,16 +26,31 @@ final class ScreenPanel {
     /** The flat panel plus the vanilla player piece, for a player-grid origin. */
     static void drawBackground(final GuiGraphics guiGraphics, final int left, final int top,
                                final int playerGridTop) {
+        drawBackground(guiGraphics, left, top, playerGridTop,
+                ContainerLayout.PANEL_WIDTH, ContainerLayout.panelHeight(playerGridTop));
+    }
+
+    /**
+     * The same panel for a container whose own sheet is not the 1.7.10 default
+     * size. The focus pouch's {@code gui_focuspouch.png} is 175x232
+     * ({@code GuiFocusPouch.java:19-20}), so the vanilla player piece — 176 px
+     * wide and 96 px tall, i.e. 234 px down from the piece top the piece
+     * implies — is cropped to the panel on both axes: 1 px of its right edge
+     * and 2 px of its bottom shadow. The 1 px frame is drawn over the full
+     * panel, so the crop stays inside the frame (docs/BEHAVIORAL_DEVIATIONS.md
+     * BD-18).
+     */
+    static void drawBackground(final GuiGraphics guiGraphics, final int left, final int top,
+                               final int playerGridTop, final int panelWidth, final int panelHeight) {
         final int playerPanelTop = ContainerLayout.playerPanelTop(playerGridTop);
-        final int panelHeight = ContainerLayout.panelHeight(playerGridTop);
-        guiGraphics.fill(left, top, left + ContainerLayout.PANEL_WIDTH, top + playerPanelTop,
+        guiGraphics.fill(left, top, left + panelWidth, top + playerPanelTop,
                 ContainerLayout.PANEL_FILL);
-        guiGraphics.renderOutline(left, top, ContainerLayout.PANEL_WIDTH, panelHeight,
+        guiGraphics.renderOutline(left, top, panelWidth, panelHeight,
                 ContainerLayout.PANEL_FRAME);
         guiGraphics.blit(ContainerLayout.PLAYER_PANEL,
                 left, top + playerPanelTop,
                 ContainerLayout.PLAYER_PANEL_U, ContainerLayout.PLAYER_PANEL_V,
-                ContainerLayout.PANEL_WIDTH, ContainerLayout.PLAYER_PANEL_HEIGHT);
+                panelWidth, ContainerLayout.playerPieceHeight(panelHeight, playerGridTop));
     }
 
     /** One vanilla slot square, one pixel up-left of the slot's item anchor. */

@@ -115,6 +115,44 @@ public final class ContainerLayout {
     public static final int SPA_FLUID_WIDTH = 10;
     public static final int SPA_FLUID_PIXELS = 48;
 
+    // ---------------------------------------------------------- focus pouch
+
+    /**
+     * The focus pouch is the one container in this crate that is not the
+     * 1.7.10 default size: {@code GuiFocusPouch} sets
+     * {@code guiWidth = 175} / {@code guiHeight = 232}
+     * ({@code GuiFocusPouch.java:19-20}) so its 6x3 focus grid fits above a
+     * player grid that sits at {@code y = 151} with the hotbar at {@code 209}
+     * ({@code ContainerFocusPouch.bindPlayerInventory}).
+     *
+     * <p>Vanilla's 96 px player piece is 2 px taller than the original sheet
+     * ({@code 151 - 13 + 96 = 234 > 232}), and its width is 176 against the
+     * sheet's 175: {@code ScreenPanel.drawBackground} crops the piece to the
+     * panel on both axes, which is the 1 px right edge and the 2 px bottom
+     * shadow row of the vanilla piece (docs/BEHAVIORAL_DEVIATIONS.md BD-18).</p>
+     */
+    public static final int POUCH_PANEL_WIDTH = 175;
+    public static final int POUCH_PANEL_HEIGHT = 232;
+
+    /** The original's 6x3 focus grid: {@code (37 + i%6*18, 51 + i/6*18)}. */
+    public static final int POUCH_COLUMNS = 6;
+    public static final int POUCH_ROWS = 3;
+    public static final int POUCH_GRID_X = 37;
+    public static final int POUCH_GRID_Y = 51;
+
+    /** The pouch's own player-grid / hotbar origins (not the 84/142 default). */
+    public static final int POUCH_PLAYER_GRID_TOP = 151;
+    public static final int POUCH_HOTBAR_TOP = 209;
+
+    /**
+     * The 16x16 marker {@code GuiFocusPouch.func_146979_b} blits over the
+     * hotbar slot that carries the pouch, at {@code (8 + currentItem*18, 209)}
+     * — the slot's own item anchor. The original texels are overlay-only, so
+     * the screen frames the box instead (BD-18).
+     */
+    public static final int POUCH_MARKER_X_ORIGIN = 8;
+    public static final int POUCH_MARKER_SIZE = 16;
+
     // ------------------------------------------------------------- geometry
 
     /** Panel top for a given player-grid origin (vanilla's 13 px piece offset). */
@@ -195,6 +233,37 @@ public final class ContainerLayout {
     /** The original bar's top edge for a fill height (it drains downward). */
     public static int barTop(final int barTop, final int pixels, final int fill) {
         return barTop + pixels - fill;
+    }
+
+    /**
+     * The original pouch grid's slot anchor: slot {@code i} of the 6x3 grid is
+     * at {@code (37 + i%6*18, 51 + i/6*18)} ({@code ContainerFocusPouch.java:31-33}).
+     */
+    public static int pouchSlotX(final int index) {
+        return POUCH_GRID_X + index % POUCH_COLUMNS * SLOT_FRAME;
+    }
+
+    public static int pouchSlotY(final int index) {
+        return POUCH_GRID_Y + index / POUCH_COLUMNS * SLOT_FRAME;
+    }
+
+    /** The x of the pouch marker for the hotbar index carrying the pouch. */
+    public static int pouchMarkerX(final int hotbarSlot) {
+        return POUCH_MARKER_X_ORIGIN + hotbarSlot * SLOT_FRAME;
+    }
+
+    /** The bottom edge of the original 6x3 focus grid (last slot anchor + 17). */
+    public static int pouchGridBottom() {
+        return pouchSlotY(POUCH_COLUMNS * POUCH_ROWS - 1) + SLOT_FRAME - 1;
+    }
+
+    /**
+     * The vanilla player piece cropped to a panel that is shorter than the
+     * piece: the pouch's 232 px sheet leaves {@code 232 - 138 = 94} px of the
+     * 96 px piece (BD-18).
+     */
+    public static int playerPieceHeight(final int panelHeight, final int playerGridTop) {
+        return Math.min(PLAYER_PANEL_HEIGHT, panelHeight - playerPanelTop(playerGridTop));
     }
 
     private ContainerLayout() {

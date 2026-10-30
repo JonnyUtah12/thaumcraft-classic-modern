@@ -4,13 +4,21 @@ import com.jonnyutah12.thaumcraftclassic.api.foci.Focus;
 import com.jonnyutah12.thaumcraftclassic.foci.Focuses;
 import com.jonnyutah12.thaumcraftclassic.items.foci.ItemFocus;
 import com.jonnyutah12.thaumcraftclassic.items.foci.ItemFocusPouch;
+import com.jonnyutah12.thaumcraftclassic.menus.FocusPouchMenu;
 import com.jonnyutah12.thaumcraftclassic.registration.ModItems;
+import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import net.minecraft.world.flag.FeatureFlags;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.minecraft.core.registries.Registries;
 
 /**
  * TC-M6-02 catalog holder: the wand-focus family — the focus pouch and the ten
@@ -44,6 +52,19 @@ import net.neoforged.neoforge.registries.DeferredItem;
  * recipe rows owned by the recipe milestones.</p>
  */
 public final class CatalogFoci {
+
+    /**
+     * This family's menu types (TC-M7-04-m3): the focus pouch GUI, the
+     * {@code gui_focus_pouch} csv row, whose item TC-M6-02 registered and
+     * whose javadoc handed the container GUI to TC-M7-04.
+     */
+    public static final DeferredRegister<MenuType<?>> MENUS =
+            DeferredRegister.create(Registries.MENU, ThaumcraftClassic.MOD_ID);
+
+    /** GUI_FOCUS_POUCH (original gui_id 5, {@code ContainerFocusPouch}). */
+    public static final DeferredHolder<MenuType<?>, MenuType<FocusPouchMenu>> GUI_FOCUS_POUCH =
+            MENUS.register("gui_focus_pouch",
+                    () -> new MenuType<>(FocusPouchMenu::new, FeatureFlags.VANILLA_SET));
 
     /** The focus pouch (original {@code ItemFocusPouchBauble}). */
     public static final DeferredItem<ItemFocusPouch> FOCUS_POUCH =
@@ -91,8 +112,14 @@ public final class CatalogFoci {
         return Collections.unmodifiableMap(FOCI);
     }
 
-    /** Forces class initialization (entry registration) from {@code ModRegistration}. */
-    public static void init() {
+    /**
+     * Forces class initialization (entry registration) from
+     * {@code ModRegistration} and attaches this family's menu types to the mod
+     * bus (TC-M7-04-m3 added the second half; the items keep registering
+     * through the shared {@code ModItems} holder).
+     */
+    public static void init(final IEventBus bus) {
+        MENUS.register(bus);
     }
 
     private CatalogFoci() {

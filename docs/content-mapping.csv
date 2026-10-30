@@ -1934,7 +1934,7 @@ Thaumcraft:GUI_TRUNK,thaumcraft:gui_trunk,gui,GuiTravelingTrunk,done,tested,,gui
 
 Thaumcraft:GUI_THAUMATORIUM,thaumcraft:gui_thaumatorium,gui,GuiThaumatorium,not_started,not_tested,,gui_id=3 handler=GuiThaumatorium
 
-Thaumcraft:GUI_FOCUS_POUCH,thaumcraft:gui_focus_pouch,gui,GuiFocusPouch,not_started,not_tested,,gui_id=5 handler=GuiFocusPouch
+Thaumcraft:GUI_FOCUS_POUCH,thaumcraft:gui_focus_pouch,gui,GuiFocusPouch,done,tested,BD-18: vanilla panel art on the original 175x232 sheet (the 96 px player piece cropped - 1 px right edge + 2 px bottom shadow); the original's client-side close is server-authoritative stillValid,gui_id=5 handler=GuiFocusPouch menu=menus/FocusPouchMenu screen=client/FocusPouchScreen opened from items/foci/ItemFocusPouch.use
 
 Thaumcraft:GUI_DECON_TABLE,thaumcraft:gui_decon_table,gui,GuiDeconstructionTable,done,tested,,gui_id=8 handler=GuiDeconstructionTable screen=client/DeconstructionTableScreen (46px break bar + collect hitbox at x=64 y=48)
 

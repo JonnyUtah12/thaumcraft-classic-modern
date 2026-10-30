@@ -3,13 +3,18 @@ package com.jonnyutah12.thaumcraftclassic.items.foci;
 import com.jonnyutah12.thaumcraftclassic.accessory.AccessoryItem;
 import com.jonnyutah12.thaumcraftclassic.accessory.AccessorySlot;
 import com.jonnyutah12.thaumcraftclassic.foci.FocusPouchContents;
+import com.jonnyutah12.thaumcraftclassic.menus.FocusPouchMenu;
 import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 
 /**
  * The focus pouch (TC-M6-02): port of
@@ -41,10 +46,12 @@ import net.minecraft.world.item.ItemStack;
  *       Curios bridge picks the item up by scanning {@code ModItems} for
  *       {@code AccessoryItem}s (TC-M8-01), so no code here depends on Curios.</li>
  *   <li>The container GUI (original {@code ContainerFocusPouch} /
- *       {@code GuiFocusPouch}, and the {@code GUI_FOCUS_POUCH} csv row) is
- *       TC-M7-04; the storage API below is what that GUI will drive. Right-click
- *       therefore does nothing yet rather than opening a screen that no slice
- *       has built.</li>
+ *       {@code GuiFocusPouch}, and the {@code GUI_FOCUS_POUCH} csv row) landed
+ *       in TC-M7-04-m3 as {@code menus/FocusPouchMenu} +
+ *       {@code client/FocusPouchScreen}: right-click opens it, and the menu
+ *       drives the storage API below — seeded from {@link #contents(ItemStack)}
+ *       on open, written back through {@link #setInventory(ItemStack, ItemStack[])}
+ *       on close, exactly the original's {@code onContainerClosed}.</li>
  * </ul>
  */
 public class ItemFocusPouch extends Item implements AccessoryItem {
@@ -149,6 +156,34 @@ public class ItemFocusPouch extends Item implements AccessoryItem {
      */
     public static ItemStack firstFocus(final ItemStack pouch) {
         return contents(pouch).first();
+    }
+
+    // ------------------------------------------------------------------ opening
+
+    /**
+     * Original {@code ItemFocusPouch.onItemRightClick}
+     * ({@code ItemFocusPouch.java:52-60}): server side only, open the pouch's
+     * container (gui id 5). The original passed {@code floor(player.pos)} to
+     * {@code openGui} purely because that is the 1.7.10 GUI channel's shape —
+     * {@code ContainerFocusPouch} ignores x/y/z and reads the pouch from
+     * {@code InventoryPlayer.getCurrentItem()} — so 1.21.1's
+     * {@code openMenu(MenuProvider)} needs no extra payload:
+     * {@code FocusPouchMenu} captures the same held stack through
+     * {@code Inventory#getSelected()}, on both sides.
+     */
+    @Override
+    public InteractionResultHolder<ItemStack> use(final Level level, final Player player,
+                                                  final InteractionHand hand) {
+        final ItemStack stack = player.getItemInHand(hand);
+        if (level.isClientSide) {
+            // The original's client half did nothing; the arm swing vanilla
+            // already plays is the whole of it.
+            return InteractionResultHolder.sidedSuccess(stack, true);
+        }
+        player.openMenu(new SimpleMenuProvider(
+                (menuId, inventory, menuPlayer) -> new FocusPouchMenu(menuId, inventory),
+                stack.getHoverName()));
+        return InteractionResultHolder.consume(stack);
     }
 
     // ------------------------------------------------------------- accessory

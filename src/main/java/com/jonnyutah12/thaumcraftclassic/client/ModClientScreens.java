@@ -1,6 +1,7 @@
 package com.jonnyutah12.thaumcraftclassic.client;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFoci;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
 import net.neoforged.api.distmarker.Dist;
@@ -58,6 +59,11 @@ public final class ModClientScreens {
         event.register(CatalogFurniture.MENU_DECON_TABLE.get(), DeconstructionTableScreen::new);
         event.register(CatalogFurniture.MENU_MAGIC_BOX.get(), MagicBoxScreen::new);
         event.register(CatalogFurniture.MENU_SPA.get(), SpaScreen::new);
+        // TC-M7-04-m3: the focus pouch (gui_id 5, GuiFocusPouch). Its menu type
+        // is the pouch's own family's holder (TC-M6-02's CatalogFoci), which is
+        // why this is the one wiring line that points outside the two catalogs
+        // the earlier GUI cards filled.
+        event.register(CatalogFoci.GUI_FOCUS_POUCH.get(), FocusPouchScreen::new);
     }
 
     private ModClientScreens() {
