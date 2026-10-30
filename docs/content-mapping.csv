@@ -964,20 +964,20 @@ Thaumcraft:config.Runic_Shielding.runic_recharge_delay,thaumcraft:config.runic_s
 Thaumcraft:config.Runic_Shielding.runic_cost,thaumcraft:config.runic_shielding.runic_cost,config_option,runic_cost,not_started,not_tested,,category=Runic_Shielding default=shieldCost
 Thaumcraft:GUI_GOLEM,thaumcraft:gui_golem,gui,GuiGolem,not_started,not_tested,,gui_id=0 handler=GuiGolem
 Thaumcraft:GUI_PECH,thaumcraft:gui_pech,gui,GuiPech,not_started,not_tested,,gui_id=1 handler=GuiPech
-Thaumcraft:GUI_TRUNK,thaumcraft:gui_trunk,gui,GuiTravelingTrunk,done,tested,,gui_id=2 handler=GuiTravelingTrunk
+Thaumcraft:GUI_TRUNK,thaumcraft:gui_trunk,gui,GuiTravelingTrunk,done,tested,,gui_id=2 handler=GuiTravelingTrunk screen=client/TrunkScreen (cr1 c325fbd)
 Thaumcraft:GUI_THAUMATORIUM,thaumcraft:gui_thaumatorium,gui,GuiThaumatorium,not_started,not_tested,,gui_id=3 handler=GuiThaumatorium
 Thaumcraft:GUI_FOCUS_POUCH,thaumcraft:gui_focus_pouch,gui,GuiFocusPouch,not_started,not_tested,,gui_id=5 handler=GuiFocusPouch
-Thaumcraft:GUI_DECON_TABLE,thaumcraft:gui_decon_table,gui,GuiDeconstructionTable,done,tested,,gui_id=8 handler=GuiDeconstructionTable
+Thaumcraft:GUI_DECON_TABLE,thaumcraft:gui_decon_table,gui,GuiDeconstructionTable,done,tested,,gui_id=8 handler=GuiDeconstructionTable screen=client/DeconstructionTableScreen (46px break bar + collect hitbox at x=64 y=48)
 Thaumcraft:GUI_ALCHEMY_FURNACE,thaumcraft:gui_alchemy_furnace,gui,GuiAlchemyFurnace,not_started,not_tested,,gui_id=9 handler=GuiAlchemyFurnace
 Thaumcraft:GUI_RESEARCH_TABLE,thaumcraft:gui_research_table,gui,GuiResearchTable,not_started,not_tested,,gui_id=10 handler=GuiResearchTable
 Thaumcraft:GUI_CHEST_HUNGRY,thaumcraft:gui_chest_hungry,gui,-,not_started,not_tested,,gui_id=11 handler=-
 Thaumcraft:GUI_THAUMONOMICON,thaumcraft:gui_thaumonomicon,gui,GuiResearchBrowser,not_started,not_tested,,gui_id=12 handler=GuiResearchBrowser
 Thaumcraft:GUI_ARCANE_WORKBENCH,thaumcraft:gui_arcane_workbench,gui,GuiArcaneWorkbench,not_started,not_tested,,gui_id=13 handler=GuiArcaneWorkbench
 Thaumcraft:GUI_ARCANE_BORE,thaumcraft:gui_arcane_bore,gui,GuiArcaneBore,not_started,not_tested,,gui_id=15 handler=GuiArcaneBore
-Thaumcraft:GUI_HAND_MIRROR,thaumcraft:gui_hand_mirror,gui,GuiHandMirror,done,tested,,gui_id=16 handler=GuiHandMirror
+Thaumcraft:GUI_HAND_MIRROR,thaumcraft:gui_hand_mirror,gui,GuiHandMirror,done,tested,,gui_id=16 handler=GuiHandMirror screen=client/HandMirrorScreen
 Thaumcraft:GUI_HOVER_HARNESS,thaumcraft:gui_hover_harness,gui,GuiHoverHarness,not_started,not_tested,,gui_id=17 handler=GuiHoverHarness
-Thaumcraft:GUI_MAGIC_BOX,thaumcraft:gui_magic_box,gui,GuiMagicBox,done,tested,,gui_id=18 handler=GuiMagicBox
-Thaumcraft:GUI_SPA,thaumcraft:gui_spa,gui,GuiSpa,done,tested,,gui_id=19 handler=GuiSpa
+Thaumcraft:GUI_MAGIC_BOX,thaumcraft:gui_magic_box,gui,GuiMagicBox,done,tested,,gui_id=18 handler=GuiMagicBox screen=client/MagicBoxScreen (original is a vanilla generic_54 chest screen)
+Thaumcraft:GUI_SPA,thaumcraft:gui_spa,gui,GuiSpa,done,tested,,gui_id=19 handler=GuiSpa screen=client/SpaScreen (tank frame + mix hitbox at x=89 y=35)
 Thaumcraft:GUI_FOCAL_MANUPULATOR,thaumcraft:gui_focal_manupulator,gui,GuiFocalManipulator,not_started,not_tested,,gui_id=20 handler=GuiFocalManipulator
 Thaumcraft:ench_haste,thaumcraft:ench_haste,enchantment,,not_started,not_tested,,class=? config_key=ench_haste registered=yes
 Thaumcraft:ench_repair,thaumcraft:ench_repair,enchantment,,not_started,not_tested,,class=? config_key=ench_repair registered=yes

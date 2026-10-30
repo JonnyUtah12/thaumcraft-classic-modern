@@ -7,6 +7,7 @@ Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
 ## [Unreleased]
 
+- **GUI parity (TC-M7-04-s)**: every registered `MenuType` now has an authored client screen — `HandMirrorScreen`, `DeconstructionTableScreen` (46 px break bar + the original's `(64,48)` collect hitbox), `MagicBoxScreen`, `SpaScreen` (tank frame + the original's `(89,35)` mix hitbox) — alongside cr1's `TrunkScreen`, all client-only and registered through the mod-bus `RegisterMenuScreensEvent`. Shared geometry lives in `client/ContainerLayout`/`client/ScreenPanel`, pinned by 14 assertions cross-checked against cr1; backgrounds are vanilla because the original sheets are overlay-only (BD-17). 401 unit tests / 0 failures / 1 pre-existing skip; game tests 116/116 in both the Curios and no-Curios configurations.
 Work heading for `0.1.0-alpha.5`, gated per merge on `main`.
 
 - **First authored container screen** (`TC-M7-04-s-cr1`): `TrunkScreen` extends 1.21.1

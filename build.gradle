@@ -366,8 +366,13 @@ def makeAssetOverlayFixture = tasks.register("makeAssetOverlayFixture", Exec) {
             'files from docs/asset-mapping.csv, so CI (no reference tree, D-004) ' +
             'can build an overlay jar and gate the block/item path remap.'
     def mapping = file('docs/asset-mapping.csv')
+    def generator = file('scripts/make_asset_overlay_fixture.py')
     def fixtureRoot = layout.buildDirectory.dir('ci-fixture-assets')
     inputs.file(mapping)
+    // The generator is an input too: it decides the placeholder bytes (and the
+    // particle sheet's 256x256 size the sprite slicer needs), so editing it has
+    // to invalidate the fixture.
+    inputs.file(generator)
     outputs.dir(fixtureRoot)
     commandLine 'python3', file('scripts/make_asset_overlay_fixture.py').absolutePath,
             fixtureRoot.get().asFile.absolutePath,
