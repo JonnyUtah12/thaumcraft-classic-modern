@@ -6,6 +6,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeB
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaTransport;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
@@ -143,6 +144,15 @@ public final class ModRegistration {
         // with their jar tiles, the glass phial and the filled-jar item. The
         // tube network that moves essentia between them stays on TC-M4-07.
         CatalogEssentiaStorage.init(modEventBus);
+
+        // TC-M4-07-s: the essentia transport network — the tube block
+        // (thaumcraft:blocktube, the original's metadata 0..7 on a variant
+        // property) with the six conduit tiles it hosts (tube, valve, filter,
+        // buffer, restricted, directional) and their suction/flow rules. The
+        // two machines the original also hosted here (metadata 2 centrifuge,
+        // metadata 7 crystallizer) keep their variant and stay on TC-M4-07-m;
+        // the wand/resonator face toggling stays on TC-M4-07-f.
+        CatalogEssentiaTransport.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-
