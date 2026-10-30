@@ -962,7 +962,7 @@ Thaumcraft:config.general.glowing_taint,thaumcraft:config.general.glowing_taint,
 Thaumcraft:config.Runic_Shielding.runic_recharge_speed,thaumcraft:config.runic_shielding.runic_recharge_speed,config_option,runic_recharge_speed,not_started,not_tested,,category=Runic_Shielding default=shieldRecharge
 Thaumcraft:config.Runic_Shielding.runic_recharge_delay,thaumcraft:config.runic_shielding.runic_recharge_delay,config_option,runic_recharge_delay,not_started,not_tested,,category=Runic_Shielding default=shieldWait
 Thaumcraft:config.Runic_Shielding.runic_cost,thaumcraft:config.runic_shielding.runic_cost,config_option,runic_cost,not_started,not_tested,,category=Runic_Shielding default=shieldCost
-Thaumcraft:GUI_GOLEM,thaumcraft:gui_golem,gui,GuiGolem,not_started,not_tested,,gui_id=0 handler=GuiGolem
+Thaumcraft:GUI_GOLEM,thaumcraft:gui_golem,gui,GuiGolem,done,tested,,gui_id=0 handler=GuiGolem; menus/GolemMenu + client/GolemScreen + EntityGolemBase.mobInteract open site - TC-M7-04-m3-a
 Thaumcraft:GUI_PECH,thaumcraft:gui_pech,gui,GuiPech,not_started,not_tested,,gui_id=1 handler=GuiPech
 Thaumcraft:GUI_TRUNK,thaumcraft:gui_trunk,gui,GuiTravelingTrunk,done,tested,,gui_id=2 handler=GuiTravelingTrunk screen=client/TrunkScreen (cr1 c325fbd)
 Thaumcraft:GUI_THAUMATORIUM,thaumcraft:gui_thaumatorium,gui,GuiThaumatorium,not_started,not_tested,,gui_id=3 handler=GuiThaumatorium

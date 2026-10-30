@@ -2,6 +2,7 @@ package com.jonnyutah12.thaumcraftclassic.client;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogGolems;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -29,12 +30,13 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
  * hazard.</p>
  *
  * <p><b>Coverage.</b> As of this commit every {@code MenuType} the mod
- * registers has a screen here — the five gui rows whose menus landed with their
- * content: {@code gui_trunk} (TC-M7-04-s-cr1), and {@code gui_hand_mirror},
+ * registers has a screen here — the six gui rows whose menus landed with their
+ * content: {@code gui_trunk} (TC-M7-04-s-cr1), {@code gui_hand_mirror},
  * {@code gui_decon_table}, {@code gui_magic_box} and {@code gui_spa}
- * (TC-M7-04-s). The remaining GUI ids in {@code docs/content-mapping.csv} have
+ * (TC-M7-04-s), and {@code gui_golem} (TC-M7-04-m3-a, over the golem-content
+ * branch). The remaining GUI ids in {@code docs/content-mapping.csv} have
  * no menu type yet (the crucible, arcane workbench, alchemy furnace, arcane
- * bore, thaumatorium, golem, pech, focus pouch, hover harness, focal
+ * bore, thaumatorium, pech, focus pouch, hover harness, focal
  * manipulator, research table) or are the Thaumonomicon (t_547e7ad8), so they
  * cannot be wired here; they are separate cards. A new menu type added without
  * a screen fails {@code MenuTypeScreenCoverageTest}.</p>
@@ -58,6 +60,8 @@ public final class ModClientScreens {
         event.register(CatalogFurniture.MENU_DECON_TABLE.get(), DeconstructionTableScreen::new);
         event.register(CatalogFurniture.MENU_MAGIC_BOX.get(), MagicBoxScreen::new);
         event.register(CatalogFurniture.MENU_SPA.get(), SpaScreen::new);
+        // TC-M7-04-m3-a: the golem (gui_id 0, GuiGolem) over the golem-content branch.
+        event.register(CatalogGolems.GUI_GOLEM.get(), GolemScreen::new);
     }
 
     private ModClientScreens() {

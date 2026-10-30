@@ -95,6 +95,95 @@ public final class ContainerLayout {
     public static final int DECON_ASPECT_Y = 48;
     public static final int DECON_ASPECT_SIZE = 16;
 
+    // ------------------------------------------------- golem window (gui_id 0)
+
+    /**
+     * The golem inventory window: {@code ContainerGolem.bindGolemInventory}
+     * binds six slots at {@code (100 + a/2*28, 16 + a%2*31)} — a 3x2 cell
+     * grid on a 28x31 pitch, the original's own page window over
+     * {@code a + currentScroll*6} — and {@code GuiGolem.func_146976_a} blits
+     * the 24x24 type-varied frame for each at {@code (96 + a/2*28,
+     * 12 + a%2*31)}: the frame is the slot anchor four pixels up-left.
+     */
+    public static final int GOLEM_WINDOW_X = 96;
+    public static final int GOLEM_WINDOW_Y = 12;
+    public static final int GOLEM_WINDOW_FRAME = 24;
+    public static final int GOLEM_WINDOW_COL_PITCH = 28;
+    public static final int GOLEM_WINDOW_ROW_PITCH = 31;
+    public static final int GOLEM_WINDOW_SLOTS = 6;
+    public static final int GOLEM_SLOT_INSET = 4;
+
+    /**
+     * The scroll rail: {@code GuiGolem} blits the 24x8 arrows at
+     * {@code (111,68)} (up, enabled when {@code currentScroll > 0}) and
+     * {@code (135,68)} (down, enabled when {@code currentScroll < maxScroll}),
+     * and {@code mouseClicked} sends menu buttons 66/67 on those boxes
+     * (the {@code slots > 6} gate).
+     */
+    public static final int GOLEM_SCROLL_UP_X = 111;
+    public static final int GOLEM_SCROLL_DOWN_X = 135;
+    public static final int GOLEM_SCROLL_Y = 68;
+    public static final int GOLEM_SCROLL_WIDTH = 24;
+    public static final int GOLEM_SCROLL_HEIGHT = 8;
+
+    /**
+     * The per-slot color tab the original draws above each window frame when
+     * the golem carries an Upgrade-4: a 24x12 strip at {@code (96 + a/2*28,
+     * 4 + a%2*31)}; the left 8 px decrement the slot color (menu button
+     * {@code a + currentScroll*6}), the right 8 px (offset 16) increment it
+     * (menu button {@code a + currentScroll*6 + slotCount}).
+     */
+    public static final int GOLEM_TAB_Y = 4;
+    public static final int GOLEM_TAB_WIDTH = 24;
+    public static final int GOLEM_TAB_HEIGHT = 12;
+    public static final int GOLEM_TAB_BUTTON_WIDTH = 8;
+    public static final int GOLEM_TAB_PLUS_OFFSET = 16;
+
+    /**
+     * The core-4 (Guard) attack-target toggles: 8x8 boxes at {@code (104,
+     * 5 + 16*row)} for rows 0..3, sending menu buttons 51..54 (Monsters,
+     * Animals, Players, Creepers).
+     */
+    public static final int GOLEM_GUARD_X = 104;
+    public static final int GOLEM_GUARD_Y = 5;
+    public static final int GOLEM_GUARD_PITCH = 16;
+    public static final int GOLEM_GUARD_SIZE = 8;
+    public static final int GOLEM_GUARD_BUTTON_FIRST = 51;
+
+    /** The core-0 (Fill) amount toggle: 8x8 at {@code (62,54)}, menu button 50. */
+    public static final int GOLEM_FILL_X = 62;
+    public static final int GOLEM_FILL_Y = 54;
+    public static final int GOLEM_FILL_SIZE = 8;
+
+    /** The core-8 (Use) action toggles: 8x8 at {@code (42, 40 + 10*row)}, buttons 50/51/52. */
+    public static final int GOLEM_USE_X = 42;
+    public static final int GOLEM_USE_Y = 40;
+    public static final int GOLEM_USE_PITCH = 10;
+    public static final int GOLEM_USE_SIZE = 8;
+
+    /**
+     * The sort toggles (Upgrade-5 + {@code ItemGolemCore.canSort}): 64x8 rows
+     * at {@code (shiftx, 24 + 10*row + shifty)} with
+     * {@code (shiftx, shifty) = core == 10 ? (66, 12) : (180, 0)}, sending
+     * menu buttons 55/56/57 (ore-dictionary, damage, NBT).
+     */
+    public static final int GOLEM_SORT_X = 180;
+    public static final int GOLEM_SORT_Y = 24;
+    public static final int GOLEM_SORT_PITCH = 10;
+    public static final int GOLEM_SORT_WIDTH = 64;
+    public static final int GOLEM_SORT_HEIGHT = 8;
+    public static final int GOLEM_SORT_SORTING_X = 66;
+    public static final int GOLEM_SORT_SORTING_Y = 12;
+    public static final int GOLEM_SORT_BUTTON_FIRST = 55;
+
+    /** The original's threat/blurb text anchor: 0.5-scaled {@code (80,22)} → panel {@code (40,11)}. */
+    public static final int GOLEM_BLURB_X = 40;
+    public static final int GOLEM_BLURB_Y = 11;
+
+    /** The 3x30-scaled golem portrait center: {@code (baseX+51, baseY+75)}. */
+    public static final int GOLEM_PORTRAIT_X = 51;
+    public static final int GOLEM_PORTRAIT_Y = 75;
+
     /** Authored stand-in for the original bar texels, which only ship in the overlay (BD-17). */
     public static final int DECON_BAR_FILL = 0xFF8A5CC8;
 
@@ -195,6 +284,40 @@ public final class ContainerLayout {
     /** The original bar's top edge for a fill height (it drains downward). */
     public static int barTop(final int barTop, final int pixels, final int fill) {
         return barTop + pixels - fill;
+    }
+
+    /**
+     * The golem window frame for a page cell {@code a} (0..5): {@code
+     * (96 + a/2*28, 12 + a%2*31)} — {@code GuiGolem.func_146976_a}.
+     */
+    public static int golemFrameX(final int cell) {
+        return GOLEM_WINDOW_X + cell / 2 * GOLEM_WINDOW_COL_PITCH;
+    }
+
+    public static int golemFrameY(final int cell) {
+        return GOLEM_WINDOW_Y + cell % 2 * GOLEM_WINDOW_ROW_PITCH;
+    }
+
+    /**
+     * The golem window slot anchor for a page cell {@code a}: {@code
+     * (100 + a/2*28, 16 + a%2*31)} — {@code ContainerGolem.bindGolemInventory}.
+     */
+    public static int golemSlotX(final int cell) {
+        return golemFrameX(cell) + GOLEM_SLOT_INSET;
+    }
+
+    public static int golemSlotY(final int cell) {
+        return golemFrameY(cell) + GOLEM_SLOT_INSET;
+    }
+
+    /** The sort-toggle x for a core: the Sorting core (10) shifts to 66, the rest sit at 180. */
+    public static int golemSortBoxX(final int core) {
+        return core == 10 ? GOLEM_SORT_SORTING_X : GOLEM_SORT_X;
+    }
+
+    /** The sort-toggle y for a core row: 24 (+ 12 for the Sorting core) + 10*row. */
+    public static int golemSortBoxY(final int core, final int row) {
+        return GOLEM_SORT_Y + row * GOLEM_SORT_PITCH + (core == 10 ? GOLEM_SORT_SORTING_Y : 0);
     }
 
     private ContainerLayout() {
