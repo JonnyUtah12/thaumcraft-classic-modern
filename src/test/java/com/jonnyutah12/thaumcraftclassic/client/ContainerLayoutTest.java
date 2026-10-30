@@ -370,6 +370,117 @@ class ContainerLayoutTest {
         assertEquals(0.5F, ContainerLayout.TAU_COUNT_SCALE, 0.0001F);
     }
 
+    /**
+     * TC-M7-04-m2e: the sheet rectangles this window now blits, transcribed from
+     * {@code GuiThaumatorium.func_146976_a} / {@code drawAspects}
+     * ({@code reference/decompiled/…/GuiThaumatorium.java:50-160}).
+     *
+     * <p>This is the card's whole claim in one place: the panel, the four pager
+     * boxes, the 48x48 highlight, the 24x24 queue box and both essentia bar
+     * cells are named by <b>the original's own UVs</b>, at the same destination
+     * rectangles its blits used — so the screen draws the shipped sheet, and the
+     * flat stand-ins survive only where the bytes are absent (D-004). The
+     * numbers are transcriptions, not inventions: each line cites the source
+     * call it came from, and the destination sizes are the geometry constants
+     * TC-M7-04-m2c already pinned, so a UV that drifted from a size would show
+     * up as a mismatch here.</p>
+     */
+    @Test
+    void thaumatoriumGlyphCellsAreTheOriginalsSheetRects() {
+        // The panel: drawTexturedModalRect(k, l, 0, 0, xSize, ySize), i.e. the
+        // sheet's top-left 176x166 — the same pair the geometry test pins.
+        assertEquals(0, ContainerLayout.TAU_SHEET_U);
+        assertEquals(0, ContainerLayout.TAU_SHEET_V);
+        assertEquals(ContainerLayout.PANEL_WIDTH, ContainerLayout.TAU_SHEET_W);
+        assertEquals(ContainerLayout.TAU_PANEL_HEIGHT, ContainerLayout.TAU_SHEET_H);
+
+        // The prev/next arrows at (128,16)/(128,24), 16x8: the source blits u 192
+        // when the button is live and 176 when it is not, on rows 16 and 24.
+        assertEquals(16, ContainerLayout.TAU_PAGE_W);
+        assertEquals(8, ContainerLayout.TAU_PAGE_H);
+        assertEquals(176, ContainerLayout.thaumatoriumArrowU(false));
+        assertEquals(192, ContainerLayout.thaumatoriumArrowU(true));
+        assertEquals(16, ContainerLayout.TAU_UV_PREV_V);
+        assertEquals(24, ContainerLayout.TAU_UV_NEXT_V);
+
+        // The aspect pager at (32,40)/(136,40), 8x16: 176/192 for the left box
+        // and 184/200 for the right, all on row 32 — the pair is 8 texels apart,
+        // unlike the arrows' 16, so each side is stated, not derived.
+        assertEquals(8, ContainerLayout.TAU_ASPECT_PAGER_W);
+        assertEquals(16, ContainerLayout.TAU_ASPECT_PAGER_H);
+        assertEquals(176, ContainerLayout.thaumatoriumAspectPagerU(0, false));
+        assertEquals(192, ContainerLayout.thaumatoriumAspectPagerU(0, true));
+        assertEquals(184, ContainerLayout.thaumatoriumAspectPagerU(1, false));
+        assertEquals(200, ContainerLayout.thaumatoriumAspectPagerU(1, true));
+        assertEquals(32, ContainerLayout.TAU_UV_ASPECT_PAGER_V);
+
+        // The essentia bar: the 14x6 background cell at (176,8) and the coloured
+        // fill strip at (176,0), blitted i1 texels wide, 4 tall.
+        assertEquals(176, ContainerLayout.TAU_UV_BAR_BACKGROUND_U);
+        assertEquals(8, ContainerLayout.TAU_UV_BAR_BACKGROUND_V);
+        assertEquals(14, ContainerLayout.TAU_BAR_W);
+        assertEquals(6, ContainerLayout.TAU_BAR_H);
+        assertEquals(176, ContainerLayout.TAU_UV_BAR_FILL_U);
+        assertEquals(0, ContainerLayout.TAU_UV_BAR_FILL_V);
+        assertEquals(4, ContainerLayout.TAU_BAR_FILL_H);
+
+        // The 24x24 queue box cell (176,56) and the 48x48 highlight (176,96).
+        assertEquals(176, ContainerLayout.TAU_UV_PULSE_U);
+        assertEquals(56, ContainerLayout.TAU_UV_PULSE_V);
+        assertEquals(24, ContainerLayout.TAU_PULSE_SIZE);
+        assertEquals(176, ContainerLayout.TAU_UV_HIGHLIGHT_U);
+        assertEquals(96, ContainerLayout.TAU_UV_HIGHLIGHT_V);
+        assertEquals(48, ContainerLayout.TAU_HIGHLIGHT_SIZE);
+
+        // Every cell is inside the 256x256 sheet the reference measures, and the
+        // window is 176 wide: the widest cell this screen blits starts at x 136
+        // and is 8 wide, so no blit runs off the panel.
+        assertTrue(ContainerLayout.TAU_UV_ENABLED_SHIFT + ContainerLayout.TAU_UV_ASPECT_RIGHT_DISABLED <= 256);
+        assertTrue(ContainerLayout.TAU_ASPECT_RIGHT_X + ContainerLayout.TAU_ASPECT_PAGER_W
+                <= ContainerLayout.PANEL_WIDTH);
+
+        // The tag's alpha: the SIX-argument drawTag (the thaumatorium's call,
+        // GuiThaumatorium.java:167-168) forwards 1.0F with no time term. The
+        // workbench's pulse formula belongs to GuiArcaneWorkbench.java:57 and is
+        // asserted in pulseKeepsTheOriginalsBandAndPhase — it is NOT this
+        // window's tag alpha, and pinning 1.0 here is what keeps the two apart.
+        assertEquals(1.0F, ContainerLayout.TAU_TAG_ALPHA, 0.0001F);
+    }
+
+    /**
+     * The path this window blits must be the path the overlay installs — the
+     * other half of D-004. {@code docs/asset-mapping.csv} is the recorded
+     * contract; {@code OriginalTextureOverlayTest} proves the copy keeps the
+     * {@code gui} directory unrenamed, and this pins the row itself.
+     */
+    @Test
+    void thaumatoriumSheetIsTheMappedOverlayAsset() throws Exception {
+        final java.nio.file.Path csv = java.nio.file.Path.of(
+                System.getProperty("tc.assetMappingFile", ""));
+        assertTrue(java.nio.file.Files.isRegularFile(csv),
+                "asset-mapping.csv not wired — run tests through ./gradlew test");
+
+        final String path = ContainerLayout.TAU_SHEET.getPath();
+        final String namespace = ContainerLayout.TAU_SHEET.getNamespace();
+        assertEquals("thaumcraft", namespace, "the sheet is the mod's own asset");
+        assertEquals("textures/gui/gui_thaumatorium.png", path);
+
+        String row = null;
+        for (final String line : java.nio.file.Files.readAllLines(csv)) {
+            if (line.startsWith("textures/gui/gui_thaumatorium.png,")) {
+                row = line;
+                break;
+            }
+        }
+        assertTrue(row != null, "docs/asset-mapping.csv has no gui_thaumatorium.png row");
+        final String[] fields = row.split(",", 5);
+        assertEquals(fields[0], path, "the overlay maps the sheet to ITSELF — the runtime path "
+                + "the screen asks for is the path the overlay installs");
+        assertEquals("ARR-overlay", fields[3],
+                "the sheet is All Rights Reserved: it ships in the overlay build only, which is "
+                        + "exactly the case the screen's gate branches on (D-004)");
+    }
+
     // ------------------------------------------- aspect tag (UtilsFX.drawTag)
     //
     // TC-M7-04-m2d. The renderer (client/AspectTagRenderer) draws pixels and so

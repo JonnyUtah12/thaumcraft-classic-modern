@@ -37,7 +37,9 @@ import java.util.List;
  * no-cap server rule, the original's queued-recipe listing quirk,
  * {@code refreshIndex}, the synced aspect display (colours, prices, stored
  * essentia, the uncapped bar formula), the {@code maxRecipes} gate the
- * original's client hitbox enforced, and the tiles' persistence.
+ * original's client hitbox enforced, the tiles' persistence, and — since
+ * TC-M7-04-m2e — the aspect identity the display channel carries for the tag
+ * sprite ({@code theAspectDisplayCarriesTheAspectItself}).
  *
  * <p>The probes run against live crucible recipe data: {@code recipe.7.crucible}
  * (research {@code ALCHEMICALDUPLICATION}, catalyst gunpowder, ignis+perditio
@@ -279,6 +281,98 @@ public final class ThaumatoriumGameTest {
         menu.clickMenuButton(player, 0);
         menu.broadcastChanges();
         helper.assertTrue(tile.queue().size() == 1, "queue refilled for the cap probes");
+        helper.succeed();
+    }
+
+    /**
+     * TC-M7-04-m2e: the display channel carries the <b>aspect itself</b>, which
+     * is what {@code UtilsFX.drawTag} needs and what a colour int cannot give it.
+     * The tag's sprite is {@code aspect.getImage()}
+     * ({@code aspect/Aspect.java:105-109} →
+     * {@code thaumcraft:textures/aspects/<tag>.png}), so the screen cannot bind
+     * the original's glyph from an RGB value; the menu syncs the aspect's index
+     * in {@link Aspect#values()} (the registry's declaration order) and the
+     * screen resolves it back. This probe pins that seam at the only level the
+     * harness can reach: the identity that crosses the wire, the sprite path the
+     * renderer will ask the resource provider for, the empty column's
+     * {@code -1}, and the out-of-range index degrading to "no tag" instead of
+     * throwing (BD-19: the pixels stay unproved — the harness is a dedicated
+     * server — so this is the arithmetic half of the glyph swap).
+     */
+    @GameTest(template = "empty")
+    public static void theAspectDisplayCarriesTheAspectItself(final GameTestHelper helper) {
+        final TileThaumatorium tile = thaumatoriumAt(helper);
+        final Player player = playerWithResearch(helper, List.of(RESEARCH));
+        tile.setItem(TileThaumatorium.SLOT_INPUT, new ItemStack(Items.GUNPOWDER));
+
+        final ThaumatoriumMenu menu = menuFor(player, tile);
+        menu.broadcastChanges();
+        helper.assertTrue(menu.getVisibleCount() == 1 && menu.getAspectCount() == 2,
+                "recipe.7 (ignis + perditio) is the visible recipe with two aspects");
+        helper.assertTrue(ThaumatoriumMenu.DATA_COUNT
+                        == ThaumatoriumMenu.DATA_DISPLAY
+                                + ContainerLayout.TAU_VISIBLE_ASPECTS
+                                        * ThaumatoriumMenu.DATA_DISPLAY_STRIDE,
+                "the data channel is 8 + 6 columns of (colour, needed, stored, aspect index) — "
+                        + "the fourth field is the aspect's identity, added for the tag sprite");
+        // The stride is the layout, not a comment: the LAST data slot is column
+        // 5's index field, so writing it and reading it back proves the channel
+        // is laid out as the screen reads it (no off-by-one, no truncation).
+        menu.setData(ThaumatoriumMenu.DATA_COUNT - 1, 5);
+        helper.assertTrue(menu.getDisplayAspectIndex(5) == 5
+                        && menu.getDisplayAspect(5) == Aspect.values().get(5),
+                "data slot " + (ThaumatoriumMenu.DATA_COUNT - 1) + " is column 5's aspect index");
+        menu.broadcastChanges();
+
+        // The identity: the resolved aspect is the registry's own object, not a
+        // copy, so the renderer's getImage()/getColor() calls see what the server
+        // saw. Aspect.values() is declaration-ordered on both sides, so the
+        // index is the same number on the server and on any client of this code.
+        final Aspect ignis = Aspect.getAspect("ignis");
+        final Aspect resolved = menu.getDisplayAspect(0);
+        helper.assertTrue(resolved != null && resolved == ignis,
+                "column 0 resolves to the registry's ignis object, not a stand-in: " + resolved);
+        helper.assertTrue(Aspect.values().get(menu.getDisplayAspectIndex(0)) == resolved,
+                "the synced index round-trips through Aspect.values()");
+        helper.assertTrue(resolved.getImage().equals(
+                        ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID,
+                                "textures/aspects/ignis.png")),
+                "the sprite the renderer will ask for is the mapped overlay path "
+                        + "(docs/asset-mapping.csv maps textures/aspects/* to themselves, and "
+                        + "OriginalTextureOverlayTest.KEPT_DIRS keeps 'aspects' unrenamed)");
+        helper.assertTrue(menu.getDisplayAspect(1) == Aspect.getAspect("perditio"),
+                "column 1 is the recipe's second sorted aspect");
+        helper.assertTrue(menu.getDisplayAspect(0).getColor() == menu.getDisplayColour(0),
+                "the colour the bar tints with is the same aspect's colour — one source, no drift");
+
+        // The empty columns: -1 and null, never an exception and never a drawn
+        // guess (the original's `if (aspect != null)` guard, UtilsFX.java:815).
+        for (int pos = 2; pos < ContainerLayout.TAU_VISIBLE_ASPECTS; pos++) {
+            helper.assertTrue(menu.getDisplayAspectIndex(pos) == -1 && menu.getDisplayAspect(pos) == null,
+                    "an empty column syncs -1 and resolves to null at pos " + pos);
+        }
+        // An index this client's registry does not know (an older client, a
+        // trimmed pack) degrades to "no tag drawn".
+        menu.setData(ThaumatoriumMenu.DATA_DISPLAY
+                + 3 * ThaumatoriumMenu.DATA_DISPLAY_STRIDE + 3, 9999);
+        helper.assertTrue(menu.getDisplayAspect(3) == null,
+                "an out-of-range aspect index resolves to null, not to an exception");
+        menu.setData(ThaumatoriumMenu.DATA_DISPLAY
+                + 3 * ThaumatoriumMenu.DATA_DISPLAY_STRIDE + 3, -5);
+        helper.assertTrue(menu.getDisplayAspect(3) == null, "a negative index resolves to null too");
+
+        // Every registered aspect travels this channel: the thaumatorium can
+        // display any of them, so a hole in the channel is a tag that silently
+        // stops drawing.
+        final List<Aspect> all = Aspect.values();
+        helper.assertTrue(all.size() == 48, "the registry has the original's 48 aspects");
+        for (final Aspect aspect : all) {
+            final int index = all.indexOf(aspect);
+            helper.assertTrue(index >= 0 && all.get(index) == aspect,
+                    "aspect " + aspect.getName() + " must round-trip through its index");
+            helper.assertTrue(aspect.getImage().getPath().startsWith("textures/aspects/"),
+                    "every tag's sprite is in the directory the overlay keeps unrenamed");
+        }
         helper.succeed();
     }
 

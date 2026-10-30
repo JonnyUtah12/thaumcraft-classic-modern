@@ -311,6 +311,109 @@ public final class ContainerLayout {
     public static final float TAU_COUNT_SCALE = 0.5F;
     public static final int TAU_COUNT_COLOUR = 0xFFFFFFFF;
 
+    // ------------------------------------------- thaumatorium sheet (the D-004 gate)
+
+    /**
+     * The window's own sheet. Every element below is a rectangle inside it, so
+     * one probe of this path decides the whole window: with the asset overlay
+     * applied the original texels are drawn, and in the code-only jar this
+     * build is gated on the screen keeps its flat stand-ins (D-004 — the
+     * original bytes are All Rights Reserved, never committed).
+     *
+     * <p>The path is not a guess: {@code docs/asset-mapping.csv} row 487 maps
+     * {@code textures/gui/gui_thaumatorium.png} to <b>itself</b> as
+     * {@code ARR-overlay}, and {@code OriginalTextureOverlayTest.KEPT_DIRS}
+     * lists {@code gui} among the directories the overlay copies unrenamed — so
+     * the runtime path the probe asks for is exactly the path the overlay
+     * installs. The reference copy measures 256x256, the size every original
+     * GUI sheet is (class javadoc), and the gate reads the edge off the PNG
+     * rather than trusting that.</p>
+     */
+    public static final ResourceLocation TAU_SHEET =
+            ResourceLocation.fromNamespaceAndPath("thaumcraft", "textures/gui/gui_thaumatorium.png");
+
+    /**
+     * The panel rect inside that sheet:
+     * {@code drawTexturedModalRect(k, l, 0, 0, xSize, ySize)}
+     * ({@code GuiThaumatorium.java:57}) — the sheet's top-left 176x166, i.e. the
+     * same size the panel is, so the sheet is blitted one-for-one with no UV
+     * offset.
+     */
+    public static final int TAU_SHEET_U = 0;
+    public static final int TAU_SHEET_V = 0;
+    public static final int TAU_SHEET_W = PANEL_WIDTH;
+    public static final int TAU_SHEET_H = TAU_PANEL_HEIGHT;
+
+    /**
+     * The prev/next arrows' sheet cells: {@code (176,16)} disabled and
+     * {@code (192,16)} enabled for prev, {@code (176,24)} / {@code (192,24)} for
+     * next, each 16x8 ({@code GuiThaumatorium.java:73-84}). The enabled cell is
+     * 16 texels right of the disabled one, exactly as the aspect pager's pair is
+     * ({@code 184 -> 200}), so one shift constant covers all four buttons.
+     */
+    public static final int TAU_UV_ARROW_DISABLED = 176;
+    public static final int TAU_UV_PREV_V = 16;
+    public static final int TAU_UV_NEXT_V = 24;
+    public static final int TAU_UV_ENABLED_SHIFT = 16;
+
+    /**
+     * The aspect pager's cells at sheet {@code v = 32}, 8x16: left
+     * {@code 176} disabled / {@code 192} enabled, right {@code 184} disabled /
+     * {@code 200} enabled ({@code GuiThaumatorium.java:86-97}).
+     */
+    public static final int TAU_UV_ASPECT_LEFT_DISABLED = 176;
+    public static final int TAU_UV_ASPECT_RIGHT_DISABLED = 184;
+    public static final int TAU_UV_ASPECT_PAGER_V = 32;
+
+    /**
+     * The essentia bar's cells: the 14x6 background at {@code (176,8)} and the
+     * coloured fill strip at {@code (176,0)} — the fill is blitted
+     * {@code i1} texels wide, 4 tall, in the aspect's own colour
+     * ({@code GuiThaumatorium.java:147-151}).
+     */
+    public static final int TAU_UV_BAR_BACKGROUND_U = 176;
+    public static final int TAU_UV_BAR_BACKGROUND_V = 8;
+    public static final int TAU_UV_BAR_FILL_U = 176;
+    public static final int TAU_UV_BAR_FILL_V = 0;
+
+    /** The 24x24 queue box cell {@code (176,56)} and the 48x48 highlight {@code (176,96)}. */
+    public static final int TAU_UV_PULSE_U = 176;
+    public static final int TAU_UV_PULSE_V = 56;
+    public static final int TAU_UV_HIGHLIGHT_U = 176;
+    public static final int TAU_UV_HIGHLIGHT_V = 96;
+
+    /**
+     * The alpha this window's tags draw at: <b>1.0, with no pulse</b>. The card
+     * that opened this work asked for the workbench's pulse
+     * ({@code 0.5 + sin((ticks + i*10)/2)*0.2 - 0.2}, pinned to 1.0 when the
+     * buffer covers the price), but that formula is
+     * {@code GuiArcaneWorkbench.java:57}, and
+     * {@code GuiThaumatorium.java:167} calls the SIX-argument
+     * {@code UtilsFX.drawTag(x, y, aspect, amount, bonus, z)} — the overload at
+     * {@code UtilsFX.java:802-804} that forwards {@code blend = 771, alpha =
+     * 1.0F, bw = false}. The thaumatorium's own two pulses are the 24x24 queue
+     * box ({@link #thaumatoriumQueuePulse}) and the grey output tint
+     * ({@link #thaumatoriumDullPulse}); its tags never pulsed, so the port does
+     * not pulse them (BD-19 records the measured call).
+     */
+    public static final float TAU_TAG_ALPHA = 1.0F;
+
+    /** The prev/next arrow's sheet u for this enabled state. */
+    public static int thaumatoriumArrowU(final boolean enabled) {
+        return enabled ? TAU_UV_ARROW_DISABLED + TAU_UV_ENABLED_SHIFT : TAU_UV_ARROW_DISABLED;
+    }
+
+    /**
+     * The aspect pager's sheet u. {@code side} is the original's own order: 0 =
+     * the left box at {@code (32,40)}, 1 = the right box at {@code (136,40)} —
+     * the two cells are 8 texels apart while the arrows' pair is 16 apart, so
+     * the pair is stated per side, not derived from one base.
+     */
+    public static int thaumatoriumAspectPagerU(final int side, final boolean enabled) {
+        final int disabled = side == 0 ? TAU_UV_ASPECT_LEFT_DISABLED : TAU_UV_ASPECT_RIGHT_DISABLED;
+        return enabled ? disabled + TAU_UV_ENABLED_SHIFT : disabled;
+    }
+
     /**
      * The white pulse of the 24x24 queue box:
      * {@code 0.6F + sin(gameTime / 5.0F) * 0.4F + 0.4F} (the client player's

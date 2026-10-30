@@ -47,14 +47,19 @@ import java.util.List;
  * branch that keeps a queued recipe listed even with the catalyst gone);
  * 1.21.1 computes it server-side — where the tile, the research attachment
  * and the crucible {@code RecipeManager} live — and ships it to the screen as
- * 26 data slots: 0 visible count, 1 the page index (the original's client-side
+ * 32 data slots: 0 visible count, 1 the page index (the original's client-side
  * {@code index}), 2 the aspect-window start (the original's
  * {@code startAspect}), 3 queue size, 4 the {@code maxRecipes} cap, 5 the
  * current recipe's aspect count, 6 whether the current recipe is queued, 7 the
  * queueability gate (the original's client hitbox test
- * {@code queueSize < maxRecipes || queued}), and 8..25 six (colour, needed,
- * stored) triples for the tag row and its essentia bars. The screen draws
- * these numbers, never a guess; anything not synced is not drawn (BD-19).</p>
+ * {@code queueSize < maxRecipes || queued}), and 8..31 six
+ * (colour, needed, stored, <b>aspect index</b>) columns for the tag row and
+ * its essentia bars. The fourth field is what the tag's <i>sprite</i> needs:
+ * {@code UtilsFX.drawTag} binds {@code aspect.getImage()}, and an RGB int
+ * cannot name that file — the channel is the aspect's index in
+ * {@link Aspect#values()} (the registry's declaration order, identical on both
+ * sides), {@code -1} for an empty column. The screen draws these numbers,
+ * never a guess; anything not synced is not drawn (BD-19).</p>
  *
  * <p><b>The queue click is the original's.</b> {@link #clickMenuButton}
  * buttons {@code 0..N-1} address the visible list by index exactly as
@@ -98,7 +103,18 @@ public class ThaumatoriumMenu extends AbstractContainerMenu {
     public static final int DATA_QUEUED_CURRENT = 6;
     public static final int DATA_QUEUEABLE = 7;
     public static final int DATA_DISPLAY = 8;
-    public static final int DATA_COUNT = DATA_DISPLAY + ContainerLayout.TAU_VISIBLE_ASPECTS * 3;
+    /**
+     * Fields per visible aspect column: colour, needed, stored, and the aspect
+     * <b>identity</b> — its index in {@link Aspect#values()}, {@code -1} for an
+     * empty column. The identity is what {@code UtilsFX.drawTag} needs and the
+     * colour does not give it: the tag's sprite is {@code aspect.getImage()}
+     * (aspect/Aspect.java:105-109 → {@code thaumcraft:textures/aspects/<tag>.png}), so
+     * a screen holding only an RGB int can tint a box but cannot name the file
+     * the original bound (TC-M7-04-m2e).
+     */
+    public static final int DATA_DISPLAY_STRIDE = 4;
+    public static final int DATA_COUNT =
+            DATA_DISPLAY + ContainerLayout.TAU_VISIBLE_ASPECTS * DATA_DISPLAY_STRIDE;
 
     /** One visible list entry: the live recipe and its data-file id. */
     public record VisibleRecipe(ResourceLocation id, CrucibleRecipe recipe) {
@@ -215,17 +231,44 @@ public class ThaumatoriumMenu extends AbstractContainerMenu {
 
     /** Colour of displayed aspect column {@code pos} (0 with nothing there). */
     public int getDisplayColour(final int pos) {
-        return this.values[DATA_DISPLAY + pos * 3];
+        return this.values[DATA_DISPLAY + pos * DATA_DISPLAY_STRIDE];
     }
 
     /** Amount the current recipe needs of displayed aspect column {@code pos}. */
     public int getDisplayNeed(final int pos) {
-        return this.values[DATA_DISPLAY + pos * 3 + 1];
+        return this.values[DATA_DISPLAY + pos * DATA_DISPLAY_STRIDE + 1];
     }
 
     /** Amount the tile's essentia buffer holds of that aspect. */
     public int getDisplayHave(final int pos) {
-        return this.values[DATA_DISPLAY + pos * 3 + 2];
+        return this.values[DATA_DISPLAY + pos * DATA_DISPLAY_STRIDE + 2];
+    }
+
+    /**
+     * The synced index of displayed aspect column {@code pos} in
+     * {@link Aspect#values()}, or {@code -1} when nothing is displayed there.
+     */
+    public int getDisplayAspectIndex(final int pos) {
+        return this.values[DATA_DISPLAY + pos * DATA_DISPLAY_STRIDE + 3];
+    }
+
+    /**
+     * The aspect of displayed column {@code pos} — the object
+     * {@code UtilsFX.drawTag} is called with, for its sprite
+     * ({@code aspect.getImage()}) as well as its colour. Null when the column is
+     * empty <b>or</b> the synced index is not in this client's registry: an
+     * out-of-range index degrades to "no tag drawn", never to an exception and
+     * never to a drawn guess (the same shape
+     * {@code DeconstructionTableMenu}'s reveal channel has).
+     */
+    @Nullable
+    public Aspect getDisplayAspect(final int pos) {
+        final int index = getDisplayAspectIndex(pos);
+        if (index < 0) {
+            return null;
+        }
+        final List<Aspect> all = Aspect.values();
+        return index < all.size() ? all.get(index) : null;
     }
 
     /** The synced output preview (the hidden slot's stack). */
@@ -323,9 +366,10 @@ public class ThaumatoriumMenu extends AbstractContainerMenu {
             this.values[DATA_QUEUED_CURRENT] = 0;
             this.values[DATA_QUEUEABLE] = 0;
             for (int pos = 0; pos < ContainerLayout.TAU_VISIBLE_ASPECTS; pos++) {
-                this.values[DATA_DISPLAY + pos * 3] = 0;
-                this.values[DATA_DISPLAY + pos * 3 + 1] = 0;
-                this.values[DATA_DISPLAY + pos * 3 + 2] = 0;
+                this.values[DATA_DISPLAY + pos * DATA_DISPLAY_STRIDE] = 0;
+                this.values[DATA_DISPLAY + pos * DATA_DISPLAY_STRIDE + 1] = 0;
+                this.values[DATA_DISPLAY + pos * DATA_DISPLAY_STRIDE + 2] = 0;
+                this.values[DATA_DISPLAY + pos * DATA_DISPLAY_STRIDE + 3] = -1;
             }
             this.preview.setItem(0, ItemStack.EMPTY);
             return;
@@ -341,17 +385,26 @@ public class ThaumatoriumMenu extends AbstractContainerMenu {
         // recipeHash.size() < maxRecipes || recipeHash.contains(hash).
         this.values[DATA_QUEUEABLE] =
                 this.thaumatorium.queue().size() < this.thaumatorium.maxRecipes() || queued ? 1 : 0;
+        final List<Aspect> registry = Aspect.values();
         for (int pos = 0; pos < ContainerLayout.TAU_VISIBLE_ASPECTS; pos++) {
             final int at = this.startAspect + pos;
+            final int base = DATA_DISPLAY + pos * DATA_DISPLAY_STRIDE;
             if (at < sorted.size()) {
                 final Aspect aspect = sorted.get(at);
-                this.values[DATA_DISPLAY + pos * 3] = aspect.getColor();
-                this.values[DATA_DISPLAY + pos * 3 + 1] = aspects.getAmount(aspect);
-                this.values[DATA_DISPLAY + pos * 3 + 2] = this.thaumatorium.essentia().getAmount(aspect);
+                this.values[base] = aspect.getColor();
+                this.values[base + 1] = aspects.getAmount(aspect);
+                this.values[base + 2] = this.thaumatorium.essentia().getAmount(aspect);
+                // The identity the tag draw needs: Aspect.values() is the
+                // registry's declaration order (aspect/Aspect.java:119-133 — it
+                // walks AspectDefinitions.all() in order), so the same index
+                // resolves to the same aspect object on the server and on every
+                // client running this code.
+                this.values[base + 3] = registry.indexOf(aspect);
             } else {
-                this.values[DATA_DISPLAY + pos * 3] = 0;
-                this.values[DATA_DISPLAY + pos * 3 + 1] = 0;
-                this.values[DATA_DISPLAY + pos * 3 + 2] = 0;
+                this.values[base] = 0;
+                this.values[base + 1] = 0;
+                this.values[base + 2] = 0;
+                this.values[base + 3] = -1;
             }
         }
         this.preview.setItem(0, current.recipe().getResultItem(
