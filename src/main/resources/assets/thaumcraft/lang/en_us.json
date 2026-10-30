@@ -240,5 +240,15 @@
   "item.thaumcraft.blockjarfilleditem": "Jar of Essentia",
   "item.thaumcraft.blockjarfilleditem.void": "Void Jar of Essentia",
   "item.thaumcraft.itemessence.0": "Glass Phial",
-  "item.thaumcraft.itemessence.1": "Phial of Essentia"
+  "item.thaumcraft.itemessence.1": "Phial of Essentia",
+  "block.thaumcraft.blocktaint": "Crusted Taint",
+  "block.thaumcraft.blocktaint.0": "Crusted Taint",
+  "block.thaumcraft.blocktaint.1": "Tainted Soil",
+  "block.thaumcraft.blocktaint.2": "Block of Flesh",
+  "block.thaumcraft.blocktaintfibres": "Fibrous Taint",
+  "block.thaumcraft.blocktaintfibres.0": "Fibrous Taint",
+  "block.thaumcraft.blocktaintfibres.1": "Tainted Grass",
+  "block.thaumcraft.blocktaintfibres.2": "Tainted Plant",
+  "block.thaumcraft.blocktaintfibres.3": "Spore Stalk",
+  "block.thaumcraft.blocktaintfibres.4": "Mature Spore Stalk"
 }
