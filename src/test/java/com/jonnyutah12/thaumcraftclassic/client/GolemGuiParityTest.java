@@ -1,5 +1,6 @@
 package com.jonnyutah12.thaumcraftclassic.client;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -26,7 +27,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>The reference resolves by walking up from the test's working directory
  * (the gradle test cwd is not the project dir, and a {@code .worktrees/<task>}
- * checkout sits one level deeper) — the idiom the asset parity tests use.</p>
+ * checkout sits one level deeper) — the idiom the asset parity tests use. The
+ * decompiled 1.7.10 tree is a local reference checkout and is NOT in the repo,
+ * so when it is absent the test <b>assumption-skips</b>
+ * ({@link org.junit.jupiter.api.Assumptions}) exactly as
+ * {@code StructureParityTest} / the asset overlay tests do: on CI its three
+ * cases are counted skipped, not failed.</p>
  */
 class GolemGuiParityTest {
 
@@ -42,6 +48,10 @@ class GolemGuiParityTest {
                 }
             }
         }
+        // The reference tree is not checked out (CI): an absent original cannot
+        // falsify a parity claim, so skip rather than fail — the same contract
+        // StructureParityTest's assumeTrue(Files.exists(...)) establishes.
+        Assumptions.assumeTrue(false, "original source not checked out: " + suffix);
         return null;
     }
 
