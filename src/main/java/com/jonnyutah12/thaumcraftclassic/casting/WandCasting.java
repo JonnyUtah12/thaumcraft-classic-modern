@@ -3,6 +3,7 @@ package com.jonnyutah12.thaumcraftclassic.casting;
 import com.jonnyutah12.thaumcraftclassic.api.foci.Focus;
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.aspect.AspectList;
+import com.jonnyutah12.thaumcraftclassic.foci.FocusCombinations;
 import com.jonnyutah12.thaumcraftclassic.items.foci.ItemFocus;
 import com.jonnyutah12.thaumcraftclassic.items.foci.ItemFocusPouch;
 import com.jonnyutah12.thaumcraftclassic.items.wands.ItemWandCasting;
@@ -58,8 +59,14 @@ public final class WandCasting {
         CLIENT,
         /** The wand carries no focus (and no fallback focus was found). */
         NO_FOCUS,
-        /** The focus has no registered spell body yet (TC-M6-03-s). */
+        /** The focus has no registered spell body yet. */
         UNSUPPORTED,
+        /**
+         * The focus's combination runs per tick (the original's channel, TC-M6-03-s):
+         * the right-click started the use and nothing has been paid yet — each tick
+         * pays for itself through {@link #channelTick}.
+         */
+        CHANNELED,
         /** The wand cannot cover the focus's price. */
         UNPAID,
         /** Vis was paid and the behaviour reported an effect. */
@@ -132,7 +139,10 @@ public final class WandCasting {
      *
      * <p>Nothing is mutated on the client, without a focus, without a
      * registered behaviour, or when the wand cannot pay — see the class
-     * javadoc for the ordering and {@link Status} for each outcome.</p>
+     * javadoc for the ordering and {@link Status} for each outcome. A focus
+     * whose resolved <em>combination</em> is a per-tick one reports
+     * {@link Status#CHANNELED} instead: the caller starts the channel and
+     * {@link #channelTick} pays and fires each tick.</p>
      */
     public static CastResult cast(final ItemWandCasting wand, final ItemStack wandStack,
                                   final Player player, final Level level, final InteractionHand hand) {
@@ -148,7 +158,52 @@ public final class WandCasting {
         if (behavior == null) {
             return CastResult.of(Status.UNSUPPORTED);
         }
+        if (FocusCombinations.channeled(focus.tag(), ItemFocus.upgrades(focusStack))) {
+            return CastResult.of(Status.CHANNELED);
+        }
+        return fire(wand, wandStack, player, level, hand, focusStack, focus, behavior);
+    }
 
+    /**
+     * One tick of a per-tick focus's channel — the original's
+     * {@code onUsingFocusTick} ({@code ItemFocusFire.java:104-137},
+     * {@code ItemFocusShock.java:136-239},
+     * {@code ItemFocusExcavation.java:109-227}).
+     *
+     * <p>The original's tick body checked affordability (a dry run), stopped the
+     * use when the wand could not pay ({@code p.func_71034_by()}), then paid and
+     * fired. The port does the same through {@link #fire}, with its own rule on
+     * top: a tick that produced no effect is refunded, so a channel never bills
+     * for a focus whose content has not landed.</p>
+     *
+     * @return {@link Status#CAST} for a tick that fired (the channel continues),
+     *         {@link Status#UNPAID} when the wand cannot pay (the caller stops the
+     *         channel), {@link Status#NO_EFFECT} when nothing happened (also stops)
+     */
+    public static CastResult channelTick(final ItemWandCasting wand, final ItemStack wandStack,
+                                         final Player player, final Level level, final InteractionHand hand) {
+        if (level.isClientSide()) {
+            return CastResult.of(Status.CLIENT);
+        }
+        final ItemStack focusStack = selectedFocus(wandStack, player);
+        final Focus focus = ItemFocus.focusOf(focusStack);
+        if (focus == null) {
+            return CastResult.of(Status.NO_FOCUS);
+        }
+        final FocusBehavior behavior = FocusBehaviors.get(focus.tag());
+        if (behavior == null) {
+            return CastResult.of(Status.UNSUPPORTED);
+        }
+        if (!FocusCombinations.channeled(focus.tag(), ItemFocus.upgrades(focusStack))) {
+            return CastResult.of(Status.NO_EFFECT);
+        }
+        return fire(wand, wandStack, player, level, hand, focusStack, focus, behavior);
+    }
+
+    /** Price, pay, fire, refund on a no-op — the one path both entries share. */
+    private static CastResult fire(final ItemWandCasting wand, final ItemStack wandStack, final Player player,
+                                   final Level level, final InteractionHand hand, final ItemStack focusStack,
+                                   final Focus focus, final FocusBehavior behavior) {
         final AspectList baseCost = ((ItemFocus) focusStack.getItem()).getVisCost(focusStack);
         final AspectList cost = wand.effectiveCost(wandStack, player, baseCost, false);
         if (!ITEM_DRY_RUN.canPay(wand, wandStack, player, baseCost)) {

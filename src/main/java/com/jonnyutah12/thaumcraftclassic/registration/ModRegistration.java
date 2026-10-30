@@ -1,5 +1,6 @@
 package com.jonnyutah12.thaumcraftclassic.registration;
 
+import com.jonnyutah12.thaumcraftclassic.casting.FocusSpells;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArcaneWorkbench;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
@@ -68,6 +69,7 @@ public final class ModRegistration {
         CatalogBaubles.init(); // TC-M8-02 bauble items
         CatalogWands.init(modEventBus); // TC-M6-01 wand items + thaumcraft:wand_component registry
         CatalogFoci.init(); // TC-M6-02 focus items + the focus pouch
+        FocusSpells.registerAll(); // TC-M6-03-s: the ten per-focus spell bodies on the casting seam
 
         ModDataComponents.DATA_COMPONENT_TYPES.register(modEventBus);
         ModBlocks.BLOCKS.register(modEventBus);

@@ -52,8 +52,20 @@ public record Focus(String tag, String researchKey, String sortingHelper, List<C
      * {@code foci/Focuses#primalCost}.
      */
     public AspectList cost() {
+        return resolveCost(baseCost);
+    }
+
+    /**
+     * A declared cost list resolved against the live aspect registry — the
+     * shared implementation of {@link #cost()} and of the TC-M6-03-s
+     * combination prices ({@code foci/FocusCombinations}). Aspect tags are held
+     * as strings because both tables are built during registration wiring, before
+     * the aspect registry is populated; an unknown tag contributes nothing, which
+     * is the original's {@code new AspectList().add(null, n)} shape.
+     */
+    public static AspectList resolveCost(final List<Cost> costs) {
         final AspectList list = new AspectList();
-        for (final Cost cost : baseCost) {
+        for (final Cost cost : costs) {
             final Aspect aspect = Aspect.getAspect(cost.aspectTag());
             if (aspect != null) {
                 list.add(aspect, cost.amount());

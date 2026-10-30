@@ -1,9 +1,14 @@
 package com.jonnyutah12.thaumcraftclassic.items.foci;
 
 import com.jonnyutah12.thaumcraftclassic.api.foci.Focus;
+import com.jonnyutah12.thaumcraftclassic.api.foci.FocusUpgradeType;
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.aspect.AspectList;
+import com.jonnyutah12.thaumcraftclassic.foci.FocusCombinations;
+import com.jonnyutah12.thaumcraftclassic.foci.FocusUpgradeList;
+import com.jonnyutah12.thaumcraftclassic.foci.FocusUpgradeTrees;
 import com.jonnyutah12.thaumcraftclassic.foci.Focuses;
+import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
 import java.text.DecimalFormat;
 import java.util.List;
 import net.minecraft.ChatFormatting;
@@ -74,15 +79,24 @@ public class ItemFocus extends Item {
     }
 
     /**
-     * Original {@code getVisCost} on an unupgraded stack (see the class javadoc
-     * for the upgrade-dependent variants and the primal roll). Amounts are
-     * centi-vis; the TC-M4-02 cost chain applies the cap/gear modifiers at
-     * payment time, exactly as the original did.
+     * Original {@code getVisCost}: the price for this stack's <em>combination</em>
+     * of applied upgrades (TC-M6-03-s). The original resolved it with a ternary
+     * chain over the upgrades ({@code isUpgradedWith(firebeam) ? costBeam :
+     * isUpgradedWith(fireball) ? costBall : costBase},
+     * {@code ItemFocusFire.java:62-64}); {@link FocusCombinations} keeps those
+     * chains, their order and their values, so an upgraded focus is priced
+     * exactly as the original priced it. The primal focus is still the one
+     * rolled price.
      */
     public AspectList getVisCost(final ItemStack stack) {
-        return Focuses.PRIMAL_TAG.equals(focus.tag())
-                ? Focuses.primalCost(System.currentTimeMillis())
-                : focus.cost();
+        if (Focuses.PRIMAL_TAG.equals(focus.tag())) {
+            return Focuses.primalCost(System.currentTimeMillis());
+        }
+        final AspectList combination = FocusCombinations.cost(focus.tag(), upgrades(stack));
+        // Before the aspect registry is live (unit tests, registration wiring) a
+        // resolved price is empty, so fall back to the declared combination price.
+        return combination.size() == 0 ? Focus.resolveCost(FocusCombinations.resolve(focus.tag(), upgrades(stack)) == null
+                ? focus.baseCost() : FocusCombinations.resolve(focus.tag(), upgrades(stack)).cost()) : combination;
     }
 
     /** Original {@code isVisCostPerTick} — the tooltip wording and the per-tick charge flag. */
@@ -96,13 +110,86 @@ public class ItemFocus extends Item {
     }
 
     /**
-     * Original {@code getActivationCooldown} on an unupgraded stack, in
-     * milliseconds. The upgrade-dependent variants ({@code fireball} 1000,
-     * {@code chainlightning}/{@code earthshock}, {@code scattershot}/
-     * {@code iceboulder}) land with TC-M6-03-s.
+     * Original {@code getActivationCooldown}: the cooldown of the stack's
+     * combination (TC-M6-03-s) — 0 for an unupgraded fire/trade/excavation/
+     * portable-hole/warding focus, 1000 for a fireball fire focus, 500 for a
+     * scattershot/iceboulder frost focus, 1000 for shock's earthshock, and so on
+     * ({@code foci/FocusCombinations}). The uncombined value is the parent
+     * slice's {@link Focus#activationCooldown()} for every focus, which
+     * {@code FociParityTest} still pins.
      */
     public int getActivationCooldown(final ItemStack stack) {
-        return focus.activationCooldown();
+        return FocusCombinations.cooldown(focus.tag(), upgrades(stack));
+    }
+
+    // ------------------------------------------------------------------ upgrades
+
+    /** The upgrades applied to a focus stack — the original's {@code "upgrade"} tag list. */
+    public static FocusUpgradeList upgrades(final ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return FocusUpgradeList.NONE;
+        }
+        return stack.getOrDefault(ModDataComponents.FOCUS_UPGRADES.get(), FocusUpgradeList.NONE);
+    }
+
+    /** Writes the stack's applied upgrades; an empty list clears the component. */
+    public static void setUpgrades(final ItemStack stack, final FocusUpgradeList upgrades) {
+        if (upgrades == null || upgrades.applied().isEmpty()) {
+            stack.remove(ModDataComponents.FOCUS_UPGRADES.get());
+        } else {
+            stack.set(ModDataComponents.FOCUS_UPGRADES.get(), upgrades);
+        }
+    }
+
+    /**
+     * Original {@code getUpgradeLevel} on this focus's stack — the level of an
+     * applied upgrade, which is what the wand's potency/enlarge/extend/treasure
+     * levels are derived from.
+     */
+    public int upgradeLevel(final ItemStack stack, final FocusUpgradeType type) {
+        return upgrades(stack).level(type);
+    }
+
+    /** Original {@code isUpgradedWith}. */
+    public boolean isUpgradedWith(final ItemStack stack, final FocusUpgradeType type) {
+        return upgrades(stack).isUpgradedWith(type);
+    }
+
+    /** Original {@code getPossibleUpgradesByRank}: this focus's tree at one rank. */
+    public FocusUpgradeType[] getPossibleUpgradesByRank(final ItemStack stack, final int rank) {
+        final java.util.List<FocusUpgradeType> rankList = FocusUpgradeTrees.byRank(focus.tag(), rank);
+        return rankList == null ? null : rankList.toArray(new FocusUpgradeType[0]);
+    }
+
+    /**
+     * Original {@code canApplyUpgrade} ({@code ItemFocusFire.java:157-162} and the
+     * three other overrides) plus the tree's own offer: whether {@code type} may
+     * be applied at {@code rank}. {@code researchComplete} is the hellbat rule's
+     * {@code VAMPBAT} research check, passed in so this is decidable without a
+     * player.
+     */
+    public boolean canApplyUpgrade(final ItemStack stack, final FocusUpgradeType type, final int rank,
+                                   final boolean researchComplete) {
+        return FocusUpgradeTrees.canApply(focus.tag(), upgrades(stack), type, rank, researchComplete);
+    }
+
+    /**
+     * Original {@code applyUpgrade} ({@code ItemFocusBasic.java:143-152}): the
+     * upgrade lands in its own rank when that slot is free; false otherwise.
+     */
+    public boolean applyUpgrade(final ItemStack stack, final FocusUpgradeType type, final int rank) {
+        final java.util.Optional<FocusUpgradeList> applied = upgrades(stack).withUpgrade(type, rank);
+        applied.ifPresent(next -> setUpgrades(stack, next));
+        return applied.isPresent();
+    }
+
+    /** Original {@code getMaxAreaSize}: the architect area a focus offers ({@code ItemFocusTrade.java:260-262}). */
+    public int getMaxAreaSize(final ItemStack stack) {
+        return switch (focus.tag()) {
+            case "trade" -> 3 + upgrades(stack).level(com.jonnyutah12.thaumcraftclassic.api.foci.FocusUpgrades.ENLARGE) * 2;
+            case "warding" -> 3 + upgrades(stack).level(com.jonnyutah12.thaumcraftclassic.api.foci.FocusUpgrades.ENLARGE);
+            default -> 1;
+        };
     }
 
     /** Original {@code getSortingHelper}: the pouch's fixed sort key prefix. */

@@ -1,11 +1,13 @@
 package com.jonnyutah12.thaumcraftclassic.items.wands;
 
 import com.jonnyutah12.thaumcraftclassic.api.foci.Focus;
+import com.jonnyutah12.thaumcraftclassic.api.foci.FocusUpgrades;
 import com.jonnyutah12.thaumcraftclassic.api.wands.WandCap;
 import com.jonnyutah12.thaumcraftclassic.api.wands.WandRod;
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.aspect.AspectList;
 import com.jonnyutah12.thaumcraftclassic.casting.WandCasting;
+import com.jonnyutah12.thaumcraftclassic.foci.FocusUpgradeList;
 import com.jonnyutah12.thaumcraftclassic.foci.Focuses;
 import com.jonnyutah12.thaumcraftclassic.items.foci.ItemFocus;
 import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
@@ -25,12 +27,15 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.registries.DeferredItem;
 
@@ -201,7 +206,19 @@ public class ItemWandCasting extends Item implements VisContainerItem, IVisConta
             return ItemStack.EMPTY;
         }
         final DeferredItem<ItemFocus> item = CatalogFoci.item(tag);
-        return item == null ? ItemStack.EMPTY : new ItemStack(item.get());
+        if (item == null) {
+            return ItemStack.EMPTY;
+        }
+        final ItemStack focusStack = new ItemStack(item.get());
+        // The original stored the focus stack itself, upgrades included; the port
+        // rebuilds it from the tag and restores the upgrades it snapshotted (TC-M6-03-s).
+        ItemFocus.setUpgrades(focusStack, focusUpgrades(stack));
+        return focusStack;
+    }
+
+    /** The applied upgrades of the wand's focus — the original's stored stack's upgrade list. */
+    public static FocusUpgradeList focusUpgrades(final ItemStack stack) {
+        return stack.getOrDefault(ModDataComponents.WAND_FOCUS_UPGRADES.get(), FocusUpgradeList.NONE);
     }
 
     /** The focus the wand carries, or null — the original {@code getFocus}. */
@@ -220,8 +237,17 @@ public class ItemWandCasting extends Item implements VisContainerItem, IVisConta
         final String tag = ItemFocus.tagOf(focusStack);
         if (tag == null) {
             stack.remove(ModDataComponents.WAND_FOCUS.get());
+            stack.remove(ModDataComponents.WAND_FOCUS_UPGRADES.get());
+            return;
+        }
+        stack.set(ModDataComponents.WAND_FOCUS.get(), tag);
+        // The focus's applied upgrades are snapshotted with it, the way the
+        // original's stored focus stack carried its own upgrade tag list (TC-M6-03-s).
+        final FocusUpgradeList upgrades = ItemFocus.upgrades(focusStack);
+        if (upgrades.applied().isEmpty()) {
+            stack.remove(ModDataComponents.WAND_FOCUS_UPGRADES.get());
         } else {
-            stack.set(ModDataComponents.WAND_FOCUS.get(), tag);
+            stack.set(ModDataComponents.WAND_FOCUS_UPGRADES.get(), upgrades);
         }
     }
 
@@ -300,18 +326,44 @@ public class ItemWandCasting extends Item implements VisContainerItem, IVisConta
     }
 
     /**
-     * The original {@code getFocusFrugal} ({@code ItemWandCasting.java:287-289}):
-     * the {@code frugal} upgrade level of the wand's focus, plus 0.
+     * Original {@code getFocusFrugal} ({@code ItemWandCasting.java:287-289}):
+     * the {@code frugal} upgrade level of the wand's focus.
      *
-     * <p>Foci upgrades — the {@code FocusUpgradeType} table and each focus's
-     * per-rank upgrade tree — are per-focus behaviour and land with TC-M6-03-s,
-     * so no shipped focus can carry a {@code frugal} upgrade yet and the level
-     * is 0. That is exactly the original's value for a wand with no focus
-     * ({@code getFocus(is) == null} returned 0), and it is the value the
-     * TC-M6-01 wand already used.</p>
+     * <p>TC-M6-03-s landed the upgrade tables, so this is the focus's real
+     * level: the original returned 0 when the wand carried no focus
+     * ({@code getFocus(is) == null}), which is what an empty upgrade list gives
+     * here.</p>
      */
     public static int frugalLevel(final ItemStack stack) {
-        return 0;
+        return focusUpgradeLevel(stack, FocusUpgrades.FRUGAL);
+    }
+
+    /** Original {@code getFocusPotency} ({@code ItemWandCasting.java:277-280}): the focus's level plus the runed wand's +1. */
+    public static int focusPotency(final ItemStack stack) {
+        return focusUpgradeLevel(stack, FocusUpgrades.POTENCY) + (hasRunes(stack) ? 1 : 0);
+    }
+
+    /** Original {@code getFocusTreasure} ({@code ItemWandCasting.java:283-284}). */
+    public static int focusTreasure(final ItemStack stack) {
+        return focusUpgradeLevel(stack, FocusUpgrades.TREASURE);
+    }
+
+    /** Original {@code getFocusEnlarge} ({@code ItemWandCasting.java:291-292}). */
+    public static int focusEnlarge(final ItemStack stack) {
+        return focusUpgradeLevel(stack, FocusUpgrades.ENLARGE);
+    }
+
+    /** Original {@code getFocusExtend} ({@code ItemWandCasting.java:295-296}). */
+    public static int focusExtend(final ItemStack stack) {
+        return focusUpgradeLevel(stack, FocusUpgrades.EXTEND);
+    }
+
+    /**
+     * {@code this.getFocus(stack).getUpgradeLevel(this.getFocusItem(stack), type)}
+     * ({@code ItemWandCasting.java:278-296}): 0 without a focus.
+     */
+    private static int focusUpgradeLevel(final ItemStack stack, final com.jonnyutah12.thaumcraftclassic.api.foci.FocusUpgradeType type) {
+        return ItemFocus.upgrades(focusItem(stack)).level(type);
     }
 
     /**
@@ -474,11 +526,70 @@ public class ItemWandCasting extends Item implements VisContainerItem, IVisConta
     public InteractionResultHolder<ItemStack> use(final Level level, final Player player, final InteractionHand hand) {
         final ItemStack stack = player.getItemInHand(hand);
         final WandCasting.CastResult result = WandCasting.cast(this, stack, player, level, hand);
+        if (result.status() == WandCasting.Status.CHANNELED) {
+            // The original's per-tick foci started an unbounded use on the right-click
+            // (p.func_71008_a(itemstack, Integer.MAX_VALUE)) and did their work in
+            // onUsingFocusTick; the port starts the same channel here.
+            player.startUsingItem(hand);
+            return InteractionResultHolder.consume(stack);
+        }
         return switch (result.status()) {
             case CLIENT, NO_FOCUS, UNSUPPORTED -> InteractionResultHolder.pass(stack);
             case UNPAID, NO_EFFECT -> InteractionResultHolder.fail(stack);
             case CAST -> InteractionResultHolder.success(stack);
+            case CHANNELED -> InteractionResultHolder.consume(stack);
         };
+    }
+
+    /**
+     * Original {@code getItemUseAction}/{@code getMaxItemUseDuration} for the
+     * per-tick foci: the original's own use duration was
+     * {@code Integer.MAX_VALUE}, i.e. the channel ran until the button was
+     * released or the vis ran out.
+     */
+    @Override
+    public int getUseDuration(final ItemStack stack, final LivingEntity entity) {
+        return Integer.MAX_VALUE;
+    }
+
+    /**
+     * Original {@code onUsingFocusTick} ({@code ItemWandCasting.java:596-620}
+     * dispatching into each focus's {@code onUsingFocusTick}, e.g.
+     * {@code ItemFocusFire.java:104-137}): one tick of the channel — pay the
+     * combination's price and fire. A tick that could not be paid, or produced
+     * nothing, ends the channel, which is the original's
+     * {@code p.func_71034_by()} (stop using) on a failed pre-check.
+     */
+    @Override
+    public void onUseTick(final Level level, final LivingEntity livingEntity, final ItemStack stack,
+                          final int remainingUseDuration) {
+        if (!(livingEntity instanceof Player player)) {
+            return;
+        }
+        final WandCasting.CastResult result = WandCasting.channelTick(this, stack, player, level,
+                player.getUsedItemHand());
+        if (result.status() != WandCasting.Status.CAST) {
+            player.stopUsingItem();
+        }
+    }
+
+    /**
+     * Original {@code onPlayerStoppedUsingFocus} for the per-tick foci: fire and
+     * shock simply stopped, excavation cleared its per-player break state
+     * ({@code ItemFocusExcavation.func_77615_a}, lines 286-317). The port keeps
+     * no per-player break state in this slice (the dig's block mutation is the
+     * excavation machinery's, see {@code casting/FocusSpells}), so this is the
+     * original's no-op half.
+     */
+    @Override
+    public void releaseUsing(final ItemStack stack, final Level level, final LivingEntity livingEntity,
+                             final int timeCharged) {
+    }
+
+    /** The original wand had no vanilla use animation; the cast FX are TC-M7's. */
+    @Override
+    public UseAnim getUseAnimation(final ItemStack stack) {
+        return UseAnim.NONE;
     }
 
     // ---------------------------------------------------------------- display

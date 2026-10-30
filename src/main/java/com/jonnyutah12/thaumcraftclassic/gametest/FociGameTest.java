@@ -6,6 +6,7 @@ import com.jonnyutah12.thaumcraftclassic.accessory.AccessorySlot;
 import com.jonnyutah12.thaumcraftclassic.api.foci.Focus;
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.aspect.AspectList;
+import com.jonnyutah12.thaumcraftclassic.casting.FocusBehavior;
 import com.jonnyutah12.thaumcraftclassic.casting.FocusBehaviors;
 import com.jonnyutah12.thaumcraftclassic.casting.WandCasting;
 import com.jonnyutah12.thaumcraftclassic.foci.FocusPouchContents;
@@ -151,16 +152,22 @@ public final class FociGameTest {
         final Aspect ignis = Aspect.getAspect("ignis");
         wandItem.addVis(wand, ignis, 10, true);
 
-        // 1. No behaviour registered: the cast is unsupported and pays nothing.
-        helper.assertTrue(!FocusBehaviors.isRegistered("fire"),
-                "this slice ships no focus behaviours; TC-M6-03-s fills the seam");
+        // 1. TC-M6-03-s filled the seam: the fire focus has a body, and its uncombined
+        //    combination is the per-tick ember stream, so a right-click starts a channel
+        //    and spends nothing (the parent slice asserted UNSUPPORTED here).
+        helper.assertTrue(FocusBehaviors.isRegistered("fire"),
+                "TC-M6-03-s registers the ten focus bodies on the seam");
+        helper.assertTrue(FocusBehaviors.registeredTags().size() == 10,
+                "all ten foci must have a body, got " + FocusBehaviors.registeredTags());
         WandCasting.CastResult result = WandCasting.cast(wandItem, wand, player, helper.getLevel(),
                 InteractionHand.MAIN_HAND);
-        helper.assertTrue(result.status() == WandCasting.Status.UNSUPPORTED,
-                "a focus with no behaviour must report UNSUPPORTED, got " + result.status());
+        helper.assertTrue(result.status() == WandCasting.Status.CHANNELED,
+                "an uncombined fire focus starts a channel, got " + result.status());
         helper.assertTrue(wandItem.getVis(wand, ignis) == 1000,
-                "an unsupported cast must not spend, got " + wandItem.getVis(wand, ignis));
+                "starting a channel must not spend, got " + wandItem.getVis(wand, ignis));
 
+        // The shipped body is swapped out for the probe's own and restored in the finally.
+        final FocusBehavior shipped = FocusBehaviors.get("fire");
         int casts = 0;
         try {
             FocusBehaviors.register("fire", context -> {
@@ -170,7 +177,8 @@ public final class FociGameTest {
 
             // 2. Supported and affordable: the iron cap's 1.1F modifier makes the
             //    ignis 10 price (int)(10 * 1.1) = 11 centi-vis.
-            result = WandCasting.cast(wandItem, wand, player, helper.getLevel(), InteractionHand.MAIN_HAND);
+            // A per-tick combination fires through channelTick (the right-click only starts it).
+            result = WandCasting.channelTick(wandItem, wand, player, helper.getLevel(), InteractionHand.MAIN_HAND);
             helper.assertTrue(result.status() == WandCasting.Status.CAST,
                     "a supported, affordable cast must succeed, got " + result.status());
             helper.assertTrue(result.focus() == Focuses.byTag("fire"), "the result must name the cast focus");
@@ -182,7 +190,7 @@ public final class FociGameTest {
 
             // 3. A behaviour that did nothing has its payment refunded.
             FocusBehaviors.register("fire", context -> false);
-            result = WandCasting.cast(wandItem, wand, player, helper.getLevel(), InteractionHand.MAIN_HAND);
+            result = WandCasting.channelTick(wandItem, wand, player, helper.getLevel(), InteractionHand.MAIN_HAND);
             helper.assertTrue(result.status() == WandCasting.Status.NO_EFFECT,
                     "a no-effect behaviour must report NO_EFFECT, got " + result.status());
             helper.assertTrue(result.untouched(), "a refunded cast reports nothing paid");
@@ -191,7 +199,7 @@ public final class FociGameTest {
 
             // 4. Unaffordable: the wand is emptied and the cast spends nothing.
             wandItem.storeVis(wand, ignis, 5);
-            result = WandCasting.cast(wandItem, wand, player, helper.getLevel(), InteractionHand.MAIN_HAND);
+            result = WandCasting.channelTick(wandItem, wand, player, helper.getLevel(), InteractionHand.MAIN_HAND);
             helper.assertTrue(result.status() == WandCasting.Status.UNPAID,
                     "a wand that cannot pay must report UNPAID, got " + result.status());
             helper.assertTrue(wandItem.getVis(wand, ignis) == 5,
@@ -199,10 +207,12 @@ public final class FociGameTest {
 
             casts++;
         } finally {
-            FocusBehaviors.unregister("fire");
+            // TC-M6-03-s ships a real "fire" body; restore it rather than leaving the seam
+            // empty for the probes that share this game-test batch.
+            FocusBehaviors.register("fire", shipped);
         }
         helper.assertTrue(casts == 1, "the casting probe did not run");
-        helper.assertTrue(!FocusBehaviors.isRegistered("fire"), "the probe behaviour must be cleaned up");
+        helper.assertTrue(FocusBehaviors.get("fire") == shipped, "the shipped fire body must be restored");
         helper.succeed();
     }
 
