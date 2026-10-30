@@ -66,8 +66,34 @@ class LocalizationFileTest {
             "item.thaumcraft.itemgolemupgrade.2", "item.thaumcraft.itemgolemupgrade.3",
             "item.thaumcraft.itemgolemupgrade.4", "item.thaumcraft.itemgolemupgrade.5",
             "item.capacity.text", "item.ItemAmuletVis.text",
+            // TC-M6-02: the per-cast / per-tick focus cost lines ItemFocus emits
+            // (the original item.Focus.cost1 / item.Focus.cost2 keys, kept in the
+            // port's one-suffix shape).
+            "item.thaumcraft.focus.cost1", "item.thaumcraft.focus.cost2",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
-            "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror");
+            "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror",
+            // TC-M6-01: the wand display name composes one translatable per part (the
+            // original item.Wand.<cap>.cap / .<rod>.rod / .{wand,staff,sceptre}.obj keys,
+            // collapsed to the port's one-suffix key shape) plus the item.Wand.name format.
+            "item.thaumcraft.wandcasting.iron",
+            "item.thaumcraft.wandcasting.gold",
+            "item.thaumcraft.wandcasting.copper",
+            "item.thaumcraft.wandcasting.silver",
+            "item.thaumcraft.wandcasting.thaumium",
+            "item.thaumcraft.wandcasting.void",
+            "item.thaumcraft.wandcasting.wood",
+            "item.thaumcraft.wandcasting.greatwood",
+            "item.thaumcraft.wandcasting.silverwood",
+            "item.thaumcraft.wandcasting.obsidian",
+            "item.thaumcraft.wandcasting.blaze",
+            "item.thaumcraft.wandcasting.ice",
+            "item.thaumcraft.wandcasting.bone",
+            "item.thaumcraft.wandcasting.reed",
+            "item.thaumcraft.wandcasting.quartz",
+            "item.thaumcraft.wandcasting.primal",
+            "item.thaumcraft.wandcasting.wand",
+            "item.thaumcraft.wandcasting.sceptre",
+            "item.thaumcraft.wandcasting.staff");
 
     /**
      * The shipped multi-meta items and the original-metadata domain their

@@ -103,6 +103,8 @@ public final class LocalizationGameTest {
             Map.entry("item.thaumcraft.itemgolemupgrade.4", "ItemTrunkSpawner tooltip (TC-M6-06 trunk upgrades)"),
             Map.entry("item.thaumcraft.itemgolemupgrade.5", "ItemTrunkSpawner tooltip (TC-M6-06 trunk upgrades)"),
             Map.entry("item.capacity.text", "ItemAmuletVis capacity line (original key shape kept)"),
+            Map.entry("item.thaumcraft.focus.cost1", "ItemFocus.appendHoverText cost line (original item.Focus.cost1), TC-M6-02"),
+            Map.entry("item.thaumcraft.focus.cost2", "ItemFocus.appendHoverText cost line (original item.Focus.cost2), TC-M6-02"),
             Map.entry("item.ItemAmuletVis.text", "ItemAmuletVis helper line (original key shape kept)"),
             Map.entry("tc.discount", "ItemBaubleBlanks apprentice-ring tooltip"),
             Map.entry("tc.resonator1", "ItemResonator action bar"),
@@ -111,7 +113,26 @@ public final class LocalizationGameTest {
             Map.entry("tc.handmirrorlinkedto", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorlinked", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorerror", "ItemHandMirror link message"),
-            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"));
+            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"),
+            Map.entry("item.thaumcraft.wandcasting.iron", "ItemWandCasting.getName fragment (original item.Wand.iron.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.gold", "ItemWandCasting.getName fragment (original item.Wand.gold.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.copper", "ItemWandCasting.getName fragment (original item.Wand.copper.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.silver", "ItemWandCasting.getName fragment (original item.Wand.silver.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.thaumium", "ItemWandCasting.getName fragment (original item.Wand.thaumium.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.void", "ItemWandCasting.getName fragment (original item.Wand.void.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.wood", "ItemWandCasting.getName fragment (original item.Wand.wood.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.greatwood", "ItemWandCasting.getName fragment (original item.Wand.greatwood.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.silverwood", "ItemWandCasting.getName fragment (original item.Wand.silverwood.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.obsidian", "ItemWandCasting.getName fragment (original item.Wand.obsidian.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.blaze", "ItemWandCasting.getName fragment (original item.Wand.blaze.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.ice", "ItemWandCasting.getName fragment (original item.Wand.ice.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.bone", "ItemWandCasting.getName fragment (original item.Wand.bone.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.reed", "ItemWandCasting.getName fragment (original item.Wand.reed.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.quartz", "ItemWandCasting.getName fragment (original item.Wand.quartz.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.primal", "ItemWandCasting.getName fragment (original item.Wand.primal.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.wand", "ItemWandCasting.getName fragment (original item.Wand.wand.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.sceptre", "ItemWandCasting.getName fragment (original item.Wand.sceptre.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.staff", "ItemWandCasting.getName fragment (original item.Wand.staff.cap/.rod/.obj), TC-M6-01"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always
