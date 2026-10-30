@@ -7,6 +7,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogGolems;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
@@ -143,6 +144,15 @@ public final class ModRegistration {
         // with their jar tiles, the glass phial and the filled-jar item. The
         // tube network that moves essentia between them stays on TC-M4-07.
         CatalogEssentiaStorage.init(modEventBus);
+
+        // TC-M6-08-s: golem content — the five golem items
+        // (itemgolemplacer / itemgolemcore / itemgolemupgrade / golembell /
+        // itemgolemdecoration) and the thaumcraft:golem entity type
+        // (EntityGolemBase substrate; behaviour is TC-M6-08-s-b, GUI and
+        // renderers TC-M6-08-s-c). Registering the items makes the shipped
+        // GOLEM*/CORE*/UPGRADE*/TINY* crucible, arcane and infusion recipe rows
+        // that gate on them live.
+        CatalogGolems.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

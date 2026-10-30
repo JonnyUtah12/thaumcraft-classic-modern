@@ -242,11 +242,11 @@ Thaumcraft:HoverHarness,thaumcraft:hoverharness,item,Thaumostatic Harness,not_st
 Thaumcraft:BlockJarFilledItem,thaumcraft:blockjarfilleditem,item,Jar of Essentia,done,tested,id case change only (D-001),class=ItemJarFilled
 Thaumcraft:BlockJarNodeItem,thaumcraft:blockjarnodeitem,item,Node in a Jar,not_started,not_tested,id case change only (D-001),class=ItemJarNode
 Thaumcraft:TrunkSpawner,thaumcraft:trunkspawner,item,Traveling Trunk,done,tested,id case change only (D-001),class=ItemTrunkSpawner
-Thaumcraft:ItemGolemPlacer,thaumcraft:itemgolemplacer,item,Straw Golem / Wood Golem / Tallow Golem / Clay Golem / Flesh Golem / Stone Golem / Iron Golem / Thaumium Golem,not_started,not_tested,id case change only (D-001),class=ItemGolemPlacer
-Thaumcraft:ItemGolemCore,thaumcraft:itemgolemcore,item,Golem Animation Core,not_started,not_tested,id case change only (D-001),class=ItemGolemCore
-Thaumcraft:ItemGolemUpgrade,thaumcraft:itemgolemupgrade,item,Golem Upgrade: Air / Golem Upgrade: Earth / Golem Upgrade: Fire / Golem Upgrade: Water / Golem Upgrade: Order / Golem Upgrade: Entropy,not_started,not_tested,id case change only (D-001),class=ItemGolemUpgrade
-Thaumcraft:GolemBell,thaumcraft:golembell,item,Golemancer's Bell,not_started,not_tested,id case change only (D-001),class=ItemGolemBell
-Thaumcraft:ItemGolemDecoration,thaumcraft:itemgolemdecoration,item,Accessory,not_started,not_tested,id case change only (D-001),class=ItemGolemDecoration
+Thaumcraft:ItemGolemPlacer,thaumcraft:itemgolemplacer,item,Straw Golem / Wood Golem / Tallow Golem / Clay Golem / Flesh Golem / Stone Golem / Iron Golem / Thaumium Golem,done,tested,id case change only (D-001),class=ItemGolemPlacer
+Thaumcraft:ItemGolemCore,thaumcraft:itemgolemcore,item,Golem Animation Core,done,tested,id case change only (D-001),class=ItemGolemCore
+Thaumcraft:ItemGolemUpgrade,thaumcraft:itemgolemupgrade,item,Golem Upgrade: Air / Golem Upgrade: Earth / Golem Upgrade: Fire / Golem Upgrade: Water / Golem Upgrade: Order / Golem Upgrade: Entropy,done,tested,id case change only (D-001),class=ItemGolemUpgrade
+Thaumcraft:GolemBell,thaumcraft:golembell,item,Golemancer's Bell,done,tested,id case change only (D-001),class=ItemGolemBell
+Thaumcraft:ItemGolemDecoration,thaumcraft:itemgolemdecoration,item,Accessory,done,tested,id case change only (D-001),class=ItemGolemDecoration
 Thaumcraft:ItemBowBone,thaumcraft:itembowbone,item,Bow of Bone,not_started,not_tested,id case change only (D-001),class=ItemBowBone
 Thaumcraft:PrimalArrow,thaumcraft:primalarrow,item,Air Arrow / Fire Arrow / Water Arrow / Earth Arrow / Order Arrow / Entropy Arrow,not_started,not_tested,id case change only (D-001),class=ItemPrimalArrow
 Thaumcraft:ItemResonator,thaumcraft:itemresonator,item,Essentia Resonator,done,tested,id case change only (D-001),class=ItemResonator
@@ -312,7 +312,7 @@ Thaumcraft:GolemOrb,thaumcraft:golemorb,entity,Energy Orb,not_started,not_tested
 Thaumcraft:ShockOrb,thaumcraft:shockorb,entity,Shocking Orb,not_started,not_tested,,class=EntityShockOrb mod_index=14
 Thaumcraft:ExplosiveOrb,thaumcraft:explosiveorb,entity,Explosive Fireball,not_started,not_tested,,class=EntityExplosiveOrb mod_index=15
 Thaumcraft:Ember,thaumcraft:ember,entity,,not_started,not_tested,,class=EntityEmber mod_index=16
-Thaumcraft:Golem,thaumcraft:golem,entity,Golem,not_started,not_tested,,class=EntityGolemBase mod_index=17
+Thaumcraft:Golem,thaumcraft:golem,entity,Golem,done,tested,,class=EntityGolemBase mod_index=17
 Thaumcraft:TravelingTrunk,thaumcraft:travelingtrunk,entity,Traveling Trunk,not_started,not_tested,,class=EntityTravelingTrunk mod_index=18
 Thaumcraft:BrainyZombie,thaumcraft:brainyzombie,entity,Angry Zombie,not_started,not_tested,,class=EntityBrainyZombie mod_index=19
 Thaumcraft:GiantBrainyZombie,thaumcraft:giantbrainyzombie,entity,Furious Zombie,not_started,not_tested,,class=EntityGiantBrainyZombie mod_index=20
