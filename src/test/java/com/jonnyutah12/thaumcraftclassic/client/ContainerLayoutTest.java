@@ -322,4 +322,121 @@ class ContainerLayoutTest {
         assertEquals(TrunkScreen.PANEL_FILL, ContainerLayout.PANEL_FILL);
         assertEquals(TrunkScreen.PANEL_FRAME, ContainerLayout.PANEL_FRAME);
     }
+
+    // ------------------------------------------- aspect tag (UtilsFX.drawTag)
+    //
+    // TC-M7-04-m2d. The renderer (client/AspectTagRenderer) draws pixels and so
+    // lives where no test in this repo can see them; every number it draws FROM
+    // is here, transcribed from
+    // reference/decompiled/thaumcraft/thaumcraft/client/lib/UtilsFX.java:814-897.
+
+    @Test
+    void tagBoxIsTheOriginalsSixteenPixelsAtThePointMinusEight() {
+        assertEquals(16, ContainerLayout.TAG_SIZE,
+                "UtilsFX.java:839-842 blits (x,y)..(x+16,y+16): the tag box is 16 px");
+        assertEquals(-8, ContainerLayout.TAG_CENTER_OFFSET,
+                "GuiArcaneWorkbench.java:65 passes the point minus 8");
+        assertEquals(64, ContainerLayout.tagBoxX(72));
+        assertEquals(13, ContainerLayout.tagBoxY(21));
+        assertEquals(ContainerLayout.TAG_SIZE, ContainerLayout.WB_ASPECT_BOX,
+                "the workbench's vis box is the same 16 px tag box");
+        assertEquals(ContainerLayout.TAG_SIZE, ContainerLayout.DECON_ASPECT_SIZE,
+                "the deconstruction table's box is the same 16 px tag box");
+        assertEquals(64, ContainerLayout.DECON_ASPECT_X, "GuiDeconstructionTable.java:39 draws at (64,48)");
+        assertEquals(48, ContainerLayout.DECON_ASPECT_Y);
+        for (int i = 0; i < ContainerLayout.WB_ASPECT_CENTER_X.length; i++) {
+            assertEquals(ContainerLayout.WB_ASPECT_CENTER_X[i] + ContainerLayout.TAG_CENTER_OFFSET,
+                    ContainerLayout.aspectBoxX(i), "workbench tag " + i + " must sit on the original's point");
+            assertEquals(ContainerLayout.WB_ASPECT_CENTER_Y[i] + ContainerLayout.TAG_CENTER_OFFSET,
+                    ContainerLayout.aspectBoxY(i));
+        }
+    }
+
+    @Test
+    void amountGlyphUsesTheOriginalsHalfScaleLiterals() {
+        assertEquals(0.5F, ContainerLayout.TAG_AMOUNT_SCALE, 0.0F, "UtilsFX.java:847 glScalef(0.5F,..)");
+        assertEquals(32, ContainerLayout.TAG_AMOUNT_ORIGIN, "the 32 in the original's two glyph literals");
+        assertEquals(0xFFFFFFFF, ContainerLayout.TAG_AMOUNT_COLOUR, "16777215 (UtilsFX.java:861)");
+        assertEquals(32 - 8 + 64 * 2, ContainerLayout.tagAmountScaledX(64, 8),
+                "the original's x is 32 - sw + (int)x * 2 — right-aligned on the tag's right edge");
+        assertEquals(32 - 8 + 13 * 2, ContainerLayout.tagAmountScaledY(13, 8),
+                "the original's y is 32 - font.FONT_HEIGHT + (int)y * 2");
+        assertEquals(8, ContainerLayout.TAG_AMOUNT_BOX, "the original's bx = 16 * 0.5F");
+        assertEquals(8 - 3 + 64 * 2, ContainerLayout.tagBonusScaledX(64, 6),
+                "the bonus glyph's x is 8 - width/2 + a*2 (UtilsFX.java:882)");
+        assertEquals(15 - 8 + 13 * 2, ContainerLayout.tagBonusScaledY(13, 8),
+                "the bonus glyph's y is 15 - font.FONT_HEIGHT + y*2 (UtilsFX.java:884)");
+    }
+
+    @Test
+    void amountTextIsTheOriginalsDecimalFormat() {
+        // UtilsFX.myFormatter = new DecimalFormat("#######.##") over REAL vis (UtilsFX.java:311,849).
+        assertEquals("2", ContainerLayout.tagAmountText(ContainerLayout.displayVisFloat(200)));
+        assertEquals("2.5", ContainerLayout.tagAmountText(ContainerLayout.displayVisFloat(250)));
+        assertEquals("0.25", ContainerLayout.tagAmountText(0.25F));
+        assertEquals("0", ContainerLayout.tagAmountText(0.0F));
+        assertEquals("1234.57", ContainerLayout.tagAmountText(1234.5678F),
+                "two decimals, no thousands separator, no forced digits");
+        assertEquals(2.5F, ContainerLayout.displayVisFloat(250), 0.0F,
+                "the centi-vis the menu syncs is the original's * 100");
+        assertEquals(2, ContainerLayout.displayVis(250), "the int the vis row shows stays the floor");
+    }
+
+    @Test
+    void blackAndWhiteTagIsTheOriginalsToneAndAlpha() {
+        assertEquals(0.1F, ContainerLayout.TAG_BW_TONE, 0.0F, "glColor4f(0.1F, 0.1F, 0.1F, ..) (UtilsFX.java:828)");
+        assertEquals(0.8F, ContainerLayout.TAG_BW_ALPHA, 0.0F, "alpha * 0.8F (UtilsFX.java:828)");
+        assertEquals(0.8F, ContainerLayout.tagAlphaOf(1.0F, true), 0.0F);
+        assertEquals(1.0F, ContainerLayout.tagAlphaOf(1.0F, false), 0.0F);
+        assertEquals(0xCC1A1A1A, ContainerLayout.tagTint(0xFF55AA, 1.0F, true),
+                "tone Math.round(0.1F*255)=26, alpha Math.round(0.8F*255)=204");
+        assertEquals(0x80FF55AA, ContainerLayout.tagTint(0xFF55AA, 0.5F, false),
+                "a colour tag keeps the aspect's colour at the caller's alpha");
+    }
+
+    @Test
+    void sparkleFramesWalkTheOriginalsSixteenStep() {
+        assertEquals(0, ContainerLayout.tagSparkleFrame(0));
+        assertEquals(16, ContainerLayout.tagSparkleFrame(1));
+        assertEquals(240, ContainerLayout.tagSparkleFrame(15));
+        assertEquals(0, ContainerLayout.tagSparkleFrame(16), "16 * (age % 16) (UtilsFX.java:869)");
+        assertEquals(240, ContainerLayout.tagSparkleFrame(-1),
+                "a negative age wraps inside the sheet (Math.floorMod), it does not go off it");
+        assertEquals(-4, ContainerLayout.TAG_SPARKLE_OFFSET, "drawTexturedQuad(x - 4, y - 4, px, 80, 16, 16)");
+        assertEquals(80, ContainerLayout.TAG_SPARKLE_V);
+        assertEquals(256, ContainerLayout.TAG_SPARKLE_SHEET, "the sheet's UVs are texel * 0.00390625F");
+        assertEquals(16, ContainerLayout.TAG_TEXTURE_FALLBACK,
+                "the fallback edge when there are no bytes to measure (D-004)");
+        assertEquals("thaumcraft", ContainerLayout.PARTICLE_SHEET.getNamespace());
+        assertEquals("textures/misc/particles.png", ContainerLayout.PARTICLE_SHEET.getPath(),
+                "ParticleEngine.particleTexture, the sheet the fx family already slices");
+    }
+
+    @Test
+    void pulseKeepsTheOriginalsBandAndPhase() {
+        // GuiArcaneWorkbench.java:57 — 0.5 + (sin((age + i*10)/2) * 0.2 - 0.2), and 1.0
+        // when the wand can pay. The 15-period sine the card body quotes is the runic
+        // matrix's (TileRunicMatrixRenderer.java:106); the 0.4/0.6 pair is the aura
+        // HUD's (ClientTickEventsFML.java:549). BD-18 records the difference.
+        assertEquals(1.0F, ContainerLayout.aspectAlpha(0, 0, true), 0.0F);
+        assertEquals(0.3F, ContainerLayout.aspectAlpha(0, 0, false), 1.0E-5F);
+        float min = Float.MAX_VALUE;
+        float max = -Float.MAX_VALUE;
+        for (int age = 0; age < 4000; age++) {
+            for (int i = 0; i < 6; i++) {
+                final float alpha = ContainerLayout.aspectAlpha(age, i, false);
+                min = Math.min(min, alpha);
+                max = Math.max(max, alpha);
+            }
+        }
+        assertTrue(min >= 0.1F - 1.0E-5F && max <= 0.5F + 1.0E-5F,
+                "the pulse must stay in the original's 0.1..0.5 band, got " + min + ".." + max);
+        assertTrue(min < 0.101F && max > 0.499F, "the pulse must reach both ends of the band");
+        for (int i = 0; i < 6; i++) {
+            assertEquals(ContainerLayout.aspectAlpha(200 + i * 10, 0, false),
+                    ContainerLayout.aspectAlpha(200, i, false), 1.0E-5F,
+                    "the phase offset is index*10, the original's (age + i*10) / 2");
+        }
+        assertEquals(Mth.sin(0.0F), 0.0F, 1.0E-6F, "the port's sine is the vanilla one the formula names");
+    }
 }
