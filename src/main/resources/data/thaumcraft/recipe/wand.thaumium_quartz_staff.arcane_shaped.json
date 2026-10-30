@@ -1,0 +1,73 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research_all": [
+    "CAP_thaumium",
+    "ROD_quartz_staff"
+  ],
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 84
+    },
+    {
+      "aspect": "terra",
+      "amount": 84
+    },
+    {
+      "aspect": "ignis",
+      "amount": 84
+    },
+    {
+      "aspect": "aqua",
+      "amount": 84
+    },
+    {
+      "aspect": "ordo",
+      "amount": 84
+    },
+    {
+      "aspect": "perditio",
+      "amount": 84
+    }
+  ],
+  "pattern": [
+    "  C",
+    " R ",
+    "C  "
+  ],
+  "key": {
+    "C": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandcap",
+      "meta": 2
+    },
+    "R": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandrod",
+      "meta": 54
+    }
+  },
+  "result": {
+    "id": "thaumcraft:wandcasting",
+    "count": 1,
+    "components": {
+      "thaumcraft:wand_cap": "thaumium",
+      "thaumcraft:wand_rod": "quartz_staff",
+      "thaumcraft:item_meta": 84
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcap"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandrod"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcasting"
+    }
+  ]
+}

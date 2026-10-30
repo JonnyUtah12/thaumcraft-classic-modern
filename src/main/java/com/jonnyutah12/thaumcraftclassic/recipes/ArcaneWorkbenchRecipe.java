@@ -53,6 +53,15 @@ import java.util.Map;
  * Item equality is the original's {@code checkItemEquals} (class + oredict tags +
  * damage meta) expressed as a NeoForge {@link Ingredient}: items, item tags and
  * {@code thaumcraft:item_meta} components (D-001).</p>
+ *
+ * <p>TC-M6-01-s-b adds the optional additive {@code research_all} list to the
+ * codec and to {@link #matches}: the 215 enumerated wand/sceptre assembly rows
+ * (the port of the two dynamic {@code IArcaneRecipe}s the original registered
+ * on {@code ThaumcraftApi.getCraftingRecipes()}) gate on the cap's research,
+ * the rod's research and, for a sceptre, {@code SCEPTRE} — three keys a single
+ * {@code research} string cannot express. It is purely additive: every key must
+ * be complete, the field defaults to empty, and the 109 shipped
+ * {@code recipe.<N>.arcane_*} rows keep using {@code research} alone.</p>
  */
 public final class ArcaneWorkbenchRecipe implements Recipe<ArcaneWorkbenchRecipe.WorkbenchInput> {
 
@@ -81,6 +90,7 @@ public final class ArcaneWorkbenchRecipe implements Recipe<ArcaneWorkbenchRecipe
     }
 
     private final String research;
+    private final List<String> researchAll;
     private final AspectList aspects;
     private final List<String> pattern;
     private final Map<String, Ingredient> key;
@@ -88,10 +98,12 @@ public final class ArcaneWorkbenchRecipe implements Recipe<ArcaneWorkbenchRecipe
     private final ItemStack output;
     private boolean mirrored = true;
 
-    public ArcaneWorkbenchRecipe(final String research, final AspectList aspects, final List<String> pattern,
+    public ArcaneWorkbenchRecipe(final String research, final List<String> researchAll,
+                                final AspectList aspects, final List<String> pattern,
                                 final Map<String, Ingredient> key, final List<Ingredient> ingredients,
                                 final ItemStack output) {
         this.research = research;
+        this.researchAll = List.copyOf(researchAll);
         this.aspects = aspects.copy();
         this.pattern = List.copyOf(pattern);
         this.key = Map.copyOf(key);
@@ -110,6 +122,11 @@ public final class ArcaneWorkbenchRecipe implements Recipe<ArcaneWorkbenchRecipe
 
     public String research() {
         return this.research;
+    }
+
+    /** The additive multi-key gate (TC-M6-01-s-b); empty on every shipped row. */
+    public List<String> researchAll() {
+        return this.researchAll;
     }
 
     public AspectList aspects() {
@@ -147,14 +164,25 @@ public final class ArcaneWorkbenchRecipe implements Recipe<ArcaneWorkbenchRecipe
 
     @Override
     public boolean matches(final WorkbenchInput in, final Level level) {
-        if (!this.research.isEmpty()) {
+        if (!this.research.isEmpty() || !this.researchAll.isEmpty()) {
             // Original: ThaumcraftApiHelper.isResearchComplete(player.name, research).
             if (in.player() == null) {
                 return false;
             }
             final PlayerKnowledgeData knowledge = in.player().getData(ModAttachments.PLAYER_KNOWLEDGE);
-            if (!ResearchManager.isResearchComplete(knowledge, this.research)) {
+            if (!this.research.isEmpty() && !ResearchManager.isResearchComplete(knowledge, this.research)) {
                 return false;
+            }
+            // TC-M6-01-s-b: the wand/sceptre assembly rows are the port of the
+            // original's two dynamic IArcaneRecipes, whose matches() gates on the
+            // cap's research AND the rod's research (ArcaneWandRecipe.checkMatch)
+            // plus, for the sceptre, ItemWandCasting.RESEARCH_SCEPTRE — three keys
+            // the single `research` field cannot carry. `research_all` is additive:
+            // every key must be complete, and the 109 shipped rows leave it empty.
+            for (final String key : this.researchAll) {
+                if (!ResearchManager.isResearchComplete(knowledge, key)) {
+                    return false;
+                }
             }
         }
         if (in.size() != 9 || in.isEmpty()) {
@@ -288,6 +316,7 @@ public final class ArcaneWorkbenchRecipe implements Recipe<ArcaneWorkbenchRecipe
 
     public static final MapCodec<ArcaneWorkbenchRecipe> CODEC = RecordCodecBuilder.mapCodec(g -> g.group(
             Codec.STRING.optionalFieldOf("research", "").forGetter(r -> r.research),
+            Codec.list(Codec.STRING).optionalFieldOf("research_all", List.of()).forGetter(r -> r.researchAll),
             ASPECTS.fieldOf("aspects").forGetter(r -> r.aspects),
             Codec.list(Codec.STRING).optionalFieldOf("pattern", List.of()).forGetter(r -> r.pattern),
             ExtraCodecs.strictUnboundedMap(Codec.STRING, Ingredient.CODEC_NONEMPTY).optionalFieldOf("key", Map.of()).forGetter(r -> r.key),
@@ -303,6 +332,7 @@ public final class ArcaneWorkbenchRecipe implements Recipe<ArcaneWorkbenchRecipe
         // the compiler strips this constructor in the erased-generic jar, so the
         // neutral defaults below exist only to satisfy definite-assignment checks.
         this.research = "";
+        this.researchAll = List.of();
         this.aspects = new AspectList();
         this.pattern = List.of();
         this.key = Map.of();

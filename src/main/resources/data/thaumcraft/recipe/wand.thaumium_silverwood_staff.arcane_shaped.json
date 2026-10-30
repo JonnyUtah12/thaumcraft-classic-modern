@@ -1,0 +1,73 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research_all": [
+    "CAP_thaumium",
+    "ROD_silverwood_staff"
+  ],
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 144
+    },
+    {
+      "aspect": "terra",
+      "amount": 144
+    },
+    {
+      "aspect": "ignis",
+      "amount": 144
+    },
+    {
+      "aspect": "aqua",
+      "amount": 144
+    },
+    {
+      "aspect": "ordo",
+      "amount": 144
+    },
+    {
+      "aspect": "perditio",
+      "amount": 144
+    }
+  ],
+  "pattern": [
+    "  C",
+    " R ",
+    "C  "
+  ],
+  "key": {
+    "C": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandcap",
+      "meta": 2
+    },
+    "R": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandrod",
+      "meta": 52
+    }
+  },
+  "result": {
+    "id": "thaumcraft:wandcasting",
+    "count": 1,
+    "components": {
+      "thaumcraft:wand_cap": "thaumium",
+      "thaumcraft:wand_rod": "silverwood_staff",
+      "thaumcraft:item_meta": 144
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcap"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandrod"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcasting"
+    }
+  ]
+}

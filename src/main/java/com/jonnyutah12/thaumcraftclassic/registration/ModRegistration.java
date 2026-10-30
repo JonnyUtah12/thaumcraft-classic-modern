@@ -10,6 +10,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogWandRecipes;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogWands;
 import net.neoforged.bus.api.IEventBus;
 
@@ -145,6 +146,13 @@ public final class ModRegistration {
         // with their jar tiles, the glass phial and the filled-jar item. The
         // tube network that moves essentia between them stays on TC-M4-07.
         CatalogEssentiaStorage.init(modEventBus);
+
+        // TC-M6-01-s-b: the wand/sceptre assembly recipes' ingredient type —
+        // the JSON form of ArcaneWandRecipe.checkItemEquals (item + original
+        // damage value) that the 107 wand + 108 sceptre rows under
+        // data/thaumcraft/recipe/ name. The rows themselves ride the
+        // CatalogArcaneWorkbench type/serializer pair above.
+        CatalogWandRecipes.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

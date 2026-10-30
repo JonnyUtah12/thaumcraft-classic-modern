@@ -1,0 +1,73 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research_all": [
+    "CAP_copper",
+    "ROD_primal_staff"
+  ],
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 64
+    },
+    {
+      "aspect": "terra",
+      "amount": 64
+    },
+    {
+      "aspect": "ignis",
+      "amount": 64
+    },
+    {
+      "aspect": "aqua",
+      "amount": 64
+    },
+    {
+      "aspect": "ordo",
+      "amount": 64
+    },
+    {
+      "aspect": "perditio",
+      "amount": 64
+    }
+  ],
+  "pattern": [
+    "  C",
+    " R ",
+    "C  "
+  ],
+  "key": {
+    "C": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandcap",
+      "meta": 3
+    },
+    "R": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandrod",
+      "meta": 100
+    }
+  },
+  "result": {
+    "id": "thaumcraft:wandcasting",
+    "count": 1,
+    "components": {
+      "thaumcraft:wand_cap": "copper",
+      "thaumcraft:wand_rod": "primal_staff",
+      "thaumcraft:item_meta": 64
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcap"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandrod"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcasting"
+    }
+  ]
+}

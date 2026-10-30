@@ -1,0 +1,73 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research_all": [
+    "CAP_silver",
+    "ROD_blaze_staff"
+  ],
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 56
+    },
+    {
+      "aspect": "terra",
+      "amount": 56
+    },
+    {
+      "aspect": "ignis",
+      "amount": 56
+    },
+    {
+      "aspect": "aqua",
+      "amount": 56
+    },
+    {
+      "aspect": "ordo",
+      "amount": 56
+    },
+    {
+      "aspect": "perditio",
+      "amount": 56
+    }
+  ],
+  "pattern": [
+    "  C",
+    " R ",
+    "C  "
+  ],
+  "key": {
+    "C": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandcap",
+      "meta": 4
+    },
+    "R": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandrod",
+      "meta": 56
+    }
+  },
+  "result": {
+    "id": "thaumcraft:wandcasting",
+    "count": 1,
+    "components": {
+      "thaumcraft:wand_cap": "silver",
+      "thaumcraft:wand_rod": "blaze_staff",
+      "thaumcraft:item_meta": 56
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcap"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandrod"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcasting"
+    }
+  ]
+}
