@@ -500,6 +500,180 @@ public final class ContainerLayout {
         return centiVis / CENTI_VIS_PER_VIS;
     }
 
+    /** The same price as the {@code float} the original's tag glyph printed. */
+    public static float displayVisFloat(final int centiVis) {
+        return centiVis / (float) CENTI_VIS_PER_VIS;
+    }
+
+    // ------------------------------------------------ aspect tag (UtilsFX.drawTag)
+    //
+    // Every figure in this block is transcribed from
+    // reference/decompiled/thaumcraft/thaumcraft/client/lib/UtilsFX.java:814-897,
+    // the one method every original aspect tag went through
+    // (GuiArcaneWorkbench, GuiDeconstructionTable, GuiThaumatorium,
+    // GuiResearchTable, GuiResearchRecipe, the tile renderers ...). The drawing
+    // itself is {@link AspectTagRenderer}; the numbers live here so
+    // {@code ContainerLayoutTest} can pin them without a client, exactly like
+    // the panel geometry above.
+
+    /**
+     * {@code UtilsFX.drawTag} blits the tag as one quad from
+     * {@code (x, y)} to {@code (x + 16, y + 16)} with UV {@code 0..1}
+     * (UtilsFX.java:839-842) — a 16 px box, always.
+     */
+    public static final int TAG_SIZE = 16;
+
+    /**
+     * The original's GUIs pass the point the tag sits ON and shift the box half
+     * its size up-left — {@code GuiArcaneWorkbench.java:65} calls
+     * {@code drawTag(var5 + aspectLocs[count][0] - 8, var6 + aspectLocs[count][1] - 8, ...)}
+     * — so the box top-left is the point minus 8.
+     */
+    public static final int TAG_CENTER_OFFSET = -8;
+
+    /**
+     * The aspect images are square and the original's quad maps the WHOLE texture
+     * onto the 16 px box (UV {@code 0..1}, not a 16-texel window): the shipped
+     * art is 32x32 ({@code reference/assets/thaumcraft/textures/aspects/ignis.png},
+     * measured), so the renderer reads the real edge from the bytes
+     * (the original's own {@code getTextureSize} reads the
+     * {@code BufferedImage} width the same way, UtilsFX.java:739-758) and falls
+     * back to 16 when there are no bytes to read.
+     */
+    public static final int TAG_TEXTURE_FALLBACK = 16;
+
+    /** The original's amount glyph is drawn inside a {@code glScalef(0.5F, ...)} (UtilsFX.java:847). */
+    public static final float TAG_AMOUNT_SCALE = 0.5F;
+
+    /**
+     * In the original's 0.5-scaled space the tag is 32 wide, which is the
+     * {@code 32} in both of its glyph literals
+     * ({@code 32 - sw + (int)x * 2} / {@code 32 - font.FONT_HEIGHT + (int)y * 2},
+     * UtilsFX.java:861).
+     */
+    public static final int TAG_AMOUNT_ORIGIN = 2 * TAG_SIZE;
+
+    /** The original's glyph colour is {@code 16777215} = white (UtilsFX.java:861). */
+    public static final int TAG_AMOUNT_COLOUR = 0xFFFFFFFF;
+
+    /**
+     * The {@code bw} (black-and-white) tag — the 3-argument overload's variant,
+     * {@code drawTag(x, y, aspect)} (UtilsFX.java:806-808), used by the in-world
+     * tile renderers for a jar's / alembic's filter aspect
+     * ({@code TileAlembicRenderer.java}, {@code TileJarRenderer.java}) — tints the
+     * sprite {@code (0.1F, 0.1F, 0.1F)} at {@code alpha * 0.8F}
+     * (UtilsFX.java:828, 836). The GUI tags, including the deconstruction table's,
+     * are the NON-{@code bw} form: the aspect's own colour.
+     */
+    public static final float TAG_BW_TONE = 0.1F;
+
+    /** The {@code bw} alpha factor (UtilsFX.java:828). */
+    public static final float TAG_BW_ALPHA = 0.8F;
+
+    /**
+     * The bonus sparkle: a 16x16 quad of the particle sheet 4 px up-left of the
+     * tag box, frame {@code 16 * (player.ticksExisted % 16)} at sheet v = 80
+     * (UtilsFX.java:867-870 → {@code drawTexturedQuad(x - 4, y - 4, px, 80, 16, 16)},
+     * whose UVs are {@code texel * 0.00390625F} = a 256-wide sheet).
+     */
+    public static final int TAG_SPARKLE_OFFSET = -4;
+    public static final int TAG_SPARKLE_FRAMES = 16;
+    public static final int TAG_SPARKLE_V = 80;
+    public static final int TAG_SPARKLE_SHEET = 256;
+
+    /** The sheet the bonus sparkle is cut from — {@code ParticleEngine.particleTexture}. */
+    public static final ResourceLocation PARTICLE_SHEET =
+            ResourceLocation.fromNamespaceAndPath("thaumcraft", "textures/misc/particles.png");
+
+    /** The tag box for a point the original passed to {@code drawTag}. */
+    public static int tagBoxX(final int pointX) {
+        return pointX + TAG_CENTER_OFFSET;
+    }
+
+    public static int tagBoxY(final int pointY) {
+        return pointY + TAG_CENTER_OFFSET;
+    }
+
+    /**
+     * The amount string the original's glyph printed:
+     * {@code new DecimalFormat("#######.##").format(amount)}
+     * ({@code UtilsFX.myFormatter}, UtilsFX.java:311 and 849) — so 200 centi-vis
+     * of aer prints as {@code "2"} and 250 as {@code "2.5"}.
+     */
+    public static String tagAmountText(final float amount) {
+        return TAG_AMOUNT_FORMAT.format(amount);
+    }
+
+    private static final java.text.DecimalFormat TAG_AMOUNT_FORMAT =
+            new java.text.DecimalFormat("#######.##");
+
+    /**
+     * The glyph's x in the 0.5-scaled space: the original's
+     * {@code 32 - sw + (int)x * 2} — right-aligned on the tag's right edge,
+     * i.e. on screen at {@code boxX + 16 - width/2}.
+     */
+    public static int tagAmountScaledX(final int boxX, final int textWidth) {
+        return TAG_AMOUNT_ORIGIN - textWidth + boxX * 2;
+    }
+
+    /**
+     * The glyph's y in the 0.5-scaled space: the original's
+     * {@code 32 - font.FONT_HEIGHT + (int)y * 2} — the font's own height, which
+     * is 8 in 1.7.10 and 9 in 1.21.1, so the port passes the live font and the
+     * glyph sits half a pixel lower on screen.
+     */
+    public static int tagAmountScaledY(final int boxY, final int fontHeight) {
+        return TAG_AMOUNT_ORIGIN - fontHeight + boxY * 2;
+    }
+
+    /** The bonus sparkle's frame index for an age in client ticks (UtilsFX.java:869). */
+    public static int tagSparkleFrame(final int ageTicks) {
+        return TAG_SPARKLE_FRAMES * Math.floorMod(ageTicks, TAG_SPARKLE_FRAMES);
+    }
+
+    /**
+     * The tag's size in the 0.5-scaled space — the original's local
+     * {@code bx = 16 * 0.5F} (UtilsFX.java:845), which is 8.
+     */
+    public static final int TAG_AMOUNT_BOX = (int) (TAG_SIZE * TAG_AMOUNT_SCALE);
+
+    /**
+     * The bonus count glyph's literals, verbatim from UtilsFX.java:875-884:
+     * {@code 8 - font.getStringWidth(text) / 2 + (int)a * 2} for x and
+     * {@code 15 - font.FONT_HEIGHT + (int)y * 2} for y — centred on the tag's left
+     * edge, near its top. (The {@code bx} in that method's outline loop is the
+     * decompiler's shadowed ±1 loop variable, not the box size; only the outline
+     * pass adds it.)
+     */
+    public static final int TAG_BONUS_TEXT_X_ORIGIN = 8;
+    public static final int TAG_BONUS_TEXT_Y_ORIGIN = 15;
+
+    public static int tagBonusScaledX(final int boxX, final int textWidth) {
+        return TAG_BONUS_TEXT_X_ORIGIN - textWidth / 2 + boxX * 2;
+    }
+
+    public static int tagBonusScaledY(final int boxY, final int fontHeight) {
+        return TAG_BONUS_TEXT_Y_ORIGIN - fontHeight + boxY * 2;
+    }
+
+    /** The alpha the tag is drawn at: the caller's, cut to 0.8 in {@code bw} mode. */
+    public static float tagAlphaOf(final float alpha, final boolean bw) {
+        return bw ? alpha * TAG_BW_ALPHA : alpha;
+    }
+
+    /**
+     * The tag's flat tint — the same colour arithmetic the original put into
+     * {@code glColor4f} (UtilsFX.java:826-836) and what the code-only build
+     * fills its 16 px box with, since the sprite is not in the jar (D-004).
+     */
+    public static int tagTint(final int rgb, final float alpha, final boolean bw) {
+        if (bw) {
+            final int tone = Math.round(TAG_BW_TONE * 255.0F);
+            return withAlpha((tone << 16) | (tone << 8) | tone, tagAlphaOf(alpha, true));
+        }
+        return withAlpha(rgb, alpha);
+    }
+
     private ContainerLayout() {
     }
 }
