@@ -316,7 +316,7 @@ Thaumcraft:Golem,thaumcraft:golem,entity,Golem,not_started,not_tested,,class=Ent
 Thaumcraft:TravelingTrunk,thaumcraft:travelingtrunk,entity,Traveling Trunk,not_started,not_tested,,class=EntityTravelingTrunk mod_index=18
 Thaumcraft:BrainyZombie,thaumcraft:brainyzombie,entity,Angry Zombie,not_started,not_tested,,class=EntityBrainyZombie mod_index=19
 Thaumcraft:GiantBrainyZombie,thaumcraft:giantbrainyzombie,entity,Furious Zombie,not_started,not_tested,,class=EntityGiantBrainyZombie mod_index=20
-Thaumcraft:Wisp,thaumcraft:wisp,entity,Wisp,not_started,not_tested,,class=EntityWisp mod_index=21
+Thaumcraft:Wisp,thaumcraft:wisp,entity,Wisp,done,tested,,class=EntityWisp
 Thaumcraft:Firebat,thaumcraft:firebat,entity,Firebat,not_started,not_tested,,class=EntityFireBat mod_index=22
 Thaumcraft:Pech,thaumcraft:pech,entity,Pech Forager,not_started,not_tested,,class=EntityPech mod_index=23
 Thaumcraft:MindSpider,thaumcraft:mindspider,entity,Mind Spider,not_started,not_tested,,class=EntityMindSpider mod_index=24

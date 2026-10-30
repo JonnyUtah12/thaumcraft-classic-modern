@@ -4,6 +4,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArcaneWorkb
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEntities;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
@@ -137,6 +138,12 @@ public final class ModRegistration {
         // serializer pair the 54 data files under data/thaumcraft/recipe/
         // resolve through. The essentia jar that refills it stays on TC-M4-06.
         CatalogCrucible.init(modEventBus);
+
+        // TC-M6-06-s: the elemental mob family — `thaumcraft:wisp`
+        // (EntityWisp) as a real 1.21.1 flying monster with its original
+        // hand-rolled AI/navigation (entities/monster/WispAiLogic pins every
+        // figure). Renderers stay on TC-M7-03-s, golems on TC-M6-08-s.
+        CatalogEntities.init(modEventBus);
 
         // TC-M4-06-s: essentia extraction + storage — the infernal furnace
         // (base + nozzle) and its smelting-bonus table, the warded/void jars
