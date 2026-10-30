@@ -193,6 +193,27 @@ The sheet's other 246 cells stay untouched: the FX families that index them
 (`FXBoreParticles`, `FXVisSparkle`, the wisp and beam art) are on their own
 cards, and slicing a cell no particle names would put dead art in every jar.
 
+## RENDER-WISP — the entity billboard's two textures (TC-M7-03-s)
+
+`RenderWisp` has no model: it draws two camera-facing quads and addresses both
+textures **by path literal**, so nothing here is sliced or renamed — the
+overlay ships the files unchanged (`textures/misc/` stays plural in 1.21.1,
+`OriginalTextureOverlayTest`).
+
+| Ported pass | Original site | Texture | Addressing |
+| --- | --- | --- | --- |
+| Body | `UtilsFX.bindTexture("textures/misc/wisp.png")`, frame `entity.field_70173_aa % 16` (RenderWisp.java:47-56) | `textures/misc/wisp.png` (256x256, animated `.mcmeta`) | 4x4 frame grid: `size1 = getTextureSize(path, 64) = 256/64 = 4` cells per row, `size4 = size1 * 4 = 16`; frame `i` = column `i % 4`, row `i / 4`, with the original's `size1 - 0.01F` inset per frame edge |
+| Glow shell | `UtilsFX.bindTexture(ParticleEngine.particleTexture)`, frame `entity.field_70173_aa % 16` (RenderWisp.java:78-84) | `textures/misc/particles.png` — the same sheet the particle slice reads, but addressed as a **raw animated texture** here, not through a frame list | atlas column `qq/16 .. (qq+1)/16`, fixed row `5/16 .. 6/16`; scale `0.4F + sin((tick + pticks)/10F) * 0.1F` |
+
+Both passes are additively blended (`GL_SRC_ALPHA, GL_ONE`) at full brightness
+(`func_78380_c(240)`) with the depth mask off, and the renderer casts no shadow
+(`field_76989_e = 0.0F`). The port keeps the cell arithmetic in
+`WispRenderLogic` (pinned by `WispRenderLogicTest`) rather than slicing — unlike
+the particles, this renderer owns its own UV maths, so slicing would add build
+steps and an atlas indirection for no fidelity gain. The camera basis
+(`ActiveRenderInfo`'s trig tuple) and the exact meaning of the literal `240` are
+not measurable from the reference tree: see **BD-17**.
+
 ## Unused assets (42) — explicit, with reason
 
 | File | Reason |
