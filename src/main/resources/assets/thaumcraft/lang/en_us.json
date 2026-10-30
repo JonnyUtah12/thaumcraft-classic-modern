@@ -1,4 +1,5 @@
 {
+  "biome.thaumcraft.biome.biomegeneldritch": "Eldritch",
   "block.thaumcraft.blockairy": "Aura Node",
   "block.thaumcraft.blockairy.0": "Aura Node",
   "block.thaumcraft.blockairy.1": "Nitor",
@@ -114,6 +115,7 @@
   "block.thaumcraft.blockmirror": "Magic Mirror",
   "block.thaumcraft.blockmirror.0": "Magic Mirror",
   "block.thaumcraft.blockmirror.6": "Essentia Mirror",
+  "block.thaumcraft.blockportaleldritch": "Eldritch Portal",
   "block.thaumcraft.blockstairsarcanestone": "Arcane Stone Stairs",
   "block.thaumcraft.blockstairseldritch": "Ancient Stone Stairs",
   "block.thaumcraft.blockstairsgreatwood": "Greatwood Stairs",

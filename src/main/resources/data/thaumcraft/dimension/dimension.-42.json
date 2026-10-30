@@ -1,0 +1,12 @@
+{
+  "type": "thaumcraft:outerlands",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "thaumcraft:biome.biomegeneldritch",
+      "layers": [],
+      "structures": [],
+      "seed": 0
+    }
+  }
+}

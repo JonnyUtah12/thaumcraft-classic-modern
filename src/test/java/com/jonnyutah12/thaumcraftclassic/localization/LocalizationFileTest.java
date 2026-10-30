@@ -40,7 +40,10 @@ class LocalizationFileTest {
     private static final List<String> CURRENT_PREFIXES = List.of(
             "item.thaumcraft.", "block.thaumcraft.", "container.thaumcraft.",
             "entity.thaumcraft.", "itemGroup.thaumcraft.",
-            "death.attack.thaumcraft.", "fluid.thaumcraft.");
+            "death.attack.thaumcraft.", "fluid.thaumcraft.",
+            // TC-M6-04f-m: the vanilla biome description id shape
+            // "biome.<namespace>.<path>" (the Eldritch biome).
+            "biome.thaumcraft.");
 
     /**
      * Keys the shipped code uses with the original 1.7.10 key shape, kept

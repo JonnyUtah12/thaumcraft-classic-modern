@@ -97,7 +97,7 @@ Thaumcraft:blockManaPod,thaumcraft:blockmanapod,block,,done,tested,id case chang
 Thaumcraft:blockArcaneFurnace,thaumcraft:blockarcanefurnace,block,Infernal Furnace,done,tested,id case change only (D-001),class=BlockArcaneFurnace item_class=-
 Thaumcraft:blockWarded,thaumcraft:blockwarded,block,,not_started,not_tested,id case change only (D-001),class=BlockWarded item_class=-
 Thaumcraft:blockHole,thaumcraft:blockhole,block,Empty Space,not_started,not_tested,id case change only (D-001),class=BlockHole item_class=-
-Thaumcraft:blockPortalEldritch,thaumcraft:blockportaleldritch,block,Eldritch Portal,not_started,not_tested,id case change only (D-001),class=BlockEldritchPortal item_class=-
+Thaumcraft:blockPortalEldritch,thaumcraft:blockportaleldritch,block,Eldritch Portal,done,tested,id case change only (D-001),class=BlockEldritchPortal item_class=-
 Thaumcraft:blockEssentiaReservoir,thaumcraft:blockessentiareservoir,block,Essentia Reservoir,not_started,not_tested,id case change only (D-001),class=BlockEssentiaReservoir item_class=BlockEssentiaReservoirItem
 Thaumcraft:blockEldritchNothing,thaumcraft:blockeldritchnothing,block,,done,tested,id case change only (D-001),class=BlockEldritchNothing item_class=-
 Thaumcraft:blockStairsArcaneStone,thaumcraft:blockstairsarcanestone,block,Arcane Stone Stairs,done,tested,id case change only (D-001),class=BlockCosmeticStairs item_class=-
@@ -178,7 +178,7 @@ Thaumcraft:TileEldritchAltar,thaumcraft:tileeldritchaltar,tile_entity,TileEldrit
 Thaumcraft:TileEldritchObelisk,thaumcraft:tileeldritchobelisk,tile_entity,TileEldritchObelisk,done,tested,,class=TileEldritchObelisk
 Thaumcraft:TileEldritchCap,thaumcraft:tileeldritchcap,tile_entity,TileEldritchCap,done,tested,,class=TileEldritchCap
 Thaumcraft:TileBanner,thaumcraft:tilebanner,tile_entity,TileBanner,done,tested,,class=TileBanner
-Thaumcraft:TileEldritchPortal,thaumcraft:tileeldritchportal,tile_entity,TileEldritchPortal,not_started,not_tested,,class=TileEldritchPortal
+Thaumcraft:TileEldritchPortal,thaumcraft:tileeldritchportal,tile_entity,TileEldritchPortal,done,tested,,class=TileEldritchPortal
 Thaumcraft:TileEssentiaReservoir,thaumcraft:tileessentiareservoir,tile_entity,TileEssentiaReservoir,not_started,not_tested,,class=TileEssentiaReservoir
 Thaumcraft:TileEssentiaCrystalizer,thaumcraft:tileessentiacrystalizer,tile_entity,TileEssentiaCrystalizer,not_started,not_tested,,class=TileEssentiaCrystalizer
 Thaumcraft:TileEldritchNothing,thaumcraft:tileeldritchnothing,tile_entity,TileEldritchNothing,done,tested,,class=TileEldritchNothing
@@ -906,7 +906,7 @@ Thaumcraft:config.Biomes.magical_forest_biome_weight,thaumcraft:config.biomes.ma
 Thaumcraft:config.Biomes.biome_magical_forest,thaumcraft:config.biomes.biome_magical_forest,config_option,biome_magical_forest,not_started,not_tested,,category=Biomes default=biomeMagicalForestID
 Thaumcraft:config.Biomes.biome_eerie,thaumcraft:config.biomes.biome_eerie,config_option,biome_eerie,not_started,not_tested,,category=Biomes default=biomeEerieID
 Thaumcraft:config.Biomes.biome_eldritch,thaumcraft:config.biomes.biome_eldritch,config_option,biome_eldritch,not_started,not_tested,,category=Biomes default=biomeEldritchID
-Thaumcraft:config.Biomes.outer_lands_dim,thaumcraft:config.biomes.outer_lands_dim,config_option,outer_lands_dim,not_started,not_tested,,category=Biomes default=dimensionOuterId
+Thaumcraft:config.Biomes.outer_lands_dim,thaumcraft:config.biomes.outer_lands_dim,config_option,outer_lands_dim,done,tested,,category=Biomes default=dimensionOuterId
 Thaumcraft:config.Enchantments.ench_haste,thaumcraft:config.enchantments.ench_haste,config_option,ench_haste,not_started,not_tested,,category=Enchantments default=encIdx++
 Thaumcraft:config.Enchantments.ench_repair,thaumcraft:config.enchantments.ench_repair,config_option,ench_repair,not_started,not_tested,,category=Enchantments default=encIdx++
 Thaumcraft:config.World_Generation.generate_aura_nodes,thaumcraft:config.world_generation.generate_aura_nodes,config_option,generate_aura_nodes,not_started,not_tested,,category=World_Generation default=true
@@ -996,8 +996,8 @@ Thaumcraft:potion.thaumarhia,thaumcraft:potion.thaumarhia,potion,Thaumarhia,not_
 Thaumcraft:biome.BiomeGenTaint,thaumcraft:biome.biomegentaint,biome,BiomeGenTaint,not_started,not_tested,,default_id=192 config_key=taint_biome_id
 Thaumcraft:biome.BiomeGenMagicalForest,thaumcraft:biome.biomegenmagicalforest,biome,BiomeGenMagicalForest,not_started,not_tested,,default_id=193 config_key=magical_forest_biome_id
 Thaumcraft:biome.BiomeGenEerie,thaumcraft:biome.biomegeneerie,biome,BiomeGenEerie,not_started,not_tested,,default_id=194 config_key=eerie_biome_id
-Thaumcraft:biome.BiomeGenEldritch,thaumcraft:biome.biomegeneldritch,biome,BiomeGenEldritch,not_started,not_tested,,default_id=195 config_key=eldritch_biome_id
-Thaumcraft:dimension.-42,thaumcraft:dimension.-42,dimension,Outer Lands,not_started,not_tested,,WorldProviderOuter; DimensionManager.registerProviderType/registerDimension; default id -42 (outer_lands_dim)
+Thaumcraft:biome.BiomeGenEldritch,thaumcraft:biome.biomegeneldritch,biome,BiomeGenEldritch,done,tested,,default_id=195 config_key=eldritch_biome_id
+Thaumcraft:dimension.-42,thaumcraft:dimension.-42,dimension,Outer Lands,done,tested,,WorldProviderOuter; DimensionManager.registerProviderType/registerDimension; default id -42 (outer_lands_dim)
 Thaumcraft:nodetype.NORMAL,thaumcraft:nodetype.normal,node_type,NORMAL,done,tested,,api/nodes/NodeType enum
 Thaumcraft:nodetype.UNSTABLE,thaumcraft:nodetype.unstable,node_type,UNSTABLE,done,tested,,api/nodes/NodeType enum
 Thaumcraft:nodetype.DARK,thaumcraft:nodetype.dark,node_type,DARK,done,tested,,api/nodes/NodeType enum
@@ -1019,7 +1019,7 @@ Thaumcraft:worldgen.shrine_mounds,thaumcraft:worldgen.shrine_mounds,worldgen_fea
 Thaumcraft:worldgen.eldritch_stone_rings,thaumcraft:worldgen.eldritch_stone_rings,worldgen_feature,Eldritch stone rings,not_started,not_tested,,impl=WorldGenEldritchRing config=genStructure
 Thaumcraft:worldgen.hilltop_stones,thaumcraft:worldgen.hilltop_stones,worldgen_feature,Hilltop stones,not_started,not_tested,,impl=WorldGenHilltopStones config=genStructure
 Thaumcraft:worldgen.nether_totems_wild_nodes,thaumcraft:worldgen.nether_totems_wild_nodes,worldgen_feature,Nether: totems + wild nodes,not_started,not_tested,,impl=generateNether config=genAura / genStructure
-Thaumcraft:worldgen.outer_lands_procedural_maze,thaumcraft:worldgen.outer_lands_procedural_maze,worldgen_feature,Outer Lands procedural maze,not_started,not_tested,,impl=MazeHandler.generateEldritch (dimension -42) config=outer_lands_dim
+Thaumcraft:worldgen.outer_lands_procedural_maze,thaumcraft:worldgen.outer_lands_procedural_maze,worldgen_feature,Outer Lands procedural maze,done,tested,,impl=MazeHandler.generateEldritch (dimension -42) config=outer_lands_dim
 Thaumcraft:worldgen.taint_spread_conversion,thaumcraft:worldgen.taint_spread_conversion,worldgen_feature,Taint spread / conversion,not_started,not_tested,,"impl=TaintManager (chunk events, not chunk gen) config=-"
 Thaumcraft:worldgen.wizard_tower_village_house,thaumcraft:worldgen.wizard_tower_village_house,worldgen_feature,Wizard tower village house,not_started,not_tested,,impl=ComponentWizardTower via VillageWizardManager config=villager_wizard spawn
 Thaumcraft:worldgen.banker_house_village_house,thaumcraft:worldgen.banker_house_village_house,worldgen_feature,Banker house village house,not_started,not_tested,,impl=ComponentBankerHome via VillageBankerManager config=villager_banker spawn

@@ -6,6 +6,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeB
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchRealm;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogOuterLands;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
@@ -153,6 +154,7 @@ public final class ModRegistration {
         // dimension/portal and structure placement are TC-M6-04f-m; the maze
         // generation shipped in f252c58.
         CatalogEldritchRealm.init(modEventBus);
+        CatalogOuterLands.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

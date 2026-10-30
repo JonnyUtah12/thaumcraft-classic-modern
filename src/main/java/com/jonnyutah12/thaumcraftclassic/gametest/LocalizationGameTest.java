@@ -358,6 +358,18 @@ public final class LocalizationGameTest {
                 keys.add("death.attack." + msgId + ".item");
             }
         }
+
+        // TC-M6-04f-m: the biomes (datapack registry) label themselves
+        // through vanilla's "biome.<namespace>.<path>" key — the Eldritch
+        // biome is shipped content (the original's biome.Eldritch display
+        // name), so the audit walks the family like the ones above.
+        final net.minecraft.core.Registry<net.minecraft.world.level.biome.Biome> biomes =
+                helper.getLevel().registryAccess().registryOrThrow(Registries.BIOME);
+        for (final ResourceLocation id : biomes.keySet()) {
+            if (eligible(id)) {
+                keys.add("biome." + id.getNamespace() + "." + id.getPath());
+            }
+        }
         return keys;
     }
 
