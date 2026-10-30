@@ -415,9 +415,11 @@ public final class ThaumatoriumGameTest {
     /**
      * The tile round-trips the original's key set: {@code maxrec}, the
      * essentia list under {@code Aspects}, the catalyst under {@code Items}
-     * slot 0, and the queue under {@code recipes} + {@code OutputPlayer} —
-     * the port's id-string form (BD-19 replaces the original's int-hash
-     * arrays); unknown recipe ids drop on load, the original's null-hash rule.
+     * slot 0, and the queue under {@code recipes} + {@code OutputPlayer} (plus
+     * the index-aligned cost copies under {@code QueueAspects}) — the port's
+     * id-string form; BD-19 replaces the original's int-hash arrays. The load
+     * is exercised on 1.21.1's REAL path, where the block entity has no level
+     * yet, and on the drops the original's registry lookup produced.
      */
     @GameTest(template = "empty")
     public static void theTilesSaveAndLoadTheOriginalKeys(final GameTestHelper helper) {
@@ -449,15 +451,49 @@ public final class ThaumatoriumGameTest {
         helper.assertTrue(tile.essentia().getAmount(Aspect.getAspect("perditio")) == 6,
                 "the essentia buffer returns from the Aspects label");
 
-        // The original's drop-unknown rule: a stale id in "recipes" vanishes.
-        final net.minecraft.nbt.CompoundTag stale = tile.saveWithFullMetadata(
+        // The real load path: 1.21.1 builds a block entity through
+        // BlockEntity.loadStatic, which runs loadWithComponents BEFORE the
+        // level is set, so a queue rebuilt from the RecipeManager at load time
+        // — the original's rule — would empty on every world load. The port
+        // keeps the cost as data (BD-19), so a level-less load keeps the queue.
+        final TileThaumatorium reloaded = new TileThaumatorium(BlockPos.ZERO,
+                helper.getLevel().getBlockState(helper.absolutePos(new BlockPos(1, 1, 1))));
+        reloaded.loadWithComponents(tag, helper.getLevel().registryAccess());
+        helper.assertTrue(!reloaded.hasLevel(), "the real load path has no level yet");
+        helper.assertTrue(reloaded.queue().size() == 1
+                        && reloaded.queue().get(0).recipeId().equals(RECIPE_7)
+                        && reloaded.queue().get(0).aspects().getAmount(Aspect.getAspect("ignis")) == 4
+                        && reloaded.queue().get(0).player().equals(player.getGameProfile().getName()),
+                "a level-less load keeps the queue, its cost copy and its queuer");
+        helper.assertTrue(reloaded.getItem(0).is(Items.GUNPOWDER)
+                        && reloaded.getItem(0).getCount() == 3,
+                "the catalyst returns on that same level-less path");
+
+        // The drops the original had, in id form: an unparsable id vanishes.
+        final net.minecraft.nbt.CompoundTag junk = tile.saveWithFullMetadata(
                 helper.getLevel().registryAccess());
-        stale.getList("recipes", net.minecraft.nbt.Tag.TAG_STRING)
+        junk.getList("recipes", net.minecraft.nbt.Tag.TAG_STRING)
+                .add(net.minecraft.nbt.StringTag.valueOf("not a resource location"));
+        tile.queue().clear();
+        tile.loadWithComponents(junk, helper.getLevel().registryAccess());
+        helper.assertTrue(tile.queue().size() == 1
+                        && tile.queue().get(0).recipeId().equals(RECIPE_7),
+                "the unparsable id is dropped, as the original's null-hash entry was");
+
+        // A save without the stored costs (the pre-QueueAspects form) keeps the
+        // original's lookup-and-drop through a live level: recipe.7 resolves,
+        // a stale id does not, and that entry vanishes.
+        final net.minecraft.nbt.CompoundTag legacy = tile.saveWithFullMetadata(
+                helper.getLevel().registryAccess());
+        legacy.remove("QueueAspects");
+        legacy.getList("recipes", net.minecraft.nbt.Tag.TAG_STRING)
                 .add(net.minecraft.nbt.StringTag.valueOf("thaumcraft:recipe.999.crucible"));
         tile.queue().clear();
-        tile.loadWithComponents(stale, helper.getLevel().registryAccess());
-        helper.assertTrue(tile.queue().size() == 1,
-                "the unknown id is dropped on load, as the original's null-hash lookup dropped it");
+        tile.loadWithComponents(legacy, helper.getLevel().registryAccess());
+        helper.assertTrue(tile.queue().size() == 1
+                        && tile.queue().get(0).recipeId().equals(RECIPE_7)
+                        && tile.queue().get(0).aspects().getAmount(Aspect.getAspect("ignis")) == 4,
+                "the cost-less form re-resolves recipe.7 from the recipe and drops the unknown id");
         helper.succeed();
     }
 }

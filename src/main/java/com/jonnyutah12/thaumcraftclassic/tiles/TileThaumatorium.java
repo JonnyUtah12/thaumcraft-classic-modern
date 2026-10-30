@@ -62,9 +62,16 @@ import java.util.List;
  * <p>Persistence is the original's key set: {@code facing}, {@code maxrec},
  * the essentia list under {@code Aspects}, {@code "Items"} slot 0 for the
  * catalyst and {@code OutputPlayer} for the queue's player names. The queue
- * list itself is stored under the original's {@code recipes} key as id strings
- * (the original's int-array form, decoded via a hash lookup, is documented in
- * BD-19).</p>
+ * list itself is stored under the original's {@code recipes} key as id
+ * strings (the original's int-array form, decoded via a hash lookup, is
+ * documented in BD-19), with each entry's cost copy under
+ * {@code QueueAspects} index-aligned: 1.21.1 runs
+ * {@code BlockEntity#loadWithComponents} before the level is set, so a
+ * queue rebuilt from the {@code RecipeManager} at load time — the
+ * original's rule — would empty on every world load. The stored cost keeps
+ * the queue on data alone; a recipe file that is not loaded leaves the
+ * entry unlisted in the GUI (the menu lists by live recipe) and the
+ * machine card resolves it.</p>
  */
 public class TileThaumatorium extends BlockEntity
         implements WorldlyContainer, MenuProvider,
@@ -402,6 +409,18 @@ public class TileThaumatorium extends BlockEntity
             players.add(StringTag.valueOf(queued.player()));
         }
         tag.put("OutputPlayer", players);
+        // The queued cost copies, index-aligned. The original rebuilt them from
+        // the recipe registry at LOAD time; 1.21.1 runs loadWithComponents
+        // before the level is set (BlockEntity.loadStatic), so the port keeps
+        // the cost as data instead (BD-19) — a queue that needed the
+        // RecipeManager to rebuild would empty on every world load.
+        final ListTag queueAspects = new ListTag();
+        for (final QueuedCraft queued : this.queue) {
+            final CompoundTag entry = new CompoundTag();
+            queued.aspects().writeToNBT(entry);
+            queueAspects.add(entry);
+        }
+        tag.put("QueueAspects", queueAspects);
     }
 
     @Override
@@ -420,24 +439,37 @@ public class TileThaumatorium extends BlockEntity
                 this.stacks[slot] = ItemStack.parseOptional(registries, item.getCompound("Item"));
             }
         }
-        // The original re-resolved int hashes through the recipe registry and
-        // dropped unknowns; the port resolves ids and drops unknowns — the same
-        // "drop what is not loaded today" rule.
+        // The original re-resolved its int hashes through the recipe registry
+        // at load and dropped what it could not resolve. 1.21.1's load path has
+        // no level yet, so the cost is read from the stored copy and an entry
+        // survives a reload on data alone; only an UNPARSABLE id is dropped
+        // here, and a save without the stored costs (the pre-QueueAspects form)
+        // falls back to the original's lookup-and-drop through a live level
+        // (BD-19).
         this.queue.clear();
         final ListTag recipes = tag.getList("recipes", Tag.TAG_STRING);
         final ListTag players = tag.getList("OutputPlayer", Tag.TAG_STRING);
+        final ListTag queueAspects = tag.getList("QueueAspects", Tag.TAG_COMPOUND);
         for (int a = 0; a < recipes.size(); a++) {
             final ResourceLocation id = ResourceLocation.tryParse(recipes.getString(a));
             if (id == null) {
                 continue;
             }
-            final CrucibleRecipe recipe = this.level == null
-                    ? null : findCrucibleRecipe(this.level, id);
-            if (recipe == null) {
-                continue;
+            AspectList aspects = null;
+            if (a < queueAspects.size()) {
+                aspects = new AspectList();
+                aspects.readFromNBT(queueAspects.getCompound(a));
+            }
+            if (aspects == null) {
+                final CrucibleRecipe recipe = this.level == null
+                        ? null : findCrucibleRecipe(this.level, id);
+                if (recipe == null) {
+                    continue;
+                }
+                aspects = recipe.aspects().copy();
             }
             final String player = a < players.size() ? players.getString(a) : "";
-            this.queue.add(new QueuedCraft(id, recipe.aspects().copy(), player));
+            this.queue.add(new QueuedCraft(id, aspects, player));
         }
     }
 
