@@ -7,6 +7,7 @@ import com.jonnyutah12.thaumcraftclassic.menus.DeconstructionTableMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.HandMirrorMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.MagicBoxMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.SpaMenu;
+import com.jonnyutah12.thaumcraftclassic.menus.ThaumatoriumMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.TrunkMenu;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -79,6 +80,8 @@ class MenuTypeScreenCoverageTest {
                 SpaMenu.class, "gui_spa"));
         SCREENS.put(ArcaneWorkbenchScreen.class, new ScreenUnderTest("CatalogArcaneWorkbench",
                 "MENU_ARCANE_WORKBENCH", ArcaneWorkbenchMenu.class, "gui_arcane_workbench"));
+        SCREENS.put(ThaumatoriumScreen.class, new ScreenUnderTest("CatalogThaumatorium",
+                "MENU_THAUMATORIUM", ThaumatoriumMenu.class, "gui_thaumatorium"));
 
         EXPECTED_HOLDERS.put("CatalogTrinketsLoot.GUI_TRUNK", "gui_trunk");
         EXPECTED_HOLDERS.put("CatalogTrinketsLoot.GUI_HAND_MIRROR", "gui_hand_mirror");
@@ -86,6 +89,7 @@ class MenuTypeScreenCoverageTest {
         EXPECTED_HOLDERS.put("CatalogFurniture.MENU_MAGIC_BOX", "gui_magic_box");
         EXPECTED_HOLDERS.put("CatalogFurniture.MENU_SPA", "gui_spa");
         EXPECTED_HOLDERS.put("CatalogArcaneWorkbench.MENU_ARCANE_WORKBENCH", "gui_arcane_workbench");
+        EXPECTED_HOLDERS.put("CatalogThaumatorium.MENU_THAUMATORIUM", "gui_thaumatorium");
     }
 
     private record ScreenUnderTest(String catalog, String holder, Class<?> menu, String id) {
@@ -150,11 +154,11 @@ class MenuTypeScreenCoverageTest {
                     "a registered menu type with no screen registration: "
                             + expected.catalog() + "." + expected.holder());
         }
-        assertEquals(6, SCREENS.size(), "the six gui rows whose menus exist today");
+        assertEquals(7, SCREENS.size(), "the seven gui rows whose menus exist today");
     }
 
     @Test
-    void catalogSourcesDeclareExactlyTheSixScreensMenus() throws Exception {
+    void catalogSourcesDeclareExactlyTheSevenScreensMenus() throws Exception {
         final Map<String, String> declared = new LinkedHashMap<>();
         collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogTrinketsLoot.java",
                 "CatalogTrinketsLoot", declared);
@@ -162,6 +166,8 @@ class MenuTypeScreenCoverageTest {
                 "CatalogFurniture", declared);
         collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogArcaneWorkbench.java",
                 "CatalogArcaneWorkbench", declared);
+        collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogThaumatorium.java",
+                "CatalogThaumatorium", declared);
         assertEquals(EXPECTED_HOLDERS, declared,
                 "the catalogs' MenuType declarations and this test's expectations must agree; a new menu type "
                         + "needs a screen and an entry here");

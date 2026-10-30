@@ -159,8 +159,8 @@ Thaumcraft:TileTubeFilter,thaumcraft:tiletubefilter,tile_entity,TileTubeFilter,n
 Thaumcraft:TileTubeBuffer,thaumcraft:tiletubebuffer,tile_entity,TileTubeBuffer,not_started,not_tested,,class=TileTubeBuffer
 Thaumcraft:TileTubeRestrict,thaumcraft:tiletuberestrict,tile_entity,TileTubeRestrict,not_started,not_tested,,class=TileTubeRestrict
 Thaumcraft:TileTubeOneway,thaumcraft:tiletubeoneway,tile_entity,TileTubeOneway,not_started,not_tested,,class=TileTubeOneway
-Thaumcraft:TileThaumatorium,thaumcraft:tilethaumatorium,tile_entity,TileThaumatorium,not_started,not_tested,,class=TileThaumatorium
-Thaumcraft:TileThaumatoriumTop,thaumcraft:tilethaumatoriumtop,tile_entity,TileThaumatoriumTop,not_started,not_tested,,class=TileThaumatoriumTop
+Thaumcraft:TileThaumatorium,thaumcraft:tilethaumatorium,tile_entity,TileThaumatorium,done,tested,GUI slice TC-M7-04-m2c: catalyst slot + essentia buffer + craft queue + original-key persistence on blockMetalDevice meta 10; machine tick - tube suction - queued-craft execution - output ejection and Mnemonic Matrix stay on the machine card (BD-19),class=TileThaumatorium
+Thaumcraft:TileThaumatoriumTop,thaumcraft:tilethaumatoriumtop,tile_entity,TileThaumatoriumTop,done,tested,GUI seam TC-M7-04-m2c: the top opens the base tile's menu at the base position (BlockMetalDevice.java:717-727); aspect-container passthrough and tick stay on the machine card (BD-19),class=TileThaumatoriumTop
 Thaumcraft:TileBrainbox,thaumcraft:tilebrainbox,tile_entity,TileBrainbox,not_started,not_tested,,class=TileBrainbox
 Thaumcraft:TileWarded,thaumcraft:tilewarded,tile_entity,TileWarded,not_started,not_tested,,class=TileWarded
 Thaumcraft:TileGrate,thaumcraft:tilegrate,tile_entity,TileGrate,done,tested,,class=TileGrate
@@ -965,7 +965,7 @@ Thaumcraft:config.Runic_Shielding.runic_cost,thaumcraft:config.runic_shielding.r
 Thaumcraft:GUI_GOLEM,thaumcraft:gui_golem,gui,GuiGolem,not_started,not_tested,,gui_id=0 handler=GuiGolem
 Thaumcraft:GUI_PECH,thaumcraft:gui_pech,gui,GuiPech,not_started,not_tested,,gui_id=1 handler=GuiPech
 Thaumcraft:GUI_TRUNK,thaumcraft:gui_trunk,gui,GuiTravelingTrunk,done,tested,,gui_id=2 handler=GuiTravelingTrunk screen=client/TrunkScreen (cr1 c325fbd)
-Thaumcraft:GUI_THAUMATORIUM,thaumcraft:gui_thaumatorium,gui,GuiThaumatorium,not_started,not_tested,,gui_id=3 handler=GuiThaumatorium
+Thaumcraft:GUI_THAUMATORIUM,thaumcraft:gui_thaumatorium,gui,GuiThaumatorium,done,tested,menu list computed server-side and synced as 26 data slots; tags/bars/pager/pulses are flat geometry (BD-19); queue stored as recipe ids (BD-19); machine tick/tubes/ejection/matrices on the TileThaumatorium machine card - the tile rows are done for the GUI seam only (BD-19),gui_id=3 handler=GuiThaumatorium menu=menus/ThaumatoriumMenu screen=client/ThaumatoriumScreen panel=176x166 queue=raw-index button no server cap display=26 data slots (TC-M7-04-m2c)
 Thaumcraft:GUI_FOCUS_POUCH,thaumcraft:gui_focus_pouch,gui,GuiFocusPouch,not_started,not_tested,,gui_id=5 handler=GuiFocusPouch
 Thaumcraft:GUI_DECON_TABLE,thaumcraft:gui_decon_table,gui,GuiDeconstructionTable,done,tested,,gui_id=8 handler=GuiDeconstructionTable screen=client/DeconstructionTableScreen (46px break bar + collect hitbox at x=64 y=48)
 Thaumcraft:GUI_ALCHEMY_FURNACE,thaumcraft:gui_alchemy_furnace,gui,GuiAlchemyFurnace,not_started,not_tested,,gui_id=9 handler=GuiAlchemyFurnace

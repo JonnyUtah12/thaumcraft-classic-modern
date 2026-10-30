@@ -322,4 +322,51 @@ class ContainerLayoutTest {
         assertEquals(TrunkScreen.PANEL_FILL, ContainerLayout.PANEL_FILL);
         assertEquals(TrunkScreen.PANEL_FRAME, ContainerLayout.PANEL_FRAME);
     }
+
+    // ------------------------------ TC-M7-04-m2c: the thaumatorium geometry
+
+    @Test
+    void thaumatoriumGeometryIsTheOriginals() {
+        // GuiThaumatorium never sets xSize/ySize, so its panel is 1.7.10's
+        // GuiContainer default 176x166. The window takes that literal pair:
+        // the shared derivation (panelHeight = playerGridTop - 13 + 96) lands
+        // on 167 for the original's 84 px grid, because vanilla's own rule is
+        // imageHeight = player-grid origin + 83. The one pixel is the delta
+        // between the original's fixed default and vanilla's derivation, so
+        // both numbers are pinned here and the screen uses the original's.
+        assertEquals(176, ContainerLayout.PANEL_WIDTH);
+        assertEquals(166, ContainerLayout.TAU_PANEL_HEIGHT);
+        assertEquals(167, ContainerLayout.panelHeight(ContainerLayout.PLAYER_GRID_TOP),
+                "vanilla's derivation for an 84 px player grid — one pixel over the original's 166");
+
+        // The tag row: 16x16 tags at (40 + 16*pos, 40), bars at (41 + 16*pos, 57)
+        // with the fill column at 42 + 16*pos — all on the 16 px pitch.
+        assertEquals(40, ContainerLayout.thaumatoriumTagX(0));
+        assertEquals(120, ContainerLayout.thaumatoriumTagX(5));
+        assertEquals(16, ContainerLayout.thaumatoriumTagX(5) - ContainerLayout.thaumatoriumTagX(4),
+                "the tag pitch is the original's 16 px");
+        assertEquals(41, ContainerLayout.thaumatoriumBarX(0));
+        assertEquals(42, ContainerLayout.thaumatoriumBarFillX(0));
+        assertEquals(6, ContainerLayout.TAU_VISIBLE_ASPECTS);
+
+        // The original's bar fill is (int)(have / need * 12.0F), uncapped — a
+        // full-plus-1 buffer runs one pixel past the 14 px background, and the
+        // port keeps that arithmetic verbatim.
+        assertEquals(15, ContainerLayout.thaumatoriumBarFill(5, 4));
+        assertEquals(12, ContainerLayout.thaumatoriumBarFill(4, 4));
+        assertEquals(3, ContainerLayout.thaumatoriumBarFill(1, 4));
+        assertEquals(0, ContainerLayout.thaumatoriumBarFill(0, 4));
+        assertEquals(0, ContainerLayout.thaumatoriumBarFill(5, 0));
+
+        // The pulses, at the original's formulas: the queue box's
+        // 0.6 + sin(t/5)*0.4 + 0.4 and the output tint's
+        // 0.3 + sin(t/4)*0.3 + 0.3 (GuiThaumatorium.java:118, 182-183).
+        assertEquals(1.0F, ContainerLayout.thaumatoriumQueuePulse(0), 0.0001F);
+        assertEquals(0.6F, ContainerLayout.thaumatoriumDullPulse(0), 0.0001F);
+
+        // The queue counter's anchor: (136,33), scaled 0.5, centred, white.
+        assertEquals(136, ContainerLayout.TAU_COUNT_X);
+        assertEquals(33, ContainerLayout.TAU_COUNT_Y);
+        assertEquals(0.5F, ContainerLayout.TAU_COUNT_SCALE, 0.0001F);
+    }
 }

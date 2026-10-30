@@ -3,6 +3,7 @@ package com.jonnyutah12.thaumcraftclassic.client;
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArcaneWorkbench;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogThaumatorium;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -30,16 +31,17 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
  * hazard.</p>
  *
  * <p><b>Coverage.</b> As of this commit every {@code MenuType} the mod
- * registers has a screen here — the six gui rows whose menus landed with their
- * content: {@code gui_trunk} (TC-M7-04-s-cr1); {@code gui_hand_mirror},
+ * registers has a screen here — the seven gui rows whose menus landed with
+ * their content: {@code gui_trunk} (TC-M7-04-s-cr1); {@code gui_hand_mirror},
  * {@code gui_decon_table}, {@code gui_magic_box} and {@code gui_spa}
- * (TC-M7-04-s); and {@code gui_arcane_workbench} (TC-M7-04-m2, the first
- * crafting-table GUI). The remaining GUI ids in {@code docs/content-mapping.csv}
- * have no menu type yet (the crucible, thaumatorium, research table, alchemy
- * furnace, arcane bore, golem, pech, focus pouch, hover harness, focal
- * manipulator) or are the Thaumonomicon (t_547e7ad8), so they cannot be wired
- * here; they are separate cards. A new menu type added without a screen fails
- * {@code MenuTypeScreenCoverageTest}.</p>
+ * (TC-M7-04-s); {@code gui_arcane_workbench} (TC-M7-04-m2, the first
+ * crafting-table GUI); and {@code gui_thaumatorium} (TC-M7-04-m2c, the
+ * thaumatorium queue window). The remaining GUI ids in
+ * {@code docs/content-mapping.csv} have no menu type yet (the crucible,
+ * research table, alchemy furnace, arcane bore, golem, pech, focus pouch,
+ * hover harness, focal manipulator) or are the Thaumonomicon (t_547e7ad8), so
+ * they cannot be wired here; they are separate cards. A new menu type added
+ * without a screen fails {@code MenuTypeScreenCoverageTest}.</p>
  */
 @EventBusSubscriber(modid = ThaumcraftClassic.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ModClientScreens {
@@ -62,6 +64,8 @@ public final class ModClientScreens {
         event.register(CatalogFurniture.MENU_SPA.get(), SpaScreen::new);
         // TC-M7-04-m2: the first crafting-table GUI, gui_arcane_workbench.
         event.register(CatalogArcaneWorkbench.MENU_ARCANE_WORKBENCH.get(), ArcaneWorkbenchScreen::new);
+        // TC-M7-04-m2c: the thaumatorium queue window, gui_thaumatorium.
+        event.register(CatalogThaumatorium.MENU_THAUMATORIUM.get(), ThaumatoriumScreen::new);
     }
 
     private ModClientScreens() {

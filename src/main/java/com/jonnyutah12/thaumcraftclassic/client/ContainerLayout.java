@@ -216,6 +216,150 @@ public final class ContainerLayout {
      */
     public static final int WB_BLOCKED_TINT = 0xA8555555;
 
+    // --------------------------------------------------------- thaumatorium
+
+    // Every figure below is transcribed from
+    // reference/decompiled/thaumcraft/thaumcraft/client/gui/GuiThaumatorium.java
+    // and .../common/container/ContainerThaumatorium.java. That GUI never sets
+    // xSize/ySize, so its panel is the 1.7.10 GuiContainer default 176x166.
+    // The width is the shared PANEL_WIDTH (176); the HEIGHT is the original's
+    // own literal, NOT the shared derivation: panelHeight(84) = (84 - 13) + 96
+    // = 167, which is vanilla's own rule (imageHeight = player-grid origin +
+    // 83) and lands one pixel below the original's fixed 166. This window takes
+    // the original's number; the shared derivation is left alone because the
+    // other screens are built on it. Asserted in ContainerLayoutTest.
+
+    /** The 1.7.10 {@code GuiContainer} default panel the original never overrode. */
+    public static final int TAU_PANEL_HEIGHT = 166;
+
+    /** {@code ContainerThaumatorium}: the catalyst slot at {@code (48,16)}. */
+    public static final int TAU_CATALYST_X = 48;
+    public static final int TAU_CATALYST_Y = 16;
+
+    /** The original player grid at {@code (8,84)} and hotbar at {@code (8,142)}. */
+    public static final int TAU_PLAYER_X = 8;
+
+    /**
+     * The recipe output box: {@code drawOutput} renders the item at
+     * {@code (x+112, y+16)}, its tooltip hitbox is that same 16x16, and
+     * {@code func_73864_a} queues the recipe from it.
+     */
+    public static final int TAU_OUTPUT_X = 112;
+    public static final int TAU_OUTPUT_Y = 16;
+    public static final int TAU_OUTPUT_SIZE = 16;
+
+    /** The prev/next page arrows: 16x8 at {@code (128,16)} and {@code (128,24)}. */
+    public static final int TAU_PAGE_X = 128;
+    public static final int TAU_PAGE_PREV_Y = 16;
+    public static final int TAU_PAGE_NEXT_Y = 24;
+    public static final int TAU_PAGE_W = 16;
+    public static final int TAU_PAGE_H = 8;
+
+    /**
+     * The aspect-window pager, drawn and clicked only while the current recipe
+     * has more than {@link #TAU_VISIBLE_ASPECTS} aspects: 8x16 boxes at
+     * {@code (32,40)} and {@code (136,40)}.
+     */
+    public static final int TAU_ASPECT_LEFT_X = 32;
+    public static final int TAU_ASPECT_RIGHT_X = 136;
+    public static final int TAU_ASPECT_PAGER_Y = 40;
+    public static final int TAU_ASPECT_PAGER_W = 8;
+    public static final int TAU_ASPECT_PAGER_H = 16;
+
+    /**
+     * The 48x48 knowledge-highlight overlay at {@code (104,8)}, drawn when the
+     * queue is non-empty and the output is hovered or the current recipe is
+     * queued; and the 24x24 white box at {@code (88,16)} that pulses whenever
+     * the queue is non-empty ({@code GuiThaumatorium.java:102-120}).
+     */
+    public static final int TAU_HIGHLIGHT_X = 104;
+    public static final int TAU_HIGHLIGHT_Y = 8;
+    public static final int TAU_HIGHLIGHT_SIZE = 48;
+    public static final int TAU_PULSE_X = 88;
+    public static final int TAU_PULSE_Y = 16;
+    public static final int TAU_PULSE_SIZE = 24;
+
+    /**
+     * The aspect row: a 16x16 {@code UtilsFX.drawTag} per aspect at
+     * {@code (40 + 16*pos, 40)}, and — only while the current recipe is queued —
+     * the essentia bar behind it: a 14x6 background at {@code (41 + 16*pos, 57)}
+     * with an {@code i1}x4 coloured fill at {@code (42 + 16*pos, 58)},
+     * {@code i1 = essentia.getAmount / recipe amount * 12.0F}. Six aspects are
+     * visible per page.
+     */
+    public static final int TAU_TAG_X = 40;
+    public static final int TAU_TAG_Y = 40;
+    public static final int TAU_TAG_PITCH = 16;
+    public static final int TAU_TAG_SIZE = 16;
+    public static final int TAU_BAR_X = 41;
+    public static final int TAU_BAR_Y = 57;
+    public static final int TAU_BAR_W = 14;
+    public static final int TAU_BAR_H = 6;
+    public static final int TAU_BAR_FILL_X = 42;
+    public static final int TAU_BAR_FILL_Y = 58;
+    public static final int TAU_BAR_FILL_H = 4;
+    public static final int TAU_BAR_FILL_SCALE = 12;
+    public static final int TAU_VISIBLE_ASPECTS = 6;
+
+    /**
+     * The queue counter: {@code recipeHash.size() + "/" + maxRecipes} translated
+     * to {@code (136,33)}, scaled 0.5, centred, white — drawn only when
+     * {@code maxRecipes > 1} ({@code GuiThaumatorium.java:124-133}).
+     */
+    public static final int TAU_COUNT_X = 136;
+    public static final int TAU_COUNT_Y = 33;
+    public static final float TAU_COUNT_SCALE = 0.5F;
+    public static final int TAU_COUNT_COLOUR = 0xFFFFFFFF;
+
+    /**
+     * The white pulse of the 24x24 queue box:
+     * {@code 0.6F + sin(gameTime / 5.0F) * 0.4F + 0.4F} (the client player's
+     * {@code ticksExisted}; the port's screens run their pulse clock the same way
+     * {@code ArcaneWorkbenchScreen} does).
+     */
+    public static float thaumatoriumQueuePulse(final int gameTime) {
+        return 0.6F + Mth.sin(gameTime / 5.0F) * 0.4F + 0.4F;
+    }
+
+    /**
+     * The grey tint pulse over the queueable output:
+     * {@code 0.3F + sin(gameTime / 4.0F) * 0.3F + 0.3F} under
+     * {@code glColor4f(0.5F, 0.5F, 0.5F, alpha)} ({@code GuiThaumatorium.java:182-183}).
+     */
+    public static float thaumatoriumDullPulse(final int gameTime) {
+        return 0.3F + Mth.sin(gameTime / 4.0F) * 0.3F + 0.3F;
+    }
+
+    /** The grey of the original's dull tint — {@code glColor4f(0.5F, 0.5F, 0.5F, a)}. */
+    public static final int TAU_DULL_GREY = 0x808080;
+
+    /**
+     * The original's bar fill width:
+     * {@code (int)((float)essentia.getAmount(aspect) / recipeAmount * 12.0F)} —
+     * verbatim, uncapped: when the tile holds more than the recipe needs the
+     * original's fill runs past its 14 px background, and the port reproduces
+     * that rather than tidying it.
+     */
+    public static int thaumatoriumBarFill(final int have, final int need) {
+        if (need <= 0) {
+            return 0;
+        }
+        return (int) ((float) have / (float) need * (float) TAU_BAR_FILL_SCALE);
+    }
+
+    /** The tag/bar slot for one visible aspect column. */
+    public static int thaumatoriumTagX(final int position) {
+        return TAU_TAG_X + position * TAU_TAG_PITCH;
+    }
+
+    public static int thaumatoriumBarX(final int position) {
+        return TAU_BAR_X + position * TAU_TAG_PITCH;
+    }
+
+    public static int thaumatoriumBarFillX(final int position) {
+        return TAU_BAR_FILL_X + position * TAU_TAG_PITCH;
+    }
+
     // ------------------------------------------------------------- geometry
 
     /** Panel top for a given player-grid origin (vanilla's 13 px piece offset). */
