@@ -77,11 +77,38 @@ registry keys are fixed here so the harness and every milestone agree:
 | Registry key | kinds | Owner |
 | --- | --- | --- |
 | `thaumcraft:aspect` | aspect | TC-M4-01 |
-| `thaumcraft:research_category` | research_category | TC-M3-01 |
-| `thaumcraft:research` | research | TC-M3-01/02 |
 | `thaumcraft:wand_component` | wand_component | TC-M6 (wand system) |
 | `thaumcraft:node_type` | node_type | TC-M5 |
 | `thaumcraft:node_modifier` | node_modifier | TC-M5 |
+
+Entry ids inside `thaumcraft:aspect` carry the `aspect.<tag>` path
+(`thaumcraft:aspect.aer`), exactly the frozen CSV contract ids; the same
+prefix pattern `NodeType.registryPath()` uses for `thaumcraft:nodetype.*`.
+The aspect tag stays the serialization key (NBT, payloads, essentia
+tables); only the registry id carries the prefix (t_f00b7e29).
+
+### Research content is graph data, not a registry (t_f00b7e29)
+
+`kind=research` (201 rows) and `kind=research_category` (6 rows) have **no
+modded registry**. The earlier pin table listed `thaumcraft:research` /
+`thaumcraft:research_category` registries for TC-M3-01/02; those registries
+were never created and will not be — the decision is recorded here. The
+original registered research in the static `ResearchCategories` code keyed
+by string, and the port ships the extracted graph as data:
+`data/thaumcraft/research_graph/{categories,entries}.json`, loaded once by
+`research/ResearchGraphLoader` and pinned by `ResearchGraphLoaderTest`
+(201 entries / 6 categories, structural validation in `ResearchGraph`).
+A registry would have no consumer — research keys are not saved as registry
+ids, not synced by registry sync, and not datapack-referenced — and
+registry population happens at `RegisterEvent` time, before data resources
+exist, so data-driven graph nodes cannot live there.
+
+The harness therefore resolves a `done` research row against the **live
+graph**: `RegistrationGameTest` looks the CSV id path up in
+`ResearchManager.graph()` (entry key for `research`, category key for
+`research_category`), matching case-insensitively because D-001 lowercases
+the original uppercase keys. The row is `done` only while the graph node
+exists at runtime — the same forward guarantee the registry branches give.
 
 Reference-only kinds (never standalone registered objects): `config_option`,
 `gui`, `oredict` (→ item tags), `mob_spawn` (spawn placements), `dimension`,
@@ -102,9 +129,10 @@ Reference-only kinds (never standalone registered objects): `config_option`,
      survive NBT save round-trips (the save-data id path).
   3. `implementedContentIdsResolve` — forward harness: every CSV row with
      status `done` must resolve in its target registry (builtin, datapack
-     lookup, or pinned modded registry). Rows stay `not_started` until
-     their milestone lands; from then on the same test enforces resolution
-     forever.
+     lookup, pinned modded registry) or in the live research graph (kind
+     `research` / `research_category`, see above). Rows stay `not_started`
+     until their milestone lands; from then on the same test enforces
+     resolution forever.
 
 Probe content (`TestProbeContent`) registers only under
 `-Dthaumcraft.testprobe=true`, set by the `gameTestServer` run config —

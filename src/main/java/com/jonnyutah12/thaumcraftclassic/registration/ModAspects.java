@@ -19,6 +19,15 @@ import net.neoforged.neoforge.registries.RegistryBuilder;
  * matching the original's aspect sync packet) and the holders land through a
  * standard {@link DeferredRegister}.
  *
+ * <p>Entry ids carry the {@code aspect.<tag>} path (e.g.
+ * {@code thaumcraft:aspect.aer}) so they equal the frozen contract ids in
+ * docs/content-mapping.csv — the same prefix pattern
+ * {@link com.jonnyutah12.thaumcraftclassic.nodes.NodeType#registryPath()}
+ * uses for the {@code thaumcraft:nodetype.*} entries. Tags stay the
+ * serialization key everywhere (NBT, payloads, essentia tables); the
+ * prefixed path is the registry id only, resolved through
+ * {@link #aspectId(String)}.</p>
+ *
  * <p>NOTE: this file was reconstructed on 2026-10-19 during TC-M6-04a after
  * the original TC-M4-01 working copy was lost from the shared workspace
  * (never committed). It satisfies the exact contract the surviving
@@ -39,7 +48,7 @@ public final class ModAspects {
 
     public static void register(final IEventBus modEventBus) {
         for (final AspectDefinitions.Definition definition : AspectDefinitions.all()) {
-            ASPECTS.register(definition.tag(), () -> new Aspect(definition));
+            ASPECTS.register("aspect." + definition.tag(), () -> new Aspect(definition));
         }
         ASPECTS.register(modEventBus);
         modEventBus.addListener(ModAspects::onNewRegistry);
@@ -54,9 +63,9 @@ public final class ModAspects {
         return registry;
     }
 
-    /** Registry id for an aspect tag, e.g. {@code thaumcraft:ignis}. */
+    /** Registry id for an aspect tag, e.g. {@code thaumcraft:aspect.ignis}. */
     public static ResourceLocation aspectId(final String tag) {
-        return ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, tag);
+        return ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "aspect." + tag);
     }
 
     private ModAspects() {

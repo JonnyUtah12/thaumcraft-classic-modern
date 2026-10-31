@@ -4,6 +4,11 @@ import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.registration.ContentMappingCsv;
 import com.jonnyutah12.thaumcraftclassic.registration.ModRegistration;
 import com.jonnyutah12.thaumcraftclassic.registration.TestProbeContent;
+import com.jonnyutah12.thaumcraftclassic.research.ResearchCategoryData;
+import com.jonnyutah12.thaumcraftclassic.research.ResearchEntryData;
+import com.jonnyutah12.thaumcraftclassic.research.ResearchGraph;
+import com.jonnyutah12.thaumcraftclassic.research.ResearchGraphLoader;
+import com.jonnyutah12.thaumcraftclassic.research.ResearchManager;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -43,8 +48,9 @@ import java.util.Optional;
  *   <li>{@link #implementedContentIdsResolve}: the forward harness over
  *       docs/content-mapping.csv — every row whose implementation_status is
  *       {@code done} must resolve to a live registered object in its target
- *       registry. Rows stay {@code not_started} until their content milestone
- *       lands; the same test then enforces resolution forever (id stability).</li>
+ *       registry, a datapack entry, or a live research-graph node. Rows
+ *       stay {@code not_started} until their content milestone lands; the
+ *       same test then enforces resolution forever (id stability).</li>
  * </ol>
  *
  * <p>Requires the {@code gameTestServer} run configuration (build.gradle),
@@ -76,11 +82,26 @@ public final class RegistrationGameTest {
      */
     private static final Map<String, ResourceKey<? extends Registry<?>>> CUSTOM_KINDS = Map.of(
             "aspect", registryKey("aspect"),
-            "research_category", registryKey("research_category"),
-            "research", registryKey("research"),
             "wand_component", registryKey("wand_component"),
             "node_type", registryKey("node_type"),
             "node_modifier", registryKey("node_modifier"));
+
+    /**
+     * kind -> research-graph data (t_f00b7e29 decision, recorded in
+     * docs/architecture/registration.md): research entries and categories
+     * are NOT registry objects. The original registered them in the static
+     * {@code ResearchCategories} code keyed by string, and the port ships
+     * the extracted graph as data — {@code data/thaumcraft/research_graph/
+     * {categories,entries}.json}, loaded once by {@link ResearchGraphLoader}
+     * (201 entries / 6 categories, pinned by ResearchGraphLoaderTest). A
+     * registry would add no consumer (ids are not saved, synced, or
+     * data-pack-referenced) and its registration-time lifecycle cannot host
+     * data-driven content, so the harness resolves a done row against the
+     * LIVE graph instead: the CSV id path is the lowercased graph key
+     * (D-001 is the only permitted transformation, and the original keys
+     * are uppercase).
+     */
+    private static final List<String> RESEARCH_GRAPH_KINDS = List.of("research", "research_category");
 
     /**
      * kind -> inventory-only rows: not standalone registered objects in 1.21.1
@@ -214,6 +235,17 @@ public final class RegistrationGameTest {
                 }
                 helper.assertTrue(found,
                         what + " is marked done but is not present in the datapack registry (provide its JSON data file)");
+                resolved++;
+            } else if (RESEARCH_GRAPH_KINDS.contains(row.kind())) {
+                final ResearchGraph graph = ResearchManager.graph();
+                final java.util.Collection<String> keys = "research".equals(row.kind())
+                        ? graph.entries().stream().map(ResearchEntryData::key).toList()
+                        : graph.categories().stream().map(ResearchCategoryData::key).toList();
+                final long matches = keys.stream().filter(k -> k.equalsIgnoreCase(id.getPath())).count();
+                helper.assertTrue(matches == 1,
+                        what + " is marked done but " + (matches == 0
+                                ? "is not a node of the live research graph (ResearchGraphLoader)"
+                                : "matches " + matches + " graph keys — the id path is ambiguous"));
                 resolved++;
             } else {
                 helper.assertTrue(false,
