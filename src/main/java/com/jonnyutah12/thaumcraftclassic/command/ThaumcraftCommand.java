@@ -12,6 +12,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -32,7 +33,12 @@ import java.util.List;
  *
  * <p>Structure, permission level (2), argument ranges (aspect amount min 1,
  * warp-set min 0, warp-add -100..100) and every chat string are kept verbatim,
- * including the original's "has reset you research." typo. Two documented
+ * including the original's "has reset you research." typo. The command tree is
+ * the original's shape: {@code research}, {@code aspect} and {@code warp} are
+ * sub-commands of the ROOT literal, siblings of {@code help} — an earlier port
+ * revision nested them under {@code help}, making the canonical
+ * {@code /thaumcraft research list} unparseable; that is fixed and pinned by
+ * {@code CommandTreeGameTest} (t_26348bbc). Two documented
  * divergences:</p>
  * <ul>
  *   <li>Aspect names: the original also accepted the localized display name
@@ -68,16 +74,27 @@ public final class ThaumcraftCommand {
 
     public static void register(final CommandDispatcher<CommandSourceStack> dispatcher) {
         for (final String root : List.of("thaumcraft", "thaum", "tc")) {
-            dispatcher.register(Commands.literal(root)
+            final LiteralArgumentBuilder<CommandSourceStack> tree = Commands.literal(root)
                     .requires(source -> source.hasPermission(2))
                     .executes(context -> invalidArgs(context.getSource()))
-                    .then(subcommands()));
+                    .then(Commands.literal("help").executes(context -> help(context.getSource())));
+            for (final ArgumentBuilder<CommandSourceStack, ?> sub : subcommands()) {
+                tree.then(sub);
+            }
+            dispatcher.register(tree);
         }
     }
 
-    private static ArgumentBuilder<CommandSourceStack, ?> subcommands() {
-        return Commands.literal("help").executes(context -> help(context.getSource()))
-                .then(Commands.literal("research")
+    /**
+     * The three sub-command families, each attached to the ROOT literal as a
+     * sibling of {@code help} (TC-M9-02 defect t_26348bbc: this builder used to
+     * return {@code Commands.literal("help").then(...)}, so the whole research /
+     * aspect / warp tree hung off {@code help} and the canonical
+     * {@code /thaumcraft research list} the help text advertises did not parse).
+     */
+    private static List<ArgumentBuilder<CommandSourceStack, ?>> subcommands() {
+        return List.of(
+                Commands.literal("research")
                         .then(Commands.literal("list").executes(context -> listResearch(context.getSource())))
                         .then(Commands.argument("player", EntityArgument.player())
                                 .then(Commands.literal("all")
@@ -89,16 +106,16 @@ public final class ThaumcraftCommand {
                                 .then(Commands.argument("research", StringArgumentType.string())
                                         .executes(context -> giveResearch(context.getSource(),
                                                 EntityArgument.getPlayer(context, "player"),
-                                                StringArgumentType.getString(context, "research"))))))
-                .then(Commands.literal("aspect")
+                                                StringArgumentType.getString(context, "research"))))),
+                Commands.literal("aspect")
                         .then(Commands.argument("player", EntityArgument.player())
                                 .then(Commands.argument("aspect", StringArgumentType.word())
                                         .then(Commands.argument("amount", IntegerArgumentType.integer(1))
                                                 .executes(context -> giveAspect(context.getSource(),
                                                         EntityArgument.getPlayer(context, "player"),
                                                         StringArgumentType.getString(context, "aspect"),
-                                                        IntegerArgumentType.getInteger(context, "amount")))))))
-                .then(Commands.literal("warp")
+                                                        IntegerArgumentType.getInteger(context, "amount")))))),
+                Commands.literal("warp")
                         .then(Commands.argument("player", EntityArgument.player())
                                 .then(Commands.literal("add")
                                         .then(Commands.argument("amount", IntegerArgumentType.integer(-100, 100))

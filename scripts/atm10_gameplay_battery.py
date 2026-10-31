@@ -349,28 +349,29 @@ def build_loops() -> list[dict]:
     # L5 -- the port's own command surface in the pack (data + registration).
     # The console source has permission level 4, so the level-2 commands run.
     #
-    # DEFECT PIN (observed by this battery 2026-10-30, not fixed here):
-    # `ThaumcraftCommand.subcommands()` chains `.then(...)` onto the
-    # `Commands.literal("help")` builder, so the whole tree -- research /
-    # aspect / warp -- hangs off `help`. The canonical
-    # `/thaumcraft research list` the in-game help text advertises therefore
-    # does not parse ("Incorrect argument for command"); only
-    # `/thaumcraft help research list` works. Step 3 pins the defect so it is
-    # visible in the evidence instead of silently skipped; the one-line fix
-    # (attach the subcommands to the root literal) is filed as its own card.
+    # FIXED (t_26348bbc, this commit): `ThaumcraftCommand.subcommands()` used to
+    # chain research / aspect / warp onto `Commands.literal("help")`, so the
+    # canonical `/thaumcraft research list` the in-game help text advertises
+    # answered "Incorrect argument for command" and only
+    # `/thaumcraft help research list` worked. The families now hang off the
+    # root literal as siblings of `help`. Step 2 pins the fixed canonical path
+    # (the graph prints at the root, in-instance); step 3 pins the flip side:
+    # `help` is a leaf, so the old nested path is dead and answers the generic
+    # "Incorrect argument for command" the battery recorded pre-fix for step 2.
     loops.append({
         "id": "L5-command",
         "title": "Thaumcraft command surface + live research graph",
         "why": "`/thaumcraft help` proves the command registers next to 470 mods; "
-               "`/thaumcraft help research list` prints ResearchManager.graph(), so "
-               "the shipped 201-entry research graph is proven live in-instance, not "
-               "just parsed. Step 3 PINS a defect: the research/aspect/warp commands "
-               "are nested under `help`, so the `/thaumcraft research <...>` path the "
-               "help text advertises is unreachable.",
+               "the canonical `/thaumcraft research list` prints ResearchManager.graph() "
+               "at the ROOT, so the shipped 201-entry research graph is proven live "
+               "in-instance and the t_26348bbc command-tree fix is proven in the pack. "
+               "Step 3 pins the flip side: `help` is a leaf, so the old "
+               "`/thaumcraft help research <...>` nested path is dead (generic parse "
+               "error), exactly as the pre-fix battery recorded for the root path.",
         "steps": [
             ("thaumcraft help", r"instead of /thaumcraft", None),
-            ("thaumcraft help research list", r"BASICTHAUMATURGY", None),
-            ("thaumcraft research list", r"Incorrect argument for command", None),
+            ("thaumcraft research list", r"BASICTHAUMATURGY", None),
+            ("thaumcraft help research list", r"Incorrect argument for command", None),
         ],
     })
 
@@ -380,7 +381,7 @@ def build_loops() -> list[dict]:
 def measure_research_graph(con: "Console", results: dict) -> None:
     """Count the entries `/thaumcraft research list` printed inside the pack."""
     start = len(con.all_lines)
-    con.send("thaumcraft help research list")
+    con.send("thaumcraft research list")
     con.wait_for(r"BASICTHAUMATURGY", timeout=30)
     time.sleep(1.5)
     with con._lock:  # noqa: SLF001 - same object, single writer thread
@@ -618,7 +619,7 @@ def render_markdown(r: dict) -> str:
     if rg:
         out.append("## Live research graph in-instance")
         out.append("")
-        out.append(f"- `thaumcraft help research list` printed {rg.get('printed_keys')} keys "
+        out.append(f"- `thaumcraft research list` printed {rg.get('printed_keys')} keys "
                    f"({rg.get('distinct_keys')} distinct); sample {rg.get('sample')}")
         out.append(f"- shipped graph on disk: 6 categories / 201 entries "
                    f"(`src/main/resources/data/thaumcraft/research_graph/`)")
