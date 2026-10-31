@@ -96,6 +96,16 @@ public final class LocalizationGameTest {
             // tooltip / action lines
             Map.entry("item.thaumcraft.itemlootbag.tooltip", "ItemLootBag.appendHoverText"),
             Map.entry("item.thaumcraft.trunkspawner.tooltip", "ItemTrunkSpawner.appendHoverText"),
+            // TC-M6-08-s: the golem upgrade's own description line (original
+            // item.ItemGolemUpgrade.<meta>.desc, ItemGolemUpgrade.appendHoverText)
+            // and the advanced-golem tooltip label (original tc.adv).
+            Map.entry("item.thaumcraft.itemgolemupgrade.0.desc", "ItemGolemUpgrade.appendHoverText"),
+            Map.entry("item.thaumcraft.itemgolemupgrade.1.desc", "ItemGolemUpgrade.appendHoverText"),
+            Map.entry("item.thaumcraft.itemgolemupgrade.2.desc", "ItemGolemUpgrade.appendHoverText"),
+            Map.entry("item.thaumcraft.itemgolemupgrade.3.desc", "ItemGolemUpgrade.appendHoverText"),
+            Map.entry("item.thaumcraft.itemgolemupgrade.4.desc", "ItemGolemUpgrade.appendHoverText"),
+            Map.entry("item.thaumcraft.itemgolemupgrade.5.desc", "ItemGolemUpgrade.appendHoverText"),
+            Map.entry("tc.adv", "ItemGolemPlacer tooltip (original tc.adv, advanced golems)"),
             Map.entry("item.thaumcraft.itemgolemupgrade.0", "ItemTrunkSpawner tooltip (TC-M6-06 trunk upgrades)"),
             Map.entry("item.thaumcraft.itemgolemupgrade.1", "ItemTrunkSpawner tooltip (TC-M6-06 trunk upgrades)"),
             Map.entry("item.thaumcraft.itemgolemupgrade.2", "ItemTrunkSpawner tooltip (TC-M6-06 trunk upgrades)"),
@@ -122,7 +132,8 @@ public final class LocalizationGameTest {
      */
     private static final Set<String> META_DRIVEN_ITEMS = Set.of(
             "itemresource", "itemshard", "itemnugget", "itemlootbag", "itembaubleblanks",
-            "itemamuletvis", "itemamuletrunic", "itemringrunic", "itemgirdlerunic");
+            "itemamuletvis", "itemamuletrunic", "itemringrunic", "itemgirdlerunic",
+            "itemgolemplacer", "itemgolemcore", "itemgolemupgrade", "itemgolemdecoration");
 
     private LocalizationGameTest() {
     }

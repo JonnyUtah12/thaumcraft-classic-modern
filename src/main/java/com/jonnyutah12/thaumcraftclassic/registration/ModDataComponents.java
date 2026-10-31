@@ -62,11 +62,20 @@ public final class ModDataComponents {
      * the same way). 1.21.1 has no damage-value variants, so the meta travels
      * on the stack; {@code new_id} stays one registered object per
      * content-mapping.csv row (docs/architecture/registration.md).
+     *
+     * <p>TC-M6-08-s widened the range from 0..63 to the original's full
+     * damage-value domain: {@code ItemGolemCore}'s blank core is metadata
+     * <b>100</b> (the {@code golem_core_blank} icon and the crucible row
+     * {@code recipe.42.crucible}'s catalyst) and the original's "any metadata"
+     * wildcard is <b>32767</b> ({@code ResearchManager.META_ANY}; the
+     * ADVANCEDGOLEM research icon's {@code ItemGolemPlacer} meta). The shipped
+     * data files already carry those values, so the narrower codec rejected
+     * rows that used to gate out on an unregistered item.</p>
      */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> ITEM_META =
             DATA_COMPONENT_TYPES.register("item_meta",
                     () -> DataComponentType.<Integer>builder()
-                            .persistent(Codec.intRange(0, 63))
+                            .persistent(Codec.intRange(0, 32767))
                             .networkSynchronized(ByteBufCodecs.VAR_INT)
                             .build());
 
