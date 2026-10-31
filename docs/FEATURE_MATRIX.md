@@ -97,6 +97,7 @@ Translation to the other status sets used in this repo:
 | Recipes (all types) | 279 recipes, 42 oredict, 11 wand triggers | IN PROGRESS | recipe inventories (arcane/crucible) WIP; extraction scripts | extraction present, in-game matching none | — | integrate per crafting system |
 | Fluids | 4 fluids | INVESTIGATED | content-mapping | none | — | dispatch with catalog |
 | Biomes / dimension (Outer Lands) | 4 biomes, 1 dim (-42) | INVESTIGATED | eldritch realm WIP (world/outerlands, damage_type) | none (uncommitted) | — | salvage (04f), dispatch |
+| Ledger integrity (content-mapping -> feature-tracking -> feature-matrix) | 1048 content rows; 93 card citations | TESTED | t_1476daed (this commit) | 10 stale rows flipped to done/tested, each citing a commit reachable from this branch; 0 archived card ids left in feature-tracking.md; feature-matrix.csv regenerated; build + runGameTestServer + CI on the pushed commit | none | keep every content-mapping flip in lock-step with the landing card |
 
 ## Fidelity scorecard (system granularity — honest denominators)
 
