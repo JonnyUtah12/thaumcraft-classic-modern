@@ -18,6 +18,7 @@ import com.jonnyutah12.thaumcraftclassic.wands.WandComponents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
@@ -60,10 +61,12 @@ public class FociPerformersGameTest {
     /** All eleven performer keys, plus the parent's native bolt, are live. */
     @GameTest(template = "empty")
     public static void everyEffectKeyIsPerformedByThisCard(final GameTestHelper helper) {
+        sweepPlayers(helper);
         EffectPerformers.registerAll(); // self-heal the seam for probe order
         for (final String key : EffectPerformers.KEYS) {
             helper.assertTrue(SpellEffects.isRegistered(key), "no performer for " + key);
         }
+        sweepPlayers(helper);
         helper.succeed();
     }
 
@@ -75,6 +78,7 @@ public class FociPerformersGameTest {
      */
     @GameTest(template = "empty")
     public static void projectileFociRefundWhileTheirEntitiesAreUnlanded(final GameTestHelper helper) {
+        sweepPlayers(helper);
         EffectPerformers.registerAll(); // self-heal the seam for probe order
         final Player player = helper.makeMockPlayer(GameType.SURVIVAL);
         final BlockPos base = helper.absolutePos(new BlockPos(1, 1, 1));
@@ -110,6 +114,7 @@ public class FociPerformersGameTest {
             helper.assertTrue(totalVis(wandItem, wand, cost) == before,
                     "the refund must restore the whole tick, " + before + " -> " + totalVis(wandItem, wand, cost));
         }
+        sweepPlayers(helper);
         helper.succeed();
     }
 
@@ -119,6 +124,7 @@ public class FociPerformersGameTest {
      */
     @GameTest(template = "empty")
     public static void wardingRefusesBeforeChangingTheWorld(final GameTestHelper helper) {
+        sweepPlayers(helper);
         EffectPerformers.registerAll();
         final BlockPos wallPos = new BlockPos(1, 3, 2);
         helper.setBlock(wallPos, Blocks.STONE.defaultBlockState());
@@ -146,6 +152,7 @@ public class FociPerformersGameTest {
             helper.assertTrue(helper.getBlockState(wallPos).is(Blocks.STONE),
                     "the refused ward must not change the world");
         }
+        sweepPlayers(helper);
         helper.succeed();
     }
 
@@ -158,6 +165,7 @@ public class FociPerformersGameTest {
      */
     @GameTest(template = "empty")
     public static void portableHoleRefundsTheDistanceTax(final GameTestHelper helper) {
+        sweepPlayers(helper);
         EffectPerformers.registerAll();
         final BlockPos wallPos = new BlockPos(1, 3, 2);
         helper.setBlock(wallPos, Blocks.STONE.defaultBlockState());
@@ -218,6 +226,7 @@ public class FociPerformersGameTest {
             helper.assertTrue(helper.getBlockState(wallPos).is(Blocks.STONE),
                     "the refused hole must not change the world");
         }
+        sweepPlayers(helper);
         helper.succeed();
     }
 
@@ -228,6 +237,7 @@ public class FociPerformersGameTest {
      */
     @GameTest(template = "empty")
     public static void equalTradePicksForFreeAndSwapsOnlyThroughTheQueue(final GameTestHelper helper) {
+        sweepPlayers(helper);
         EffectPerformers.registerAll();
         final BlockPos wallPos = new BlockPos(1, 3, 2);
         helper.setBlock(wallPos, Blocks.STONE.defaultBlockState());
@@ -268,6 +278,7 @@ public class FociPerformersGameTest {
             helper.assertTrue(helper.getBlockState(wallPos).is(Blocks.STONE),
                     "the refused swap must not change the world");
         }
+        sweepPlayers(helper);
         helper.succeed();
     }
 
@@ -281,6 +292,7 @@ public class FociPerformersGameTest {
      */
     @GameTest(template = "empty")
     public static void excavationPaysEveryTickAndBreaksOnTheCompletingOne(final GameTestHelper helper) {
+        sweepPlayers(helper);
         EffectPerformers.registerAll();
         final BlockPos digPos = new BlockPos(1, 3, 2);
         helper.setBlock(digPos, Blocks.DIRT.defaultBlockState());
@@ -352,10 +364,33 @@ public class FociPerformersGameTest {
                         + totalVis(wandItem, wand, cost) + " (cost " + tickCost + ")");
         helper.assertTrue(wand.get(ModDataComponents.WAND_DIG_STATE.get()) == null,
                 "a completed dig clears the dig state");
+        sweepPlayers(helper);
         helper.succeed();
     }
 
     // ------------------------------------------------------------------ helpers
+
+    /**
+     * Discard the harness players this probe class creates.
+     *
+     * <p>{@code makeMockPlayer} leaves its player in the shared level, and the
+     * batch packs every probe into one grid, so a leaked player is the nearest
+     * living entity for a neighbour probe. That is not cosmetic: the shock
+     * focus's bolt refuses a player target on a non-PVP server
+     * ({@code ItemFocusShock.java:191-236}, the parent's port of it), so a probe
+     * that aims at a cow reads NO_EFFECT because of what a sibling left behind.
+     * The sweep is scoped to this probe's own cell (16 blocks; the batch packs
+     * at 31, so this reaches this probe's players and no neighbour's), never the
+     * whole level.</p>
+     */
+    private static void sweepPlayers(final GameTestHelper helper) {
+        final BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+        final AABB cell = new AABB(origin).inflate(16.0D);
+        for (final Player stray : helper.getLevel().getEntities(EntityType.PLAYER, cell, entity -> true)) {
+            stray.discard();
+        }
+    }
+
 
     /**
      * A mock survival player one cell back with their feet in the cell at
