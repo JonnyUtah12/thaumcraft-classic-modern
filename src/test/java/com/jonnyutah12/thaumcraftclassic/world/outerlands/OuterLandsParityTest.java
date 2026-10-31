@@ -88,7 +88,11 @@ class OuterLandsParityTest {
 
     @Test
     void biomeCarriesTheBiomeGenEldritchFlags() throws IOException {
-        final JsonObject doc = json(dataFile("worldgen", "biome", "biomegeneldritch.json"));
+        // 1.21.1's datapack registry layout is data/<ns>/<registry>/<path>.json,
+        // so the file name is the content-mapping id's path: the biome is
+        // thaumcraft:biome.biomegeneldritch, hence biome.biomegeneldritch.json
+        // (the game-test registry probe proved the ungapped name never loaded).
+        final JsonObject doc = json(dataFile("worldgen", "biome", "biome.biomegeneldritch.json"));
         // BiomeGenEldritch: SPONGE palette on nothing (the void), no weather
         // (the outer world has no rain), the black sky/fog (setColor(0,0,0)).
         assertEquals(false, doc.get("has_precipitation").getAsBoolean(), "has_precipitation");

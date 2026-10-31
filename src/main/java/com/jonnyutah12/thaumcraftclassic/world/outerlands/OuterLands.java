@@ -31,6 +31,21 @@ import net.minecraft.world.level.biome.Biome;
  * {@code ChunkProviderOuter}, which filled every block with {@code null}
  * (pure air) and stamped every column with
  * {@code WorldChunkManagerHell(biomeEldritchLands, 0)}.</p>
+ *
+ * <p>The family stays data-driven, which is 1.21.1's shape for a dimension:
+ * {@code RegistryDataLoader.DIMENSION_REGISTRIES} loads
+ * {@code dimension_type}, {@code biome} and the {@code dimension} (level
+ * stem) JSONs, and {@code MinecraftServer.createLevels} creates a
+ * {@link ServerLevel} per level stem the world knows. One measurement worth
+ * carrying forward: the game-test harness bakes its world over an
+ * {@code EMPTY} level-stem registry
+ * ({@code net/minecraft/gametest/framework/GameTestServer.create}:
+ * {@code new MappedRegistry<>(Registries.LEVEL_STEM, Lifecycle.stable())
+ * .freeze()} + the flat preset), so inside {@code runGameTestServer} no
+ * datapack — mod or vanilla — gets a second live dimension. The probes
+ * therefore assert the Outer Lands where it is observable: the live
+ * {@code dimension_type}/{@code biome} registry entries, and the shipped
+ * dimension JSON decoded by {@code LevelStem.CODEC}.</p>
  */
 public final class OuterLands {
 
