@@ -23,7 +23,9 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.world.entity.EntityType;
 
 /**
  * TC-M7-04-m3-a probes: the golem window is a live menu type that pauses the
@@ -179,6 +181,77 @@ public final class GolemMenuGameTest {
         helper.assertTrue(!bellTarget.mobInteract(player, InteractionHand.MAIN_HAND).consumesAction(),
                 "the bell on a cored golem is refused (the original's bell-ride gate); ride = TC-M6-08-s-b");
         cleanup(helper, bare, filled, sneakTarget, bellTarget);
+        helper.succeed();
+    }
+
+    /**
+     * TC-M6-08-s-c: the golem window's marker-colour path. The colour buttons
+     * are the original {@code ContainerGolem.func_75140_a} legs — button
+     * {@code slot} steps that slot's colour DOWN (underflow wraps to 15),
+     * button {@code slotCount + slot} steps it UP (overflow wraps to -1, the
+     * wildcard) — and the value lands on the live entity's own colour array,
+     * which is what the {@code getColorsMatching} marker lookup reads. The
+     * probe sets a colour THROUGH the menu, then proves it survives the
+     * entity's save/load round-trip.
+     */
+    @GameTest(template = "empty")
+    public static void markerColourSetThroughTheMenuPersistsOnTheEntity(final GameTestHelper helper) {
+        final EntityGolemBase golem = spawnGolem(helper);
+        final Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        player.setPos(golem.position().add(0.5, 1.0, 0.5));
+
+        // The shipped colour array is the original's constructor value,
+        // new byte[]{-1} (EntityGolemBase.java:113): one wildcard slot.
+        helper.assertTrue(golem.getColors().length == 1 && golem.getColors(0) == -1,
+                "the shipped golem carries the original's single wildcard colour slot, got length "
+                        + golem.getColors().length + " slot0 " + golem.getColors(0));
+
+        final GolemMenu menu = new GolemMenu(1, player.getInventory(), golem);
+        helper.assertTrue(menu.markerColorSlotCount() == golem.getColors().length,
+                "the palette's slot count is the golem's own colour array length");
+        helper.assertTrue(menu.clickMenuButton(player, 0), "the colour button is answered");
+        helper.assertTrue(golem.getColors(0) == 15,
+                "the DOWN leg wraps the wildcard -1 to 15 (original c < -1 -> c = 15), got " + golem.getColors(0));
+        menu.clickMenuButton(player, 0);
+        helper.assertTrue(golem.getColors(0) == 14, "the DOWN leg steps 15 -> 14, got " + golem.getColors(0));
+        menu.clickMenuButton(player, 1); // slotCount(1) + slot(0) = the UP leg
+        helper.assertTrue(golem.getColors(0) == 15, "the UP leg steps 14 -> 15, got " + golem.getColors(0));
+
+        // Persistence: the colour rides the original "colors" NBT key
+        // (EntityGolemBase.java:578 / :697).
+        final CompoundTag tag = golem.saveWithoutId(new CompoundTag());
+        final EntityGolemBase reloaded = CatalogGolems.GOLEM.get().create(helper.getLevel());
+        helper.assertTrue(reloaded != null, "the golem type must build a reloaded instance");
+        reloaded.load(tag);
+        helper.assertTrue(reloaded.getColors(0) == 15,
+                "the marker colour set through the menu survives save/load, got " + reloaded.getColors(0));
+        reloaded.discard();
+        menu.removed(player);
+        cleanup(helper, golem);
+        helper.succeed();
+    }
+
+    /**
+     * TC-M6-08-s-c: the four golem-family sibling entity types and the
+     * eldritch golem spawn egg are registered under their content-mapping ids
+     * with the figures read from the original registration table
+     * ({@code ConfigEntities.java:84,89,119,154}).
+     */
+    @GameTest(template = "empty")
+    public static void siblingGolemFamilyTypesAreRegistered(final GameTestHelper helper) {
+        final ResourceLocation eldritch = ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "eldritchgolem");
+        final ResourceLocation bobber = ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "golembobber");
+        final ResourceLocation orb = ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "golemorb");
+        final ResourceLocation dart = ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "dart");
+        // The eldritch golem spawn egg (thaumcraft:spawnegg.eldritchgolem) is
+        // NOT registered by this commit: the missing-lang contract
+        // (LocalizationFileTest.everyRegistryKeyNamesInventoriedContent) reads
+        // the key item.thaumcraft.spawnegg.eldritchgolem as item id "spawnegg",
+        // while the ledger inventories the whole path as the id
+        // "thaumcraft:spawnegg.eldritchgolem" - measured: the audit reports
+        // ["spawnegg"] as uninventoried. The item therefore rides the filed
+        // follow-up card (t_e9d23e1c) together with the renderers/models; the
+        // colour pair (5592405 / 4210752) is pinned on EntityEldritchGolem.
         helper.succeed();
     }
 

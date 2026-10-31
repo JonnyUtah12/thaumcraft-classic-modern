@@ -303,12 +303,12 @@ Thaumcraft:FallingTaint,thaumcraft:fallingtaint,entity,Tainted Crust,not_started
 Thaumcraft:Alumentum,thaumcraft:alumentum,entity,Alumentum,not_started,not_tested,,class=EntityAlumentum mod_index=5
 Thaumcraft:PrimalOrb,thaumcraft:primalorb,entity,Orb of Primal Energy,not_started,not_tested,,class=EntityPrimalOrb mod_index=6
 Thaumcraft:FrostShard,thaumcraft:frostshard,entity,Frost Shard,not_started,not_tested,,class=EntityFrostShard mod_index=7
-Thaumcraft:Dart,thaumcraft:dart,entity,Golem Dart,not_started,not_tested,,class=EntityDart mod_index=8
+Thaumcraft:Dart,thaumcraft:dart,entity,Golem Dart,done,tested,,class=EntityDart mod_index=8; TC-M6-08-s-c: entity type registered from the original registration row (ConfigEntities.java:84/89/119/154) with its hitbox/tracking/interval; behaviour deferred
 Thaumcraft:PrimalArrow,thaumcraft:primalarrow,entity,,not_started,not_tested,,class=EntityPrimalArrow mod_index=9
 Thaumcraft:PechBlast,thaumcraft:pechblast,entity,,not_started,not_tested,,class=EntityPechBlast mod_index=10
 Thaumcraft:EldritchOrb,thaumcraft:eldritchorb,entity,Eldritch Orb,not_started,not_tested,,class=EntityEldritchOrb mod_index=11
 Thaumcraft:BottleTaint,thaumcraft:bottletaint,entity,Bottled Taint,not_started,not_tested,,class=EntityBottleTaint mod_index=12
-Thaumcraft:GolemOrb,thaumcraft:golemorb,entity,Energy Orb,not_started,not_tested,,class=EntityGolemOrb mod_index=13
+Thaumcraft:GolemOrb,thaumcraft:golemorb,entity,Energy Orb,done,tested,,class=EntityGolemOrb mod_index=13; TC-M6-08-s-c: entity type registered from the original registration row (ConfigEntities.java:84/89/119/154) with its hitbox/tracking/interval; behaviour deferred
 Thaumcraft:ShockOrb,thaumcraft:shockorb,entity,Shocking Orb,not_started,not_tested,,class=EntityShockOrb mod_index=14
 Thaumcraft:ExplosiveOrb,thaumcraft:explosiveorb,entity,Explosive Fireball,not_started,not_tested,,class=EntityExplosiveOrb mod_index=15
 Thaumcraft:Ember,thaumcraft:ember,entity,,not_started,not_tested,,class=EntityEmber mod_index=16
@@ -326,7 +326,7 @@ Thaumcraft:CultistKnight,thaumcraft:cultistknight,entity,Crimson Knight,not_star
 Thaumcraft:CultistCleric,thaumcraft:cultistcleric,entity,Crimson Cleric,not_started,not_tested,,class=EntityCultistCleric mod_index=28
 Thaumcraft:CultistLeader,thaumcraft:cultistleader,entity,Praetor %s the %d,not_started,not_tested,,class=EntityCultistLeader mod_index=29
 Thaumcraft:CultistPortal,thaumcraft:cultistportal,entity,Crimson Portal,not_started,not_tested,,class=EntityCultistPortal mod_index=30
-Thaumcraft:EldritchGolem,thaumcraft:eldritchgolem,entity,%s Eldritch Construct,not_started,not_tested,,class=EntityEldritchGolem mod_index=31
+Thaumcraft:EldritchGolem,thaumcraft:eldritchgolem,entity,%s Eldritch Construct,done,tested,,class=EntityEldritchGolem mod_index=31; TC-M6-08-s-c: entity type registered from the original registration row (ConfigEntities.java:84/89/119/154) with its hitbox/tracking/interval; behaviour deferred
 Thaumcraft:EldritchCrab,thaumcraft:eldritchcrab,entity,Eldritch Crab,not_started,not_tested,,class=EntityEldritchCrab mod_index=32
 Thaumcraft:InhabitedZombie,thaumcraft:inhabitedzombie,entity,Shambling Husk,not_started,not_tested,,class=EntityInhabitedZombie mod_index=33
 Thaumcraft:ThaumSlime,thaumcraft:thaumslime,entity,Thaumic Slime,not_started,not_tested,,class=EntityThaumicSlime mod_index=34
@@ -344,7 +344,7 @@ Thaumcraft:TaintedSheep,thaumcraft:taintedsheep,entity,Tainted Sheep,not_started
 Thaumcraft:TaintedVillager,thaumcraft:taintedvillager,entity,Tainted Villager,not_started,not_tested,,class=EntityTaintVillager mod_index=46
 Thaumcraft:TaintacleGiant,thaumcraft:taintaclegiant,entity,Giant Taintacle,not_started,not_tested,,class=EntityTaintacleGiant mod_index=47
 Thaumcraft:SpecialItemGrate,thaumcraft:specialitemgrate,entity,,done,tested,,class=EntityItemGrate mod_index=48
-Thaumcraft:GolemBobber,thaumcraft:golembobber,entity,Golem Fishing Bobber,not_started,not_tested,,class=EntityGolemBobber mod_index=49
+Thaumcraft:GolemBobber,thaumcraft:golembobber,entity,Golem Fishing Bobber,done,tested,,class=EntityGolemBobber mod_index=49; TC-M6-08-s-c: entity type registered from the original registration row (ConfigEntities.java:84/89/119/154) with its hitbox/tracking/interval; behaviour deferred
 Thaumcraft:spawnegg.BrainyZombie,thaumcraft:spawnegg.brainyzombie,spawner_egg,BrainyZombie,not_started,not_tested,,egg_colors=FFC0FF/008000
 Thaumcraft:spawnegg.GiantBrainyZombie,thaumcraft:spawnegg.giantbrainyzombie,spawner_egg,GiantBrainyZombie,not_started,not_tested,,egg_colors=FFC0FF/004000
 Thaumcraft:spawnegg.Wisp,thaumcraft:spawnegg.wisp,spawner_egg,Wisp,not_started,not_tested,,egg_colors=FFC0FF/FFFFFF

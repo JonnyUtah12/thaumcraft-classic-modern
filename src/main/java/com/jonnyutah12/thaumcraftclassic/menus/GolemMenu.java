@@ -224,6 +224,28 @@ public class GolemMenu extends AbstractContainerMenu {
             this.currentScroll++;
             this.refreshInventory();
         }
+        // Original ContainerGolem.func_75140_a colour legs, verbatim over
+        // markerColorSlotCount() (the original's mobInv.slotCount, which by
+        // construction IS the length of the golem's colour array:
+        // EntityGolemBase.java:173 `this.colors = new byte[this.inventory.slotCount]`).
+        // Button `slot` steps that slot's marker colour DOWN (underflow wraps to
+        // 15) and button `slots + slot` steps it UP (overflow wraps to -1, the
+        // wildcard). This is the GUI's marker-colour path (TC-M6-08-s-c).
+        final int slots = markerColorSlotCount();
+        if (button >= 0 && button < slots) {
+            int c = this.golem.getColors(button) - 1;
+            if (c < -1) {
+                c = 15;
+            }
+            this.golem.setColors(button, c);
+        }
+        if (button >= slots && button < slots * 2) {
+            int c = this.golem.getColors(button - slots) + 1;
+            if (c > 15) {
+                c = -1;
+            }
+            this.golem.setColors(button - slots, c);
+        }
         // Original tail: playSound(x, y, z, "random.click", 0.2F, 0.8F).
         this.golem.level().playSound(null,
                 this.golem.getX(), this.golem.getY(), this.golem.getZ(),
@@ -287,6 +309,26 @@ public class GolemMenu extends AbstractContainerMenu {
         return this.golem != null
                 && this.golem.isAlive()
                 && playerCheck.distanceToSqr(this.golem) <= 64.0;
+    }
+
+    /**
+     * The number of marker-colour slots the golem exposes — the original's
+     * {@code mobInv.slotCount}, read through the golem's own colour array.
+     *
+     * <p>The two are the same number by construction in the original:
+     * {@code EntityGolemBase.setupGolemInventory()} resizes {@code colors} to
+     * {@code this.inventory.slotCount} ({@code EntityGolemBase.java:172-180}),
+     * and {@code ContainerGolem.bindGolemInventory()} pages that same slot
+     * count. {@code InventoryMob}'s per-core sizing is the runtime card's
+     * ({@code setupGolemInventory} is not ported — TC-M6-08-s-b2, t_03c5d088),
+     * so the colour array is the authoritative count here: the runtime
+     * initialises it to {@code new byte[]{-1}}
+     * ({@code EntityGolemBase.java:113}, ported verbatim), which is one
+     * wildcard colour slot until a core resizes it. Every colour button this
+     * menu accepts is therefore a real slot of the golem's own array.</p>
+     */
+    public int markerColorSlotCount() {
+        return this.golem == null ? 0 : this.golem.getColors().length;
     }
 
     /** The player inventory this menu bound (original {@code playerInv} field). */

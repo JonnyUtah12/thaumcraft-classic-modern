@@ -699,10 +699,6 @@ public class EntityGolemBase extends AbstractGolem {
         return this.paused;
     }
 
-    public void setPaused(final boolean paused) {
-        this.paused = paused;
-    }
-
     public boolean isInactive() {
         return this.inactive;
     }

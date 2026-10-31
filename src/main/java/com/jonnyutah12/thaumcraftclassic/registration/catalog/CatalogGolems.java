@@ -2,6 +2,10 @@ package com.jonnyutah12.thaumcraftclassic.registration.catalog;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.entities.golems.EntityGolemBase;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.EntityGolemBobber;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityEldritchGolem;
+import com.jonnyutah12.thaumcraftclassic.entities.projectile.EntityDart;
+import com.jonnyutah12.thaumcraftclassic.entities.projectile.EntityGolemOrb;
 import com.jonnyutah12.thaumcraftclassic.items.golems.ItemGolemBell;
 import com.jonnyutah12.thaumcraftclassic.items.golems.ItemGolemCore;
 import com.jonnyutah12.thaumcraftclassic.items.golems.ItemGolemDecoration;
@@ -122,6 +126,71 @@ public final class CatalogGolems {
                     .updateInterval(EntityGolemBase.UPDATE_INTERVAL)
                     .build("golem"));
 
+    /**
+     * {@code thaumcraft:eldritchgolem} — original {@code EntityEldritchGolem}
+     * (content-mapping {@code Thaumcraft:EldritchGolem}, mod_index 31). Hitbox
+     * 1.75 x 3.5 and tracking 64 / interval 3 are the original's own figures
+     * ({@code EntityEldritchGolem.java:54};
+     * {@code ConfigEntities.java:119}); category MONSTER is the 1.21.1 home of
+     * the 1.7.10 hostile-mob base. No spawn placement: the original registers
+     * none for it (it is summoned/boss-spawned).
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityEldritchGolem>> ELDRITCH_GOLEM =
+            ENTITY_TYPES.register("eldritchgolem", () -> EntityType.Builder
+                    .of(EntityEldritchGolem::new, MobCategory.MONSTER)
+                    .sized(EntityEldritchGolem.WIDTH, EntityEldritchGolem.HEIGHT)
+                    .clientTrackingRange(EntityEldritchGolem.TRACKING_RANGE)
+                    .updateInterval(EntityEldritchGolem.UPDATE_INTERVAL)
+                    .build("eldritchgolem"));
+
+    /**
+     * {@code thaumcraft:golembobber} — original {@code EntityGolemBobber}
+     * (content-mapping {@code Thaumcraft:GolemBobber}, mod_index 49). Hitbox
+     * 0.25 x 0.25 and tracking 64 / interval 64 from the original
+     * ({@code EntityGolemBobber.java:49};
+     * {@code ConfigEntities.java:154}, third argument false = no velocity
+     * sync — the bobber carried its state in the spawn payload).
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityGolemBobber>> GOLEM_BOBBER =
+            ENTITY_TYPES.register("golembobber", () -> EntityType.Builder
+                    .of(EntityGolemBobber::new, MobCategory.MISC)
+                    .sized(0.25F, 0.25F)
+                    .clientTrackingRange(64)
+                    .updateInterval(64)
+                    .noSave()
+                    .build("golembobber"));
+
+    /**
+     * {@code thaumcraft:golemorb} — original {@code EntityGolemOrb}
+     * (content-mapping {@code Thaumcraft:GolemOrb}, mod_index 13). The
+     * original {@code extends EntityThrowable}, whose 1.7.10 hitbox is the
+     * 0.25 x 0.25 projectile default; tracking 64 / interval 20 / velocity
+     * synced ({@code ConfigEntities.java:89}, third argument true).
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityGolemOrb>> GOLEM_ORB =
+            ENTITY_TYPES.register("golemorb", () -> EntityType.Builder
+                    .<EntityGolemOrb>of(EntityGolemOrb::new, MobCategory.MISC)
+                    .sized(0.25F, 0.25F)
+                    .clientTrackingRange(64)
+                    .updateInterval(20)
+                    .build("golemorb"));
+
+    /**
+     * {@code thaumcraft:dart} — original {@code EntityDart}
+     * (content-mapping {@code Thaumcraft:Dart}, mod_index 8). Hitbox
+     * 0.5 x 0.5 from the original's own {@code func_70105_a(0.5F, 0.5F)};
+     * tracking 64 / interval 20 / no velocity sync
+     * ({@code ConfigEntities.java:84}).
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityDart>> DART =
+            ENTITY_TYPES.register("dart", () -> EntityType.Builder
+                    .<EntityDart>of(EntityDart::new, MobCategory.MISC)
+                    .sized(0.5F, 0.5F)
+                    .clientTrackingRange(64)
+                    .updateInterval(20)
+                    .noSave()
+                    .build("dart"));
+
     // --- menus (gui rows) ------------------------------------------------------
 
     /**
@@ -149,5 +218,6 @@ public final class CatalogGolems {
 
     private static void onAttributeCreation(final EntityAttributeCreationEvent event) {
         event.put(GOLEM.get(), EntityGolemBase.createAttributes().build());
+        event.put(ELDRITCH_GOLEM.get(), EntityEldritchGolem.createAttributes().build());
     }
 }
