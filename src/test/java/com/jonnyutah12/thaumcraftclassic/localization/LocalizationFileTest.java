@@ -195,13 +195,53 @@ class LocalizationFileTest {
                 .filter(key -> key.startsWith("item.thaumcraft.") || key.startsWith("block.thaumcraft.")
                         || key.startsWith("container.thaumcraft.") || key.startsWith("entity.thaumcraft."))
                 .filter(key -> !CODE_AUTHORED_KEYS.contains(key))
+                .filter(key -> !inventoriedById(key, inventory))
                 .map(key -> key.split("\\.")[2])
-                .filter(id -> !inventory.contains(id))
                 .distinct()
                 .sorted()
                 .toList();
         assertEquals(List.of(), orphans,
                 "en_us.json keys name ids that docs/content-mapping.csv does not inventory");
+    }
+
+    /**
+     * Does a registry-derived key name content the ledger inventories?
+     *
+     * <p>The naive reading — the key's third segment is the id — is only right
+     * for ids whose path has no dot. The ledger's own id contract is the
+     * narrower rule: {@code new_id} is exactly {@code "thaumcraft:" +
+     * lower(original id path)} ({@code ContentMappingIdContractTest}, D-001
+     * addendum) and that path charset is {@code [a-z0-9/._-]+}, so a
+     * spawner_egg row inventories the WHOLE dotted path —
+     * {@code thaumcraft:spawnegg.eldritchgolem} for the original
+     * {@code spawnegg.EldritchGolem} — and the item's 1.21.1 lang key is
+     * {@code item.thaumcraft.<that whole path>}. The key shape audit
+     * ({@link #keysFollowThe1211KeyConventions}) already permits a trailing
+     * segment: the per-meta suffix ({@code .3}) and the tooltip suffix
+     * ({@code .desc}) are the same syntax. So a key belongs to the inventoried
+     * id that is its longest dot-boundary prefix: {@code spawnegg.eldritchgolem}
+     * resolves for {@code item.thaumcraft.spawnegg.eldritchgolem}, and
+     * {@code itemgolemplacer} resolves for {@code item.thaumcraft.itemgolemplacer.3}.
+     * Nothing is widened for a key whose id is simply absent: the whole
+     * remainder and every one of its dotted prefixes must be checked, and all
+     * of them miss.</p>
+     */
+    private static boolean inventoriedById(final String key, final java.util.Set<String> inventory) {
+        final String[] parts = key.split("\\.");
+        if (parts.length < 3) {
+            return false;
+        }
+        final StringBuilder id = new StringBuilder(parts[2]);
+        if (inventory.contains(id.toString())) {
+            return true;
+        }
+        for (int i = 3; i < parts.length; i++) {
+            id.append('.').append(parts[i]);
+            if (inventory.contains(id.toString())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Test
