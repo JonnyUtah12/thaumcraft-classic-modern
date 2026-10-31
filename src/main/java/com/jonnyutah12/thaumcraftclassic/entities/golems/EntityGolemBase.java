@@ -1161,15 +1161,6 @@ public class EntityGolemBase extends AbstractGolem {
     }
 
     /**
-     * Original {@code AIHomePlace}/{@code AIEmptyPlace}: put the carried stack
-     * into a marked container that has room for it (any marked colour that
-     * matches the carried stack).
-     */
-    public boolean actHomePlace(final Level level, final EntityGolemBase golem) {
-        return false;
-    }
-
-    /**
      * Original {@code AIHomeTake}: take from the home container whatever this
      * golem's core says it needs, up to the carry space
      * ({@code GolemHelper.getItemsNeeded} for the need list, {@code

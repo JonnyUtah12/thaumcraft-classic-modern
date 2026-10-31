@@ -76,6 +76,7 @@ Statuses (DONE only with test evidence):
 | ATM10 startup | disposable instance | TC-M9-01 (t_bd0c30d2) | DONE (f86a444, ff962ed; docs/atm10-compatibility.md) |
 | ATM10 gameplay | disposable instance | TC-M9-02 (t_95c84692) | NOT STARTED (gated on TC-M6-03) |
 | Regression | all suites | TC-M10-01 (t_fa8b23a7) | DONE (065dceb; docs/regression-report-2026-10-22.md — point-in-time at c44b219, not current HEAD) |
+| Golem runtime (tasks, markers, upgrades, feeding, persistence) | common/entities/golems runtime | TC-M6-08-s-b (t_a7293d2c) | TESTED (PARTIAL — build green, 127/127 game tests; per-core goal classes not ported, see TC-M6-08-s-b2 t_03c5d088) |
 | Release | release gate | TC-M10-02 (t_596882c9) | DONE (347647f; v0.1.0-alpha.1 pre-release — gameplay systems NOT YET DONE, see table) |
 
 ## Systemic blockers (why the BLOCKED rows exist)
