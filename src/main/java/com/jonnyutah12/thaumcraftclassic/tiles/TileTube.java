@@ -3,15 +3,22 @@ package com.jonnyutah12.thaumcraftclassic.tiles;
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.aspect.EssentiaTransportHelper;
 import com.jonnyutah12.thaumcraftclassic.aspect.IEssentiaTransport;
+import com.jonnyutah12.thaumcraftclassic.wands.IWandable;
+import com.jonnyutah12.thaumcraftclassic.wands.WandInteractionFeedback;
+import com.jonnyutah12.thaumcraftclassic.wands.WandRayTracer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 /**
  * The essentia tube (content-mapping.csv {@code thaumcraft:tiletube}, blockTube
@@ -33,16 +40,20 @@ import javax.annotation.Nullable;
  * is only reachable when {@link #isConnectable(Direction)} says so, and
  * {@link EssentiaTransportHelper} asks the neighbour the same question about
  * the side facing back. In the original that array is flipped by a wand
- * right-click on the pipe's face (a codechicken ray-trace sub-hit); the
- * wand/resonator interaction rides on {@code TC-M4-07-f}, so the port ships the
- * snapshots (all six open) and the accessor contract here.</p>
+ * right-click on the pipe's face — a codechicken ray-trace <em>sub-hit</em>,
+ * one box per connectable side plus a centre box — and that interaction is
+ * ported here (TC-M4-07-f): {@link #onWandRightClick} retraces the click
+ * through {@link WandRayTracer}, flips the aimed face, and hands the same value
+ * to the neighbour across it so a side opens and closes <em>from both
+ * ends</em>. Hitting the centre box walks {@link #facing} forward, which is how
+ * a directional tube is aimed.</p>
  *
  * <p>Out of scope, with their cards: the client-side vent particles and the
  * {@code thaumcraft:creak}/fizz sounds (TC-M7-01/TC-M7-05 — the venting
  * <em>counter</em>, which does gate the transport pass, is ported), and the
  * tube's extended-run renderer (TC-M7-01).</p>
  */
-public class TileTube extends BlockEntity implements IEssentiaTransport {
+public class TileTube extends BlockEntity implements IEssentiaTransport, IWandable, WandRayTracer.Traceable {
 
     /** Original {@code freq}: the equalisation cadence constant. */
     public static final int FREQ = 5;
@@ -198,6 +209,143 @@ public class TileTube extends BlockEntity implements IEssentiaTransport {
     protected final TubeTransportLogic.Neighbour neighbour(final Direction side) {
         final BlockEntity te = level == null ? null : EssentiaTransportHelper.getConnectableTile(level, worldPosition, side);
         return new TubeTransportLogic.Neighbour(side, te instanceof IEssentiaTransport transport ? transport : null);
+    }
+
+    // --- the wand configuration (original onWandRightClick, TC-M4-07-f) ---
+
+    /**
+     * Original {@code TileTube.canConnectSide(int)}: a transport tile sits
+     * across {@code side}. The original used it for two things at once — it is
+     * why a side box exists in {@link #addTraceableCuboids} (only a connectable
+     * face got a box, so a wand ray aimed at a bare face reaches the centre box
+     * instead) and it is the centre walk's gate.
+     */
+    public boolean canConnectSide(final int side) {
+        if (level == null || side < 0 || side > 5) {
+            return false;
+        }
+        final BlockEntity te = level.getBlockEntity(worldPosition.relative(Direction.values()[side]));
+        return te instanceof IEssentiaTransport;
+    }
+
+    /**
+     * Original {@code TileTube.addTraceableCuboids}: the six side stubs
+     * ({@link TubeTransportLogic#SUBHIT_SIDE_MIN}..{@link
+     * TubeTransportLogic#SUBHIT_SIDE_MAX} across the other axes, out to the
+     * block edge on their own) in face-ordinal order, each only when
+     * {@link #canConnectSide(int)} passes, then the centre box
+     * ({@link TubeTransportLogic#SUBHIT_TUBE_CENTRE_MIN}..{@link
+     * TubeTransportLogic#SUBHIT_TUBE_CENTRE_MAX}) at index
+     * {@link TubeTransportLogic#SUBHIT_CENTRE}. World-space, like the
+     * original's {@code xTile + min} boxes — the order matters: the
+     * ray-tracer keeps the first box on an exact tie.
+     */
+    @Override
+    public void addTraceableCuboids(final List<WandRayTracer.IndexedBox> cuboids) {
+        for (final Direction side : Direction.values()) {
+            if (canConnectSide(side.ordinal())) {
+                cuboids.add(new WandRayTracer.IndexedBox(side.ordinal(),
+                        TubeTransportLogic.subHitSideBox(side.ordinal()).move(
+                                worldPosition.getX(), worldPosition.getY(), worldPosition.getZ())));
+            }
+        }
+        cuboids.add(new WandRayTracer.IndexedBox(TubeTransportLogic.SUBHIT_CENTRE,
+                TubeTransportLogic.subHitCentreBox(false).move(
+                        worldPosition.getX(), worldPosition.getY(), worldPosition.getZ())));
+    }
+
+    /**
+     * Original {@code TileTube.onWandRightClick}: retrace the click into a
+     * sub-hit and act on it.
+     *
+     * <ul>
+     *   <li>sub-hit 0..5 — the tool click, then flip {@code openSides[subHit]}
+     *       and <b>assign</b> the new value to the neighbouring {@link TileTube}
+     *       across that face (its side pointing back), so the same face opens
+     *       and closes from both ends. The original assigns rather than flips:
+     *       two tubes that disagree about a shared face are pulled back into
+     *       agreement by the next click from either side.</li>
+     *   <li>sub-hit 6 (the centre box) — walk {@link #facing} forward through
+     *       {@link TubeTransportLogic#nextFacing} with
+     *       {@link #facingWalkAccepts(Direction)} as the gate.</li>
+     *   <li>no box hit — nothing, the original's {@code hit == null} return.</li>
+     * </ul>
+     *
+     * <p>1.21.1 splits the two sides: the state moves on the server only and
+     * {@link #touch()} syncs it (the original flipped its client copy in place,
+     * because the wand's {@code onItemUseFirst} ran on both sides).</p>
+     */
+    @Override
+    public int onWandRightClick(final Level level, final ItemStack wandStack, final Player player,
+                                final BlockPos pos, final Direction side, final int md) {
+        final int hit = WandRayTracer.retraceBlock(level, player, worldPosition);
+        if (hit < 0) {
+            // The original's `if (hit == null) return 0;` — the tile answers the
+            // wand (so the item consumes the click) and changes nothing.
+            return 0;
+        }
+        if (hit < TubeTransportLogic.SUBHIT_CENTRE) {
+            toolClick(level, player);
+            touch();
+            if (!level.isClientSide) {
+                openSides[hit] = !openSides[hit];
+            }
+            final Direction dir = Direction.values()[hit];
+            final BlockEntity te = level.getBlockEntity(worldPosition.relative(dir));
+            if (te instanceof TileTube neighbour) {
+                if (!level.isClientSide) {
+                    neighbour.openSides[dir.getOpposite().ordinal()] = openSides[hit];
+                    // The original: markBlockForUpdate on the neighbour + its markDirty.
+                    neighbour.touch();
+                }
+            }
+        }
+        if (hit == TubeTransportLogic.SUBHIT_CENTRE) {
+            toolClick(level, player);
+            touch();
+            final int next = TubeTransportLogic.nextFacing(facing.ordinal(),
+                    candidate -> facingWalkAccepts(Direction.values()[candidate]));
+            if (next >= 0 && !level.isClientSide) {
+                facing = Direction.values()[next];
+                touch();
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * The centre walk's gate for this tile — the original's
+     * {@code canConnectSide(getOrientation(a % 6).getOpposite().ordinal())
+     * && isConnectable(getOrientation(a % 6).getOpposite())}, i.e. the walk
+     * aims at {@code candidate} when the face <em>opposite</em> it is a live
+     * connection. {@link TileTubeValve} replaces it with its own inverse gate.
+     */
+    protected boolean facingWalkAccepts(final Direction candidate) {
+        final Direction towards = candidate.getOpposite();
+        return canConnectSide(towards.ordinal()) && isConnectable(towards);
+    }
+
+    /** The original's {@code thaumcraft:tool} click: {@code 0.5F} / {@code 0.9F + rand·0.2F}. */
+    protected void toolClick(final Level level, final Player player) {
+        WandInteractionFeedback.toolClick(level, worldPosition, player);
+    }
+
+    @Override
+    @Nullable
+    public ItemStack onWandRightClick(final Level level, final ItemStack wandStack, final Player player) {
+        // The original's drawing-the-wand hook: the tube family never replaces the wand.
+        return null;
+    }
+
+    @Override
+    public void onUsingWandTick(final ItemStack wandStack, final Player player, final int count) {
+        // Original empty.
+    }
+
+    @Override
+    public void onWandStoppedUsing(final ItemStack wandStack, final Level level, final Player player,
+                                   final int count) {
+        // Original empty.
     }
 
     // --- IEssentiaTransport (the contract the network speaks) --------------

@@ -35,7 +35,11 @@ import javax.annotation.Nullable;
  * passes: TC-M7-01 (renderer) and TC-M7-05 (sounds). The flow state itself, the
  * per-variant item label, and the manual right-click toggle (<code>BlockTube
  * .onBlockActivated</code> metadata 1) are ported — see
- * {@link com.jonnyutah12.thaumcraftclassic.blocks.BlockTube}.</p>
+ * {@link com.jonnyutah12.thaumcraftclassic.blocks.BlockTube}. The valve's wand
+ * interaction is the base tile's, with one override: its centre-box aim walk
+ * accepts a face that has <em>no</em> transport neighbour (see
+ * {@link #facingWalkAccepts(Direction)}), which is the original's
+ * {@code TileTubeValve.onWandRightClick} (TC-M4-07-f).</p>
  */
 public class TileTubeValve extends TileTube {
 
@@ -75,6 +79,19 @@ public class TileTubeValve extends TileTube {
     @Override
     public boolean isConnectable(final Direction face) {
         return face != facing && super.isConnectable(face);
+    }
+
+    /**
+     * The valve's own centre-walk gate from its {@code onWandRightClick}
+     * override: {@code !canConnectSide(getOrientation(a % 6).ordinal())} — the
+     * face is accepted when there is <b>no</b> transport neighbour across it,
+     * with no {@code getOpposite()} and no {@code isConnectable} term. That is
+     * the valve's geometry: the wheel blocks the line it gates, so aiming walks
+     * to a side the valve can actually close off.
+     */
+    @Override
+    protected boolean facingWalkAccepts(final Direction candidate) {
+        return !canConnectSide(candidate.ordinal());
     }
 
     /** Original {@code setSuction}: a closed valve refuses to advertise suction. */

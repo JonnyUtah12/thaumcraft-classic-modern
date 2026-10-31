@@ -14,6 +14,7 @@ import com.jonnyutah12.thaumcraftclassic.tiles.TileTubeBuffer;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileTubeFilter;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileTubeValve;
 import com.jonnyutah12.thaumcraftclassic.tiles.TubeTransportLogic;
+import com.jonnyutah12.thaumcraftclassic.wands.IWandable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
@@ -83,13 +84,20 @@ import java.util.List;
  * toggle. The original's block destruction drop of the label for a filtered
  * tube rides on {@link #getDrops}.</p>
  *
- * <p>Out of scope, with cards: the wand/resonator face toggling (the
- * codechicken ray-trace sub-hits in {@code BlockTube.onBlockHighlight} and the
- * tiles' {@code addTraceableCuboids}) on <b>TC-M4-07-f</b>, the pipe renderer
- * and textures on TC-M7-01, the per-variant item labels on TC-M7-01b (the
- * block's own label is the original's metadata-0 name, "Essentia Tube"), the
- * vent particles and the creak sound on TC-M7-01/TC-M7-05, and the two machine
- * tiles (centrifuge, crystallizer) on <b>TC-M4-07-m</b>.</p>
+ * <p>The wand/resonator face toggling is ported here (TC-M4-07-f):
+ * {@link #useItemOn} picks up a wand-like click and dispatches it to the tile
+ * as {@link IWandable}, which retraces the click into the sub-hits of
+ * {@code TileTube.addTraceableCuboids} — flip the aimed face (and the neighbour
+ * across it), aim a valve/directional tube on the centre box, cycle a buffer
+ * face's choke on a sneak-use. Out of scope, with cards: the original's
+ * wand-aware selection outline (its {@code noDoodads} flag, which suppressed
+ * the connected outline while a wand was held — 1.21.1 draws the selection
+ * shape with an empty {@code CollisionContext}, so there is no held item to
+ * test) and the pipe renderer / textures on TC-M7-01, the per-variant item
+ * labels on TC-M7-01b (the block's own label is the original's metadata-0 name,
+ * "Essentia Tube"), the vent particles and the creak sound on
+ * TC-M7-01/TC-M7-05, and the two machine tiles (centrifuge, crystallizer) on
+ * <b>TC-M4-07-m</b>.</p>
  */
 public class BlockTube extends Block implements EntityBlock, VariantDevice {
 
@@ -154,8 +162,11 @@ public class BlockTube extends Block implements EntityBlock, VariantDevice {
      *
      * <p>The original also skipped the connected outline while the player held
      * a wand or a resonator (its {@code noDoodads} flag, which went with the
-     * wand interaction); that interaction is TC-M4-07-f, so the port always
-     * draws the connected outline.</p>
+     * wand interaction). The interaction itself is ported (TC-M4-07-f, see
+     * {@link #useItemOn}); the flag's outline change stays client-side because
+     * 1.21.1 asks for the selection shape with an empty {@code CollisionContext}
+     * — there is no held item to test — so the port always draws the connected
+     * outline.</p>
      */
     @Override
     protected VoxelShape getShape(final BlockState state, final BlockGetter level, final BlockPos pos,
@@ -296,7 +307,20 @@ public class BlockTube extends Block implements EntityBlock, VariantDevice {
     // --- interactions (the original's onBlockActivated) --------------------
 
     /**
-     * Original {@code onBlockActivated}, metadata 1 and 3 branches.
+     * Original {@code onBlockActivated}, metadata 1 and 3 branches, <em>plus</em>
+     * the wand branch (TC-M4-07-f).
+     *
+     * <p>The wand branch: in the original, {@code ItemWandCasting.onItemUseFirst}
+     * asked the block and then the block entity as {@code IWandable} and consumed
+     * the click when the answer was {@code >= 0}, so a wand right-click on any
+     * tube face reached {@code TileTube.onWandRightClick}. 1.21.1 hands the held
+     * stack to {@code useItemOn} for <em>any</em> item, which is where the port
+     * picks the click up and dispatches it — the wand item lives on another
+     * branch, so the block is the seam, exactly as the tile family's own
+     * "the player is working on the pipe" guard already is. It runs ahead of the
+     * valve and filter branches: the original's metadata guards excluded a
+     * wand-like stack, so a wand toggles a <em>face</em> and never flips a valve
+     * or moves a label.</p>
      *
      * <p>The valve branch mirrors the original's guard: a wand, a resonator or
      * the tube's own item in hand means "the player is working on the pipe, not
@@ -309,6 +333,9 @@ public class BlockTube extends Block implements EntityBlock, VariantDevice {
                                               final BlockPos pos, final Player player, final InteractionHand hand,
                                               final BlockHitResult hitResult) {
         final int variant = state.getValue(VARIANT);
+        if (isWandItem(stack) && level.getBlockEntity(pos) instanceof IWandable wandable) {
+            return wandInteraction(wandable, stack, state, level, pos, player, hitResult);
+        }
         if (variant == VARIANT_VALVE && isWandLike(stack)) {
             // NOT PASS_TO_DEFAULT_BLOCK_INTERACTION: that would let the
             // engine call useWithoutItem next and flip the valve anyway.
@@ -319,6 +346,30 @@ public class BlockTube extends Block implements EntityBlock, VariantDevice {
             case VARIANT_FILTER -> filterInteraction(stack, state, level, pos, player, hitResult);
             default -> ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         };
+    }
+
+    /**
+     * The original's {@code ItemWandCasting.onItemUseFirst} dispatch
+     * (TC-M4-07-f): hand the click to the {@link IWandable} tile and treat an
+     * answer of {@code >= 0} as handled.
+     *
+     * <p>One deliberate divergence: the wand item returned {@code ret == 1}, so
+     * with a tube answering {@code 0} the original let the wand's own
+     * right-click run as well — in 1.7.10 that was a side effect of
+     * {@code onItemUseFirst}, and in 1.21.1 letting the click continue means
+     * firing an equipped focus and spending vis on every face toggle. The port
+     * consumes the click instead (the tile's own {@code onWandRightClick}
+     * drawing/holding hooks, which the original left empty, stay unwired for
+     * the same reason).</p>
+     */
+    private static ItemInteractionResult wandInteraction(final IWandable wandable, final ItemStack stack,
+                                                         final BlockState state, final Level level,
+                                                         final BlockPos pos, final Player player,
+                                                         final BlockHitResult hitResult) {
+        final Direction side = hitResult.getDirection();
+        final int md = state.getValue(VARIANT);
+        wandable.onWandRightClick(level, stack, player, pos, side, md);
+        return ItemInteractionResult.sidedSuccess(level.isClientSide);
     }
 
     /**
@@ -354,8 +405,9 @@ public class BlockTube extends Block implements EntityBlock, VariantDevice {
 
     /**
      * Original metadata-1 branch: flip {@code allowFlow}, sound the squeak, and
-     * mark the block for a client update. The original's wand branch here
-     * (the face toggle) is TC-M4-07-f.
+     * mark the block for a client update. The original's wand branch (the face
+     * toggle) is ported in {@link #useItemOn} (TC-M4-07-f) and runs <em>ahead</em>
+     * of this one, so a wand in hand aims the pipe rather than flipping the valve.
      */
     private static ItemInteractionResult toggleValve(final Level level, final BlockPos pos, final Player player) {
         if (level.getBlockEntity(pos) instanceof TileTubeValve valve) {
@@ -419,9 +471,22 @@ public class BlockTube extends Block implements EntityBlock, VariantDevice {
         // "this stack holds vis, i.e. it is a wand" is the TC-M4-02 VIS_POOL
         // component (the same test TileArcaneWorkbench uses), because the wand
         // item itself lands with its own card.
-        return stack.getOrDefault(ModDataComponents.VIS_POOL.get(), null) != null
-                || stack.getItem() instanceof ItemResonator
+        return isWandItem(stack)
                 || stack.getItem() instanceof VariantBlockItem item && item.getBlock() instanceof BlockTube;
+    }
+
+    /**
+     * The stacks that carry the original's wand dispatch (TC-M4-07-f):
+     * {@code ItemWandCasting} and {@code ItemResonator} are the two items whose
+     * {@code onItemUseFirst} asked the tile as {@code IWandable}. The tube's own
+     * item is deliberately <em>not</em> here — it only ever appeared in
+     * {@code BlockTube.onBlockActivated}'s "working on the pipe" guard, and in
+     * 1.7.10 it never reached a tile's {@code onWandRightClick}.
+     */
+    private static boolean isWandItem(final ItemStack stack) {
+        return !stack.isEmpty()
+                && (stack.getOrDefault(ModDataComponents.VIS_POOL.get(), null) != null
+                || stack.getItem() instanceof ItemResonator);
     }
 
     /** The original's {@code new ItemStack(ConfigItems.itemResource, 1, 13)}. */
