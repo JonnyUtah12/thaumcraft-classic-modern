@@ -15,6 +15,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.item.TooltipFlag;
 
 /**
@@ -120,6 +121,50 @@ public class ItemFocus extends Item {
      */
     public int getActivationCooldown(final ItemStack stack) {
         return FocusCombinations.cooldown(focus.tag(), upgrades(stack));
+    }
+
+    // ------------------------------------------------------------- picked block
+
+    /**
+     * The block this equal-trade focus carries — the original's
+     * {@code ItemFocusBasic.getPickedBlock}, the {@code "picked"} compound on
+     * the focus stack ({@code ItemFocusTrade.java:97-99,116-120}). The port
+     * keeps the stack of the picked block's item
+     * ({@code BlockItemUtils.getBlockItemStack}).
+     */
+    public static ItemStack getPickedBlock(final ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        return unpackPicked(stack.getOrDefault(ModDataComponents.PICKED_BLOCK.get(),
+                ItemContainerContents.EMPTY));
+    }
+
+    /**
+     * Pack a picked stack into the one-slot container the pick components
+     * carry. {@code ItemStack} cannot be a data component value (NeoForge
+     * requires the type to declare {@code equals}/{@code hashCode}, and
+     * 1.20.5 dropped it), so vanilla's {@code ItemContainerContents} wraps it.
+     */
+    public static ItemContainerContents packPicked(final ItemStack picked) {
+        return picked == null || picked.isEmpty()
+                ? ItemContainerContents.EMPTY
+                : ItemContainerContents.fromItems(java.util.List.of(picked));
+    }
+
+    /** The inverse of {@link #packPicked}: an empty container is {@code EMPTY}. */
+    public static ItemStack unpackPicked(final ItemContainerContents contents) {
+        // copyOne is the first non-air stack, EMPTY when there is none.
+        return contents == null ? ItemStack.EMPTY : contents.copyOne();
+    }
+
+    /** The original's {@code setPickedBlock}: an empty stack clears it. */
+    public static void setPickedBlock(final ItemStack stack, final ItemStack picked) {
+        if (picked == null || picked.isEmpty()) {
+            stack.remove(ModDataComponents.PICKED_BLOCK.get());
+        } else {
+            stack.set(ModDataComponents.PICKED_BLOCK.get(), packPicked(picked));
+        }
     }
 
     // ------------------------------------------------------------------ upgrades

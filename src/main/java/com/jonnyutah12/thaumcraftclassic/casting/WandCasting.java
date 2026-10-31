@@ -234,9 +234,12 @@ public final class WandCasting {
     /**
      * Puts an already-deducted cost back, exactly — {@code storeVis} writes the
      * pool absolutely (the original's semantics), so this restores the precise
-     * pre-cast charge without re-running the modifier chain.
+     * pre-cast charge without re-running the modifier chain. Public for the
+     * performers (TC-M6-03-p): a handler that charged beyond the seam's base
+     * (the hole's distance tax, an excavation progress tick) refunds the
+     * excess through this same primitive.
      */
-    private static void refund(final ItemWandCasting wand, final ItemStack wandStack, final AspectList cost) {
+    public static void refund(final ItemWandCasting wand, final ItemStack wandStack, final AspectList cost) {
         for (final Aspect aspect : cost.getAspects()) {
             final int restored = wand.getVis(wandStack, aspect) + cost.getAmount(aspect);
             wand.storeVis(wandStack, aspect, restored);

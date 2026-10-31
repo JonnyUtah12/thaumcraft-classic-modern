@@ -11,6 +11,7 @@ import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemContainerContents;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -202,6 +203,26 @@ public final class ModDataComponents {
                             .build());
 
     /**
+     * The block the equal-trade focus a wand carries has picked (TC-M6-03-p).
+     *
+     * <p>The original's wand stored the focus stack, so the {@code "picked"}
+     * compound written by a sneak-pick ({@code ItemFocusTrade.java:93-95})
+     * lived on that stack and came back on the next cast. The port rebuilds
+     * the focus from its tag on every cast, which drops per-stack state — so
+     * the pick travels on the wand beside the upgrades snapshot above, and
+     * {@code ItemWandCasting.focusItem} restores it onto the rebuilt stack.
+     * It is persisted because the original persisted the pick over logout, and
+     * it is a one-slot {@link ItemContainerContents} for the same reason
+     * {@link #PICKED_BLOCK} is.</p>
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<ItemContainerContents>> WAND_FOCUS_PICKED =
+            DATA_COMPONENT_TYPES.register("wand_focus_picked",
+                    () -> DataComponentType.<ItemContainerContents>builder()
+                            .persistent(ItemContainerContents.CODEC)
+                            .networkSynchronized(ItemContainerContents.STREAM_CODEC)
+                            .build());
+
+    /**
      * The aspect a jar label / filled jar locks its jar to (TC-M4-06-s): the
      * original wrote the label's tag string to the {@code AspectFilter} key on
      * the stack's NBT ({@code ItemJarFilled.getFilter},
@@ -246,6 +267,40 @@ public final class ModDataComponents {
                     () -> DataComponentType.<Integer>builder()
                             .persistent(Codec.INT)
                             .networkSynchronized(ByteBufCodecs.VAR_INT)
+                            .build());
+
+    /**
+     * The block the equal-trade focus carries (TC-M6-03-p): the original's
+     * {@code "picked"} NBT on the focus stack — {@code ItemFocusBasic
+     * .getPickedBlock}/{@code setPickedBlock}
+     * ({@code ItemFocusTrade.java:93-95} stores {@code BlockUtils
+     * .createStackedBlock(bi, md)} on a sneak-pick; {@code :97-99,116-120}
+     * reads it back for the swap). The port keeps it as the stack of the
+     * picked block's item ({@code BlockItemUtils.getBlockItemStack}), carried in
+     * a one-slot {@link ItemContainerContents}: NeoForge rejects a component
+     * whose value type does not declare {@code equals}/{@code hashCode}, and
+     * {@code ItemStack} does not (1.20.5 dropped its {@code equals}), which is
+     * why vanilla wraps stacks in {@code ItemContainerContents} too.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<ItemContainerContents>> PICKED_BLOCK =
+            DATA_COMPONENT_TYPES.register("picked_block",
+                    () -> DataComponentType.<ItemContainerContents>builder()
+                            .persistent(ItemContainerContents.CODEC)
+                            .networkSynchronized(ItemContainerContents.STREAM_CODEC)
+                            .build());
+
+    /**
+     * The excavation focus's in-flight dig (TC-M6-03-p): the original's
+     * excavate block coordinates and accumulated break progress on the
+     * player's properties ({@code ItemFocusExcavation.java:170-188}); the
+     * port tracks it on the wand stack that owns the channel. See
+     * {@code casting/DigState}.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.jonnyutah12.thaumcraftclassic.casting.DigState>> WAND_DIG_STATE =
+            DATA_COMPONENT_TYPES.register("wand_dig_state",
+                    () -> DataComponentType.<com.jonnyutah12.thaumcraftclassic.casting.DigState>builder()
+                            .persistent(com.jonnyutah12.thaumcraftclassic.casting.DigState.CODEC)
+                            .networkSynchronized(com.jonnyutah12.thaumcraftclassic.casting.DigState.STREAM_CODEC)
                             .build());
 
     private ModDataComponents() {

@@ -34,6 +34,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
@@ -213,12 +214,43 @@ public class ItemWandCasting extends Item implements VisContainerItem, IVisConta
         // The original stored the focus stack itself, upgrades included; the port
         // rebuilds it from the tag and restores the upgrades it snapshotted (TC-M6-03-s).
         ItemFocus.setUpgrades(focusStack, focusUpgrades(stack));
+        // The equal-trade pick is the focus's other per-stack state: the
+        // original's wand stored the focus stack, so the "picked" compound a
+        // sneak-pick wrote (ItemFocusTrade.java:93-95) came back on the next
+        // cast. The port snapshots it on the wand and restores it here.
+        ItemFocus.setPickedBlock(focusStack, focusPicked(stack));
         return focusStack;
     }
 
     /** The applied upgrades of the wand's focus — the original's stored stack's upgrade list. */
     public static FocusUpgradeList focusUpgrades(final ItemStack stack) {
         return stack.getOrDefault(ModDataComponents.WAND_FOCUS_UPGRADES.get(), FocusUpgradeList.NONE);
+    }
+
+    /**
+     * The block the wand's focus has picked (TC-M6-03-p) — the original's
+     * {@code "picked"} compound on the focus stack the wand stored
+     * ({@code ItemFocusBasic.getPickedBlock}, read by
+     * {@code ItemFocusTrade.java:97-99,116-120}).
+     */
+    public static ItemStack focusPicked(final ItemStack stack) {
+        return ItemFocus.unpackPicked(stack.getOrDefault(
+                ModDataComponents.WAND_FOCUS_PICKED.get(), ItemContainerContents.EMPTY));
+    }
+
+    /**
+     * Record (or clear, with an empty stack) the pick of the focus the wand
+     * carries. The original wrote it straight onto the stored focus stack on a
+     * sneak-pick ({@code ItemFocusTrade.java:93-95}) and charged nothing; the
+     * port's focus is rebuilt from its tag on every cast, so the pick's home is
+     * this snapshot — written by {@code casting/EffectPerformers.performSwap}.
+     */
+    public static void setFocusPicked(final ItemStack stack, final ItemStack picked) {
+        if (picked == null || picked.isEmpty()) {
+            stack.remove(ModDataComponents.WAND_FOCUS_PICKED.get());
+        } else {
+            stack.set(ModDataComponents.WAND_FOCUS_PICKED.get(), ItemFocus.packPicked(picked));
+        }
     }
 
     /** The focus the wand carries, or null — the original {@code getFocus}. */
@@ -238,6 +270,7 @@ public class ItemWandCasting extends Item implements VisContainerItem, IVisConta
         if (tag == null) {
             stack.remove(ModDataComponents.WAND_FOCUS.get());
             stack.remove(ModDataComponents.WAND_FOCUS_UPGRADES.get());
+            stack.remove(ModDataComponents.WAND_FOCUS_PICKED.get());
             return;
         }
         stack.set(ModDataComponents.WAND_FOCUS.get(), tag);
@@ -249,6 +282,9 @@ public class ItemWandCasting extends Item implements VisContainerItem, IVisConta
         } else {
             stack.set(ModDataComponents.WAND_FOCUS_UPGRADES.get(), upgrades);
         }
+        // ...and so the original's stored stack carried its "picked" compound
+        // (ItemFocusTrade.java:93-99), the equal-trade pick travels too (TC-M6-03-p).
+        setFocusPicked(stack, ItemFocus.getPickedBlock(focusStack));
     }
 
     /** Clears the wand's focus — the original's {@code setFocus(stack, null)}. */
