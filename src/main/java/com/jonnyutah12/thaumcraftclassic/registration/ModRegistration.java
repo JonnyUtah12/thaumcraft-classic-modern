@@ -11,6 +11,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTaint;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTaintMobs;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
 import net.neoforged.bus.api.IEventBus;
 
@@ -145,6 +146,11 @@ public final class ModRegistration {
         // hand-rolled AI/navigation (entities/monster/WispAiLogic pins every
         // figure). Renderers stay on TC-M7-03-s, golems on TC-M6-08-s.
         CatalogEntities.init(modEventBus);
+        // TC-M6-06-s-b: the taint mob family (taint animals, taintacles, spore
+        // chain, thaumic slime, taint spider, falling taint). The spawn-guard
+        // ids TaintManager and BlockTaint look up at call time (taintspore,
+        // taintswarmer, fallingtaint) land here, flipping those seams on.
+        CatalogTaintMobs.init(modEventBus);
 
         // TC-M4-06-s: essentia extraction + storage — the infernal furnace
         // (base + nozzle) and its smelting-bonus table, the warded/void jars

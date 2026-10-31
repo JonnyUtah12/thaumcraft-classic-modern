@@ -250,5 +250,13 @@
   "block.thaumcraft.blocktaintfibres.1": "Tainted Grass",
   "block.thaumcraft.blocktaintfibres.2": "Tainted Plant",
   "block.thaumcraft.blocktaintfibres.3": "Spore Stalk",
-  "block.thaumcraft.blocktaintfibres.4": "Mature Spore Stalk"
+  "block.thaumcraft.blocktaintfibres.4": "Mature Spore Stalk",
+  "entity.thaumcraft.taintedchicken": "Tainted Chicken",
+  "entity.thaumcraft.taintedcow": "Tainted Cow",
+  "entity.thaumcraft.taintedpig": "Tainted Pig",
+  "entity.thaumcraft.taintedsheep": "Tainted Sheep",
+  "entity.thaumcraft.taintedcreeper": "Tainted Creeper",
+  "entity.thaumcraft.taintedvillager": "Tainted Villager",
+  "entity.thaumcraft.taintspider": "Tainted Crawler",
+  "entity.thaumcraft.fallingtaint": "Tainted Crust"
 }
