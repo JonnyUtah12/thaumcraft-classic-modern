@@ -7,10 +7,12 @@ import com.jonnyutah12.thaumcraftclassic.items.golems.ItemGolemCore;
 import com.jonnyutah12.thaumcraftclassic.items.golems.ItemGolemDecoration;
 import com.jonnyutah12.thaumcraftclassic.items.golems.ItemGolemPlacer;
 import com.jonnyutah12.thaumcraftclassic.items.golems.ItemGolemUpgrade;
+import com.jonnyutah12.thaumcraftclassic.menus.GolemMenu;
 import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
@@ -42,6 +44,9 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  *       registration
  *       ({@code ConfigEntities.init}: {@code registerModEntity(EntityGolemBase.class,
  *       "Golem", id, instance, 64, 3, true)}) with its 0.4 × 0.95 hitbox.</li>
+ *   <li>{@code thaumcraft:gui_golem} — the {@link GolemMenu} menu type for the
+ *       golem configuration window (content-mapping {@code Thaumcraft:GUI_GOLEM},
+ *       gui_id 0, TC-M7-04-m3-a).</li>
  * </ul>
  *
  * <p>Attributes ship through {@link EntityAttributeCreationEvent} because
@@ -56,6 +61,8 @@ public final class CatalogGolems {
             DeferredRegister.createItems(ThaumcraftClassic.MOD_ID);
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
             DeferredRegister.create(Registries.ENTITY_TYPE, ThaumcraftClassic.MOD_ID);
+    public static final DeferredRegister<MenuType<?>> MENUS =
+            DeferredRegister.create(Registries.MENU, ThaumcraftClassic.MOD_ID);
 
     // --- items -----------------------------------------------------------------
 
@@ -115,13 +122,28 @@ public final class CatalogGolems {
                     .updateInterval(EntityGolemBase.UPDATE_INTERVAL)
                     .build("golem"));
 
+    // --- menus (gui rows) ------------------------------------------------------
+
+    /**
+     * GUI_GOLEM (content-mapping.csv {@code Thaumcraft:GUI_GOLEM}, original
+     * gui_id 0 / {@code ContainerGolem} + {@code GuiGolem}, TC-M7-04-m3-a).
+     * Entity-bound: the open-menu extra buffer carries the golem's entity id
+     * (the original's openGui x argument) and {@link GolemMenu}'s client
+     * constructor resolves it. The id is the content-mapping gui path (D-001);
+     * opened from {@link EntityGolemBase#mobInteract}.
+     */
+    public static final DeferredHolder<MenuType<?>, MenuType<GolemMenu>> GUI_GOLEM =
+            MENUS.register("gui_golem", () -> net.neoforged.neoforge.common.extensions.IMenuTypeExtension.create(
+                    (menuId, inv, extraData) -> new GolemMenu(menuId, inv, extraData)));
+
     private CatalogGolems() {
     }
 
-    /** Attach both golem holders to the mod bus (single wiring line). */
+    /** Attach the golem holders to the mod bus (single wiring line). */
     public static void init(final IEventBus modEventBus) {
         ITEMS.register(modEventBus);
         ENTITY_TYPES.register(modEventBus);
+        MENUS.register(modEventBus);
         modEventBus.addListener(CatalogGolems::onAttributeCreation);
     }
 

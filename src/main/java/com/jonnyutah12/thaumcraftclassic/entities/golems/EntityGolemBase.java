@@ -1,5 +1,9 @@
 package com.jonnyutah12.thaumcraftclassic.entities.golems;
 
+import com.jonnyutah12.thaumcraftclassic.items.golems.ItemGolemBell;
+import com.jonnyutah12.thaumcraftclassic.items.golems.ItemGolemCore;
+import com.jonnyutah12.thaumcraftclassic.menus.GolemMenu;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -7,12 +11,16 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.world.Container;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.navigation.GroundPathNavigation;
 import net.minecraft.world.entity.animal.AbstractGolem;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -296,6 +304,81 @@ public class EntityGolemBase extends AbstractGolem {
     /** Original {@code setup(side)}: {@code this.homeFacing = side}. */
     public void setHomeFacing(final int side) {
         this.homeFacing = side;
+    }
+
+    /** Original {@code public boolean paused} — set by {@code ContainerGolem}. */
+    public boolean getPaused() {
+        return this.paused;
+    }
+
+    public void setPaused(final boolean paused) {
+        this.paused = paused;
+    }
+
+    /**
+     * The right-click GUI open site — the GUI leg of the original
+     * {@code func_70085_c(EntityPlayer)} (called from {@code interact}), gated
+     * by the original chain ({@code EntityGolemBase.java:1002-1042} and its
+     * {@code customInteraction} tail at 954-1001):
+     *
+     * <ol>
+     *   <li>sneaking is refused ({@code func_70085_c} first branch);</li>
+     *   <li>a golem that already has a core and is clicked with a
+     *       {@code ItemGolemBell} is refused (the bell's ride/leash leg is the
+     *       bell item's, TC-M6-08-s-b);</li>
+     *   <li>the GUI opens only when {@code getCore() > -1 &&
+     *       ItemGolemCore.hasGUI(core)} — the ported
+     *       {@link com.jonnyutah12.thaumcraftclassic.items.golems.ItemGolemCore#hasGUI(int)}
+     *       predicate, cores 0/1/2/4/5/8/10;</li>
+     *   <li>a held {@code ItemWandCasting} is refused so wand right-clicks
+     *       keep their own use. The wand item is not in this tree (only the
+     *       {@code IVisContainerItem} seam), so that leg cannot be reproduced
+     *       here; it is recorded in docs/BEHAVIORAL_DEVIATIONS.md (BD-19) and
+     *       lands with the wand family;</li>
+     *   <li>the core-attachment and upgrade-attachment legs of
+     *       {@code func_70085_c} (and the decoration/cake legs of
+     *       {@code customInteraction}) run before the GUI leg in the original
+     *       and are TC-M6-08-s-b; with them absent the GUI leg is the only
+     *       leg this override ships.</li>
+     * </ol>
+     *
+     * <p>The original opens through {@code openGui(Thaumcraft.instance, 0,
+     * world, entityId, 0, 0)} — gui id 0 = {@code GuiHandlerGui} building
+     * {@code ContainerGolem(playerInventory, golem.inventory)} from the entity
+     * id carried in the x slot. 1.21.1's equivalent is a
+     * {@code MenuProvider} whose extra buffer carries the entity id, resolved
+     * by {@code GolemMenu}'s client constructor (the {@link
+     * com.jonnyutah12.thaumcraftclassic.menus.TrunkMenu} pattern). The
+     * original's interact returns false on every leg — nothing is consumed —
+     * so this returns {@link InteractionResult#PASS}; the open itself runs
+     * server-side (the original's {@code !world.isClientSide} gate — a
+     * game-test/dedicated server is not client-side), and the client
+     * receives the open-screen packet.</p>
+     */
+    @Override
+    public InteractionResult mobInteract(final Player player, final InteractionHand hand) {
+        // Original func_70085_c first branch: sneak refuses the whole chain.
+        if (player.isSecondaryUseActive()) {
+            return InteractionResult.PASS;
+        }
+        final ItemStack held = player.getMainHandItem();
+        // Original: core > -1 && held == bell -> the bell item's leg (TC-M6-08-s-b).
+        if (this.getCore() > -1 && held.getItem() instanceof ItemGolemBell) {
+            return InteractionResult.PASS;
+        }
+        // Original customInteraction GUI gate: core > -1 && ItemGolemCore.hasGUI(core).
+        // The ItemWandCasting exclusion is NOT reproducible here (BD-19).
+        final int core = this.getCore();
+        if (core > -1 && ItemGolemCore.hasGUI(core) && !this.level().isClientSide) {
+            player.openMenu(new SimpleMenuProvider(
+                            (windowId, inventory, opener) -> new GolemMenu(windowId, inventory, this),
+                            Component.translatable("container.thaumcraft.gui_golem")),
+                    buffer -> buffer.writeInt(this.getId()));
+            // The original customInteraction returns true when the GUI opens
+            // (the interaction is consumed); 1.21.1 spells that SUCCESS.
+            return InteractionResult.SUCCESS;
+        }
+        return InteractionResult.PASS;
     }
 
     // -------------------------------------------------------------- upgrades ---

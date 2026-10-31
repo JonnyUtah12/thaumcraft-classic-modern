@@ -32,29 +32,31 @@ PNG_1X1 = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
 )
 
-# `textures/misc/particles.png` is not a plain texture: build.gradle's
-# `sliceOriginalParticleSprites` indexes it as a 16-column x 16-row grid of
-# 16 px cells (the original sheet is 256x256), so a 1x1 placeholder makes
-# `Image.getSubimage` throw "(x + width) is outside of Raster" and the
-# overlay-fixture gate cannot even run. The fixture reproduces the sheet's
-# DIMENSIONS (transparent placeholder content, no original bytes); every other
-# placeholder stays 1x1 because the gates only care about paths.
+
+def png_rgba(width, height):
+    """A transparent RGBA PNG of the requested size, built with the stdlib only.
+
+    The path gates only care that a texture exists, so every placeholder is 1x1
+    — except the particle sheet: `sliceOriginalParticleSprites` (build.gradle)
+    cuts 16x16 cells out of `textures/misc/particles.png`, and `getSubimage`
+    throws `(x + width) is outside of Raster` on a 1x1 image. The real sheet is
+    256x256 with a 16 px cell grid, so the fixture hands the slicer a sheet of
+    the same size and the fixture overlay build exercises the slice for real.
+    """
+    raw = b"".join(b"\x00" + b"\x00\x00\x00\x00" * width for _ in range(height))
+
+    def chunk(tag, data):
+        return (struct.pack(">I", len(data)) + tag + data
+                + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF))
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr)
+            + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
+
+
+# The one placeholder that has to carry real dimensions (see png_rgba).
 PARTICLE_SHEET = "textures/misc/particles.png"
-PARTICLE_SHEET_SIZE = 256
-
-
-def transparent_png(width, height):
-    """A valid fully-transparent RGBA PNG of the given size (stdlib only)."""
-    def chunk(tag, payload):
-        body = tag + payload
-        return struct.pack(">I", len(payload)) + body + struct.pack(">I", zlib.crc32(body) & 0xFFFFFFFF)
-
-    header = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
-    scanlines = b"".join(b"\x00" + b"\x00\x00\x00\x00" * width for _ in range(height))
-    return (b"\x89PNG\r\n\x1a\n"
-            + chunk(b"IHDR", header)
-            + chunk(b"IDAT", zlib.compress(scanlines, 9))
-            + chunk(b"IEND", b""))
+PARTICLE_SHEET_PX = 256
 
 # The sound transform reads this file; the fixture gives it the two camelCase
 # ids the build normalizes so the rename path is exercised too.
@@ -83,7 +85,7 @@ def main():
             if not path.endswith(".png"):
                 data = (json.dumps({}) + "\n").encode()
             elif source == PARTICLE_SHEET:
-                data = transparent_png(PARTICLE_SHEET_SIZE, PARTICLE_SHEET_SIZE)
+                data = png_rgba(PARTICLE_SHEET_PX, PARTICLE_SHEET_PX)
             else:
                 data = PNG_1X1
             with open(path, "wb") as out:

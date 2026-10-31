@@ -65,6 +65,22 @@ public class DeconstructionTableMenu extends AbstractContainerMenu {
         }
     }
 
+    /**
+     * The tile's break timer, in the original's units: it is set to
+     * {@code TileDeconstructionTable.BREAK_TIME} when a break starts and counts
+     * down, so the original's bar was
+     * {@code getBreakTimeScaled(46) = breaktime * 46 / 40} px tall and drained
+     * downward. The client's menu instance holds the client tile, which the
+     * data slot below syncs into ({@link ContainerData#set}), so a screen can
+     * read the live value through this getter (TC-M7-04-s).
+     */
+    public int getBreakTime() {
+        return this.table.breaktime;
+    }
+
+    /** The menu's container data slot carrying the break timer (original's own channel). */
+    static final int DATA_BREAK_TIME = 0;
+
     // MC 1.21.1 declares clickMenuButton as boolean (true = the button did something).
     @Override
     public boolean clickMenuButton(final Player player, final int buttonId) {
