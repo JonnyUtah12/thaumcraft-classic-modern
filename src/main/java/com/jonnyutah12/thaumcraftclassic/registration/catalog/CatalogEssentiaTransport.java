@@ -3,6 +3,8 @@ package com.jonnyutah12.thaumcraftclassic.registration.catalog;
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockTube;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockTubeItem;
+import com.jonnyutah12.thaumcraftclassic.tiles.TileCentrifuge;
+import com.jonnyutah12.thaumcraftclassic.tiles.TileEssentiaCrystalizer;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileTube;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileTubeBuffer;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileTubeFilter;
@@ -36,9 +38,11 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  *
  * <p>The original's metadata 2 (Alchemical Centrifuge, {@code tilecentrifuge})
  * and metadata 7 (Essentia Crystallizer, {@code tileessentiacrystalizer}) are
- * <em>machines</em> hosted on this block, not conduits: their ids stay
- * {@code not_started} with their own card (TC-M4-07-m), and the two variants
- * place no tile here.</p>
+ * <em>machines</em> hosted on this block, not conduits. They landed with their
+ * own card (TC-M4-07-m): their ids are registered here as the two extra block
+ * entities, and {@link BlockTube} maps their variants to
+ * {@link TileCentrifuge} / {@link TileEssentiaCrystalizer} exactly as the
+ * original's {@code createTileEntity} did.</p>
  */
 public final class CatalogEssentiaTransport {
 
@@ -91,6 +95,18 @@ public final class CatalogEssentiaTransport {
             BLOCK_ENTITY_TYPES.register("tiletubeoneway",
                     () -> BlockEntityType.Builder.of(TileTubeOneway::new, BLOCK_TUBE.get()).build(null));
 
+    // --- block entities (the two machines, TC-M4-07-m) ----------------------
+
+    @SuppressWarnings("deprecation")
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TileCentrifuge>> TILE_CENTRIFUGE =
+            BLOCK_ENTITY_TYPES.register("tilecentrifuge",
+                    () -> BlockEntityType.Builder.of(TileCentrifuge::new, BLOCK_TUBE.get()).build(null));
+
+    @SuppressWarnings("deprecation")
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TileEssentiaCrystalizer>> TILE_CRYSTALIZER =
+            BLOCK_ENTITY_TYPES.register("tileessentiacrystalizer",
+                    () -> BlockEntityType.Builder.of(TileEssentiaCrystalizer::new, BLOCK_TUBE.get()).build(null));
+
     private CatalogEssentiaTransport() {
     }
 
@@ -124,6 +140,14 @@ public final class CatalogEssentiaTransport {
 
     public static TileTubeOneway createOneway(final BlockPos pos, final BlockState state) {
         return new TileTubeOneway(pos, state);
+    }
+
+    public static TileCentrifuge createCentrifuge(final BlockPos pos, final BlockState state) {
+        return new TileCentrifuge(pos, state);
+    }
+
+    public static TileEssentiaCrystalizer createCrystalizer(final BlockPos pos, final BlockState state) {
+        return new TileEssentiaCrystalizer(pos, state);
     }
 
     /** The block state for one of the original's metadata values. */

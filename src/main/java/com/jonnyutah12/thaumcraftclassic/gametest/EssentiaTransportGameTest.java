@@ -10,6 +10,8 @@ import com.jonnyutah12.thaumcraftclassic.items.ItemResource;
 import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaTransport;
+import com.jonnyutah12.thaumcraftclassic.tiles.TileCentrifuge;
+import com.jonnyutah12.thaumcraftclassic.tiles.TileEssentiaCrystalizer;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileJarFillable;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileTube;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileTubeBuffer;
@@ -50,8 +52,9 @@ import java.util.List;
  *   <li>{@link #tubeNetworkRegistersItsOwnContent} — the block, its same-id
  *       block item, the six conduit block entities, the original metadata 0..7
  *       on the {@code variant} property, the (variant -> tile class) mapping
- *       (with no tile for the two machines that belong to another card) and the
- *       content-mapping rows this card flipped.</li>
+ *       (all eight, including the centrifuge and the crystallizer, which
+ *       landed with their own card TC-M4-07-m) and the content-mapping rows
+ *       this card flipped.</li>
  *   <li>{@link #aBufferFeedsAJarThroughTheTubeLine} — the end-to-end flow in a
  *       real world: an essentia buffer, two plain tubes and a warded jar, ticked
  *       by the blocks' own tickers, with the total conserved.</li>
@@ -139,16 +142,22 @@ public final class EssentiaTransportGameTest {
         helper.assertTrue(CatalogEssentiaTransport.BLOCK_TUBE.get().variant(base) == 0,
                 "the default state is the plain tube (original metadata 0)");
 
-        // The six conduits: their ids, their binding to the tube block, and the
-        // (variant -> tile) mapping the original's createTileEntity performed.
-        // Arrays.asList, not List.of: the two machine variants have no tile and
-        // List.of rejects a null element.
-        final List<Class<?>> expected = java.util.Arrays.asList(TileTube.class, TileTubeValve.class, null,
+        // The eight variants the original's createTileEntity picked: their ids,
+        // their binding to the tube block, and the (variant -> tile) mapping.
+        // Metas 2 and 7 are the two machines (the centrifuge and the
+        // crystallizer): they landed with TC-M4-07-m, so this probe — which
+        // used to assert those two variants place NO tile — now asserts they
+        // place their own machine tile. The machines' conversion rules are
+        // proven by EssentiaMachinesGameTest.
+        final List<Class<?>> expected = java.util.Arrays.asList(TileTube.class, TileTubeValve.class,
+                TileCentrifuge.class,
                 TileTubeFilter.class, TileTubeBuffer.class,
                 com.jonnyutah12.thaumcraftclassic.tiles.TileTubeRestrict.class,
-                com.jonnyutah12.thaumcraftclassic.tiles.TileTubeOneway.class, null);
+                com.jonnyutah12.thaumcraftclassic.tiles.TileTubeOneway.class,
+                TileEssentiaCrystalizer.class);
         for (final String id : List.of("tiletube", "tiletubevalve", "tiletubefilter",
-                "tiletubebuffer", "tiletuberestrict", "tiletubeoneway")) {
+                "tiletubebuffer", "tiletuberestrict", "tiletubeoneway",
+                "tilecentrifuge", "tileessentiacrystalizer")) {
             helper.assertTrue(
                     BuiltInRegistries.BLOCK_ENTITY_TYPE.containsKey(ResourceLocation.parse("thaumcraft:" + id)),
                     id + " must be registered as a block entity");
@@ -157,15 +166,9 @@ public final class EssentiaTransportGameTest {
             final BlockEntity created = CatalogEssentiaTransport.BLOCK_TUBE.get()
                     .newBlockEntity(BlockPos.ZERO, CatalogEssentiaTransport.state(variant));
             final Class<?> want = expected.get(variant);
-            if (want == null) {
-                helper.assertTrue(created == null,
-                        "blockTube variant " + variant + " is a machine hosted on this block (the original's"
-                                + " centrifuge/crystallizer) and belongs to its own card, so it must place no tile");
-            } else {
-                helper.assertTrue(created != null && want.isInstance(created),
-                        "blockTube variant " + variant + " must place " + want.getSimpleName()
-                                + ", got " + created);
-            }
+            helper.assertTrue(created != null && want.isInstance(created),
+                    "blockTube variant " + variant + " must place " + want.getSimpleName()
+                            + ", got " + created);
         }
 
         final TileTube tube = castBe(CatalogEssentiaTransport.createTube(BlockPos.ZERO,

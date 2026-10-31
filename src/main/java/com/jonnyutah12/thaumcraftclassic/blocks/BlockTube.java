@@ -9,6 +9,8 @@ import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaTransport;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
 import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
+import com.jonnyutah12.thaumcraftclassic.tiles.TileCentrifuge;
+import com.jonnyutah12.thaumcraftclassic.tiles.TileEssentiaCrystalizer;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileTube;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileTubeBuffer;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileTubeFilter;
@@ -56,22 +58,21 @@ import java.util.List;
  *   <caption>blockTube metadata</caption>
  *   <tr><td>0</td><td>Essentia Tube</td><td>{@link TileTube} — ported</td></tr>
  *   <tr><td>1</td><td>Essentia Valve</td><td>{@link TileTubeValve} — ported</td></tr>
- *   <tr><td>2</td><td>Alchemical Centrifuge</td><td>TileCentrifuge — TC-M4-07-sibling</td></tr>
+ *   <tr><td>2</td><td>Alchemical Centrifuge</td><td>{@link TileCentrifuge} — ported</td></tr>
  *   <tr><td>3</td><td>Filtered Essentia Tube</td><td>{@link TileTubeFilter} — ported</td></tr>
  *   <tr><td>4</td><td>Essentia Buffer</td><td>{@link TileTubeBuffer} — ported</td></tr>
  *   <tr><td>5</td><td>Restricted Essentia Tube</td><td>TileTubeRestrict — ported</td></tr>
  *   <tr><td>6</td><td>Directional Essentia Tube</td><td>TileTubeOneway — ported</td></tr>
- *   <tr><td>7</td><td>Essentia Crystallizer</td><td>TileEssentiaCrystalizer — TC-M4-07-sibling</td></tr>
+ *   <tr><td>7</td><td>Essentia Crystallizer</td><td>{@link TileEssentiaCrystalizer} — ported</td></tr>
  * </table>
  *
  * <p>Metas 2 and 7 are the two <em>machines</em> the original hosted on this
  * block (the centrifuge and the crystallizer, both essentia-conversion
- * machines, not conduits). They keep their variant in the block so the landed
- * recipes ({@code recipe.190}/{@code 193} centrifuge, {@code recipe.194}
- * crystallizer) and the original ids stay valid, and produce no tile entity
- * until their own card lands — the same treatment
- * {@link com.jonnyutah12.thaumcraftclassic.blocks.BlockJar} gives its
- * brain/node variants.</p>
+ * machines, not conduits). They keep the original metadata on the
+ * {@code variant} property so the landed recipes ({@code recipe.190}/{@code 193}
+ * centrifuge, {@code recipe.194} crystallizer) and the original ids stay
+ * valid, and their tiles — with the original conversion rules — landed with
+ * them on TC-M4-07-m.</p>
  *
  * <p>Ported from the block: the material properties (hardness 0.5, resistance
  * 5, metal), the connected pipe outline and collision boxes with the original's
@@ -85,11 +86,12 @@ import java.util.List;
  *
  * <p>Out of scope, with cards: the wand/resonator face toggling (the
  * codechicken ray-trace sub-hits in {@code BlockTube.onBlockHighlight} and the
- * tiles' {@code addTraceableCuboids}) on <b>TC-M4-07-f</b>, the pipe renderer
- * and textures on TC-M7-01, the per-variant item labels on TC-M7-01b (the
- * block's own label is the original's metadata-0 name, "Essentia Tube"), the
- * vent particles and the creak sound on TC-M7-01/TC-M7-05, and the two machine
- * tiles (centrifuge, crystallizer) on <b>TC-M4-07-m</b>.</p>
+ * tiles' {@code addTraceableCuboids}) on <b>TC-M4-07-f</b>, the pipe and
+ * machine renderers and textures on TC-M7-01, the per-variant item labels on
+ * TC-M7-01b (the block's own label is the original's metadata-0 name,
+ * "Essentia Tube"), and the vent particles, the creak/fizz/pump sounds and the
+ * client block-entity ticker that drives the machines' animation state on
+ * TC-M7-01/TC-M7-05.</p>
  */
 public class BlockTube extends Block implements EntityBlock, VariantDevice {
 
@@ -100,7 +102,7 @@ public class BlockTube extends Block implements EntityBlock, VariantDevice {
     public static final int VARIANT_TUBE = 0;
     /** Original metadata 1 — {@link TileTubeValve}. */
     public static final int VARIANT_VALVE = 1;
-    /** Original metadata 2 — TileCentrifuge (no tile in this slice). */
+    /** Original metadata 2 — {@link TileCentrifuge} (TC-M4-07-m). */
     public static final int VARIANT_CENTRIFUGE = 2;
     /** Original metadata 3 — {@link TileTubeFilter}. */
     public static final int VARIANT_FILTER = 3;
@@ -110,7 +112,7 @@ public class BlockTube extends Block implements EntityBlock, VariantDevice {
     public static final int VARIANT_RESTRICT = 5;
     /** Original metadata 6 — TileTubeOneway. */
     public static final int VARIANT_ONEWAY = 6;
-    /** Original metadata 7 — TileEssentiaCrystalizer (no tile in this slice). */
+    /** Original metadata 7 — {@link TileEssentiaCrystalizer} (TC-M4-07-m). */
     public static final int VARIANT_CRYSTALIZER = 7;
 
     /** Original {@code BlockRenderer.W5}/{@code W11}: the outline's 5/16 and 11/16. */
@@ -222,13 +224,13 @@ public class BlockTube extends Block implements EntityBlock, VariantDevice {
         return switch (state.getValue(VARIANT)) {
             case VARIANT_TUBE -> CatalogEssentiaTransport.createTube(pos, state);
             case VARIANT_VALVE -> CatalogEssentiaTransport.createValve(pos, state);
+            case VARIANT_CENTRIFUGE -> CatalogEssentiaTransport.createCentrifuge(pos, state);
             case VARIANT_FILTER -> CatalogEssentiaTransport.createFilter(pos, state);
             case VARIANT_BUFFER -> CatalogEssentiaTransport.createBuffer(pos, state);
             case VARIANT_RESTRICT -> CatalogEssentiaTransport.createRestrict(pos, state);
             case VARIANT_ONEWAY -> CatalogEssentiaTransport.createOneway(pos, state);
-            // The centrifuge (meta 2) and the crystallizer (meta 7) are machines,
-            // not conduits: TC-M4-07-m. A state placed by an old save keeps its
-            // data in the world and drops its item, with no behaviour.
+            case VARIANT_CRYSTALIZER -> CatalogEssentiaTransport.createCrystalizer(pos, state);
+            // The variant property is bounded 0..7, so this is unreachable.
             default -> null;
         };
     }
@@ -247,6 +249,10 @@ public class BlockTube extends Block implements EntityBlock, VariantDevice {
                 buffer.serverTick();
             } else if (be instanceof TileTube tube) {
                 tube.serverTick();
+            } else if (be instanceof TileCentrifuge centrifuge) {
+                centrifuge.serverTick();
+            } else if (be instanceof TileEssentiaCrystalizer crystalizer) {
+                crystalizer.serverTick();
             }
         };
     }

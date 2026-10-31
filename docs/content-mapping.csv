@@ -154,7 +154,7 @@ Thaumcraft:TileDeconstructionTable,thaumcraft:tiledeconstructiontable,tile_entit
 Thaumcraft:TilePurifyTotem,thaumcraft:tilepurifytotem,tile_entity,TileEtherealBloom,not_started,not_tested,,class=TileEtherealBloom
 Thaumcraft:TileTube,thaumcraft:tiletube,tile_entity,TileTube,done,tested,,class=TileTube
 Thaumcraft:TileTubeValve,thaumcraft:tiletubevalve,tile_entity,TileTubeValve,done,tested,,class=TileTubeValve
-Thaumcraft:TileCentrifuge,thaumcraft:tilecentrifuge,tile_entity,TileCentrifuge,not_started,not_tested,,class=TileCentrifuge
+Thaumcraft:TileCentrifuge,thaumcraft:tilecentrifuge,tile_entity,TileCentrifuge,done,tested,,class=TileCentrifuge
 Thaumcraft:TileTubeFilter,thaumcraft:tiletubefilter,tile_entity,TileTubeFilter,done,tested,,class=TileTubeFilter
 Thaumcraft:TileTubeBuffer,thaumcraft:tiletubebuffer,tile_entity,TileTubeBuffer,done,tested,,class=TileTubeBuffer
 Thaumcraft:TileTubeRestrict,thaumcraft:tiletuberestrict,tile_entity,TileTubeRestrict,done,tested,,class=TileTubeRestrict
@@ -180,7 +180,7 @@ Thaumcraft:TileEldritchCap,thaumcraft:tileeldritchcap,tile_entity,TileEldritchCa
 Thaumcraft:TileBanner,thaumcraft:tilebanner,tile_entity,TileBanner,done,tested,,class=TileBanner
 Thaumcraft:TileEldritchPortal,thaumcraft:tileeldritchportal,tile_entity,TileEldritchPortal,not_started,not_tested,,class=TileEldritchPortal
 Thaumcraft:TileEssentiaReservoir,thaumcraft:tileessentiareservoir,tile_entity,TileEssentiaReservoir,not_started,not_tested,,class=TileEssentiaReservoir
-Thaumcraft:TileEssentiaCrystalizer,thaumcraft:tileessentiacrystalizer,tile_entity,TileEssentiaCrystalizer,not_started,not_tested,,class=TileEssentiaCrystalizer
+Thaumcraft:TileEssentiaCrystalizer,thaumcraft:tileessentiacrystalizer,tile_entity,TileEssentiaCrystalizer,done,tested,,class=TileEssentiaCrystalizer
 Thaumcraft:TileEldritchNothing,thaumcraft:tileeldritchnothing,tile_entity,TileEldritchNothing,not_started,not_tested,,class=TileEldritchNothing
 Thaumcraft:TileEldritchLock,thaumcraft:tileeldritchlock,tile_entity,TileEldritchLock,not_started,not_tested,,class=TileEldritchLock
 Thaumcraft:TileEldritchCrabSpawner,thaumcraft:tileeldritchcrabspawner,tile_entity,TileEldritchCrabSpawner,not_started,not_tested,,class=TileEldritchCrabSpawner
