@@ -73,7 +73,7 @@ Statuses (DONE only with test evidence):
 | Accessory layer | Baubles semantics | TC-M8-01 (t_76c2874f) | DONE (c44b219; docs/architecture/accessories.md) |
 | Baubles items | items/baubles | TC-M8-02 (t_0ca9e33b) | DONE (e48c4fb; docs/architecture/runic-shielding.md) |
 | ATM10 startup | disposable instance | TC-M9-01 (t_bd0c30d2) | DONE (f86a444, ff962ed; docs/atm10-compatibility.md) |
-| ATM10 gameplay | disposable instance | TC-M9-02 (t_95c84692) | NOT STARTED (gated on TC-M6-03) |
+| ATM10 gameplay | disposable instance | TC-M9-02-s (t_d827c350) | DONE (this commit; `scripts/atm10_gameplay_battery.py` + `docs/atm10-gameplay-battery.md`; branch `wt/m9-atm10-gameplay` pushed, CI green; 5/5 representative loops green in the DISPOSABLE atm10-test pack over its real server console, research graph 201/201 live in-instance, 0 thaumcraft-attributable ERROR/FATAL/Exception lines over the whole boot+battery log, conflicts inventoried by mod; NO mod deleted/disabled/renamed and the primary Prism instance untouched. NOT proved: the client-side/rendered surface; `/thaumcraft research <...>` unreachable by a pinned command-tree defect filed separately) |
 | Regression | all suites | TC-M10-01 (t_fa8b23a7) | DONE (065dceb; docs/regression-report-2026-10-22.md — point-in-time at c44b219, not current HEAD) |
 | Release | release gate | TC-M10-02 (t_596882c9) | DONE (347647f; v0.1.0-alpha.1 pre-release — gameplay systems NOT YET DONE, see table) |
 

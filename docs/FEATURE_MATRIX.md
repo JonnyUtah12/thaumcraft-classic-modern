@@ -93,7 +93,7 @@ Translation to the other status sets used in this repo:
 | GUI parity (non-research) — 1 of N screens authored | client/gui set | TESTED (PARTIAL) | TC-M7-04 (t_52cdd02c) → TC-M7-04-s-cr1 (t_a49c8ee2) | `client/TrunkScreen` + `client/ModClientScreens` (`RegisterMenuScreensEvent`, mod bus, client-only) bound to `CatalogTrinketsLoot.GUI_TRUNK`; `TrunkScreenRegistrationTest` 4 assertions | — | author the remaining menu-type screens (cr2+): the mod has menu types with no screen today, so opening them is a blank screen |
 | Build / load foundation | — | VERIFIED | t_e81a4a3b → 8058029/575c1b6 | 5 unit + smoke gametest, CI | — | — |
 | ATM10 startup | 496/470 mods | VERIFIED (startup only) | t_bd0c30d2 → f86a444/ff962ed | load in disposable instance | — | — |
-| ATM10 gameplay | representative loops | NOT INVESTIGATED | TC-M9-02 (gated on TC-M6-03) | none | — | gated; dispatch after M6 |
+| ATM10 gameplay | representative loops | TESTED (partial) | TC-M9-02-s (t_d827c350) (this commit) → branch `wt/m9-atm10-gameplay` | 5/5 representative loops PASS in the DISPOSABLE `atm10-test` dedicated pack (470 server mods, NeoForge 21.1.259, JDK21) driven over the real server console by `scripts/atm10_gameplay_battery.py`: L1 16 ported blocks placed and their block entities read back (incl. the crucible via `blockmetaldevice[variant=0]` and the wand pedestal via `blockstonedevice[variant=9]`), L2 22 item ids summoned and read back, L3 mod datapack loaded plus a full `reload` of 95567 recipes with 0 thaumcraft parse errors, L4 all 14 wand/foci ids of the TC-M6-03-s dependency, L5 the `/thaumcraft` command with the shipped graph live in-instance (201/201 research keys printed, 201 distinct). Conflict triage over the whole boot+battery log: 0 ERROR/FATAL/Exception lines attributable to `thaumcraft`, 0 recipe parse errors, 0 mixin apply failures; the other mods' own 229 ERROR lines are inventoried by mod in docs/atm10-gameplay-battery.md. Pack jar backed up and restored; no mod deleted, disabled or renamed; primary Prism instance never touched | — | not proved: client-side/rendered behavior (headless pack; needs a real client) and the pinned `/thaumcraft research <...>` command-path defect (`ThaumcraftCommand` nests the subcommands under `help`, so only `/thaumcraft help research list` parses) — one-line fix filed as its own card; the wider modpack gameplay surface follows later cards |
 | Recipes (all types) | 279 recipes, 42 oredict, 11 wand triggers | IN PROGRESS | recipe inventories (arcane/crucible) WIP; extraction scripts | extraction present, in-game matching none | — | integrate per crafting system |
 | Fluids | 4 fluids | INVESTIGATED | content-mapping | none | — | dispatch with catalog |
 | Biomes / dimension (Outer Lands) | 4 biomes, 1 dim (-42) | INVESTIGATED | eldritch realm WIP (world/outerlands, damage_type) | none (uncommitted) | — | salvage (04f), dispatch |
@@ -108,13 +108,14 @@ uncommitted WIP as VERIFIED.
   aspects, research graph, research progression, vis, aura+nodes, node
   behavior, flux, accessory layer, baubles items, sounds, registration,
   config, build foundation, ATM10 startup.
-- **TESTED (partial substrate)**: **3** — persistence, networking, worldgen ores.
+- **TESTED (partial substrate)**: **4** — persistence, networking, worldgen ores,
+  ATM10 gameplay.
 - **IN PROGRESS (WIP, uncommitted, unverified)**: **12** — minigames,
   taint, structures, workbench, infusion, crucible, essentia storage,
   blocks, items, tile entities, enchantments/potions, recipes.
-- **INVESTIGATED, not ported**: **13** — essentia transport, wands, foci,
+- **INVESTIGATED, not ported**: **12** — essentia transport, wands, foci,
   focus behaviors, entities+AI, armor/equipment, models, particles,
-  renderers, GUI parity, fluids, biomes/dimension, ATM10 gameplay.
+  renderers, GUI parity, fluids, biomes/dimension.
 - **BLOCKED (worker gave up, needs re-dispatch)**: **1** — Thaumonomicon GUI.
 - **DOCUMENTED DEVIATIONS**: 14 rows in `BEHAVIORAL_DEVIATIONS.md`.
 
