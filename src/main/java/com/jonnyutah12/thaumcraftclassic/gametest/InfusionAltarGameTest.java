@@ -88,6 +88,14 @@ import java.util.List;
  *       over the original's five-cycle animation, and the run ends with the
  *       result on the central pedestal, the pedestals empty and
  *       {@code crafting}/{@code instability} cleared.</li>
+ *   <li>{@link #infusionLiveRowsAreMeasured} (t_bec9739a): the live-row
+ *       measurement of the crucible card's shape — every shipped
+ *       {@code *.infusion*} row file is enumerated through the server
+ *       {@code ResourceManager}, its {@code neoforge:conditions} gate is
+ *       evaluated against the live registries, every gate-satisfied row must
+ *       be present in the live {@code RecipeManager} under its own id and no
+ *       gated row may be, and the measured counts plus the per-row gate
+ *       verdicts are logged for the CI evidence trail.</li>
  * </ul>
  */
 @GameTestHolder(ThaumcraftClassic.MOD_ID)
@@ -606,5 +614,153 @@ public final class InfusionAltarGameTest {
         helper.assertTrue(matrix.instability == 0,
                 "a clean craft ends with instability cleared, got " + matrix.instability);
         helper.succeed();
+    }
+
+    /**
+     * t_bec9739a: measure the LIVE infusion row count the way TC-M4-05-p
+     * proved the crucible count (CrucibleGameTest.everyUngatedCrucibleRowIsLoaded).
+     *
+     * <p>Enumerates every shipped {@code data/thaumcraft/recipe/*.infusion*}
+     * file through the server {@code ResourceManager}, evaluates every
+     * {@code neoforge:conditions} gate against the live registries
+     * ({@code neoforge:item_exists} against {@link BuiltInRegistries#ITEM},
+     * {@code neoforge:not(tag_empty)} against the live item-tag lookup,
+     * anything else recorded as unevaluable), and compares against the live
+     * {@link RecipeManager}. The row's live id IS its resource path
+     * ({@code recipe/<name>.json} loads as {@code thaumcraft:<name>}), so each
+     * logged verdict maps 1:1 onto a {@code docs/content-mapping.csv} row.</p>
+     *
+     * <p>Invariants: the shipped set is 63 + 24 files; every row whose gates
+     * are all satisfied MUST be live (a row that fails to decode is dropped in
+     * silence with a RecipeManager parse error, which is what the CI smoke
+     * gate counts as mod-attributable); and a row with an unmet gate must NOT
+     * be live (the loader skipped it, as designed). The measured counts and
+     * the per-row gate verdicts are logged so the CI log carries the evidence
+     * the content-mapping flips cite.</p>
+     */
+    @GameTest(template = "empty")
+    public static void infusionLiveRowsAreMeasured(final GameTestHelper helper) {
+        final var resources = helper.getLevel().getServer().getResourceManager();
+        final RecipeManager manager = helper.getLevel().getRecipeManager();
+
+        int shipped = 0;
+        int shippedCrafting = 0;
+        int shippedEnchantment = 0;
+        int ungated = 0;
+        int liveCrafting = 0;
+        int liveEnchantment = 0;
+        final java.util.List<String> gated = new java.util.ArrayList<>();
+        final java.util.List<String> ungatedMissing = new java.util.ArrayList<>();
+        final java.util.List<String> gatedLive = new java.util.ArrayList<>();
+
+        for (final var entry : resources.listResources("recipe", path ->
+                path.getNamespace().equals(ThaumcraftClassic.MOD_ID)
+                        && path.getPath().contains(".infusion")).entrySet()) {
+            // listResources keeps the namespace-local path WITH its "recipe/"
+            // prefix; data/thaumcraft/recipe/<name>.json loads under
+            // thaumcraft:<name>, so the prefix and extension come off before
+            // the id is looked up (the shape CrucibleGameTest.java:529 uses).
+            final String rawPath = entry.getKey().getPath();
+            final String file = rawPath.startsWith("recipe/")
+                    ? rawPath.substring("recipe/".length()) : rawPath;
+            final String rowId = file.endsWith(".json")
+                    ? file.substring(0, file.length() - ".json".length()) : file;
+            final boolean enchantment = rowId.endsWith(".infusion_enchantment");
+            shipped++;
+            if (enchantment) {
+                shippedEnchantment++;
+            } else {
+                shippedCrafting++;
+            }
+
+            final com.google.gson.JsonObject json;
+            try (var reader = entry.getValue().openAsReader()) {
+                json = com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
+            } catch (final java.io.IOException failure) {
+                helper.fail("unreadable recipe resource " + entry.getKey() + ": " + failure);
+                return;
+            }
+            helper.assertTrue("thaumcraft:infusion".equals(json.get("type").getAsString())
+                            || "thaumcraft:infusion_enchantment".equals(json.get("type").getAsString()),
+                    "the infusion row " + rowId + " names an unexpected type");
+
+            final java.util.List<String> gates = new java.util.ArrayList<>();
+            final com.google.gson.JsonElement conditions = json.get("neoforge:conditions");
+            if (conditions != null && conditions.isJsonArray()) {
+                for (final var condition : conditions.getAsJsonArray()) {
+                    final var guard = condition.getAsJsonObject();
+                    final String type = guard.get("type").getAsString();
+                    if ("neoforge:item_exists".equals(type)) {
+                        final String item = guard.get("item").getAsString();
+                        if (!BuiltInRegistries.ITEM.containsKey(ResourceLocation.parse(item))) {
+                            gates.add("item_exists:" + item);
+                        }
+                    } else if ("neoforge:not".equals(type)) {
+                        final var inner = guard.getAsJsonObject("value");
+                        if ("neoforge:tag_empty".equals(inner.get("type").getAsString())
+                                && tagEmpty(helper, inner.get("tag").getAsString())) {
+                            gates.add("tag_empty:" + inner.get("tag").getAsString());
+                        }
+                    } else {
+                        gates.add("unevaluable:" + type);
+                    }
+                }
+            }
+            final boolean isLive = manager.byKey(id(rowId)).isPresent();
+            if (gates.isEmpty()) {
+                ungated++;
+                if (isLive) {
+                    if (enchantment) {
+                        liveEnchantment++;
+                    } else {
+                        liveCrafting++;
+                    }
+                } else {
+                    ungatedMissing.add(rowId);
+                }
+            } else {
+                gated.add(rowId + "[" + String.join("+", gates) + "]"
+                        + (isLive ? "(LIVE-DESPITE-GATE)" : ""));
+                if (isLive) {
+                    gatedLive.add(rowId);
+                }
+            }
+        }
+
+        helper.assertTrue(shipped == 87,
+                "the extractor ships 63 infusion + 24 infusion_enchantment row files, got "
+                        + shipped);
+        helper.assertTrue(shippedCrafting == 63 && shippedEnchantment == 24,
+                "the shipped split must stay 63 crafting + 24 enchantment, got "
+                        + shippedCrafting + " + " + shippedEnchantment);
+        helper.assertTrue(ungatedMissing.isEmpty(),
+                "every infusion row whose gates are all satisfied must be live in the "
+                        + "RecipeManager (a row that fails to decode is dropped in silence "
+                        + "- check the RecipeManager parse error in the log), missing: "
+                        + String.join(", ", ungatedMissing));
+        helper.assertTrue(gatedLive.isEmpty(),
+                "no infusion row with an unmet gate may be live in the RecipeManager "
+                        + "(the loader skips gated rows): " + String.join(", ", gatedLive));
+
+        ThaumcraftClassic.LOGGER.info(
+                "[t_bec9739a] infusion live measurement: shipped={} ({} infusion + {} "
+                        + "infusion_enchantment), ungated={} (all live), live={} ({} infusion "
+                        + "+ {} infusion_enchantment), gated-out={}",
+                shipped, shippedCrafting, shippedEnchantment, ungated,
+                liveCrafting + liveEnchantment, liveCrafting, liveEnchantment, gated.size());
+        for (int i = 0; i < gated.size(); i += 6) {
+            ThaumcraftClassic.LOGGER.info("[t_bec9739a] gated rows: {}",
+                    String.join(" ", gated.subList(i, Math.min(i + 6, gated.size()))));
+        }
+        helper.succeed();
+    }
+
+    /** True when the live item-tag lookup for {@code tag} has no entries. */
+    private static boolean tagEmpty(final GameTestHelper helper, final String tag) {
+        final var held = helper.getLevel().registryAccess()
+                .lookupOrThrow(net.minecraft.core.registries.Registries.ITEM)
+                .get(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM,
+                        ResourceLocation.parse(tag)));
+        return held.isEmpty() || held.get().size() == 0;
     }
 }
