@@ -329,20 +329,20 @@ Thaumcraft:CultistPortal,thaumcraft:cultistportal,entity,Crimson Portal,not_star
 Thaumcraft:EldritchGolem,thaumcraft:eldritchgolem,entity,%s Eldritch Construct,not_started,not_tested,,class=EntityEldritchGolem mod_index=31
 Thaumcraft:EldritchCrab,thaumcraft:eldritchcrab,entity,Eldritch Crab,not_started,not_tested,,class=EntityEldritchCrab mod_index=32
 Thaumcraft:InhabitedZombie,thaumcraft:inhabitedzombie,entity,Shambling Husk,not_started,not_tested,,class=EntityInhabitedZombie mod_index=33
-Thaumcraft:ThaumSlime,thaumcraft:thaumslime,entity,Thaumic Slime,not_started,not_tested,,class=EntityThaumicSlime mod_index=34
+Thaumcraft:ThaumSlime,thaumcraft:thaumslime,entity,Thaumic Slime,done,tested,,class=EntityThaumicSlime mod_index=34
 Thaumcraft:TaintSpider,thaumcraft:taintspider,entity,Tainted Crawler,done,tested,,class=EntityTaintSpider mod_index=35
-Thaumcraft:Taintacle,thaumcraft:taintacle,entity,Taintacle,not_started,not_tested,,class=EntityTaintacle mod_index=36
-Thaumcraft:TaintacleTiny,thaumcraft:taintacletiny,entity,Taint Tendril,not_started,not_tested,,class=EntityTaintacleSmall mod_index=37
-Thaumcraft:TaintSpore,thaumcraft:taintspore,entity,Taint Spore,not_started,not_tested,,class=EntityTaintSpore mod_index=38
-Thaumcraft:TaintSwarmer,thaumcraft:taintswarmer,entity,Taint Spore Swarmer,not_started,not_tested,,class=EntityTaintSporeSwarmer mod_index=39
-Thaumcraft:TaintSwarm,thaumcraft:taintswarm,entity,Taint Swarm,not_started,not_tested,,class=EntityTaintSwarm mod_index=40
+Thaumcraft:Taintacle,thaumcraft:taintacle,entity,Taintacle,done,tested,,class=EntityTaintacle mod_index=36
+Thaumcraft:TaintacleTiny,thaumcraft:taintacletiny,entity,Taint Tendril,done,tested,,class=EntityTaintacleSmall mod_index=37
+Thaumcraft:TaintSpore,thaumcraft:taintspore,entity,Taint Spore,done,tested,,class=EntityTaintSpore mod_index=38
+Thaumcraft:TaintSwarmer,thaumcraft:taintswarmer,entity,Taint Spore Swarmer,done,tested,,class=EntityTaintSporeSwarmer mod_index=39
+Thaumcraft:TaintSwarm,thaumcraft:taintswarm,entity,Taint Swarm,done,tested,,class=EntityTaintSwarm mod_index=40
 Thaumcraft:TaintedChicken,thaumcraft:taintedchicken,entity,Tainted Chicken,done,tested,,class=EntityTaintChicken mod_index=41
 Thaumcraft:TaintedCow,thaumcraft:taintedcow,entity,Tainted Cow,done,tested,,class=EntityTaintCow mod_index=42
 Thaumcraft:TaintedCreeper,thaumcraft:taintedcreeper,entity,Tainted Creeper,done,tested,,class=EntityTaintCreeper mod_index=43
 Thaumcraft:TaintedPig,thaumcraft:taintedpig,entity,Tainted Pig,done,tested,,class=EntityTaintCow.Pig (nested static class) mod_index=44
 Thaumcraft:TaintedSheep,thaumcraft:taintedsheep,entity,Tainted Sheep,done,tested,,class=EntityTaintSheep mod_index=45
 Thaumcraft:TaintedVillager,thaumcraft:taintedvillager,entity,Tainted Villager,done,tested,,class=EntityTaintVillager mod_index=46
-Thaumcraft:TaintacleGiant,thaumcraft:taintaclegiant,entity,Giant Taintacle,not_started,not_tested,,class=EntityTaintacleGiant mod_index=47
+Thaumcraft:TaintacleGiant,thaumcraft:taintaclegiant,entity,Giant Taintacle,done,tested,,class=EntityTaintacleGiant mod_index=47
 Thaumcraft:SpecialItemGrate,thaumcraft:specialitemgrate,entity,,done,tested,,class=EntityItemGrate mod_index=48
 Thaumcraft:GolemBobber,thaumcraft:golembobber,entity,Golem Fishing Bobber,not_started,not_tested,,class=EntityGolemBobber mod_index=49
 Thaumcraft:spawnegg.BrainyZombie,thaumcraft:spawnegg.brainyzombie,spawner_egg,BrainyZombie,not_started,not_tested,,egg_colors=FFC0FF/008000

@@ -45,13 +45,15 @@ class LocalizationFileTest {
      * Keys the shipped code uses with the original 1.7.10 key shape, kept
      * verbatim so the original strings apply unchanged
      * (ItemAmuletVis:206/209, ItemBaubleBlanks:142, ItemResonator:66-72,
-     * ItemHandMirror:142-158, ResearchManager:460).
+     * ItemHandMirror:142-158, ResearchManager:460,
+     * EntityTaintacleGiant:122 — {@code StatCollector.translateToLocal(
+     * "tc.boss.enrage")} in the enrage announcement, en_US.lang:761).
      */
     private static final List<String> LEGACY_KEYS = List.of(
             "item.ItemAmuletVis.text", "item.capacity.text",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
             "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror",
-            "tc.researcherror");
+            "tc.researcherror", "tc.boss.enrage");
 
     /** Registry-derived key shape: lower-case id plus an optional meta/tooltip suffix. */
     private static final Pattern KEY_SHAPE =
@@ -67,7 +69,8 @@ class LocalizationFileTest {
             "item.thaumcraft.itemgolemupgrade.4", "item.thaumcraft.itemgolemupgrade.5",
             "item.capacity.text", "item.ItemAmuletVis.text",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
-            "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror");
+            "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror",
+            "tc.boss.enrage");
 
     /**
      * The shipped multi-meta items and the original-metadata domain their

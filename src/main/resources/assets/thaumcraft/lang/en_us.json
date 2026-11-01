@@ -227,6 +227,7 @@
   "item.thaumcraft.triplemeattreat": "Triple Meat Treat",
   "item.thaumcraft.trunkspawner": "Traveling Trunk",
   "item.thaumcraft.trunkspawner.tooltip": "This trunk holds items",
+  "tc.boss.enrage": "is enraged by your powerful blows.",
   "tc.discount": "discount",
   "tc.handmirrorerror": "Destination mirror is missing or misplaced. Link broken.",
   "tc.handmirrorlinked": "Link established.",
@@ -258,5 +259,12 @@
   "entity.thaumcraft.taintedcreeper": "Tainted Creeper",
   "entity.thaumcraft.taintedvillager": "Tainted Villager",
   "entity.thaumcraft.taintspider": "Tainted Crawler",
-  "entity.thaumcraft.fallingtaint": "Tainted Crust"
+  "entity.thaumcraft.fallingtaint": "Tainted Crust",
+  "entity.thaumcraft.thaumslime": "Thaumic Slime",
+  "entity.thaumcraft.taintacle": "Taintacle",
+  "entity.thaumcraft.taintacletiny": "Taint Tendril",
+  "entity.thaumcraft.taintaclegiant": "Giant Taintacle",
+  "entity.thaumcraft.taintspore": "Taint Spore",
+  "entity.thaumcraft.taintswarmer": "Taint Spore Swarmer",
+  "entity.thaumcraft.taintswarm": "Taint Swarm"
 }

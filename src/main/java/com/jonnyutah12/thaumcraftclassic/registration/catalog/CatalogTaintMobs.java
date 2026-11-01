@@ -7,7 +7,15 @@ import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityTaintCow;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityTaintCreeper;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityTaintSheep;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityTaintSpider;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityTaintSpore;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityTaintSporeSwarmer;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityTaintSwarm;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityTaintVillager;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityTaintacle;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityTaintacleSmall;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityThaumicSlime;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.TaintacleAiLogic;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EntityTaintacleGiant;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
@@ -24,16 +32,20 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  * BlockTaint.FALLING_TAINT_ID}).
  *
  * <p>Every id is the content-mapping.csv {@code new_id} for the row; the
- * spawn-guard seam pins {@code fallingtaint}. Hitboxes and attributes quote
- * the decompiled constructors — see the per-class AiLogic files and their
- * unit tests.</p>
+ * spawn-guard seam pins {@code fallingtaint}, {@code taintspore} and
+ * {@code taintswarmer} (the latter two flip on with TC-M6-06-s-e, which is
+ * when {@code TaintManager} / {@code BlockTaint} stop falling back to their
+ * documented no-entity path). Hitboxes and attributes quote the decompiled
+ * constructors — see the per-class AiLogic files and their unit tests.</p>
  *
- * <p>Still unregistered, and therefore still inert: the taintacle family
- * ({@code taintacle}, {@code taintacletiny}, {@code taintaclegiant}), the
- * spore/swarm chain ({@code taintspore}, {@code taintswarmer},
- * {@code taintswarm}) and {@code thaumslime} — they are the follow-up cards
- * split out of this one (see the card handoff). {@code TaintManager} resolves
- * those ids at call time and falls back to its documented no-entity path.</p>
+ * <p>TC-M6-06-s-e added the monster slice: {@code thaumslime}, the taintacle
+ * family ({@code taintacle}, {@code taintacletiny}, {@code taintaclegiant})
+ * and the spore/swarm chain ({@code taintspore}, {@code taintswarmer},
+ * {@code taintswarm}). None of them installs goal selectors — see
+ * {@link com.jonnyutah12.thaumcraftclassic.entities.monster.GoallessTaintMonster}
+ * — and none of them is in a biome spawn list: the originals install no
+ * spawn placements, so the taint engine and the boss fight are their only
+ * entry points.</p>
  */
 public final class CatalogTaintMobs {
 
@@ -102,6 +114,65 @@ public final class CatalogTaintMobs {
             registerWithEyeHeight("taintspider", EntityTaintSpider::new, MobCategory.MONSTER,
                     0.4F, 0.3F, 0.1F);
 
+    // ------------------------------------------------------------- TC-M6-06-s-e
+
+    /**
+     * {@code thaumcraft:thaumslime} — {@code EntityThaumicSlime} ctor line 84
+     * boxes the slime as {@code 0.25*sqrt(size)+0.25} on BOTH axes and the
+     * ctor (lines 31-34) starts at {@code 1 << rand(3)}, i.e. size 1 → the
+     * 0.5 x 0.5 spawning box. The size ladder re-calls {@code setSize} on
+     * every spawn, load and merge, so the builder size is only the entry size.
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityThaumicSlime>> THAUMIC_SLIME =
+            register("thaumslime", EntityThaumicSlime::new, MobCategory.MONSTER, 0.5F, 0.5F);
+
+    /**
+     * {@code thaumcraft:taintacle} — {@code EntityTaintacle.java:30}
+     * {@code func_70105_a(0.66F, 3.0F)}; the eye height is the
+     * {@code func_70053_R} override at :54-56 (0.25F), carried on the
+     * dimensions by the entity's {@code getDefaultDimensions} override.
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityTaintacle>> TAINTACLE =
+            register("taintacle", EntityTaintacle::new, MobCategory.MONSTER,
+                    TaintacleAiLogic.WIDTH, TaintacleAiLogic.HEIGHT);
+
+    /** {@code thaumcraft:taintacletiny} — {@code EntityTaintacleSmall.java:14} 0.22 x 1.0. */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityTaintacleSmall>> TAINTACLE_TINY =
+            register("taintacletiny", EntityTaintacleSmall::new, MobCategory.MONSTER,
+                    TaintacleAiLogic.SMALL_WIDTH, TaintacleAiLogic.SMALL_HEIGHT);
+
+    /** {@code thaumcraft:taintaclegiant} — {@code EntityTaintacleGiant.java:24} 1.1 x 6.0. */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityTaintacleGiant>> TAINTACLE_GIANT =
+            register("taintaclegiant", EntityTaintacleGiant::new, MobCategory.MONSTER,
+                    com.jonnyutah12.thaumcraftclassic.entities.monster.boss.TaintacleGiantAiLogic.WIDTH,
+                    com.jonnyutah12.thaumcraftclassic.entities.monster.boss.TaintacleGiantAiLogic.HEIGHT);
+
+    /**
+     * {@code thaumcraft:taintspore} — the ctor's {@code setSporeSize(2)}
+     * (EntityTaintSpore.java:31) boxes it at {@code max(0.15*2, 0.5)} = 0.5
+     * (:51); the size ladder grows that box to 1.5 at size 10 through
+     * {@code getDefaultDimensions}, so this is the spawning size only.
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityTaintSpore>> TAINT_SPORE =
+            register("taintspore", EntityTaintSpore::new, MobCategory.MONSTER, 0.5F, 0.5F);
+
+    /**
+     * {@code thaumcraft:taintswarmer} — the swarmer's own {@code setSporeSize}
+     * copy (EntityTaintSporeSwarmer.java:27) pins a FIXED 1.0 x 1.0 box,
+     * smaller than a size-10 spore's 1.5; the size ladder moves the swarm-FX
+     * budget and the xp, never the hitbox.
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityTaintSporeSwarmer>> TAINT_SWARMER =
+            register("taintswarmer", EntityTaintSporeSwarmer::new, MobCategory.MONSTER, 1.0F, 1.0F);
+
+    /**
+     * {@code thaumcraft:taintswarm} — 2.0 x 2.0. The tracking range is in
+     * CHUNKS here, and {@code ConfigEntities.java:137} registered 64 BLOCKS
+     * for this mob, so the argument is 4, not 64.
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityTaintSwarm>> TAINT_SWARM =
+            register("taintswarm", EntityTaintSwarm::new, MobCategory.MONSTER, 2.0F, 2.0F, 4);
+
     private CatalogTaintMobs() {
     }
 
@@ -155,5 +226,15 @@ public final class CatalogTaintMobs {
         event.put(TAINTED_CREEPER.get(), EntityTaintCreeper.createAttributes().build());
         event.put(TAINTED_VILLAGER.get(), EntityTaintVillager.createAttributes().build());
         event.put(TAINT_SPIDER.get(), EntityTaintSpider.createAttributes().build());
+        // TC-M6-06-s-e: the monster slice. The thaumslime's health attribute IS
+        // its size (EntityThaumicSlime.java:86), rewritten by setSlimeSize on
+        // every spawn, load and merge, so the builder value is a placeholder.
+        event.put(THAUMIC_SLIME.get(), EntityThaumicSlime.createAttributes().build());
+        event.put(TAINTACLE.get(), EntityTaintacle.createAttributes().build());
+        event.put(TAINTACLE_TINY.get(), EntityTaintacleSmall.createAttributes().build());
+        event.put(TAINTACLE_GIANT.get(), EntityTaintacleGiant.createAttributes().build());
+        event.put(TAINT_SPORE.get(), EntityTaintSpore.createAttributes().build());
+        event.put(TAINT_SWARMER.get(), EntityTaintSporeSwarmer.createSwarmerAttributes().build());
+        event.put(TAINT_SWARM.get(), EntityTaintSwarm.createAttributes().build());
     }
 }
