@@ -23,18 +23,24 @@ import net.minecraft.server.level.ServerLevel;
  */
 public final class EldritchMazeHost {
 
-    /** Answers "does a maze of at least this size cover this chunk". */
+    /**
+     * Answers "does a maze of at least this size cover this chunk", and starts
+     * the build when it does not. {@code seed} is the seed the requesting
+     * structure drew (the original's {@code MazeThread} seed); a caller with no
+     * level to draw from passes 0 and the handler picks its own.
+     */
     @FunctionalInterface
     public interface Probe {
-        boolean mazesInRange(int chunkX, int chunkZ, int width, int height);
+        boolean mazesInRange(int chunkX, int chunkZ, int width, int height, long seed);
     }
 
-    private static Probe probe = (chunkX, chunkZ, width, height) -> false;
+    private static Probe probe = (chunkX, chunkZ, width, height, seed) -> false;
 
     private static int lastWidth;
     private static int lastHeight;
     private static int lastChunkX;
     private static int lastChunkZ;
+    private static long lastSeed;
     private static int requests;
 
     /** Installs the handler's answer (called by TC-M6-04f-m at mod start). */
@@ -44,12 +50,32 @@ public final class EldritchMazeHost {
 
     /** Record a generation request and answer it through the probe. */
     public static boolean request(final int chunkX, final int chunkZ, final int width, final int height) {
+        return request(chunkX, chunkZ, width, height, 0L);
+    }
+
+    /**
+     * The request the structure's own tile makes, carrying the maze seed: the
+     * original handed {@code world.rand.nextLong()} to the {@code MazeThread}
+     * that the out-of-range branch started (reference
+     * {@code TileEldritchAltar.java:231}), so the seed is the caller's level
+     * random's, not the generator's choice.
+     *
+     * <p>Measured adaptation, cited at the caller: the original drew that seed
+     * only on the not-in-range branch, so a request answered "maze in range"
+     * consumed no seed draw. The port draws the seed at the call site, so one
+     * extra draw per in-range request shifts the level's random stream; it is
+     * kept visible here (and on {@link #lastSeed()}) rather than hidden behind
+     * a duplicated range check in the tile.</p>
+     */
+    public static boolean request(final int chunkX, final int chunkZ, final int width, final int height,
+                                  final long seed) {
         lastChunkX = chunkX;
         lastChunkZ = chunkZ;
         lastWidth = width;
         lastHeight = height;
+        lastSeed = seed;
         requests++;
-        return probe.mazesInRange(chunkX, chunkZ, width, height);
+        return probe.mazesInRange(chunkX, chunkZ, width, height, seed);
     }
 
     /**
@@ -79,13 +105,18 @@ public final class EldritchMazeHost {
         return lastChunkZ;
     }
 
+    /** The seed the last request carried (the original's {@code MazeThread} seed). */
+    public static long lastSeed() {
+        return lastSeed;
+    }
+
     public static int requests() {
         return requests;
     }
 
     /** The lock's boss spawn reads the maze map around the lock (TC-M6-04f-m). */
     public static boolean mazeMapLoaded(final ServerLevel level, final BlockPos pos) {
-        return probe.mazesInRange(pos.getX() >> 4, pos.getZ() >> 4, 15, 15);
+        return probe.mazesInRange(pos.getX() >> 4, pos.getZ() >> 4, 15, 15, 0L);
     }
 
     private EldritchMazeHost() {

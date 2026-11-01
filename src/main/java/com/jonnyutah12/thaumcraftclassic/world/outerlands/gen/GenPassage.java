@@ -133,14 +133,14 @@ import net.minecraft.world.level.chunk.PalettedContainer;
  *   one-case switch, so the default passage always runs, and that is the maze's
  *   only use of this class. {@link #generateDefaultPassage} is that entry (it
  *   stamps {@code cell.feature = 13} as the original does) and
- *   {@link #generatePassage} is the per-room builder it calls. The shipped
- *   {@code MazeHandler.generateEldritch} (TC-M6-04f-2) wires
- *   {@code GenPortal.generatePortal}, {@code GenBossRoom.generateRoom} and
- *   {@code GenCommon.processDecorations} only — no passage branch — and the
- *   original's {@code GenCommon.generateConnections} carves connections without
- *   building these rooms, so the landing of the maze handler (or the toolbox)
- *   must route features 9-14 + default to {@code generateDefaultPassage}.
- *   Nothing else in the repo calls this class today.</li>
+ *   {@link #generatePassage} is the per-room builder it calls. TC-M6-04f-m
+ *   wired {@code MazeHandler.generateEldritch} to {@code GenPortal},
+ *   {@code GenBossRoom} and {@code GenCommon.processDecorations} only (no
+ *   passage branch); TC-M6-04f-m2 closed the gap — the handler's features
+ *   9..14 and its default branch now route through the original's private
+ *   {@code generatePassage} wrapper to {@code generateDefaultPassage}, which
+ *   is the maze's only use of this class, and the game probe
+ *   {@code passageFeaturesBuildPassages} drives it cell by cell.</li>
  * </ul>
  */
 public class GenPassage extends GenCommon {

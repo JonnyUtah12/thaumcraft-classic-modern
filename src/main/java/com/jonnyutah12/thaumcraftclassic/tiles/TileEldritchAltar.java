@@ -133,17 +133,35 @@ public class TileEldritchAltar extends BlockEntity
     }
 
     /**
-     * Original {@code checkForMaze()}: ask for a maze of 15 + 2·rand(8) cells
-     * per side covering the altar's chunk. The maze generation request is
-     * recorded on {@link EldritchMazeHost} (the maze generator shipped as a
-     * pure class in f252c58; the per-world handler is TC-M6-04f-m), so the
-     * answer is "no maze in range" until that handler lands.
+     * The original's {@code checkForMaze()} (reference
+     * {@code TileEldritchAltar.java:227-237}): ask whether a maze of
+     * {@code 15 + world.rand.nextInt(8) * 2} cells per side — an odd side
+     * between 15 and 29 — already covers the altar's chunk, and when it does
+     * not, start the maze build with a seed drawn from the same world random.
+     * The 1.7.10 {@code new Thread(new MazeThread(...))} is the shipped
+     * {@link EldritchMazeHost} seam, which runs the layout on the server
+     * thread (the original raced the chunk generator, the card's measured
+     * constraint) and answers the request.
+     *
+     * <p>The sizes and the seed are the caller's draws, as the original's were
+     * ({@code field_145850_b.field_73012_v} = the world random). An unloaded
+     * tile has no level to draw from, so it falls back to the seam's stable
+     * per-coordinate size derivation.</p>
      */
     public boolean checkForMaze() {
-        final long seed = level instanceof ServerLevel serverLevel ? serverLevel.getSeed() : 0L;
-        final int w = EldritchMazeHost.requestSize(seed, worldPosition.getX());
-        final int h = EldritchMazeHost.requestSize(seed, worldPosition.getZ());
-        return EldritchMazeHost.request(worldPosition.getX() >> 4, worldPosition.getZ() >> 4, w, h);
+        final int w;
+        final int h;
+        final long seed;
+        if (level != null) {
+            w = 15 + level.random.nextInt(8) * 2; // ref L228
+            h = 15 + level.random.nextInt(8) * 2; // ref L229
+            seed = level.random.nextLong();       // ref L231 (draw-order note at EldritchMazeHost.request)
+        } else {
+            w = EldritchMazeHost.requestSize(0L, worldPosition.getX());
+            h = EldritchMazeHost.requestSize(0L, worldPosition.getZ());
+            seed = 0L;
+        }
+        return EldritchMazeHost.request(worldPosition.getX() >> 4, worldPosition.getZ() >> 4, w, h, seed);
     }
 
     /** Original {@code spawnClerics()}: the four corners, ±2 cells. */

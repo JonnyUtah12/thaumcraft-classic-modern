@@ -3,6 +3,10 @@ package com.jonnyutah12.thaumcraftclassic.world.outerlands;
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.world.outerlands.gen.GenBossRoom;
 import com.jonnyutah12.thaumcraftclassic.world.outerlands.gen.GenCommon;
+import com.jonnyutah12.thaumcraftclassic.world.outerlands.gen.GenKeyRoom;
+import com.jonnyutah12.thaumcraftclassic.world.outerlands.gen.GenLibraryRoom;
+import com.jonnyutah12.thaumcraftclassic.world.outerlands.gen.GenNestRoom;
+import com.jonnyutah12.thaumcraftclassic.world.outerlands.gen.GenPassage;
 import com.jonnyutah12.thaumcraftclassic.world.outerlands.gen.GenPortal;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -50,13 +54,21 @@ import java.util.Set;
  * original's populate-once pipeline gave it for free — keeps a room from
  * being rebuilt (and its decoration rolls from re-running) on reload.
  *
- * <p>Builders shipping on this card: portal room ({@link GenPortal}) and the
- * four boss-room quadrants ({@link GenBossRoom} + {@code Gen2x2}) — the
- * card's named scope. The passage, key-, nest- and library-room builders and
- * the wall features are the follow-up slice (recorded in
- * {@code left_out_of_scope}); a cell whose builder has not landed stays
- * unbuilt, and its chunk stays the original's void. The boss entities
- * themselves (golem/warden/crimson/taint) are TC-M6-06.</p>
+ * <p>Builders shipped: portal room ({@link GenPortal}), the four boss-room
+ * quadrants ({@link GenBossRoom} + {@code Gen2x2}), the key room
+ * ({@link GenKeyRoom}, feature 6), the nest room ({@link GenNestRoom},
+ * feature 7), the library room ({@link GenLibraryRoom}, feature 8) and the
+ * passage ({@link GenPassage}, features 9..14 and every other cell — the
+ * original's fall-through, {@code MazeHandler.java:161-168}). Wall features
+ * 9 (altar) / 10 (obelisk) / 11 (cap) / 12 (crusted) / 13 (glyphed) / 14
+ * (spawner) are not separate rooms: the {@code MazeGenerator} marks such
+ * cells and the original builds them as passages, whose decorations carry the
+ * feature (the {@code GenCommon} code dispatcher's crab-spawner, crusted and
+ * glyphed legs read {@code cell.feature}). Every mapped cell now builds, so a
+ * cell that stays unbuilt in a probe means the builder refused it, not that
+ * the sweep skipped it. The boss entities themselves (golem/warden/crimson/
+ * taint), the Eldrian Guardian and the {@code EntityPermanentItem} entity are
+ * TC-M6-06 (the {@link EldritchMobHost} / {@link EntitiesHost} seams).</p>
  */
 public final class MazeHandler {
 
@@ -193,10 +205,15 @@ public final class MazeHandler {
     /**
      * The original's {@code MazeHandler.generateEldritch}: when a cell covers
      * the chunk, run its feature builder at y = 50 and flush the queued
-     * decorations. This slice ships feature 1 (portal room) and features
-     * 2..5 (the boss-room quadrants); other features return false and leave
-     * the void (their builders are the follow-up slice, and the shipped room
-     * is never rebuilt — see the "built" gate in the class javadoc).
+     * decorations. TC-M6-04f-m shipped feature 1 (the portal room) and features
+     * 2..5 (the boss-room quadrants) and refused the rest; TC-M6-04f-m2 lands
+     * the remaining arms of the original's switch (reference
+     * {@code MazeHandler.java:142-168}) — 6 the key room, 7 the nest room, 8
+     * the library room, and 9..14 plus every other cell (including the empty
+     * cell 0) the passage through the original's private {@code
+     * generatePassage} wrapper — so every feature the layout draws builds now,
+     * and the built gate keeps a shipped room from being rebuilt (see the
+     * "built" gate in the class javadoc).
      */
     public static boolean generateEldritch(final ServerLevel outer, final Random random,
                                            final int chunkX, final int chunkZ) {
@@ -226,8 +243,28 @@ public final class MazeHandler {
                         cell.feature - 2, cell);
                 built = true;
                 break;
+            case 6: // ref L152-153: the key room (cap pedestal + Runed Tablet)
+                GenKeyRoom.generateRoom(outer, random, chunkX, chunkZ, OuterLands.ROOM_Y, cell);
+                built = true;
+                break;
+            case 7: // ref L155-156: the nest room (crust platforms, crab spawners)
+                GenNestRoom.generateRoom(outer, random, chunkX, chunkZ, OuterLands.ROOM_Y, cell);
+                built = true;
+                break;
+            case 8: // ref L157-158: the library room (glyphed stacks)
+                GenLibraryRoom.generateRoom(outer, random, chunkX, chunkZ, OuterLands.ROOM_Y, cell);
+                built = true;
+                break;
+            case 9: // ref L161-168: the wall features and every other cell are
+            case 10:// the passage — the original's labels fall through to the
+            case 11:// default (its `switch (random.nextInt(1))` has one arm).
+            case 12:
+            case 13:
+            case 14:
             default:
-                built = false;
+                generatePassage(outer, random, chunkX, chunkZ, OuterLands.ROOM_Y, cell);
+                built = true;
+                break;
         }
         if (built) {
             GenCommon.processDecorations(outer);
@@ -235,6 +272,23 @@ public final class MazeHandler {
             store.setDirty();
         }
         return built;
+    }
+
+    /**
+     * The original's private {@code generateEldritch} helper (ref L175-180):
+     * the passage pick is {@code switch (random.nextInt(1))} — one arm, so the
+     * default passage always runs, and the draw is kept verbatim because it
+     * consumes a random number and shifts every later draw in the seed.
+     */
+    private static void generatePassage(final ServerLevel outer, final Random random, final int chunkX,
+                                        final int chunkZ, final int y, final Cell cell) {
+        switch (random.nextInt(1)) { // ref L176
+            case 0:
+                GenPassage.generateDefaultPassage(outer, random, chunkX, chunkZ, y, cell); // ref L178
+                break;
+            default:
+                break;
+        }
     }
 
     /** Test seam: mark every mapped cell built (idempotence checks). */
@@ -258,11 +312,14 @@ public final class MazeHandler {
      * answered "no maze" for that first request; running synchronously
      * answers the *same* request yes, so the altar's next wave sees the
      * dungeon one eye-insertion earlier (documented in the FEATURE_MATRIX
-     * row). The seed is the overworld's world random, as the original's
-     * {@code world.rand.nextLong()} was.</p>
+     * row). The seed is the one the requesting structure drew (the original's
+     * {@code world.rand.nextLong()}, {@code TileEldritchAltar.java:231}); a
+     * caller that had no level to draw from leaves it 0 and the handler falls
+     * back to the overworld's world random, as this seam's install did before
+     * the altar's own draw landed.</p>
      */
     public static void install() {
-        EldritchMazeHost.setProbe((chunkX, chunkZ, width, height) -> {
+        EldritchMazeHost.setProbe((chunkX, chunkZ, width, height, seed) -> {
             final ServerLevel outer = OuterLands.outerLands(server);
             if (outer == null) {
                 return false;
@@ -270,9 +327,13 @@ public final class MazeHandler {
             if (mazesInRange(outer, chunkX, chunkZ, width, height)) {
                 return true;
             }
-            final ServerLevel overworld = server != null ? server.getLevel(net.minecraft.world.level.Level.OVERWORLD) : null;
-            generateMaze(outer, chunkX, chunkZ, width, height,
-                    overworld != null ? worldRandom(overworld).nextLong() : outer.getSeed());
+            long mazeSeed = seed;
+            if (mazeSeed == 0L) {
+                final ServerLevel overworld = server != null
+                        ? server.getLevel(net.minecraft.world.level.Level.OVERWORLD) : null;
+                mazeSeed = overworld != null ? worldRandom(overworld).nextLong() : outer.getSeed();
+            }
+            generateMaze(outer, chunkX, chunkZ, width, height, mazeSeed);
             return mazesInRange(outer, chunkX, chunkZ, width, height);
         });
 
@@ -308,7 +369,7 @@ public final class MazeHandler {
         });
 
         ThaumcraftClassic.LOGGER.info("[TC-M6-04f-m] Outer Lands maze handler + boss-room builder installed "
-                + "(portal room f1, boss rooms f2-5; passages/key/nest/library on the follow-up slice)");
+                + "(portal f1, boss rooms f2-5, key f6, nest f7, library f8, passages f9-14 + default)");
     }
 
     // ------------------------------------------------------------------

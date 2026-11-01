@@ -1,14 +1,24 @@
 package com.jonnyutah12.thaumcraftclassic.gametest;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockCosmeticSolid;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockCosmeticStoneSlab;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockCrystal;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockEldritch;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockLoot;
+import com.jonnyutah12.thaumcraftclassic.items.ItemEldritchObject;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchRealm;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogOuterLands;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
+import com.jonnyutah12.thaumcraftclassic.tiles.TileEldritchAltar;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileEldritchPortal;
 import com.jonnyutah12.thaumcraftclassic.world.outerlands.Cell;
 import com.jonnyutah12.thaumcraftclassic.world.outerlands.CellLoc;
 import com.jonnyutah12.thaumcraftclassic.world.outerlands.EldritchBossRoomHost;
 import com.jonnyutah12.thaumcraftclassic.world.outerlands.EldritchMazeHost;
+import com.jonnyutah12.thaumcraftclassic.world.outerlands.EldritchMobHost;
+import com.jonnyutah12.thaumcraftclassic.world.outerlands.EldritchRealmValues;
 import com.jonnyutah12.thaumcraftclassic.world.outerlands.MazeGenerator;
 import com.jonnyutah12.thaumcraftclassic.world.outerlands.MazeHandler;
 import com.jonnyutah12.thaumcraftclassic.world.outerlands.OuterLands;
@@ -27,9 +37,14 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.dimension.LevelStem;
 import net.minecraft.world.level.levelgen.FlatLevelSource;
@@ -48,10 +63,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.lang.reflect.Modifier;
 import java.util.Random;
+import java.util.function.Predicate;
 
 /**
- * TC-M6-04f-m evidence (the card's bar: dimension + portal + boss-room
- * placement probes). Ten probes:
+ * TC-M6-04f-m + TC-M6-04f-m2 evidence (the parent's bar: dimension + portal +
+ * boss-room placement probes; this card's bar: the maze features 6..14 the
+ * parent refused, plus the altar's {@code checkForMaze} caller leg). Fifteen
+ * probes:
  *
  * <ol>
  *   <li>the data-driven dimension family — the live {@code dimension_type}
@@ -66,8 +84,9 @@ import java.util.Random;
  *   <li>a seeded maze matches the shipped {@link MazeGenerator} layout cell
  *       for cell (the {@code MazeThread} placement math);</li>
  *   <li>a seeded maze runs the {@code MazeThread} build sweep cell by cell:
- *       features 1..5 build and mark built, the rest refuse, and the built
- *       gate makes the second sweep a no-op;</li>
+ *       every feature the layout draws builds and marks built (TC-M6-04f-m
+ *       built only 1..5 and refused the rest), and the built gate makes the
+ *       second sweep a no-op;</li>
  *   <li>a feature-1 cell builds the portal room at x*16+8, y+3 (the
  *       {@code GenPortal} geometry + the chunk-hook entry);</li>
  *   <li>the lock's seam is installed and builds a boss room through
@@ -84,6 +103,35 @@ import java.util.Random;
  *   <li>the seed is the maze's fingerprint and the map is not (the original's
  *       {@code MazeThread} + {@code LabyrinthMap}.{@code getCells}/
  *       {@code getBuiltCells}).</li>
+ *   <li>a feature-6 cell builds the key room: the shell that starts one above
+ *       the floor, the void lining, the purple-stair case, the eldritch cap
+ *       pedestal, the Runed Tablet (eldritch object meta 2) that stands in for
+ *       the unregistered {@code EntityPermanentItem} — meta, spot and the
+ *       never-despawn rule — and the difficulty-counted guardian escort through
+ *       the {@code EldritchMobHost} seam (the {@code GenKeyRoom} geometry, ref
+ *       L21-116);</li>
+ *   <li>a feature-7 cell builds the nest room: the floor-level shell, the void
+ *       floor under the crusted one, the crusted spawner platform up the centre
+ *       column and the upper platform, the ceiling crystals (blockCrystal meta
+ *       7) and the crate/urn loot ring (the {@code GenNestRoom} geometry, ref
+ *       L20-84);</li>
+ *   <li>a feature-8 cell builds the library room: the twelve-deep shell, the
+ *       ancient-stone pedestal (meta 15) / glyphed eldritch (meta 5) / eldritch
+ *       slab ({@code blockSlabStone} meta 1) / double slab (meta 9) stack at
+ *       the corners and in the centre column, and the stair runs (the
+ *       {@code GenLibraryRoom} geometry, ref L21-99);</li>
+ *   <li>features 0 and 9..14 each build their passage through the fall-through
+ *       leg (reference {@code MazeHandler.java:161-180}), and the features
+ *       GenCommon decorates off {@code cell.feature} are pinned: 11 the
+ *       interior bedrock (code 20), 12 the crusted shell (code 22), 13 the
+ *       taint-biome leg (the shipped {@code BiomeAura} seam, a no-op while no
+ *       taint biome is registered), 14 the mob spawner at (x+8,y+4,z+8) with
+ *       its cobweb box (ref L240-276);</li>
+ *   <li>the altar tile's own {@code checkForMaze} leg reaches the maze seam
+ *       with the request the original draws: the altar's chunk, an odd
+ *       15..29 per side ({@code 15 + random.nextInt(8) * 2}) and a seed, drawn
+ *       per call, while the shipped install keeps answering no without a live
+ *       Outer Lands level (reference {@code TileEldritchAltar.java:224-236}).</li>
  * </ol>
  *
  * <p>Where the probes build, and why: the game-test harness bakes its world
@@ -320,10 +368,12 @@ public final class OuterLandsGameTest {
                 "generateMaze failed to find a layout");
 
         // The original's MazeThread sweep: after the layout lands in the map,
-        // every mapped cell is handed to the builder, which builds the rooms
-        // this slice ships (feature 1 portal, 2..5 boss quadrants) and refuses
-        // the rest (their builders are the follow-up slice), marking built only
-        // what it built.
+        // every mapped cell is handed to the builder. TC-M6-04f-m built only
+        // feature 1 (portal) and 2..5 (boss quadrants) and refused the rest;
+        // TC-M6-04f-m2 lands the remaining legs of the GenMaze switch (6 key,
+        // 7 nest, 8 library, 9..14 passages — reference MazeHandler.java:
+        // 142-168), so every feature the layout draws now builds, and the
+        // built gate marks exactly what was built.
         int built = 0;
         int refused = 0;
         int portalCells = 0;
@@ -340,9 +390,9 @@ public final class OuterLandsGameTest {
                     portalCells++;
                 }
                 final boolean didBuild = MazeHandler.generateEldritch(outer, new Random(seed), loc.x, loc.z);
-                helper.assertTrue(didBuild == (cell.feature >= 1 && cell.feature <= 5),
+                helper.assertTrue(didBuild,
                         "cell (" + loc.x + "," + loc.z + ") feature " + cell.feature
-                                + " answered " + didBuild + "; this slice builds features 1..5");
+                                + " answered " + didBuild + "; the maze builds every feature the layout draws");
                 helper.assertTrue(MazeHandler.data(outer).isBuilt(loc.x, loc.z) == didBuild,
                         "the built gate disagrees with the sweep for cell (" + loc.x + "," + loc.z + ")");
                 if (didBuild) {
@@ -586,4 +636,429 @@ public final class OuterLandsGameTest {
         }
         helper.succeed();
     }
+
+    // ------------------------------------------------------------------
+    // TC-M6-04f-m2 — the maze features the parent slice refused.
+    //
+    // The harness has no live Outer Lands ServerLevel (its level-stem registry
+    // is empty when the world is baked — GameTestServer.create), so each probe
+    // below puts its cell in the harness level and reads what landed there, as
+    // mazeCellBuildsPortalRoom and bossRoomBuildsThroughTheSeam do. Every probe
+    // owns a 16x16 cell window of its own and counts only inside it: the
+    // harness runs probes in parallel batches on ONE shared level and one
+    // shared labyrinth map, so a whole-map count would race with siblings.
+    // ------------------------------------------------------------------
+
+    /** Features 6 (key), 7 (nest) and 8 (library), high-byte packed (Cell: feature = code >> 8). */
+    private static final short KEY_ROOM_CELL = (short) (6 << 8);
+    private static final short NEST_ROOM_CELL = (short) (7 << 8);
+    private static final short LIBRARY_ROOM_CELL = (short) (8 << 8);
+
+    @GameTest(template = "empty")
+    public static void mazeCellBuildsKeyRoom(final GameTestHelper helper) {
+        final ServerLevel outer = build(helper);
+        final int cx = 70;
+        final int cz = 70;
+        final int x = cx * 16;
+        final int z = cz * 16;
+        final int y = OuterLands.ROOM_Y;
+        MazeHandler.putToHashMap(outer, new CellLoc(cx, cz), new Cell(KEY_ROOM_CELL));
+
+        // GenKeyRoom's escort runs through the EldritchMobHost seam (the
+        // guardians are TC-M6-06). The probe claims the seam for the duration
+        // and records only spots inside its own cell window, so a sibling probe
+        // summoning a guardian at its own structure cannot land in this count;
+        // the seam goes back to the unregistered no-op afterwards.
+        final List<BlockPos> guardians = new ArrayList<>();
+        EldritchMobHost.register(EldritchMobHost.GUARDIAN, (level, pos) -> {
+            if (pos.getX() >= x && pos.getX() < x + 16 && pos.getZ() >= z && pos.getZ() < z + 16) {
+                guardians.add(pos.immutable());
+            }
+            return false;
+        }, () -> true);
+        final boolean built;
+        try {
+            built = MazeHandler.generateEldritch(outer, new Random(11), cx, cz);
+        } finally {
+            EldritchMobHost.register(EldritchMobHost.GUARDIAN, (level, pos) -> false, () -> false);
+        }
+        helper.assertTrue(built, "a feature-6 cell did not build");
+        helper.assertTrue(MazeHandler.data(outer).isBuilt(cx, cz), "the built gate did not mark the key-room cell");
+
+        // The bedrock shell: ref L21-24 runs c over 1..10 and places while
+        // c < 10, so the shell's lowest block sits one above the room floor
+        // (the nest room's shell starts at the floor — the two rooms differ
+        // here, and the probe pins each). The interior is the eldritch void
+        // (code 8, ref L25-27) and the (3,*,3) corner is the purple stair
+        // (code 3, ref L35).
+        helper.assertTrue(outer.getBlockState(new BlockPos(x + 1, y + 1, z + 1)).is(Blocks.BEDROCK),
+                "the key room's bedrock shell is missing at its lowest corner");
+        helper.assertTrue(isVoid(outer.getBlockState(new BlockPos(x + 2, y + 1, z + 2))),
+                "the key room's eldritch void lining (code 8) is missing");
+        helper.assertTrue(outer.getBlockState(new BlockPos(x + 3, y + 1, z + 3))
+                        .is(CatalogDecorativeBlocks.BLOCK_STAIRS_ELDRITCH.get()),
+                "the key room's purple stair (code 3) is missing at (x+3,y+1,z+3)");
+        // The floor (ref L51-53) is code 2 (cosmetic solid, stone case); the
+        // 1-in-25 decoration queue may have turned it into crusted stone or an
+        // eldritch pedestal (GenCommon code 2 case), so both are the reference.
+        helper.assertTrue(isFloor(outer.getBlockState(new BlockPos(x + 8, y + 1, z + 8))),
+                "the key room's floor under the pedestal is missing (got "
+                        + outer.getBlockState(new BlockPos(x + 8, y + 1, z + 8)).getBlock() + ")");
+
+        // The cap pedestal: ref L95 places blockEldritch meta 3 at (x+8,y+2,z+8).
+        final BlockPos pedestal = new BlockPos(x + 8, y + 2, z + 8);
+        helper.assertTrue(outer.getBlockState(pedestal).is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())
+                        && outer.getBlockState(pedestal).getValue(BlockEldritch.VARIANT)
+                                == EldritchRealmValues.ELDRITCH_CAP,
+                "the eldritch cap (meta 3) is not on the pedestal " + pedestal + " (got "
+                        + outer.getBlockState(pedestal) + ")");
+        // Ref L65-70: the room's core above the pedestal is void (code 8).
+        helper.assertTrue(isVoid(outer.getBlockState(new BlockPos(x + 7, y + 5, z + 7))),
+                "the key room's inner void (ref L65-70) is missing above the pedestal");
+
+        // The Runed Tablet (ref L96-100): eldritch object meta 2, on top of the
+        // cap, never despawning — the vanilla stand-in for EntityPermanentItem.
+        // The harness level is shared across the parallel probe batches, so the
+        // census filters to the item the room drops (an eldritch object) and
+        // reports the rest, rather than trusting a raw item count.
+        final List<ItemEntity> all = outer.getEntitiesOfClass(ItemEntity.class, cellBox(cx, cz));
+        final List<ItemEntity> drops = all.stream()
+                .filter(e -> e.getItem().getItem() instanceof ItemEldritchObject).toList();
+        helper.assertTrue(drops.size() == 1,
+                "the key room's cell holds " + drops.size() + " eldritch objects (" + all.size()
+                        + " item entities in the window); ref L97 drops one tablet");
+        if (drops.isEmpty()) {
+            helper.fail("no tablet on the pedestal");
+            return;
+        }
+        final ItemEntity tablet = drops.get(0);
+        helper.assertTrue(ItemEldritchObject.storedMeta(tablet.getItem()) == EldritchRealmValues.OBJECT_TABLET,
+                "the pedestal item is not the Runed Tablet (meta 2, ref L98)");
+        helper.assertTrue(tablet.blockPosition().equals(pedestal.above()),
+                "the tablet is not on top of the cap (ref L97: y + 3.5)");
+        helper.assertTrue(tablet.getAge() < 0,
+                "the tablet may despawn; the original's EntityPermanentItem never does (L23-25)");
+
+        // The escort (ref L101-116): zz = 2 + (hard ? 2 : normal ? 1 : 0)
+        // guardians, each at x + 8.5 + [1..3]*[-1..1] whole blocks, z likewise,
+        // y + 2 exactly.
+        final int escort = outer.getDifficulty() == Difficulty.HARD ? 4
+                : outer.getDifficulty() == Difficulty.NORMAL ? 3 : 2;
+        helper.assertTrue(guardians.size() == escort,
+                "the key room summoned " + guardians.size() + " guardians; ref L101 counts " + escort
+                        + " on " + outer.getDifficulty());
+        for (final BlockPos g : guardians) {
+            helper.assertTrue(g.getX() >= x + 5 && g.getX() <= x + 11 && g.getY() == y + 2
+                            && g.getZ() >= z + 5 && g.getZ() <= z + 11,
+                    "the guardian spot " + g + " is outside ref L107-108's 8.5 ± [1,3] box");
+        }
+        helper.assertTrue(GenCommon.DECORATED_BLOCKS.isEmpty(),
+                "processDecorations left " + GenCommon.DECORATED_BLOCKS.size() + " decorations queued");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void mazeCellBuildsNestRoom(final GameTestHelper helper) {
+        final ServerLevel outer = build(helper);
+        final int cx = 71;
+        final int cz = 70;
+        final int x = cx * 16;
+        final int z = cz * 16;
+        final int y = OuterLands.ROOM_Y;
+        MazeHandler.putToHashMap(outer, new CellLoc(cx, cz), new Cell(NEST_ROOM_CELL));
+        helper.assertTrue(MazeHandler.generateEldritch(outer, new Random(13), cx, cz),
+                "a feature-7 cell did not build");
+        helper.assertTrue(MazeHandler.data(outer).isBuilt(cx, cz), "the built gate did not mark the nest-room cell");
+
+        // The shell starts AT the floor here (ref L20-23: c runs 0..10), and the
+        // floor is the eldritch void (code 8) with the crusted shell (code 22)
+        // above it — the room's signature is the crust.
+        helper.assertTrue(outer.getBlockState(new BlockPos(x + 1, y, z + 1)).is(Blocks.BEDROCK),
+                "the nest room's bedrock shell is missing at the floor corner");
+        helper.assertTrue(isVoid(outer.getBlockState(new BlockPos(x + 8, y, z + 8))),
+                "the nest room's void floor (code 8) is missing");
+        helper.assertTrue(isCrust(outer.getBlockState(new BlockPos(x + 8, y + 1, z + 8))),
+                "the nest room's crusted floor (code 22) is missing");
+        // The spawner platform: ref L41-47 stacks the crust up the room's
+        // centre column, and ref L48-56 the upper platform at y+8.
+        for (int c = 2; c <= 4; c++) {
+            helper.assertTrue(isCrust(outer.getBlockState(new BlockPos(x + 8, y + c, z + 8))),
+                    "the nest room's spawner platform is missing at (x+8,y+" + c + ",z+8)");
+        }
+        helper.assertTrue(isCrust(outer.getBlockState(new BlockPos(x + 8, y + 8, z + 8))),
+                "the nest room's upper platform is missing at (x+8,y+8,z+8)");
+        helper.assertTrue(countInCell(outer, cx, cz, y, y + 14, OuterLandsGameTest::isCrust) >= 20,
+                "the nest room's crusted shell is thin in its own cell");
+
+        // The ceiling crystal (ref L61-65: blockCrystal meta 7, hung downward)
+        // is a 1-in-N roll, so the probe counts the whole cell and asks for at
+        // least one over the generator's own draw — with 25 rolls in the room a
+        // zero is not reachable for the seed the probe pins.
+        final int crystals = countInCell(outer, cx, cz, y, y + 14,
+                state -> state.is(CatalogDecorativeBlocks.BLOCK_CRYSTAL.get()));
+        helper.assertTrue(crystals >= 1, "the nest room placed no ceiling crystal (ref L61-65)");
+
+        // The loot (ref L66-84): crates and urns on the floor ring. The count is
+        // random-driven, so the probe asks for at least one landing in the cell
+        // and pins the y the reference places them at.
+        final int loot = countInCell(outer, cx, cz, y + 2, y + 2, state ->
+                state.is(CatalogTrinketsLoot.BLOCK_LOOT_CRATE.get())
+                        || state.is(CatalogTrinketsLoot.BLOCK_LOOT_URN.get()));
+        helper.assertTrue(loot >= 1, "the nest room placed no crate/urn loot in its cell (ref L66-84)");
+
+        // The crab spawners run through GenCommon's decoration queue (code 26);
+        // the queue must be drained by the handler's processDecorations call.
+        helper.assertTrue(GenCommon.DECORATED_BLOCKS.isEmpty(),
+                "processDecorations left " + GenCommon.DECORATED_BLOCKS.size() + " decorations queued");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void mazeCellBuildsLibraryRoom(final GameTestHelper helper) {
+        final ServerLevel outer = build(helper);
+        final int cx = 72;
+        final int cz = 70;
+        final int x = cx * 16;
+        final int z = cz * 16;
+        final int y = OuterLands.ROOM_Y;
+        MazeHandler.putToHashMap(outer, new CellLoc(cx, cz), new Cell(LIBRARY_ROOM_CELL));
+        helper.assertTrue(MazeHandler.generateEldritch(outer, new Random(17), cx, cz),
+                "a feature-8 cell did not build");
+        helper.assertTrue(MazeHandler.data(outer).isBuilt(cx, cz), "the built gate did not mark the library-room cell");
+
+        // The library is the tall room: its shell runs c over 0..12 (ref L21-24),
+        // twelve blocks up from the floor — two above the key room's nine.
+        helper.assertTrue(outer.getBlockState(new BlockPos(x + 1, y + 12, z + 1)).is(Blocks.BEDROCK),
+                "the library's bedrock shell does not reach y+12 (ref L21-24)");
+        helper.assertTrue(!outer.getBlockState(new BlockPos(x + 1, y + 13, z + 1)).is(Blocks.BEDROCK),
+                "the library's shell is taller than ref L21-24's twelve");
+
+        // The corner pedestals (ref L62-63: blockCosmeticSolid meta 15, the
+        // ancient pedestal) carry the glyphed eldritch block (meta 5) under a
+        // slab, a double slab, and the glyphed block again (ref L74-89).
+        final BlockPos corner = new BlockPos(x + 5, y + 3, z + 5);
+        helper.assertTrue(outer.getBlockState(corner).is(CatalogDecorativeBlocks.BLOCK_COSMETIC_SOLID.get())
+                        && outer.getBlockState(corner).getValue(BlockCosmeticSolid.VARIANT)
+                                == BlockCosmeticSolid.VARIANT_ANCIENT_PEDESTAL,
+                "the library's corner pedestal (meta 15) is missing at " + corner + " (got "
+                        + outer.getBlockState(corner) + ")");
+        helper.assertTrue(isGlyphed(outer.getBlockState(corner.above())),
+                "the glyphed eldritch block (meta 5) is missing over the corner pedestal");
+        final BlockPos slab = new BlockPos(x + 5, y + 5, z + 5);
+        helper.assertTrue(outer.getBlockState(slab).is(CatalogDecorativeBlocks.BLOCK_COSMETIC_SLAB_STONE.get())
+                        && outer.getBlockState(slab).getValue(BlockCosmeticStoneSlab.VARIANT)
+                                == BlockCosmeticStoneSlab.VARIANT_ELDRITCH
+                        && outer.getBlockState(slab).getValue(SlabBlock.TYPE) == SlabType.BOTTOM,
+                "the library's eldritch slab (blockSlabStone meta 1) is missing at " + slab + " (got "
+                        + outer.getBlockState(slab) + ")");
+        final BlockPos doubleSlab = new BlockPos(x + 5, y + 6, z + 5);
+        helper.assertTrue(outer.getBlockState(doubleSlab).is(CatalogDecorativeBlocks.BLOCK_COSMETIC_DOUBLE_SLAB_STONE.get())
+                        && outer.getBlockState(doubleSlab).getValue(SlabBlock.TYPE) == SlabType.DOUBLE,
+                "the library's double slab (blockDoubleSlabStone meta 1) is missing at " + doubleSlab
+                        + " (got " + outer.getBlockState(doubleSlab) + ")");
+        helper.assertTrue(isGlyphed(outer.getBlockState(doubleSlab.above())),
+                "the glyphed block is missing over the library's double slab");
+
+        // The centre column (ref L96-99): pedestal, glyphed, slab, ... the
+        // double slab at y+7, glyphed at y+8, pedestal at y+9.
+        helper.assertTrue(outer.getBlockState(new BlockPos(x + 8, y + 2, z + 8))
+                        .is(CatalogDecorativeBlocks.BLOCK_COSMETIC_SOLID.get()),
+                "the library's centre pedestal is missing");
+        helper.assertTrue(isGlyphed(outer.getBlockState(new BlockPos(x + 8, y + 3, z + 8))),
+                "the library's centre column has no glyphed block at y+3");
+        helper.assertTrue(outer.getBlockState(new BlockPos(x + 8, y + 7, z + 8))
+                        .is(CatalogDecorativeBlocks.BLOCK_COSMETIC_DOUBLE_SLAB_STONE.get()),
+                "the library's centre column has no double slab at y+7");
+        helper.assertTrue(outer.getBlockState(new BlockPos(x + 8, y + 9, z + 8))
+                        .is(CatalogDecorativeBlocks.BLOCK_COSMETIC_SOLID.get()),
+                "the library's centre column has no pedestal at y+9");
+
+        // The stair runs (ref L90-95): the room's five cases place purple
+        // stairs along the walls; the probe pins a floor under the count rather
+        // than the exact cells, which the generator's own draws choose.
+        helper.assertTrue(countInCell(outer, cx, cz, y, y + 14,
+                        state -> state.is(CatalogDecorativeBlocks.BLOCK_STAIRS_ELDRITCH.get())) >= 20,
+                "the library's eldritch stair runs are missing from its cell");
+        helper.assertTrue(GenCommon.DECORATED_BLOCKS.isEmpty(),
+                "processDecorations left " + GenCommon.DECORATED_BLOCKS.size() + " decorations queued");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void passageFeaturesBuildPassages(final GameTestHelper helper) {
+        final ServerLevel outer = build(helper);
+        // The original's GenMaze has no case for features 9..14: they fall
+        // through to the private generatePassage wrapper (reference
+        // MazeHandler.java:161-180), whose body is the default passage. Feature
+        // 0 (the empty cell) takes the same leg. Each feature gets its own cell.
+        final int[] features = {0, 9, 10, 11, 12, 13, 14};
+        for (int i = 0; i < features.length; i++) {
+            final int feature = features[i];
+            final int cx = 73 + i;
+            final int cz = 70;
+            final int x = cx * 16;
+            final int z = cz * 16;
+            final int y = OuterLands.ROOM_Y;
+            MazeHandler.putToHashMap(outer, new CellLoc(cx, cz), new Cell((short) (feature << 8)));
+            helper.assertTrue(MazeHandler.generateEldritch(outer, new Random(23 + i), cx, cz),
+                    "feature " + feature + " did not build its passage");
+            helper.assertTrue(MazeHandler.data(outer).isBuilt(cx, cz),
+                    "the built gate did not mark the feature-" + feature + " passage cell");
+            // GenPassage builds its own shell: the room is carved out of
+            // cosmetic solid (code 2) with bedrock at the corners (code 1).
+            helper.assertTrue(countInCell(outer, cx, cz, y, y + 10, state ->
+                            state.is(CatalogDecorativeBlocks.BLOCK_COSMETIC_SOLID.get())
+                                    || state.is(Blocks.BEDROCK)) >= 40,
+                    "feature " + feature + " left no passage shell in its cell");
+
+            if (feature == 11) {
+                // Ref L61, L103, L145, L187 (the four stone-site legs): feature
+                // 11 swaps one in three of the passage's stone sites for the
+                // trapped stone — code 20 (STONE_TRAPPED) -> blockEldritch meta
+                // 10 (GenCommon's STONE_TRAPPED case, ref L223-228). The roll is
+                // the pinned maze random (feature == 11 && random.nextInt(3) == 0
+                // ? 20 : 2), so the count this probe pins is deterministic.
+                helper.assertTrue(countInCell(outer, cx, cz, y, y + 10, OuterLandsGameTest::isTrap) >= 1,
+                        "feature 11 (the trapped passage, code 20) left no trapped stone (meta 10)");
+            }
+            if (feature == 12) {
+                // Ref L246-250: feature 12 crusts the room (code 22).
+                helper.assertTrue(countInCell(outer, cx, cz, y, y + 10, OuterLandsGameTest::isCrust) >= 1,
+                        "feature 12 (the crusted passage) left no crusted stone");
+            }
+            if (feature == 13) {
+                // Ref L251-255: feature 13 writes the taint biome into the
+                // column through the shipped BiomeAura seam. No taint biome is
+                // registered on this card, so the write is a no-op (the seam's
+                // own contract) and the passage is the assertion.
+                helper.assertTrue(com.jonnyutah12.thaumcraftclassic.worldgen.BiomeAura.firstTaintBiome() == null,
+                        "feature 13's taint-biome leg needs its assertion re-measured: a taint biome is now registered");
+            }
+            if (feature == 14) {
+                // Ref L260-276: the spawner box — the mob spawner at the centre
+                // (x+8, y+4, z+8) and cobweb in the air cells around it.
+                final BlockPos centre = new BlockPos(x + 8, y + 4, z + 8);
+                helper.assertTrue(outer.getBlockState(centre).is(Blocks.SPAWNER),
+                        "feature 14 placed no mob spawner at " + centre + " (ref L268)");
+                helper.assertTrue(countInCell(outer, cx, cz, y, y + 10, state -> state.is(Blocks.COBWEB)) >= 1,
+                        "feature 14 placed no cobweb in its spawner box (ref L265)");
+            }
+        }
+        helper.assertTrue(GenCommon.DECORATED_BLOCKS.isEmpty(),
+                "processDecorations left " + GenCommon.DECORATED_BLOCKS.size() + " decorations queued");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void altarTileRunsTheMazeRequestLeg(final GameTestHelper helper) {
+        final ServerLevel outer = build(helper);
+        final BlockPos altarPos = new BlockPos(1400, OuterLands.ROOM_Y, 1400);
+        outer.setBlock(altarPos, CatalogEldritchRealm.BLOCK_ELDRITCH.get().defaultBlockState()
+                .setValue(BlockEldritch.VARIANT, EldritchRealmValues.ELDRITCH_ALTAR), 3);
+        final TileEldritchAltar altar = (TileEldritchAltar) outer.getBlockEntity(altarPos);
+        if (altar == null) {
+            helper.fail("no eldritch altar tile at " + altarPos);
+            return;
+        }
+
+        // The probe claims the maze seam for the duration and records the
+        // request this tile makes, so the shape it draws is measured and not a
+        // sibling probe's; the shipped install goes back at the end.
+        final List<long[]> seen = new ArrayList<>();
+        EldritchMazeHost.setProbe((chunkX, chunkZ, width, height, seed) -> {
+            seen.add(new long[]{chunkX, chunkZ, width, height, seed});
+            return false;
+        });
+        final boolean answer;
+        final boolean second;
+        try {
+            answer = altar.checkForMaze();
+            second = altar.checkForMaze();
+        } finally {
+            MazeHandler.install();
+        }
+        helper.assertTrue(seen.size() >= 2,
+                "the altar's checkForMaze reached the maze seam " + seen.size() + " times in two calls");
+        final long[] first = seen.get(seen.size() - 2);
+        final long[] next = seen.get(seen.size() - 1);
+        for (final long[] request : new long[][]{first, next}) {
+            // Ref TileEldritchAltar.java:227-231: the request is the altar's own
+            // chunk, and the size is 15 + random.nextInt(8) * 2 per side — odd,
+            // 15..29 — drawn from the level random, per call.
+            helper.assertTrue(request[0] == (altarPos.getX() >> 4) && request[1] == (altarPos.getZ() >> 4),
+                    "the altar's maze request carried chunk (" + request[0] + "," + request[1]
+                            + "), not the altar's own chunk");
+            helper.assertTrue(request[2] >= 15 && request[2] <= 29 && (request[2] & 1L) == 1L,
+                    "the maze width " + request[2] + " is outside ref L228's 15 + nextInt(8)*2");
+            helper.assertTrue(request[3] >= 15 && request[3] <= 29 && (request[3] & 1L) == 1L,
+                    "the maze height " + request[3] + " is outside ref L228's 15 + nextInt(8)*2");
+            // Ref L231: the seed is the level's own random draw, not a constant.
+            helper.assertTrue(request[4] != 0L, "the maze request carried no seed (ref L231)");
+        }
+        helper.assertTrue(first[4] != next[4] || first[2] != next[2] || first[3] != next[3],
+                "two checkForMaze calls drew the identical request; the original draws per call");
+        // The plane gate: the harness has no live Outer Lands level, so the
+        // shipped install answers "no maze" (reference TileEldritchAltar.java:
+        // 224-236 keeps the isEldritch gate; the parent's probe pins the gate,
+        // this one pins that the tile's caller leg reaches the seam at all).
+        helper.assertTrue(!answer && !second,
+                "the maze request answered yes with no live Outer Lands level in the harness");
+        helper.succeed();
+    }
+
+    /** The original's eldritch void (blockEldritchnothing, maze code 8). */
+    private static boolean isVoid(final BlockState state) {
+        return state.is(CatalogEldritchRealm.BLOCK_ELDRITCH_NOTHING.get());
+    }
+
+    /** The trapped stone (blockEldritch meta 10, maze code 20 / STONE_TRAPPED). */
+    private static boolean isTrap(final BlockState state) {
+        return state.is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())
+                && state.getValue(BlockEldritch.VARIANT) == EldritchRealmValues.ELDRITCH_TRAP;
+    }
+
+    /** The glyphed eldritch block (blockEldritch meta 5). */
+    private static boolean isGlyphed(final BlockState state) {
+        return state.is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())
+                && state.getValue(BlockEldritch.VARIANT) == EldritchRealmValues.ELDRITCH_GLYPHED;
+    }
+
+    /** The crusted shell (blockCosmeticSolid meta 14) and its code-22 eldritch twin. */
+    private static boolean isCrust(final BlockState state) {
+        if (state.is(CatalogDecorativeBlocks.BLOCK_COSMETIC_SOLID.get())
+                && state.getValue(BlockCosmeticSolid.VARIANT) == BlockCosmeticSolid.VARIANT_CRUSTED_STONE) {
+            return true;
+        }
+        return state.is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())
+                && state.getValue(BlockEldritch.VARIANT) == EldritchRealmValues.ELDRITCH_CRUSTED;
+    }
+
+    /** A maze floor: the plain cosmetic solid (code 2) or a decoration the queue put there. */
+    private static boolean isFloor(final BlockState state) {
+        return state.is(CatalogDecorativeBlocks.BLOCK_COSMETIC_SOLID.get())
+                || state.is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())
+                || state.is(Blocks.BEDROCK);
+    }
+
+    /** The probe's own cell window — the harness shares one level across probes. */
+    private static AABB cellBox(final int cx, final int cz) {
+        return new AABB(cx * 16, OuterLands.ROOM_Y - 8, cz * 16, cx * 16 + 16, OuterLands.ROOM_Y + 24, cz * 16 + 16);
+    }
+
+    private static int countInCell(final ServerLevel level, final int cx, final int cz, final int yFrom,
+                                   final int yTo, final Predicate<BlockState> test) {
+        int n = 0;
+        final BlockPos.MutableBlockPos at = new BlockPos.MutableBlockPos();
+        for (int x = cx * 16; x < cx * 16 + 16; x++) {
+            for (int y = yFrom; y <= yTo; y++) {
+                for (int z = cz * 16; z < cz * 16 + 16; z++) {
+                    if (test.test(level.getBlockState(at.set(x, y, z)))) {
+                        n++;
+                    }
+                }
+            }
+        }
+        return n;
+    }
+
 }
