@@ -170,6 +170,45 @@ Rules the code pins:
 - The per-meta icons and the glint overlay are item-model concerns and ride the
   item models card; the interactive note screen is its own card.
 
+## The KnowFrag recipe — how a note is acquired (TC-M3-04-s-iv)
+
+`reference/decompiled/thaumcraft/thaumcraft/common/config/ConfigRecipes.java:3860-3865` is the
+original's **only** `itemResearchNotes` recipe: `ConfigResearch.recipes.put("KnowFrag",
+GameRegistry.addShapedRecipe(new ItemStack(ConfigItems.itemResearchNotes, 1, 42), "KKK","KKK","KKK",
+'K', new ItemStack(ConfigItems.itemResource, 1, 9)))`. It ships as a data row —
+`data/thaumcraft/recipe/recipe.256.crafting_shaped.json` — under the id
+`thaumcraft:recipe.256.crafting_shaped`, the next free number in the recipe-family numbering that
+already carries `recipe.264/266/274` (arcane workbench rows) and `recipe.275` (crucible):
+
+- Pattern `KKK/KKK/KKK` — the full 3x3, so the row is craftable at a crafting table and never in the
+  2x2 player grid. The original is a `GameRegistry.addShapedRecipe` (vanilla crafting) row, so the
+  type stays `minecraft:crafting_shaped`; the port's arcane/infusion/crucible types would move the
+  station, which the original does not.
+- The ingredient is the registered component form `{"type": "neoforge:components",
+  "items": ["thaumcraft:itemresource"], "components": {"thaumcraft:item_meta": 9}}` (BD-04: the
+  original's metadata damage is the `thaumcraft:item_meta` component). The `type` key is mandatory —
+  a bare `item` ingredient matches every `itemresource` meta and would let amber (3), nitor (6) or
+  pure (13) craft notes; the meta precision is pinned by a probe that offers a bare stack, metas
+  1/6/13, eight fragments and one stack of nine, and asserts each refuses.
+- The result is `thaumcraft:itemresearchnotes` count 1 with `thaumcraft:item_meta: 42` —
+  `ItemResearchNotes.META_BLANK_DISCOVERY_B`. The crafted stack carries **no**
+  `thaumcraft:research_note` component, matching the original's meta-42 blank, whose
+  `ResearchManager.getData` is null, so right-click rolls `findHiddenResearch` (BD-18).
+- The row is gated on `neoforge:item_exists` for **both** items. A 1.21.1 `CraftingOutput` resolves
+  the result id while the row is parsed, so an ungated row naming an unregistered item is dropped
+  with a `Parsing error loading recipe` ERROR — exactly the shape the `runServer` smoke job fails on
+  (the crucible row documents the same rule for its output fluid).
+- No research gate: the original's KNOWFRAG entry is `setAutoUnlock`, so the recipe is never
+  research-locked, and its Thaumonomicon page shows it because the original stored the recipe in
+  `ConfigResearch.recipes["KnowFrag"]`. Vanilla crafting rows have nowhere to carry that key, so the
+  page display is BD-19 and belongs to the Thaumonomicon/GUI card.
+
+Proven by `KnowledgeFragmentRecipeGameTest` (3 probes: the shipped `.crafting_*` rows all decode and
+are live in the `RecipeManager`, the nine-fragment grid crafts **this** row into exactly
+`ItemResearchNotes.blankDiscoveryNote(42)` with all slots consumed, and the ingredient is
+meta-precise) and by `KnowFragRecipeDataTest` (5 tests, which parse the decompiled registration and
+compare it field-for-field with the shipped JSON).
+
 ## Testing
 
 - Unit (`src/test/.../research/`): `ResearchProgressionRulesTest` — starting
@@ -209,3 +248,21 @@ Rules the code pins:
   arm's 7-9 fragments counted as `ItemEntity` drops, the success arm's stamped
   meta-0 note, the tooltip keys with the warp clamp, and the note surviving its
   NBT (byte-width `hexgrid` rows), wire and stack-save round trips.
+- KnowFrag recipe (`recipes/KnowFragRecipeDataTest` 5; game
+  `gametest/KnowledgeFragmentRecipeGameTest` 3): the unit side parses the
+  decompiled `ConfigRecipes.java` KnowFrag registration (grid rows, the `'K'`
+  binding's item/count/meta, the output item/count/meta) and asserts the shipped
+  JSON agrees field for field, plus the mandatory `type` key and list-shaped
+  `items` of the component Ingredient, the metas read out of `ItemResource` /
+  `ItemResearchNotes` and inside the `thaumcraft:item_meta` carrier's 0..63
+  bound, the family's `item_exists` gate rule over every shipped
+  `minecraft:crafting_*` row, and the content-mapping row's 8-field contract.
+  The game side runs on a server: every shipped `.crafting_*` row whose named
+  items all exist is live in the `RecipeManager` under its own id (the
+  `runServer` smoke failure mode is a row dropped by a parse ERROR), the
+  nine-fragment 3x3 matches **this** row and `assemble` returns exactly
+  `ItemResearchNotes.blankDiscoveryNote(42)` — meta 42, rare, unstackable, no
+  `thaumcraft:research_note` component, all nine slots consumed — and the
+  ingredient is meta-precise: a bare `itemresource` stack, metas 1/6/13, eight
+  fragments and one stack of nine all refuse, with the nine-fragment grid as the
+  positive control.
