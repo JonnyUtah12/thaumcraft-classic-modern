@@ -56,7 +56,10 @@ class LocalizationFileTest {
             // its warp block, kept in the original 1.7.10 key shape.
             "item.researchnotes.unknown.1", "item.researchnotes.unknown.2",
             "tc.forbidden", "tc.forbidden.level.1", "tc.forbidden.level.2",
-            "tc.forbidden.level.3", "tc.forbidden.level.4", "tc.forbidden.level.5");
+            "tc.forbidden.level.3", "tc.forbidden.level.4", "tc.forbidden.level.5",
+            // TC-M3-04-s-iv-b: the Thaumonomicon crafting-page labels, kept in
+            // the original key shape (GuiResearchRecipe:821/888).
+            "recipe.type.workbench", "recipe.type.workbenchshapeless");
 
     /** Registry-derived key shape: lower-case id plus an optional meta/tooltip suffix. */
     private static final Pattern KEY_SHAPE =
@@ -76,7 +79,9 @@ class LocalizationFileTest {
             "tc.forbidden", "tc.forbidden.level.1", "tc.forbidden.level.2",
             "tc.forbidden.level.3", "tc.forbidden.level.4", "tc.forbidden.level.5",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
-            "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror");
+            "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror",
+            // TC-M3-04-s-iv-b: the Thaumonomicon crafting-page station labels.
+            "recipe.type.workbench", "recipe.type.workbenchshapeless");
 
     /**
      * The shipped multi-meta items and the original-metadata domain their

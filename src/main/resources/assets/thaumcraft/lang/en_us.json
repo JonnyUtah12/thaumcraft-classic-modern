@@ -230,6 +230,8 @@
   "item.thaumcraft.triplemeattreat": "Triple Meat Treat",
   "item.thaumcraft.trunkspawner": "Traveling Trunk",
   "item.thaumcraft.trunkspawner.tooltip": "This trunk holds items",
+  "recipe.type.workbench": "Workbench",
+  "recipe.type.workbenchshapeless": "Workbench (Shapeless)",
   "tc.discount": "discount",
   "tc.forbidden": "Forbidden knowledge (%s)",
   "tc.forbidden.level.1": "Mostly Harmless",

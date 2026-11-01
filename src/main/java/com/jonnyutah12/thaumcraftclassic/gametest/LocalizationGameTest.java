@@ -127,7 +127,14 @@ public final class LocalizationGameTest {
             Map.entry("tc.forbidden.level.3", "ItemResearchNotes warp tooltip level 3"),
             Map.entry("tc.forbidden.level.4", "ItemResearchNotes warp tooltip level 4"),
             Map.entry("tc.forbidden.level.5", "ItemResearchNotes warp tooltip level 5"),
-            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"));
+            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"),
+            // TC-M3-04-s-iv-b research-page recipe body (the client's book screen
+            // draws the page): the station label the original printed centred above the
+            // grid, verbatim key and wording.
+            Map.entry("recipe.type.workbench",
+                    "book-screen recipe-page station label (original GuiResearchRecipe.java:821-823 key)"),
+            Map.entry("recipe.type.workbenchshapeless",
+                    "book-screen recipe-page station label (original GuiResearchRecipe.java:887-890 key)"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always

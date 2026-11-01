@@ -209,6 +209,45 @@ are live in the `RecipeManager`, the nine-fragment grid crafts **this** row into
 meta-precise) and by `KnowFragRecipeDataTest` (5 tests, which parse the decompiled registration and
 compare it field-for-field with the shipped JSON).
 
+## The research page's recipe body — closing BD-19 (TC-M3-04-s-iv-b)
+
+The original keeps **two** records of that row: the crafting-table row and the entry
+`ConfigResearch.recipes["KnowFrag"]` (`ConfigResearch.java:2661-2662`). The second is what the
+Thaumonomicon reads: `GuiResearchRecipe` looks the recipe up for a page's `normal_crafting` body and
+draws the ingredient grid, the station label centred above it (`recipe.type.workbench` /
+`recipe.type.workbenchshapeless` — `GuiResearchRecipe.java:821-823` shaped, `887-890` shapeless) and
+the result item beside it (`GuiResearchRecipe#drawCraftingPage:755-946`). The port has no recipes
+map, and a vanilla `minecraft:crafting_*` row has no field to carry a research key, so the join is
+data compiled in from the ledger:
+
+- `research/book/ResearchRecipeLinks` — one record per vanilla crafting row the content-mapping
+  ledger links to a research entry: the original's recipes-map key (`KnowFrag`), the research entry
+  (`KNOWFRAG`), the shipped row id (`thaumcraft:recipe.256.crafting_shaped`). The page names the
+  recipes-map key (`entries.json`: `{"type":"normal_crafting","recipe":"KnowFrag"}`), which is the
+  selector; the ledger's `research=` column is the authority for which rows are implemented. Its
+  three sources are cross-checked in `ThaumonomiconRecipePageTest`, so a link that drifts from the
+  ledger row, from the JSON's `_source` citation, from the shipped graph, from the entry's
+  `setAutoUnlock` flag, or from the original's label strings fails the build.
+- `research/book/BookPageView` — the server-safe page state stays free of
+  `net.minecraft.world.item.crafting`: it carries the nullable row **id** the page names
+  (`vanillaCraftingRowId(entry, page)`), so a dedicated server never loads a `Screen`-adjacent
+  recipe type and the pinned dist-safety scan stays green.
+- `client/ThaumonomiconScreen#renderCraftingBody` — draws the body for the page that carries an id,
+  resolving that id against the **live `RecipeManager`** (`recipes/RecipePageDisplay`) and laying it
+  out with the geometry measured off `drawCraftingPage` (`recipes/RecipePageLayout`): the original's
+  52×52 backdrop blitted at scale 2 (so a 104 wide block, `BLOCK_HEIGHT` 156 = `76 + 2*32 + 16`),
+  grid cells at `x + 16 + col*32` / `y + 76 + row*32` with both axes capped at 3 and the cell index
+  `col + row*width`, the shapeless walk `i % 3` / `i / 3` capped at nine cells, the result at
+  `x + 48, y + 32`, the label centred at `x + 56 - width/2`. The block is scaled to fit the book's
+  pane (never up, floor 0.5) because the port's page is smaller than the original's window.
+  Ingredients are vanilla `GuiGraphics` items with the vanilla 18px slot square; there is **no** ARR
+  art and no `gui_researchback` backdrop (BD-17 / D-004).
+- Resolution by id is what keeps the picture honest: the screen draws the row the game is crafting
+  with, and a page whose recipes-map key has no shipped row draws no body — 44 of the 45
+  `normal_crafting` pages today, because the ledger has implemented 1 of the 45 rows.
+
+Proven by `ThaumonomiconRecipePageGameTest` (3 probes) and `ThaumonomiconRecipePageTest` (9 tests).
+
 ## Testing
 
 - Unit (`src/test/.../research/`): `ResearchProgressionRulesTest` — starting
@@ -266,3 +305,18 @@ compare it field-for-field with the shipped JSON).
   ingredient is meta-precise: a bare `itemresource` stack, metas 1/6/13, eight
   fragments and one stack of nine all refuse, with the nine-fragment grid as the
   positive control.
+- Thaumonomicon recipe page (`research/book/ThaumonomiconRecipePageTest` 9; game
+  `gametest/ThaumonomiconRecipePageGameTest` 3): the unit side cross-checks the join against its
+  three sources (the ledger's `research=` column over every shipped `crafting_shaped`/
+  `crafting_shapeless` row, the row JSON's `_source` citation of
+  `ConfigResearch.recipes.put("KnowFrag", ...)`, the graph's 45 `normal_crafting` pages with the
+  page's key resolving to its own entry, and the linked entry's `setAutoUnlock` flag), pins the two
+  station-label keys to the original `en_US.lang` strings, pins the layout constants and the
+  fit-to-pane scale (height-bound at 110×142 → 142/156, never above 1, floor 0.5) and the shapeless
+  box walk (9 cells cap). The game side runs on a server: the page's id resolves out of the **live
+  `RecipeManager`** into the original's picture — a 3×3 whose every cell is an `itemresource`
+  carrying `thaumcraft:item_meta: 9`, beside an `itemresearchnotes` x1 carrying meta 42, labelled
+  `recipe.type.workbench` — an id the manager does not have resolves to no body, the join names
+  exactly one vanilla crafting row so no other live row can reach the screen, the KNOWFRAG page is
+  the second page of the entry the book opens, and every other shipped page (44 `normal_crafting`
+  pages included) carries no body.
