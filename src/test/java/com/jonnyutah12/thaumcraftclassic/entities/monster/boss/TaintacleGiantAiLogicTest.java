@@ -180,7 +180,8 @@ class TaintacleGiantAiLogicTest {
         assertEquals(6.5, TaintacleGiantAiLogic.particleY(0.0, 6.0, 1.0), 1.0E-12,
                 "EntityTaintacleGiant.java:55 uses 6.0 (box height) + 0.5, not 125 + 0.5");
         assertEquals(6.0, TaintacleGiantAiLogic.particleY(0.0, 6.0, 0.0), 1.0E-12, "minY + height at roll 0");
-        assertEquals(131.0, TaintacleGiantAiLogic.particleY(125.0, 6.0, 1.0), 1.0E-12, "minY rides through");
+        assertEquals(131.5, TaintacleGiantAiLogic.particleY(125.0, 6.0, 1.0), 1.0E-12,
+                "minY rides through: 125 + 6 + 0.5 = 131.5");
         assertEquals(1.0F, TaintacleGiantAiLogic.PARTICLE_Y_HEIGHT_MULTIPLIER, "1x the box height");
         assertEquals(0.5F, TaintacleGiantAiLogic.PARTICLE_Y_JITTER_SPAN, "EntityTaintacleGiant.java:55 rand*0.5");
     }
