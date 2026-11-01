@@ -1,6 +1,7 @@
 package com.jonnyutah12.thaumcraftclassic.registration.catalog;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.items.ItemInkwell;
 import com.jonnyutah12.thaumcraftclassic.items.ItemResearchNotes;
 import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
 import net.minecraft.world.item.Item;
@@ -50,6 +51,21 @@ public final class M3ResearchContent {
                             .stacksTo(1)
                             .rarity(Rarity.RARE)
                             .component(ModDataComponents.ITEM_META.get(), 0)));
+
+    /**
+     * thaumcraft:iteminkwell — Scribing Tools, the shipped
+     * {@code IScribeTools} ink source the Thaumonomicon's note arm spends one
+     * durability use of (TC-M3-04-s-v; original
+     * {@code thaumcraft.common.items.ItemInkwell}, registered as
+     * {@code ItemInkwell}, content-mapping.csv row 210). Properties verbatim
+     * from the original constructor: stack size 1 and durability 100
+     * ({@code common/items/ItemInkwell.java:23-29}).
+     */
+    public static final DeferredItem<ItemInkwell> ITEM_INKWELL =
+            ITEMS.register("iteminkwell", () -> new ItemInkwell(
+                    new Item.Properties()
+                            .stacksTo(1)
+                            .durability(100)));
 
     private M3ResearchContent() {
     }

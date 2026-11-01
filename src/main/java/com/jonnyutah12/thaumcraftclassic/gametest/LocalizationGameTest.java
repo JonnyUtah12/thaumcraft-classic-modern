@@ -127,7 +127,19 @@ public final class LocalizationGameTest {
             Map.entry("tc.forbidden.level.3", "ItemResearchNotes warp tooltip level 3"),
             Map.entry("tc.forbidden.level.4", "ItemResearchNotes warp tooltip level 4"),
             Map.entry("tc.forbidden.level.5", "ItemResearchNotes warp tooltip level 5"),
-            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"));
+            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"),
+            // TC-M3-04-s-v Thaumonomicon node interaction: the per-state hint
+            // line the book draws under the hovered node, the 3 s note popup and
+            // the prerequisite line. The keys are the original's verbatim
+            // (GuiResearchBrowser.java:560, :614-618, :656-658, :717-726);
+            // BookNoteRequest names them; the book screen (client) draws them.
+            Map.entry("tc.research.getprim", "book-screen node hint (BookNoteRequest.KEY_GET_PRIM)"),
+            Map.entry("tc.research.hasnote", "book-screen node hint (BookNoteRequest.KEY_HAS_NOTE)"),
+            Map.entry("tc.research.shortprim", "book-screen node hint (BookNoteRequest.KEY_SHORT_PRIM)"),
+            Map.entry("tc.research.purchase", "book-screen node hint (BookNoteRequest.KEY_PURCHASE)"),
+            Map.entry("tc.research.short", "book-screen node hint (BookNoteRequest.KEY_SHORT)"),
+            Map.entry("tc.researchmissing", "book-screen prerequisite hint (BookNoteRequest.KEY_MISSING)"),
+            Map.entry("tc.research.popup", "book-screen note popup (BookNoteRequest.popupMessage)"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always

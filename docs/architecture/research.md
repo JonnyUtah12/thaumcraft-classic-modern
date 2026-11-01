@@ -170,6 +170,52 @@ Rules the code pins:
 - The per-meta icons and the glint overlay are item-model concerns and ride the
   item models card; the interactive note screen is its own card.
 
+## Thaumonomicon note request (TC-M3-04-s-v)
+
+The book's third interaction: clicking a node of the graph. The original ran
+that click in-process (`GuiResearchBrowser.func_73864_a`,
+`GuiResearchBrowser.java:682-731`) and re-ran its own gate server-side in
+`PacketPlayerCompleteToServer.onMessage`
+(`common/lib/network/playerdata/PacketPlayerCompleteToServer.java:50-100`).
+The port keeps the split, and the seam rule the card set: **the book only asks**.
+
+| Piece | Role | Original counterpart |
+|---|---|---|
+| `research/book/BookNoteRequest` | the click's arm + the hover line, as a pure function of (completed keys, `research_difficulty`, scribing ink, carried note, aspect pool); no client class, so a dedicated server runs the same code | `GuiResearchBrowser.func_73864_a` (:682-731), the tooltip lines (:560, :614-618, :656-658), `canUnlockResearch` (:789-809) |
+| `client/ThaumonomiconScreen` | sends the shipped `PlayerCompleteToServerPayload` (type 0 / type 1), draws the hint line in the original's colour and the 3000 ms popup | the click, `popuptime`/`popupmessage` (:186-191, :717-727) |
+| `ResearchManager.handlePlayerCompleteRequest` | the one completion authority: pay the tags, `ResearchCompletePayload` + `completeResearch` for the entry and the siblings it unlocks; the note arm returns without completing | `PacketPlayerCompleteToServer.onMessage` (:54-90) |
+| `ResearchManager.createResearchNoteForPlayer` | the note arm: `noteSlot` gate, the scribe-tool + paper gate, one durability, `createNote` grid, add-or-drop, `broadcastChanges` | `ResearchManager.java:102-121` |
+| `items/ItemInkwell` + `api/IScribeTools` | the shipped ink source marker; stack 1, durability 100 | `common/items/ItemInkwell.java:19-29`, `api/IScribeTools.java` |
+
+Rules the code pins:
+
+- **No second completion path.** The purchase arm completes only through
+  `completeResearch` + `ResearchCompletePayload` — the pair
+  `ItemResearchNotes.completeWithSiblings` already drives. The note arm never
+  completes: it hands over an unsolved generated note and the entry stays
+  unknown, which is the original's behaviour and the probe's headline assert.
+- **The gates run twice, on both sides, on their own data.** The client reads
+  its inventory view and synced knowledge to decide what to ask for; the server
+  re-reads its own copy (`isResearchComplete`, `doesPlayerHaveRequisites`,
+  `consumeInkFromPlayer`, `carriesPaper`, `noteSlot`), so a spoofed request for
+  a locked entry, a note-less entry, or an ink-less player buys nothing and
+  spends no durability.
+- **The carry check is paper, not an ink sac.** The original's
+  `InventoryUtils.isPlayerCarrying(player, new ItemStack(Items.field_151121_aF))`
+  and `inventory.hasItem(Items.field_151121_aF)` name the MCP field
+  `paper` (`reference/mcp-mappings/fields_1.7.10_mcp_stable_11.csv:1723`), and
+  the original's own hint line agrees: `tc.research.shortprim` = "You need
+  scribing tools and paper to get this research note". Paper is required and
+  is never consumed; only one durability comes off the scribe tool.
+- **A carried note is free.** `noteSlot` (the original's `getResearchSlot`)
+  short-circuits the request: no second note, no ink (the original returns the
+  existing stack, `ResearchManager.java:105-107`).
+- **The hint is the affordance.** Five states, each with the original's key and
+  colour: `tc.researchmissing` (-9416624), `tc.research.hasnote` (16753920),
+  `tc.research.getprim` / `tc.research.purchase` (8900331),
+  `tc.research.shortprim` / `tc.research.short` (14423100), and the
+  `tc.research.popup` line (khaki, wrapped at 150 px) for 3000 ms after a note.
+
 ## Testing
 
 - Unit (`src/test/.../research/`): `ResearchProgressionRulesTest` — starting
@@ -195,6 +241,21 @@ Rules the code pins:
   shipped 201-entry graph on a server and drive completion through the TC-M3-02
   knowledge record.
 
+- Thaumonomicon note request (`research/BookNoteRequestRulesTest` 13; game
+  `gametest/ThaumonomiconNoteRequestGameTest` 8): the prerequisite gate
+  (`canUnlockResearch`, drawn and hidden parents, a parent missing from the
+  graph does NOT fail it), the purchase/primary split at difficulty -1/0/1,
+  the pool-affordability loop, the five hint keys and their colours, the
+  popup window and its `%1$s` name argument, and the arm order. The probes
+  drive the payload handler on a real `ServerPlayer` with a declared ad-hoc
+  channel: Scribing Tools registered as the `IScribeTools` source with the
+  original's stack-1/durability-100 constructor, the note arm's single
+  durability use and generated unsolved note while the entry stays unknown,
+  the carried-note gate, the scribe-tool/paper rejections with no ink spent,
+  the requisites rejection of a spoofed locked-entry request, the note
+  dropping at the player when the inventory is full, the purchase arm paying
+  the tags out of the pool and completing through the shipped authority, and
+  the click decision computed over the real 201-entry graph.
 - Research note item (`research/ResearchNoteItemRulesTest` 6; game
   `gametest/ResearchNoteItemGameTest` 8): the meta 64 / blank 24+42 /
   warp-clamp-5 / `7 + rand(3)` rules read out of the decompiled item, the

@@ -56,7 +56,15 @@ class LocalizationFileTest {
             // its warp block, kept in the original 1.7.10 key shape.
             "item.researchnotes.unknown.1", "item.researchnotes.unknown.2",
             "tc.forbidden", "tc.forbidden.level.1", "tc.forbidden.level.2",
-            "tc.forbidden.level.3", "tc.forbidden.level.4", "tc.forbidden.level.5");
+            "tc.forbidden.level.3", "tc.forbidden.level.4", "tc.forbidden.level.5",
+            // TC-M3-04-s-v: the Thaumonomicon node-click hint lines, the note
+            // popup and the requisition failure line, in the original 1.7.10
+            // key shape (GuiResearchBrowser.java:614-618, :656-658, :683-727,
+            // :186-191, PacketPlayerCompleteToServer.java:52-92), with the
+            // original en_US.lang wording.
+            "tc.research.getprim", "tc.research.hasnote", "tc.research.popup",
+            "tc.research.purchase", "tc.research.short", "tc.research.shortprim",
+            "tc.researchmissing");
 
     /** Registry-derived key shape: lower-case id plus an optional meta/tooltip suffix. */
     private static final Pattern KEY_SHAPE =
@@ -76,7 +84,9 @@ class LocalizationFileTest {
             "tc.forbidden", "tc.forbidden.level.1", "tc.forbidden.level.2",
             "tc.forbidden.level.3", "tc.forbidden.level.4", "tc.forbidden.level.5",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
-            "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror");
+            "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror",
+            "tc.research.getprim", "tc.research.hasnote", "tc.research.popup", "tc.research.purchase",
+            "tc.research.short", "tc.research.shortprim", "tc.researchmissing");
 
     /**
      * The shipped multi-meta items and the original-metadata domain their
