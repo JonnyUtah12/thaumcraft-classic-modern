@@ -121,7 +121,20 @@ public final class LocalizationGameTest {
             Map.entry("container.thaumcraft.insufficient_vis",
                     "GuiArcaneWorkbench insufficient-vis notice"),
             Map.entry("container.thaumcraft.wand_slot_hint",
-                    "ArcaneWorkbenchScreen wand-slot tooltip"));
+                    "ArcaneWorkbenchScreen wand-slot tooltip"),
+            // Research table GUI (TC-M7-04-m2b): the menu title key is the menu
+            // type's own id, the "from the table" line marks the tile's bonus
+            // pool (the original showed that state as a second, dimmer tag), and
+            // the two out-of-ink lines are the original's verbatim strings at the
+            // original's key shape (GuiResearchTable.java:213-228).
+            Map.entry("container.thaumcraft.gui_research_table",
+                    "TileResearchTable.getDisplayName — the open menu's title (TC-M7-04-m2b)"),
+            Map.entry("container.thaumcraft.research_table_from_table",
+                    "ResearchTableScreen bonus-pool tooltip line"),
+            Map.entry("tile.researchtable.noink.0",
+                    "ResearchTableScreen out-of-ink notice (original key shape kept)"),
+            Map.entry("tile.researchtable.noink.1",
+                    "ResearchTableScreen out-of-ink notice (original key shape kept)"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always

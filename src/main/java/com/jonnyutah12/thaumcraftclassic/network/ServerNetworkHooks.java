@@ -1,6 +1,7 @@
 package com.jonnyutah12.thaumcraftclassic.network;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.network.payload.AspectCombinationToServerPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.AspectPlaceToServerPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.NotePayload;
@@ -32,16 +33,58 @@ public final class ServerNetworkHooks {
                 payload.scanType(), payload.scannedId(), payload.data());
     }
 
-    /** TODO(M4 research table): aspect combination in the research table, per original PacketAspectCombinationToServer. */
+    /**
+     * TC-M7-04-m2b: the research table's aspect combination. The original ran the
+     * rule in the packet handler
+     * ({@code PacketAspectCombinationToServer.onMessage}, its :71-126); the port
+     * keeps the rule where the original's research table keeps its own copy of it —
+     * on the tile — so the table's {@code bonusAspects} pool is paid in the same
+     * place it is stored. The tile method is the whole of the original's semantics:
+     * the RESEARCHER1 gate, the RESEARCHER2 gate on a known result, one of each
+     * aspect out of the player's pool (or out of this table's bonus pool when the
+     * well was fed from the table), and the discovery bonus on a first find.
+     */
     static void combineAspects(final AspectCombinationToServerPayload payload, final Player player) {
-        LOGGER.debug("aspect combination from {} at {}: {} + {}", player.getGameProfile().getName(),
-                payload.tablePos(), payload.aspect1(), payload.aspect2());
+        if (!(player instanceof ServerPlayer serverPlayer)) {
+            return;
+        }
+        if (!(serverPlayer.level().getBlockEntity(payload.tablePos())
+                instanceof com.jonnyutah12.thaumcraftclassic.tiles.TileResearchTable table)) {
+            LOGGER.debug("aspect combination from {} at {}: no research table at that position",
+                    player.getGameProfile().getName(), payload.tablePos());
+            return;
+        }
+        final Aspect first = Aspect.getAspect(payload.aspect1());
+        final Aspect second = Aspect.getAspect(payload.aspect2());
+        if (first == null || second == null) {
+            return;
+        }
+        // The original verified the sender owns the window by matching the packet's
+        // player id; 1.21.1 gives the payload the sending player, and the tile's
+        // distance check is the container's own stillValid.
+        if (!table.stillValid(serverPlayer)) {
+            return;
+        }
+        table.combineAspects(serverPlayer, first, second, payload.bonus1(), payload.bonus2());
     }
 
-    /** TODO(M4 research table): place aspect on the research table grid, per original PacketAspectPlaceToServer. */
+    /**
+     * The research table's hex-grid drop. The payload is decoded field for field,
+     * and the tile's body is the documented refusal: every step of the original's
+     * {@code placeAspect} writes into the note's {@code ResearchNoteData}
+     * hex grid, and that component is the note card's unmerged lane
+     * ({@code TcComponents.NOTE}; docs/BEHAVIORAL_DEVIATIONS.md BD-19).
+     */
     static void placeAspect(final AspectPlaceToServerPayload payload, final Player player) {
-        LOGGER.debug("aspect place from {} at {} ({},{}): {}", player.getGameProfile().getName(),
-                payload.tablePos(), payload.q(), payload.r(), payload.aspectTag().orElse("(none)"));
+        if (!(player instanceof ServerPlayer serverPlayer)) {
+            return;
+        }
+        if (!(serverPlayer.level().getBlockEntity(payload.tablePos())
+                instanceof com.jonnyutah12.thaumcraftclassic.tiles.TileResearchTable table)) {
+            return;
+        }
+        table.placeAspect(payload.q(), payload.r(),
+                payload.aspectTag().map(Aspect::getAspect).orElse(null), serverPlayer);
     }
 
     /**

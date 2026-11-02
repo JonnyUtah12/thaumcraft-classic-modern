@@ -39,8 +39,11 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
  *   <li>{@link #furnitureTilesResolveForTheirOwningMetas} — the
  *       (block, variant) → tile suppliers this card registers through
  *       {@code DeviceTileFactory} really produce their tile entity once placed,
- *       and the table metas it deliberately left out (the research-table base
- *       and the arcane workbench, both owned by other cards) produce none.</li>
+ *       and the table metas it deliberately leaves out produce none — the arcane
+ *       workbench metas, whose tile lives on that machine's own block. The
+ *       research-table base (metas 2-5) is no longer hostless: TC-M7-04-m2b
+ *       (t_5caddd7d) claims it with the research tile its GUI opens, and this
+ *       probe asserts that tile.</li>
  *   <li>{@link #storedItemsSurviveASaveLoadRoundTrip} — items stored in the
  *       hungry chest and the magic box survive the vanilla block-entity
  *       serialize/load path, which is what the "inventory persistence" bar
@@ -190,7 +193,14 @@ public final class CatalogFurnitureGameTest {
                 base.offset(0, step, 0), "deconstruction table");
         expectTile(helper, table, 7, CatalogFurniture.TILE_TABLE.get(),
                 base.offset(0, 2 * step, 0), "table top half");
-        expectNoTile(helper, table, 2, base.offset(0, 3 * step, 0), "research-table base");
+        // The research-table base is claimed: TC-M7-04-m2b (t_5caddd7d) ships the
+        // tile its GUI opens, on the original's direction-encoded metas 2-5. The
+        // arcane workbench metas stay hostless here — that tile belongs to the
+        // workbench's own block, tilearcaneworkbench.
+        expectTile(helper, table, 2, CatalogFurniture.TILE_RESEARCH_TABLE.get(),
+                base.offset(0, 3 * step, 0), "research-table base");
+        expectTile(helper, table, 5, CatalogFurniture.TILE_RESEARCH_TABLE.get(),
+                base.offset(0, 4 * step, 0), "research-table base, last direction");
         expectNoTile(helper, table, 15, base.offset(1, 0, step), "arcane workbench");
 
         // The tiles this card hosts on sibling device blocks.

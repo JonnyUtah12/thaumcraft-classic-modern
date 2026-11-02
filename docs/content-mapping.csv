@@ -123,7 +123,7 @@ Thaumcraft:TileJar,thaumcraft:tilejar,tile_entity,TileJarFillable,not_started,no
 Thaumcraft:TileJarVoid,thaumcraft:tilejarvoid,tile_entity,TileJarFillableVoid,not_started,not_tested,,class=TileJarFillableVoid
 Thaumcraft:TileJarNode,thaumcraft:tilejarnode,tile_entity,TileJarNode,not_started,not_tested,,class=TileJarNode
 Thaumcraft:TileJarBrain,thaumcraft:tilejarbrain,tile_entity,TileJarBrain,not_started,not_tested,,class=TileJarBrain
-Thaumcraft:TileResearchTable,thaumcraft:tileresearchtable,tile_entity,TileResearchTable,not_started,not_tested,,class=TileResearchTable
+Thaumcraft:TileResearchTable,thaumcraft:tileresearchtable,tile_entity,TileResearchTable,done,tested,,class=tiles/TileResearchTable 10-slot layout and NBT keys and 3x3 duplicate grid and combineAspects; note lane refuses until itemresearchnotes registers (BD-19)
 Thaumcraft:TileTable,thaumcraft:tiletable,tile_entity,TileTable,done,tested,,class=TileTable
 Thaumcraft:TileArcaneWorkbench,thaumcraft:tilearcaneworkbench,tile_entity,TileArcaneWorkbench,done,tested,,class=TileArcaneWorkbench
 Thaumcraft:TileChestHungry,thaumcraft:tilechesthungry,tile_entity,TileChestHungry,done,tested,,class=TileChestHungry
@@ -969,7 +969,7 @@ Thaumcraft:GUI_THAUMATORIUM,thaumcraft:gui_thaumatorium,gui,GuiThaumatorium,not_
 Thaumcraft:GUI_FOCUS_POUCH,thaumcraft:gui_focus_pouch,gui,GuiFocusPouch,not_started,not_tested,,gui_id=5 handler=GuiFocusPouch
 Thaumcraft:GUI_DECON_TABLE,thaumcraft:gui_decon_table,gui,GuiDeconstructionTable,done,tested,,gui_id=8 handler=GuiDeconstructionTable screen=client/DeconstructionTableScreen (46px break bar + collect hitbox at x=64 y=48)
 Thaumcraft:GUI_ALCHEMY_FURNACE,thaumcraft:gui_alchemy_furnace,gui,GuiAlchemyFurnace,not_started,not_tested,,gui_id=9 handler=GuiAlchemyFurnace
-Thaumcraft:GUI_RESEARCH_TABLE,thaumcraft:gui_research_table,gui,GuiResearchTable,not_started,not_tested,,gui_id=10 handler=GuiResearchTable
+Thaumcraft:GUI_RESEARCH_TABLE,thaumcraft:gui_research_table,gui,GuiResearchTable,done,tested,,gui_id=10 handler=GuiResearchTable menu=menus/ResearchTableMenu menuType=thaumcraft:gui_research_table screen=client/ResearchTableScreen tile=tiles/TileResearchTable panel=255x255 slots at x=14 y=10 and x=70 y=10 aspect grid at x=10 y=40 on a 16px pitch 25 per page; combine plate at x=35 y=139 32x16; clear boxes at x=11 y=137 and x=71 y=137; dupe button at x=37 y=5 24x24; 148 data slots (4 flags + 3 per registered aspect over the 48 aspects); BD-19
 Thaumcraft:GUI_CHEST_HUNGRY,thaumcraft:gui_chest_hungry,gui,-,not_started,not_tested,,gui_id=11 handler=-
 Thaumcraft:GUI_THAUMONOMICON,thaumcraft:gui_thaumonomicon,gui,GuiResearchBrowser,not_started,not_tested,,gui_id=12 handler=GuiResearchBrowser
 Thaumcraft:GUI_ARCANE_WORKBENCH,thaumcraft:gui_arcane_workbench,gui,GuiArcaneWorkbench,done,tested,,gui_id=13 handler=GuiArcaneWorkbench menu=menus/ArcaneWorkbenchMenu screen=client/ArcaneWorkbenchScreen panel=190x234 grid=24px pitch vis=14 data slots (TC-M7-04-m2)

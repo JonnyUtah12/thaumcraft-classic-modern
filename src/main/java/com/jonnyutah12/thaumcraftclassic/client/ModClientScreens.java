@@ -62,6 +62,8 @@ public final class ModClientScreens {
         event.register(CatalogFurniture.MENU_SPA.get(), SpaScreen::new);
         // TC-M7-04-m2: the first crafting-table GUI, gui_arcane_workbench.
         event.register(CatalogArcaneWorkbench.MENU_ARCANE_WORKBENCH.get(), ArcaneWorkbenchScreen::new);
+        // TC-M7-04-m2b: the research table, gui_research_table (original gui_id 10).
+        event.register(CatalogFurniture.MENU_RESEARCH_TABLE.get(), ResearchTableScreen::new);
     }
 
     private ModClientScreens() {

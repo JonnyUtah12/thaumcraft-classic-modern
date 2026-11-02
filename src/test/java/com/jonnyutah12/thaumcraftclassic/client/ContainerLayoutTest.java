@@ -304,6 +304,105 @@ class ContainerLayoutTest {
         assertEquals(4, ContainerLayout.titleLabelY());
     }
 
+    // ------------------------------ research table window (TC-M7-04-m2b)
+
+    @Test
+    void researchTablePanelIsTheOriginals255x255() {
+        // GuiResearchTable.java:70-71 — field_146999_f (xSize) = 255 and
+        // field_147000_g (ySize) = 255, the pair the MCP fields CSV names.
+        assertEquals(255, ContainerLayout.RT_PANEL_WIDTH,
+                "the original's xSize (GuiResearchTable.java:70)");
+        assertEquals(255, ContainerLayout.RT_PANEL_HEIGHT,
+                "the original's ySize (GuiResearchTable.java:71)");
+        assertEquals(40, ContainerLayout.RT_PLAYER_PIECE_X,
+                "the player piece blits at (x+40, y+167) (GuiResearchTable.java:231)");
+        assertEquals(48, ContainerLayout.RT_PLAYER_GRID_X,
+                "the player grid starts at 48 (ContainerResearchTable.java:30)");
+        assertEquals(175, ContainerLayout.RT_PLAYER_GRID_TOP,
+                "the player grid's first row is at y=175 (ContainerResearchTable.java:30)");
+        assertEquals(233, ContainerLayout.RT_HOTBAR_TOP,
+                "the hotbar row is at y=233 (ContainerResearchTable.java:35)");
+        assertEquals(14, ContainerLayout.RT_INK_X, "SlotLimitedByClass(IScribeTools, ..., 14, 10) (ContainerResearchTable.java:22)");
+        assertEquals(10, ContainerLayout.RT_INK_Y);
+        assertEquals(70, ContainerLayout.RT_NOTES_X, "SlotLimitedByClass(ItemResearchNotes, ..., 70, 10) (ContainerResearchTable.java:23)");
+        assertEquals(10, ContainerLayout.RT_NOTES_Y);
+    }
+
+    @Test
+    void researchTableGridIsTheOriginalsFiveByFiveSixteenPitchPage() {
+        // getClickedAspect: xx = drawn / 5 * 16, yy = drawn % 5 * 16 off (10, 40),
+        // page window starts at page * 5 (GuiResearchTable.java:742-747), and
+        // drawAspects walks the same (10, 40) origin (its :258).
+        assertEquals(10, ContainerLayout.RT_ASPECT_X);
+        assertEquals(40, ContainerLayout.RT_ASPECT_Y);
+        assertEquals(16, ContainerLayout.RT_ASPECT_CELL);
+        assertEquals(5, ContainerLayout.RT_ASPECT_COLS);
+        assertEquals(25, ContainerLayout.RT_ASPECTS_PER_PAGE, "twenty-five cells per page");
+        assertEquals(5, ContainerLayout.RT_PAGE_STRIDE, "a page moves the start index by five");
+        assertEquals(10, ContainerLayout.researchTableGridX(0));
+        assertEquals(26, ContainerLayout.researchTableGridX(5), "the second column sits one 16 px pitch over");
+        assertEquals(56, ContainerLayout.researchTableGridY(1), "the second row is one 16 px pitch down");
+        assertEquals(104, ContainerLayout.researchTableGridY(4), "the fifth row of a page is 4 * 16 below the top");
+        assertEquals(0, ContainerLayout.researchTableIndexAt(0, 0));
+        assertEquals(5, ContainerLayout.researchTableIndexAt(0, 1), "page 1 starts at index 5");
+        // lastPage = (count - 20) / 5 (GuiResearchTable.java:268), integer division.
+        assertEquals(0, ContainerLayout.researchTableLastPage(20));
+        assertEquals(1, ContainerLayout.researchTableLastPage(25));
+        assertEquals(5, ContainerLayout.researchTableLastPage(48), "the port's 48 registered aspects span pages 0..5");
+    }
+
+    @Test
+    void researchTableClickTargetsAreTheOriginalsRects() {
+        // func_73864_a (GuiResearchTable.java:623-693): combine plate (35,139) 32x16
+        // behind a 200 ms cooldown (:628-632), page rails (27,121)/(51,121) 24x8
+        // (:649/:655), clear boxes (11,137)/(71,137) 16x16 (:662/:672), camera
+        // plate (37,5) 24x24 (:684).
+        assertEquals(35, ContainerLayout.RT_COMBINE_X);
+        assertEquals(139, ContainerLayout.RT_COMBINE_Y);
+        assertEquals(32, ContainerLayout.RT_COMBINE_WIDTH);
+        assertEquals(16, ContainerLayout.RT_COMBINE_HEIGHT);
+        assertEquals(200_000_000L, ContainerLayout.RT_BUTTON_COOLDOWN_NANOS,
+                "the original's System.nanoTime() + 200000000L (GuiResearchTable.java:631)");
+        assertEquals(27, ContainerLayout.RT_PAGE_PREV_X);
+        assertEquals(51, ContainerLayout.RT_PAGE_NEXT_X);
+        assertEquals(121, ContainerLayout.RT_PAGE_Y);
+        assertEquals(24, ContainerLayout.RT_PAGE_WIDTH);
+        assertEquals(8, ContainerLayout.RT_PAGE_HEIGHT);
+        assertEquals(11, ContainerLayout.RT_CLEAR1_X);
+        assertEquals(71, ContainerLayout.RT_CLEAR2_X);
+        assertEquals(137, ContainerLayout.RT_CLEAR_Y);
+        assertEquals(16, ContainerLayout.RT_CLEAR_SIZE);
+        assertEquals(13, ContainerLayout.RT_SELECT1_X);
+        assertEquals(71, ContainerLayout.RT_SELECT2_X);
+        assertEquals(139, ContainerLayout.RT_SELECT_Y);
+        assertEquals(16, ContainerLayout.RT_SELECT_SIZE);
+        assertEquals(37, ContainerLayout.RT_DUPE_X);
+        assertEquals(5, ContainerLayout.RT_DUPE_Y);
+        assertEquals(24, ContainerLayout.RT_DUPE_SIZE);
+    }
+
+    @Test
+    void researchTableDropTargetsAndNoticeAreTheOriginals() {
+        // The mouseReleased drop targets are 16-radius boxes centred on (20,146)
+        // and (79,146) (GuiResearchTable.java:177-190); the out-of-ink notice is
+        // centred on gx + 157 at gy + 84 (its :213-228, drawn at :223).
+        assertEquals(20, ContainerLayout.RT_DROP1_X);
+        assertEquals(79, ContainerLayout.RT_DROP2_X);
+        assertEquals(146, ContainerLayout.RT_DROP_Y);
+        assertEquals(16, ContainerLayout.RT_DROP_RADIUS);
+        assertTrue(ContainerLayout.inDragTarget(20, 146, ContainerLayout.RT_DROP1_X, ContainerLayout.RT_DROP_Y),
+                "the centre is inside its own target");
+        assertTrue(ContainerLayout.inDragTarget(4, 146, ContainerLayout.RT_DROP1_X, ContainerLayout.RT_DROP_Y),
+                "the original's box is inclusive at -16 (mouseX >= -16)");
+        assertTrue(!ContainerLayout.inDragTarget(3, 146, ContainerLayout.RT_DROP1_X, ContainerLayout.RT_DROP_Y),
+                "and exclusive at +16, so -17 is outside");
+        assertEquals(157, ContainerLayout.RT_NOINK_X);
+        assertEquals(84, ContainerLayout.RT_NOINK_Y);
+        assertEquals(147, ContainerLayout.researchTableNoInkX(20), "the original's gx + 157 - widest/2");
+        assertEquals(0.33F, ContainerLayout.RT_FADED_ALPHA, 0.0F,
+                "the original's faded tag: glColor4f alpha 0.33F when the pool is 0");
+    }
+
     // ------------------------------------- no drift against cr1 (TrunkScreen)
 
     @Test

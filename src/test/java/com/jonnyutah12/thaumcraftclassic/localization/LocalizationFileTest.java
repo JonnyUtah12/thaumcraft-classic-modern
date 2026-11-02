@@ -51,7 +51,10 @@ class LocalizationFileTest {
             "item.ItemAmuletVis.text", "item.capacity.text",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
             "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror",
-            "tc.researcherror");
+            "tc.researcherror",
+            // The research table's out-of-ink notice: the original's key shape and
+            // wording, drawn at GuiResearchTable.java:213-228 (TC-M7-04-m2b).
+            "tile.researchtable.noink.0", "tile.researchtable.noink.1");
 
     /** Registry-derived key shape: lower-case id plus an optional meta/tooltip suffix. */
     private static final Pattern KEY_SHAPE =
@@ -73,7 +76,12 @@ class LocalizationFileTest {
             // (GuiArcaneWorkbench.java:105) and the wand-slot tooltip the port
             // added where the original drew an unlabelled slot. Neither names a
             // content id, so they are code-authored, not registry keys.
-            "container.thaumcraft.insufficient_vis", "container.thaumcraft.wand_slot_hint");
+            "container.thaumcraft.insufficient_vis", "container.thaumcraft.wand_slot_hint",
+            // The research table window's own labels (TC-M7-04-m2b): the menu
+            // title key is the menu type's id, and the bonus-pool tooltip line
+            // names no content id.
+            "container.thaumcraft.gui_research_table",
+            "container.thaumcraft.research_table_from_table");
 
     /**
      * The shipped multi-meta items and the original-metadata domain their
