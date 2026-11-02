@@ -212,6 +212,22 @@ against the repository, not against recollection.
    compile proof instead of drifting whole-project totals, and the rule that a
    test unreachable because main fails to compile is not a pass.
 
+6. **"The items must be in JEI" as a port requirement.** Rejected as a fidelity
+   target: the 1.7.10 original ships **no recipe browser**, so a browser
+   contributes nothing to behavioral parity. It is also, as a request, **already
+   satisfied with zero JEI code** — JEI enumerates every registered item for
+   free, so an item appears because it is registered and has a model (the
+   item-model cards) and is searchable because it is in a public creative tab
+   (SPINE-2). The only residual work is category pages for the port's four
+   **custom recipe types**; that shipped as SPINE-4 (`t_aebd14cf`) under the
+   dependency shape the Curios precedent fixes: `compileOnly` API +
+   runtime-optional dev jar, **never bundled**, manifest
+   `type="optional" side="CLIENT"`, pinned to the exact build the target
+   instance ships (`jei-1.21.1-neoforge-19.64.0.454.jar`, read from the ATM10
+   install, 1.21.1/NeoForge). Recorded here so it is **never counted as port
+   content**: no fidelity row attributes it to the original, and the license
+   terms are in `docs/licensing-and-attribution.md`.
+
 **What is used instead** — deterministic and free: `compileJava` / `build`
 exit codes; `runGameTestServer` asserting "required tests passed"; CI green
 on the pushed SHA; `git merge-base --is-ancestor` before claiming a commit
@@ -415,9 +431,15 @@ RecipeManager's parse errors for our mod go from 31 to 0.
 v0.1.0-alpha.4.
 
 **Fact.** `src/main/resources/assets/thaumcraft/lang/en_us.json` is committed to
-the public repository (landed `fca4fb8`, merged `3810797`). Of its **242 shipped
-values, 232 appear verbatim in the original 4.2.3.5 `en_US.lang`** (All Rights
-Reserved); 10 are authored for port-created ids. (SPINE-2 / t_76ab9b65 added the
+the public repository (landed `fca4fb8`, merged `3810797`). Of its **246 shipped
+values, 236 appear verbatim in the original 4.2.3.5 `en_US.lang`** (All Rights
+Reserved); 10 are authored for port-created ids. (SPINE-4 / t_aebd14cf added the
+243rd–246th: the four recipe-category headers `recipe.type.arcane` /
+`recipe.type.crucible` / `recipe.type.infusion` /
+`recipe.type.infusionenchantment`, whose values are verbatim
+`en_US.lang:660-663`; they are the ORIGINAL keys, and the JEI lane is an
+integration convenience, not port content — see D-011 item 6 and
+`docs/jei-integration.md`. (SPINE-2 / t_76ab9b65 added the
 242nd: the creative-tab label `itemGroup.thaumcraft.thaumcraft` = “Thaumcraft”
 mirrors the original `itemGroup.thaumcraft=Thaumcraft` (en_US.lang:670) verbatim,
 recorded here per the D-004 rule that original-mirroring strings go to D-016; the

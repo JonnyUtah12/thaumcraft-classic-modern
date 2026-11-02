@@ -111,7 +111,17 @@ public final class LocalizationGameTest {
             Map.entry("tc.handmirrorlinkedto", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorlinked", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorerror", "ItemHandMirror link message"),
-            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"));
+            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"),
+            // SPINE-4 (t_aebd14cf): the four recipe-category headers. These are
+            // the ORIGINAL keys — 1.7.10's own book heads these same four recipe
+            // kinds with recipe.type.* (decompiled GuiResearchRecipe.java:644,
+            // :969, :1162, :1355; values en_US.lang:660-663), so the port ships
+            // the keys it already had and the JEI category reuses them.
+            Map.entry("recipe.type.arcane", "ArcaneWorkbenchCategory.getTitle (JEI, SPINE-4)"),
+            Map.entry("recipe.type.crucible", "CrucibleCategory.getTitle (JEI, SPINE-4)"),
+            Map.entry("recipe.type.infusion", "InfusionCategory.getTitle (JEI, SPINE-4)"),
+            Map.entry("recipe.type.infusionenchantment",
+                    "InfusionEnchantmentCategory.getTitle (JEI, SPINE-4)"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always

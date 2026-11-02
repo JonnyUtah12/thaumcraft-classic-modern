@@ -16,6 +16,10 @@
    `-Ptc.noCurios` (built-in fallback; separate CI job
    `game-test-no-curios`). `AccessoryGameTest` branches on the active
    provider; the shared contract must hold identically.
+   A third leg covers the optional browser (SPINE-4): `-Ptc.noJei` drops the
+   JEI dev jar from `localRuntime` entirely, and `JeiRecipeCategoryGameTest`
+   must stay green there — the probe never loads a `mezz.jei` type, which is
+   the load-safety claim of an optional dependency.
    Client-dist boot (payload registration and dist-safe handlers must also
    construct on the client) is smoke-tested manually with
    `xvfb-run ./gradlew runClient`: require the mod init line and

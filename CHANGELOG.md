@@ -9,6 +9,26 @@ Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
 Work heading for `0.1.0-alpha.5`, gated per merge on `main`.
 
+- **Optional recipe-browser categories** (`SPINE-4` / `t_aebd14cf`): four JEI
+  categories, one per custom recipe type (`thaumcraft:arcane_workbench`,
+  `thaumcraft:crucible`, `thaumcraft:infusion`, `thaumcraft:infusion_enchantment`),
+  headed by the **original** `recipe.type.*` keys and strings (en_US.lang:660-663,
+  D-016 counts 242→246 / 232→236). This is an **integration convenience, not port
+  content** — D-011 item 6 records that the 1.7.10 original ships no recipe
+  browser, and that "the items are in JEI" was already satisfied with zero JEI
+  code by the item-model cards plus the SPINE-2 creative tab. JEI is `compileOnly`
+  API plus a `-Ptc.noJei`-gated development jar, manifest
+  `type="optional" side="CLIENT"`, pinned to `19.64.0.454` — the exact jar the
+  target ATM10 instance ships — and is **never bundled**: the release jar has 0
+  `mezz` entries and `JeiPluginIsolationTest` byte-scans every core class for a
+  `mezz.jei` reference. Rows that resolve to no item draw as empty slots instead
+  of throwing: **103** live ingredients and all **24** infusion-enchantment rows
+  (no item output by design) are tolerated, and the probe fails if those measured
+  counts ever hit zero. Gates: 394 unit tests / 0 failures (1 skipped), **127/127
+  game tests** with JEI present, with `-Ptc.noJei` (new CI job
+  `game-test-no-jei`) and with `-Ptc.noCurios`; `./gradlew build` exit 0.
+  `docs/jei-integration.md` records the shape, the licensing terms, the observed
+  caveats and what is left to other cards.
 - **First authored container screen** (`TC-M7-04-s-cr1`): `TrunkScreen` extends 1.21.1
   `AbstractContainerScreen`; `ModClientScreens` registers it on the mod bus through
   `RegisterMenuScreensEvent`, client-only, bound to the trunk menu type. Gate: 372 unit

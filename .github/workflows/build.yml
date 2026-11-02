@@ -75,6 +75,34 @@ jobs:
       - name: Assert game tests ran and passed
         run: grep -q "required tests passed" run/logs/latest.log
 
+  # SPINE-4 (t_aebd14cf, D-011): the four recipe categories are an optional,
+  # never-bundled third-party integration. -Ptc.noJei drops the JEI dev jar from
+  # localRuntime, so this job proves the mod loads and EVERY game test passes
+  # with no browser installed at all — the load-safety claim of the optional
+  # dependency. The probe itself touches no `mezz.jei` type; JeiPluginIsolationTest
+  # (unit) byte-scans every core class for one.
+  game-test-no-jei:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Game tests without JEI
+        run: ./gradlew -Ptc.noJei runGameTestServer
+        timeout-minutes: 20
+
+      - name: Assert game tests ran and passed
+        run: grep -q "required tests passed" run/logs/latest.log
+
   # Docs prerequisite (docs/porting-decisions.md D-014): the versioned 1.21.1
   # gettingstarted page requires testing EVERY mod, incl. client-only ones, in a
   # plain dedicated server. runGameTestServer is not that: it never exercises

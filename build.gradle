@@ -27,6 +27,13 @@ repositories {
         name = "Blameless Maven"
         url = "https://maven.theillusivec4.top/"
     }
+    // JEI API (optional recipe-category integration, SPINE-4) — the mod's Maven.
+    // Only the API jars are ever resolved at compile time; the full JEI jar is
+    // a localRuntime (development) artifact and is never a published dependency.
+    maven {
+        name = "BlameJared"
+        url = "https://maven.blamejared.com/"
+    }
 }
 
 base {
@@ -105,6 +112,22 @@ dependencies {
         localRuntime "top.theillusivec4.curios:curios-neoforge:${curios_version}"
     }
 
+    // Optional recipe-category integration (SPINE-4, docs/jei-integration.md).
+    // Same shape as Curios: the plugin package compiles against the JEI API
+    // (compileOnly, permanent — the Curios API is likewise always on the compile
+    // path and -Ptc.noCurios only strips its dev jar), bundles nothing, and the
+    // mod loads with or without JEI: the plugin class is only ever loaded BY
+    // JEI, through @JeiPlugin discovery, so a no-JEI runtime never touches a
+    // mezz.jei type — guarded by JeiPluginIsolationTest (bytecode scan).
+    // -Ptc.noJei removes the dev jars from localRuntime to exercise the no-JEI
+    // load path; the guards keep the API on the TEST path unconditionally, so
+    // the same tests run on both legs.
+    compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    if (!project.hasProperty('tc.noJei')) {
+        localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
+    }
+
     // Unit-test harness. With neoForge.unitTest enabled the test source set has
     // the Minecraft/NeoForge classpath: unit tests cover pure logic, data, build
     // wiring, and persistence codecs. In-game behavior is covered by NeoForge
@@ -116,6 +139,11 @@ dependencies {
     // TC-M8-01: the Curios adapter unit test compiles against the Curios API
     // (compileOnly for main; tests need it on their own compile classpath).
     testImplementation "top.theillusivec4.curios:curios-neoforge:${curios_version}"
+    // SPINE-4: the JEI plugin's unit guards compile against the JEI API on the
+    // test classpath only (never published, never bundled). Unconditional, like
+    // Curios: the guards must run in the -Ptc.noJei leg too.
+    testImplementation "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
+    testImplementation "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
     // Versionless: with neoForge.unitTest the Minecraft dependency platform pins
     // gson strictly (2.10.1 for 1.21.1); an explicit version would conflict.
     testImplementation 'com.google.code.gson:gson'
@@ -444,6 +472,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             neo_version            : neo_version,
             loader_version_range   : loader_version_range,
             curios_version         : curios_version,
+            jei_version            : jei_version,
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,
@@ -471,6 +500,12 @@ tasks.named('test', Test).configure {
     systemProperty 'tc.minecraftVersion', minecraft_version
     systemProperty 'tc.neoVersion', neo_version
     systemProperty 'tc.curiosVersion', curios_version
+    // SPINE-4: the JEI integration guards read their pins from gradle.properties
+    // (single source of truth) and from build.gradle (the dependency-shape rule:
+    // compileOnly + localRuntime, never implementation/runtimeOnly).
+    systemProperty 'tc.jeiVersion', jei_version
+    systemProperty 'tc.buildGradleFile', file('build.gradle').absolutePath
+    systemProperty 'tc.jeiLocalRuntime', String.valueOf(!project.hasProperty('tc.noJei'))
     systemProperty 'tc.generatedModsToml',
             layout.buildDirectory.file('generated/sources/modMetadata/META-INF/neoforge.mods.toml').get().asFile.absolutePath
     systemProperty 'tc.assetMappingFile',

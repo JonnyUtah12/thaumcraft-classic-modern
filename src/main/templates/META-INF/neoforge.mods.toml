@@ -38,3 +38,17 @@ original content are the work of Azanor.
     versionRange="[${curios_version},)"
     ordering="AFTER"
     side="BOTH"
+
+# Optional recipe browser (SPINE-4, docs/jei-integration.md). The @JeiPlugin in
+# client/jei is discovered by JEI itself, so nothing in the core mod references
+# a mezz.jei type and the mod loads identically when JEI is absent (D-011: the
+# browser is an integration convenience, not port content). JEI is client-side,
+# so the declaration is CLIENT; the version floor is the build the ATM10 instance
+# ships. Licensing (recorded with D-011/D-016): JEI is third-party — compile-time
+# API plus runtime-optional, and its jar is never redistributed by this project.
+[[dependencies.${mod_id}]]
+    modId="jei"
+    type="optional"
+    versionRange="[${jei_version},)"
+    ordering="AFTER"
+    side="CLIENT"

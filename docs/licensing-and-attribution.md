@@ -71,9 +71,11 @@ in docs and task notes, never pasted into committed sources.
 
 `src/main/resources/assets/thaumcraft/lang/en_us.json` is committed to this
 public repository and is included in the code-only release artifact. Of its
-**242 shipped values, 232 appear verbatim in the original 4.2.3.5 `en_US.lang`** (SPINE-2 added the tab label, en_US.lang:670 verbatim)
+**246 shipped values, 236 appear verbatim in the original 4.2.3.5 `en_US.lang`** (SPINE-2 added the tab label, en_US.lang:670 verbatim; SPINE-4 /
+t_aebd14cf added the four `recipe.type.*` recipe-category headers,
+en_US.lang:660-663 verbatim — counted under the same rule)
 (All Rights Reserved); 10 are authored for port-created ids. Measured
-2026-10-28 by comparing shipped values against the original file.
+2026-11-02 by comparing shipped values against the original file.
 
 D-004 states original assets are never committed or redistributed. The claim
 that the release artifact is "code-only, no original content" is therefore
@@ -83,3 +85,29 @@ commits `fca4fb8` / `3810797` are already public), so the jar adds no new copy.
 Options and the recommendation are recorded as **D-016** in
 `porting-decisions.md`; this needs an explicit decision rather than an implicit
 one.
+
+
+## Third-party optional integration: JEI (SPINE-4, recorded with D-011/D-016)
+
+The recipe-browser lane (`docs/jei-integration.md`) compiles against
+**JEI** by MEZ, a third-party mod with its own license. The terms this project
+takes on:
+
+- the JEI **API jars** are a `compileOnly` dependency (and a `testImplementation`
+  dependency for the guards) — they are needed to build, never to run;
+- the full JEI jar is a `localRuntime` **development** artifact only, behind
+  `-Ptc.noJei`, so a dev client can exercise the plugin;
+- JEI's jar is **never bundled into this project's artifact and never a
+  published dependency** — no `implementation`, `runtimeOnly` or `api` line
+  mentions `mezz.jei`, and `JeiPluginIsolationTest` reads `build.gradle` to keep
+  that true; the code-only release artifact (alpha.4 artifact policy) stays
+  code-only;
+- the manifest declares the mod `type="optional" side="CLIENT"`, so an install
+  without JEI loads this port unchanged;
+- **no JEI asset, string, model or source file is copied into this
+  repository** — the four category labels are the original Thaumcraft
+  `recipe.type.*` strings (en_US.lang:660-663, covered by D-016), not JEI text.
+
+The user installs JEI themselves; the integration activates only when the user's
+own JEI is present. The same shape already governs the optional Curios bridge
+(D-005).
