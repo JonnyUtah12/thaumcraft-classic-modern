@@ -37,6 +37,10 @@ Work heading for `0.1.0-alpha.5`, gated per merge on `main`.
   screens exist in the wip tree is measured false (0 screen classes in `src`, 0 in
   `wip-salvage`), so the rest are authoring work, not porting.
 
+### Fixed
+
+- **The node death-spiral game probe is deterministic.** `productionAndDeathSpiralCycleObservedOverSimulatedTicks` asserted a single value that is one draw from the level's **shared** RNG, so it passed at 125 game tests and failed at 127 (CI `game-test-no-curios`, run 41472347781) once a sibling card's probe changed how many draws came before it: the spiral degrades **every** empty-container aspect's base and the 1/20 removal roll breaks that loop only when it fires, so base 9 (one empty aspect) and base 8 (two) are both legal readings. It is now two probes that drive `NodeRuntime.tick(Context, Random, LongSupplier)` with a probe-local context and rolls scripted per bound — `isolatedNodeDeathSpiralDegradesTheOneEmptyAspectToBaseNine` (exactly 9) and `dischargedNodeDeathSpiralDegradesBothEmptyAspectsToBaseEight` (exactly 8) — and the container tolerance `held == 1 || held == 2` is exact now too (1 and 0). No `NodeRuntime` behaviour changed and the arithmetic asserted is the original's; the record stays in `docs/jei-integration.md` § "Gate flakiness observed on this branch".
+
 ## [0.1.0-alpha.4] - 2026-10-28
 
 Fourth pre-release. Still deliberately a pre-release, not playable end-to-end:

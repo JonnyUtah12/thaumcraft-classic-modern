@@ -105,10 +105,36 @@ card makes them behave.
   aspects are never selected, L197-201), full-pool takes nothing.
 - `WorldMagicDataNodeBehaviorTest` (4): `aspectsBase`/`lastActive`
   round-trip, lenient load of generated records, `replaceNode` in place.
-- `NodeBehaviorGameTest` (4, `runGameTestServer`):
+- `NodeBehaviorGameTest` (5, `runGameTestServer`):
   `driverMaterialisesRuntimeAndTapPersistsToStore` (record→runtime→
-  record loop + tap persistence), `productionAndDeathSpiralCycleObservedOverSimulatedTicks`
-  (first unit at count 600, base degradation at 1200),
+  record loop + tap persistence),
+  `isolatedNodeDeathSpiralDegradesTheOneEmptyAspectToBaseNine` (first unit at
+  count 600; at the 1200 spiral the ONE empty aspect's base falls 5 → 4, total
+  9), `dischargedNodeDeathSpiralDegradesBothEmptyAspectsToBaseEight` (a richer
+  neighbor discharges that unit away, so the spiral degrades BOTH bases 5 → 4,
+  total 8, and the node survives on two zero-vis entries),
   `emptyNodeDiesAndIsRemovedFromStore` (one aspect per spiral pass,
   record dropped when emptied), `revealGateFollowsTheOriginalSlots`
   (helmet vs held slots against a registered item).
+- **The spiral probes own their RNG.** The engine consumes the level's shared
+  stream in production — `NodeTickDriver` bridges `world.rand` (TileNode L711)
+  to `LevelRandomBridge(level.getRandom())` — so a probe that drives the spiral
+  through the driver and asserts a single value asserts ONE DRAW from a stream
+  it does not own: that value depends on how many other probes consumed the
+  stream in the same tick. The probe that did this was green at 125 game tests
+  and red at 127 (CI `game-test-no-curios`, run 41472347781; record:
+  docs/jei-integration.md § "Gate flakiness observed on this branch"). Both
+  spiral probes now drive `NodeRuntime.tick(Context, Random, LongSupplier)`
+  with a probe-local `Context` — the runtime is never registered with the
+  driver and no `WorldMagicData` record is written, so no neighbouring probe's
+  cell, chunk, tick counter or RNG can reach it — and rolls scripted **per
+  bound**: each bound is one named site in the original (`nextInt(20)` L711
+  removal roll, `nextInt(5)` the L590-592 offset pair plus the L713 modifier
+  roll, `nextInt(2)`/`nextInt(1)` the uniform picks at L609/L765), so pinning a
+  bound pins that site no matter how many draws came before it. An unscripted
+  site, an out-of-range scripted value and `nextBoolean` (the PALE paths,
+  L593/L617) all throw, so a probe that walks into an unaccounted branch says
+  so. Both of the original's numbers survive as exact assertions, and the old
+  `held == 1 || held == 2` tolerance is now `1` (isolated) and `0`
+  (discharged). Widening the original to `9 || 8` would have hidden the
+  question these two probes answer.

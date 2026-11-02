@@ -175,6 +175,21 @@ this card** — an over-strict assertion in
 someone else's probe is that card's finding to make, not this one's to paper
 over.
 
+**Resolved (t_7bf6a4d0).** The node probe no longer asserts a drawn value at
+all. It is split into `isolatedNodeDeathSpiralDegradesTheOneEmptyAspectToBaseNine`
+(exactly 9) and `dischargedNodeDeathSpiralDegradesBothEmptyAspectsToBaseEight`
+(exactly 8), both driving `NodeRuntime.tick(Context, Random, LongSupplier)` with
+a probe-local context and rolls scripted **per bound** (each bound is one named
+`nextInt(n)` site in the original), so the level RNG is not in the path and the
+suite's test count cannot move the result. `held == 1 || held == 2` became `1`
+in the isolated probe and `0` in the discharged one. The suite is **128** game
+tests: 5 consecutive `runGameTestServer` runs, `-Ptc.noCurios
+runGameTestServer` and `-Ptc.noJei runGameTestServer` are all green, and
+`./gradlew build` exits 0. The shape is written up in
+docs/architecture/node-behavior.md § "The spiral probes own their RNG" and the
+rule for the next probe is in docs/testing.md. The ore probe (**t_20ad0211**)
+shares the drop-capture cause and stays open.
+
 ## Observing it (the test-copy caveat)
 
 The disposable test copy `~/minecraft mods/atm10-test/mods` holds **0**
