@@ -71,7 +71,7 @@ in docs and task notes, never pasted into committed sources.
 
 `src/main/resources/assets/thaumcraft/lang/en_us.json` is committed to this
 public repository and is included in the code-only release artifact. Of its
-**241 shipped values, 231 appear verbatim in the original 4.2.3.5 `en_US.lang`**
+**242 shipped values, 232 appear verbatim in the original 4.2.3.5 `en_US.lang`** (SPINE-2 added the tab label, en_US.lang:670 verbatim)
 (All Rights Reserved); 10 are authored for port-created ids. Measured
 2026-10-28 by comparing shipped values against the original file.
 

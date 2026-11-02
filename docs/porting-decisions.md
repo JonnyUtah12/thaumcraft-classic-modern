@@ -415,9 +415,15 @@ RecipeManager's parse errors for our mod go from 31 to 0.
 v0.1.0-alpha.4.
 
 **Fact.** `src/main/resources/assets/thaumcraft/lang/en_us.json` is committed to
-the public repository (landed `fca4fb8`, merged `3810797`). Of its **241 shipped
-values, 231 appear verbatim in the original 4.2.3.5 `en_US.lang`** (All Rights
-Reserved); 10 are authored for port-created ids. Measured by comparing shipped
+the public repository (landed `fca4fb8`, merged `3810797`). Of its **242 shipped
+values, 232 appear verbatim in the original 4.2.3.5 `en_US.lang`** (All Rights
+Reserved); 10 are authored for port-created ids. (SPINE-2 / t_76ab9b65 added the
+242nd: the creative-tab label `itemGroup.thaumcraft.thaumcraft` = “Thaumcraft”
+mirrors the original `itemGroup.thaumcraft=Thaumcraft` (en_US.lang:670) verbatim,
+recorded here per the D-004 rule that original-mirroring strings go to D-016; the
+1.21.1 key convention is `itemGroup.<ns>.<id>`, NOT `item_category.*` — the
+shipped code and both localization probes key tabs as `itemGroup.thaumcraft.*`
+and no `item_category` key ever shipped.) Measured by comparing shipped
 values against the original file, not by trusting the card's own 118-key claim.
 
 **Why it conflicts.** D-004 states original assets are never committed or
