@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.registration.ModCreativeTabs;
+import com.jonnyutah12.thaumcraftclassic.blocks.DeviceDynamicState;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -465,6 +466,195 @@ public final class BlockStateCoverageGameTest {
         helper.assertTrue(dead.isEmpty(),
                 dead.size() + " committed block models are not reachable from any shipped blockstate: " + preview(dead));
         helper.succeed();
+    }
+
+    /**
+     * BD-18 (t_065502ba): the appearance the tile drives ships as
+     * <b>states</b>, not as a renderer.
+     *
+     * <p>A block that publishes a dynamic look through
+     * {@link DeviceDynamicState} must satisfy four things, all of them
+     * checkable from the shipped JSON, none of them visible to a screenshot of
+     * one static block:</p>
+     * <ol>
+     *   <li>the block registers the property the tile writes;</li>
+     *   <li>every blockstate key <em>addresses</em> that property — a wildcard
+     *     key pins one model for both values, which is how a lit swap silently
+     *     stops changing the look (the mechanism 1.7.10 did not have to worry
+     *     about: {@code BlockMetalDevice.java:117-155} and
+     *     {@code BlockLifterRenderer.java:50-89} picked the sprite per frame,
+     *     not per state);</li>
+     *   <li>for at least one state group the two values name <b>different</b>
+     *     models — a property no model depends on is decoration. A group whose
+     *     two values name the same model is allowed: the plain arcane lamp
+     *     (metal device 7) always drew its lit {@code lamp_top}/{@code
+     *     lamp_side} pair, so its look really is static;</li>
+     *   <li>those two models name <b>different sprites</b>: two models with the
+     *     same textures would swap geometry and leave the face alone, which is
+     *     exactly the failure this card exists to prevent.</li>
+     * </ol>
+     *
+     * <p>The expected set comes from the live registry (the shipped blocks that
+     * implement the interface), so a later card that publishes a new dynamic
+     * look is gated here without editing this probe.</p>
+     */
+    @GameTest(template = "empty")
+    public static void dynamicAppearanceShipsAsDistinctStateModels(final GameTestHelper helper) {
+        final List<String> sources = new ArrayList<>();
+        final List<String> problems = new ArrayList<>();
+        for (final Map.Entry<String, Block> entry : shippedBlocks().entrySet()) {
+            if (!(entry.getValue() instanceof DeviceDynamicState device)) {
+                continue;
+            }
+            final Property<?> property = device.dynamicAppearanceProperty();
+            sources.add(entry.getKey() + ":" + property.getName());
+            final StateDefinition<Block, BlockState> definition = entry.getValue().getStateDefinition();
+            if (!definition.getProperties().contains(property)) {
+                problems.add(entry.getKey() + " publishes " + property.getName()
+                        + " through the interface but its StateDefinition does not register it");
+                continue;
+            }
+            final JsonObject json = loadObject("blockstates/" + entry.getKey() + ".json");
+            if (json == null || !json.has("variants") || !json.get("variants").isJsonObject()) {
+                problems.add(entry.getKey() + " has no blockstate variants to key the dynamic property on");
+                continue;
+            }
+            final List<String> keys = new ArrayList<>(json.getAsJsonObject("variants").keySet());
+            for (final String key : keys) {
+                if (!keyAddressesProperty(key, property)) {
+                    problems.add(entry.getKey() + " blockstate key '" + key + "' leaves " + property.getName()
+                            + " a wildcard — one model would be pinned for every value the tile publishes");
+                }
+            }
+            // state group (every property except the dynamic one) -> value -> model
+            final Map<String, Map<String, String>> models = new TreeMap<>();
+            for (final BlockState state : definition.getPossibleStates()) {
+                final String group = groupKey(state, definition, property);
+                final String value = serialValue(property, state.getValue(property));
+                String model = null;
+                for (final String key : keys) {
+                    if (keyMatches(key, state, definition)) {
+                        model = modelOf(json.getAsJsonObject("variants").getAsJsonObject(key));
+                    }
+                }
+                if (model == null) {
+                    problems.add(entry.getKey() + " state " + serialName(state, definition)
+                            + " is matched by no key, so the dynamic property has no model to pick");
+                    continue;
+                }
+                models.computeIfAbsent(group, k -> new TreeMap<>()).put(value, model);
+            }
+            int swapping = 0;
+            for (final Map.Entry<String, Map<String, String>> group : models.entrySet()) {
+                final List<String> groupModels = new ArrayList<>(new LinkedHashSet<>(group.getValue().values()));
+                if (groupModels.size() < 2) {
+                    continue;
+                }
+                swapping++;
+                final List<String> sprites = new ArrayList<>();
+                for (final String model : groupModels) {
+                    sprites.add(String.join(",", spritesOfModel(model)));
+                }
+                if (new LinkedHashSet<>(sprites).size() < 2) {
+                    problems.add(entry.getKey() + " group " + group.getKey() + " swaps the model between "
+                            + property.getName() + "'s values but every model names the same sprites ("
+                            + groupModels + ") — the state change would not change the appearance");
+                }
+            }
+            if (swapping == 0) {
+                problems.add(entry.getKey() + " publishes " + property.getName()
+                        + " on " + models.size() + " state group(s) and none of them names a model that "
+                        + "differs between the values — the property changes nothing the player can see");
+            }
+        }
+        ThaumcraftClassic.LOGGER.info("[BD-18] dynamic appearance: {} tile-driven property source(s) — {}",
+                sources.size(), sources);
+        helper.assertTrue(!sources.isEmpty(),
+                "no shipped block publishes a dynamic appearance property — the lit/charged swaps of "
+                        + "BlockMetalDevice.java:117-155 and BlockLifterRenderer.java:50-89 are "
+                        + "unrepresented, and this probe can never fail");
+        helper.assertTrue(problems.isEmpty(),
+                problems.size() + " dynamic-appearance contracts are broken: " + preview(problems));
+        helper.succeed();
+    }
+
+    /** True when a blockstate key names the property (no wildcard on it). */
+    private static boolean keyAddressesProperty(final String key, final Property<?> property) {
+        if (key.isEmpty()) {
+            return false;
+        }
+        for (final String pair : key.split(",")) {
+            if (pair.startsWith(property.getName() + "=")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The state's serial name with the dynamic property omitted — its state group. */
+    private static String groupKey(final BlockState state, final StateDefinition<Block, BlockState> definition,
+                                   final Property<?> dynamic) {
+        final StringBuilder sb = new StringBuilder();
+        for (final Property<?> property : definition.getProperties()) {
+            if (property.equals(dynamic)) {
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append(',');
+            }
+            sb.append(property.getName()).append('=').append(serialValue(property, state.getValue(property)));
+        }
+        return sb.toString();
+    }
+
+    /** The model a blockstate key names (a weighted list's first entry). */
+    private static String modelOf(final JsonObject entry) {
+        if (entry.has("model")) {
+            return entry.get("model").getAsString();
+        }
+        if (entry.has("variants") && entry.getAsJsonArray("variants").size() > 0) {
+            return entry.getAsJsonArray("variants").get(0).getAsJsonObject().get("model").getAsString();
+        }
+        return "";
+    }
+
+    /**
+     * Every sprite reachable from a model: the literal texture values across its
+     * parent chain (a {@code #key} entry is a local alias, resolved by the same
+     * model's {@code textures} object, so collecting the literals is the sprite
+     * set the faces can draw).
+     */
+    private static Set<String> spritesOfModel(final String modelRef) {
+        final Set<String> sprites = new LinkedHashSet<>();
+        final Deque<String> chain = new ArrayDeque<>();
+        final Set<String> seen = new LinkedHashSet<>();
+        chain.add(modelRef);
+        while (!chain.isEmpty()) {
+            final String ref = chain.poll();
+            if (!seen.add(ref) || !ref.contains(":")) {
+                continue;
+            }
+            final String namespace = ref.substring(0, ref.indexOf(':'));
+            if (!namespace.equals(ThaumcraftClassic.MOD_ID)) {
+                continue;
+            }
+            final JsonObject model = parseAsset("models/" + ref.substring(ref.indexOf(':') + 1) + ".json");
+            if (model == null) {
+                continue;
+            }
+            if (model.has("textures")) {
+                for (final Map.Entry<String, JsonElement> texture : model.getAsJsonObject("textures").entrySet()) {
+                    final String value = texture.getValue().getAsString();
+                    if (!value.startsWith("#") && value.contains(":")) {
+                        sprites.add(value);
+                    }
+                }
+            }
+            if (model.has("parent") && model.get("parent").getAsString().startsWith(ThaumcraftClassic.MOD_ID + ":")) {
+                chain.add(model.get("parent").getAsString());
+            }
+        }
+        return sprites;
     }
 
     // ------------------------------------------------------------------ helpers

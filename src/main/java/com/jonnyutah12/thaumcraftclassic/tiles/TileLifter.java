@@ -1,5 +1,7 @@
 package com.jonnyutah12.thaumcraftclassic.tiles;
 
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockLifter;
+import com.jonnyutah12.thaumcraftclassic.blocks.DeviceDynamicState;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.BlockPos;
@@ -74,6 +76,18 @@ public class TileLifter extends BlockEntity implements com.jonnyutah12.thaumcraf
                 }
             }
         }
+        publishPowered();
+    }
+
+    /**
+     * BD-18: publish the levitator's look. The original's ISMR draws the
+     * {@code animatedglow} shell bright while the tile is unpowered
+     * ({@code BlockLifterRenderer.java:47-84}); the port puts the shell on the
+     * {@code powered=false} model, so the tile writes the property the
+     * blockstate keys on (see {@link com.jonnyutah12.thaumcraftclassic.blocks.BlockLifter#POWERED}).
+     */
+    public void publishPowered() {
+        DeviceDynamicState.sync(this, BlockLifter.POWERED, gettingPower());
     }
 
     public boolean gettingPower() {

@@ -4,6 +4,8 @@ import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.aspect.AspectList;
 import com.jonnyutah12.thaumcraftclassic.aspect.IEssentiaTransport;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockDeviceBase;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockMetalDevice;
+import com.jonnyutah12.thaumcraftclassic.blocks.DeviceDynamicState;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -56,6 +58,23 @@ public class TileArcaneLamp extends BlockEntity
                 consumeEssentia(target);
             }
         }
+        publishCharged();
+    }
+
+    /**
+     * BD-18: publish the lamp's lit look. The original swapped the face pair
+     * inside its connected-texture hook on {@code charges > 0}
+     * ({@code BlockMetalDevice.java:120-160}); the port has no vis charge on
+     * these tiles, so the live analogue is {@code use > 0} — the lamp is armed
+     * and burning essentia (BD-18 records the mapping).
+     *
+     * <p>Public as the tile's appearance-publish hook, the same shape as
+     * {@link TileLifter#publishPowered()}: {@link #serverTick()} calls it every
+     * tick, and {@code DynamicBlockAppearanceGameTest} drives it directly to
+     * pin the property the shipped blockstate keys on.</p>
+     */
+    public void publishCharged() {
+        DeviceDynamicState.sync(this, BlockMetalDevice.CHARGED, use > 0);
     }
 
     /** The block this lamp is currently acting on, or null. */
