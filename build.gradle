@@ -297,6 +297,8 @@ def originalBeamTiles = [
         'bolt_core': 'p_small.png',
 ]
 
+def particleCellPx = 16
+
 def sliceOriginalParticleSprites = tasks.register("sliceOriginalParticleSprites") {
     onlyIf { originalParticleSheet.exists() }
     inputs.file(originalParticleSheet)
@@ -309,12 +311,28 @@ def sliceOriginalParticleSprites = tasks.register("sliceOriginalParticleSprites"
         spriteDir.mkdirs()
         def image = javax.imageio.ImageIO.read(originalParticleSheet)
         if (image == null) { throw new GradleException("cannot decode ${originalParticleSheet}") }
+        // State the sheet contract in words. `getSubimage` on a sheet that is too
+        // small for the indexed grid throws java.awt.image.RasterException
+        // "(x + width) is outside of Raster" — no file, no cell, no size — which is
+        // exactly how this task read on CI for four days: the fixture tree wrote
+        // 1x1 placeholder PNGs and the build job's overlay step died in ~1s.
+        def allCells = originalParticleCells.values().flatten()
+        int needCols = allCells.collect { (it % particleCellPx) + 1 }.max() as int
+        int needRows = allCells.collect { ((int) (it / particleCellPx)) + 1 }.max() as int
+        if (image.width < needCols * particleCellPx || image.height < needRows * particleCellPx) {
+            throw new GradleException("${originalParticleSheet} is ${image.width}x${image.height}, too " +
+                    "small for the ${particleCellPx}px cell grid the ported particles index: cells " +
+                    "${allCells.min()}..${allCells.max()} need at least " +
+                    "${needCols * particleCellPx}x${needRows * particleCellPx}. The original sheet is " +
+                    "256x256, and the CI fixture tree (scripts/make_asset_overlay_fixture.py) must " +
+                    "carry a sheet of that size — a 1x1 placeholder is not a valid fixture here.")
+        }
         def written = 0
         originalParticleCells.each { name, cells ->
             cells.eachWithIndex { cell, frame ->
-                def x = (cell % 16) * 16
-                def y = ((int) (cell / 16)) * 16
-                def sprite = image.getSubimage(x, y, 16, 16)
+                def x = (cell % particleCellPx) * particleCellPx
+                def y = ((int) (cell / particleCellPx)) * particleCellPx
+                def sprite = image.getSubimage(x, y, particleCellPx, particleCellPx)
                 def file = new File(spriteDir, "${name}_${frame}.png")
                 if (!javax.imageio.ImageIO.write(sprite, 'png', file)) {
                     throw new GradleException("no PNG writer for ${file}")
