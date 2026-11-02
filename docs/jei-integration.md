@@ -152,6 +152,28 @@ and the catalyst bindings (which need a booted registry for
 The server-side half proves the data half: if a live row's display builds and
 its slots fit the declared panel, that row's JEI page has content.
 
+## Gate flakiness observed on this branch (inherited, not this lane)
+
+The lane's own gates are green (394 unit / 127 game tests, all legs). While
+repeating the game-test legs to characterise the branch, **5 runs of
+`runGameTestServer` produced 4 green and 1 red, and CI's
+`game-test-no-curios` job was red** — every failure in a probe that predates
+this card, in a system this card does not touch:
+
+| Probe | Leg | Failure | Mechanism |
+| --- | --- | --- | --- |
+| `NodeBehaviorGameTest.productionAndDeathSpiralCycleObservedOverSimulatedTicks` | CI `game-test-no-curios` (125-test runs on `main` and on the SPINE-2 parent are green) | `death spiral must degrade the empty aspect's base by exactly one, got 8` | the spiral degrades **every empty-container aspect's** base by one and the `random.nextInt(20)` roll breaks out after the first (`NodeRuntime.java`:413-433). One empty aspect ⇒ base 9, two (the produced unit discharged between 600 and 1200) ⇒ base 8. The draw comes from the **shared level RNG**, whose stream depends on how many other game tests are running in the same tick, so this probe pins a single RNG draw as its expected value. |
+| `OreDropGameTest.silkTouchDropsTheBlockWithItsVariant` | local default leg (run 5 of 5) | `a silk-touched v0 ore drops exactly one stack, got 2 [1 minecraft:stone_button, 1 thaumcraft:blockcustomore]` | the drop collection is taken from a region that also contains a template `stone_button`; under some interleavings the button's drop lands in the same collection. Fixture-order sensitive. |
+
+This lane's two probes draw from no level RNG and no block-breaking region, so
+they are not the cause; adding game tests shifts the interleaving, which is why
+the failure surfaced on the 127-test branch and not on the 125-test parent. Both
+probes need determinism work in their own cards (pin the level RNG; scope the
+drop capture to the broken block), tracked as the follow-up cards created from
+this one. **No probe was loosened on this card** — an over-strict assertion in
+someone else's probe is that card's finding to make, not this one's to paper
+over.
+
 ## Observing it (the test-copy caveat)
 
 The disposable test copy `~/minecraft mods/atm10-test/mods` holds **0**
