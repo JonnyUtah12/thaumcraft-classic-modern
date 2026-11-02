@@ -32,17 +32,33 @@ public final class VariantStateItems {
     public static final String VARIANT_PROPERTY = "variant";
 
     /**
+     * The int properties whose value IS the original's block metadata, in
+     * lookup order: {@code variant} for the catalog families (D-018), and
+     * {@code age} for the blocks whose original metadata is a growth stage
+     * (measured: {@code BlockManaPod.getIcon(side, meta)} switches its stem
+     * sprite on the placed metadata — {@code reference/…/blocks/BlockManaPod.java:54-56}
+     * — and the port stores that stage in {@code age}, {@code blocks/BlockManaPod.java:59}).
+     * The same list decides what the {@code minecraft:block_state} component
+     * carries (so pick-block and drops preserve the stage, as the original's
+     * meta-carrying drops did) and what {@code ItemMetaAppearance} treats as
+     * the metadata domain of a block item.
+     */
+    public static final java.util.List<String> META_CARRIER_PROPERTIES =
+            java.util.List.of(VARIANT_PROPERTY, "age");
+
+    /**
      * The {@code minecraft:block_state} component value carrying this state's
      * {@code variant} property, for {@code stack.set(DataComponents.BLOCK_STATE, …)}.
      */
     public static BlockItemStateProperties variantComponent(final BlockState state) {
-        final Property<?> variant = state.getBlock().getStateDefinition().getProperty(VARIANT_PROPERTY);
-        if (variant == null) {
-            return BlockItemStateProperties.EMPTY;
-        }
         final Map<String, String> properties = new HashMap<>();
-        properties.put(VARIANT_PROPERTY, name(state, variant));
-        return new BlockItemStateProperties(properties);
+        for (final String propertyName : META_CARRIER_PROPERTIES) {
+            final Property<?> property = state.getBlock().getStateDefinition().getProperty(propertyName);
+            if (property != null) {
+                properties.put(propertyName, name(state, property));
+            }
+        }
+        return properties.isEmpty() ? BlockItemStateProperties.EMPTY : new BlockItemStateProperties(properties);
     }
 
     private static <T extends Comparable<T>> String name(final BlockState state, final Property<T> property) {
@@ -52,6 +68,13 @@ public final class VariantStateItems {
     /** Convenience: attach the variant component to a fresh block-item stack. */
     public static ItemStack withVariant(final ItemStack stack, final BlockState state) {
         stack.set(net.minecraft.core.component.DataComponents.BLOCK_STATE, variantComponent(state));
+        final Integer variant = variantOf(stack);
+        if (variant != null) {
+            // BD-17: mirror the variant into the 1.21.1 appearance component so
+            // the family's model overrides pick this variant's art. The
+            // authoritative thaumcraft:item_meta is written by ItemMetaAppearance.
+            com.jonnyutah12.thaumcraftclassic.items.ItemMetaAppearance.mirror(stack, variant);
+        }
         return stack;
     }
 
@@ -68,12 +91,17 @@ public final class VariantStateItems {
     public static Integer variantOf(final ItemStack stack) {
         final BlockItemStateProperties component =
                 stack.get(net.minecraft.core.component.DataComponents.BLOCK_STATE);
-        final String carried = component == null ? null : component.properties().get(VARIANT_PROPERTY);
-        if (carried != null) {
-            try {
-                return Integer.valueOf(carried);
-            } catch (NumberFormatException notANumber) {
-                return null;
+        if (component != null) {
+            for (final String propertyName : META_CARRIER_PROPERTIES) {
+                final String carried = component.properties().get(propertyName);
+                if (carried == null) {
+                    continue;
+                }
+                try {
+                    return Integer.valueOf(carried);
+                } catch (NumberFormatException notANumber) {
+                    return null;
+                }
             }
         }
         return stack.get(com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents.ITEM_META.get());

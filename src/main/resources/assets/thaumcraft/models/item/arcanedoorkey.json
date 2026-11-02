@@ -2,5 +2,17 @@
   "parent": "minecraft:item/generated",
   "textures": {
     "layer0": "thaumcraft:item/keyiron"
-  }
+  },
+  "overrides": [
+    {
+      "predicate": "custom_model_data",
+      "value": 0,
+      "model": "thaumcraft:itemmeta/arcanedoorkey_0"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 1,
+      "model": "thaumcraft:itemmeta/arcanedoorkey_1"
+    }
+  ]
 }

@@ -2,5 +2,42 @@
   "parent": "minecraft:item/generated",
   "textures": {
     "layer0": "thaumcraft:item/shard"
-  }
+  },
+  "overrides": [
+    {
+      "predicate": "custom_model_data",
+      "value": 0,
+      "model": "thaumcraft:itemmeta/itemshard_0"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 1,
+      "model": "thaumcraft:itemmeta/itemshard_1"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 2,
+      "model": "thaumcraft:itemmeta/itemshard_2"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 3,
+      "model": "thaumcraft:itemmeta/itemshard_3"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 4,
+      "model": "thaumcraft:itemmeta/itemshard_4"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 5,
+      "model": "thaumcraft:itemmeta/itemshard_5"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 6,
+      "model": "thaumcraft:itemmeta/itemshard_6"
+    }
+  ]
 }

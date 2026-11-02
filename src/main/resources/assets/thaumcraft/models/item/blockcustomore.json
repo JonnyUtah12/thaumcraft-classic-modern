@@ -1,3 +1,45 @@
 {
-  "parent": "thaumcraft:block/blockcustomore_cinnabar"
+  "parent": "thaumcraft:block/blockcustomore_cinnabar",
+  "overrides": [
+    {
+      "predicate": "custom_model_data",
+      "value": 0,
+      "model": "thaumcraft:itemmeta/blockcustomore_0"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 1,
+      "model": "thaumcraft:itemmeta/blockcustomore_1"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 2,
+      "model": "thaumcraft:itemmeta/blockcustomore_2"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 3,
+      "model": "thaumcraft:itemmeta/blockcustomore_3"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 4,
+      "model": "thaumcraft:itemmeta/blockcustomore_4"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 5,
+      "model": "thaumcraft:itemmeta/blockcustomore_5"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 6,
+      "model": "thaumcraft:itemmeta/blockcustomore_6"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 7,
+      "model": "thaumcraft:itemmeta/blockcustomore_7"
+    }
+  ]
 }

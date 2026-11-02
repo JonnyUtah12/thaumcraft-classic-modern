@@ -2,5 +2,22 @@
   "parent": "minecraft:item/generated",
   "textures": {
     "layer0": "thaumcraft:block/warded_glass_1"
-  }
+  },
+  "overrides": [
+    {
+      "predicate": "custom_model_data",
+      "value": 0,
+      "model": "thaumcraft:itemmeta/blockcosmeticopaque_0"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 1,
+      "model": "thaumcraft:itemmeta/blockcosmeticopaque_1"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 2,
+      "model": "thaumcraft:itemmeta/blockcosmeticopaque_2"
+    }
+  ]
 }

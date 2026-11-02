@@ -2,5 +2,17 @@
   "parent": "minecraft:item/generated",
   "textures": {
     "layer0": "thaumcraft:item/vis_amulet_lesser"
-  }
+  },
+  "overrides": [
+    {
+      "predicate": "custom_model_data",
+      "value": 0,
+      "model": "thaumcraft:itemmeta/itemamuletvis_0"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 1,
+      "model": "thaumcraft:itemmeta/itemamuletvis_1"
+    }
+  ]
 }

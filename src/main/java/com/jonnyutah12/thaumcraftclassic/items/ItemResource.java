@@ -76,7 +76,7 @@ public class ItemResource extends Item implements IEssentiaContainerItem {
             throw new IllegalArgumentException("ItemResource meta out of range: " + meta);
         }
         final ItemStack stack = new ItemStack(CatalogResources.ITEM_RESOURCE.get());
-        stack.set(ModDataComponents.ITEM_META.get(), meta);
+        ItemMetaAppearance.mirror(stack, meta); // BD-17: meta + appearance mirror
         if (meta == META_PRIMAL_CHARM) {
             // Original getItemStackLimit: primal charm stacks never merge.
             stack.set(DataComponents.MAX_STACK_SIZE, 1);

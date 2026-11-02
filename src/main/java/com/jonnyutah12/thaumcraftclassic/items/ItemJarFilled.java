@@ -75,7 +75,7 @@ public class ItemJarFilled extends Item implements IEssentiaContainerItem {
     /** The original's {@code new ItemStack(ConfigItems.itemJarFilled, 1, meta)}. */
     public static ItemStack stack(final int meta) {
         final ItemStack stack = new ItemStack(CatalogEssentiaStorage.ITEM_JAR_FILLED.get());
-        stack.set(ModDataComponents.ITEM_META.get(), meta);
+        ItemMetaAppearance.mirror(stack, meta); // BD-17: jar meta + appearance mirror
         return stack;
     }
 

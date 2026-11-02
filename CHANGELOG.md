@@ -37,6 +37,40 @@ Work heading for `0.1.0-alpha.5`, gated per merge on `main`.
   before the models landed, exit 0 (“All 130 required tests passed”) after;
   `-Ptc.noCurios` 130/130; `./gradlew build` exit 0 (379 unit / 0 failures / 1 skipped).
 
+
+- **BD-17 follow-up (t_f04c44fb): per-metadata item appearance, the per-meta
+  tints, and the four custom item renderers as art.** One registered id per
+  family (D-018) keeps the catalog stable while the **`minecraft:custom_model_data`**
+  item property — 1.21.1's own per-stack model selector, already registered by
+  vanilla `ItemProperties` — selects the metadata's art: `items/ItemMetaAppearance.java`
+  is the single measured table (every row cited to the 4.2.3.5 class that
+  distinguishes the metadata) and `scripts/generate_itemmeta_models.py` emits
+  **134** `models/itemmeta/<id>_<meta>.json` models across **21** families plus the
+  `overrides` array on each family's base model; the same rows drive the per-meta
+  names and the creative-tab entries, and a new `checkItemMetaModels` task (wired
+  into `check`, runs in `build`) fails the build the moment the shipped models
+  drift from the table. Item colour ships as a `RegisterColorHandlersEvent.Item`
+  handler for the **7** ids the original tinted per meta/aspect (`items/ItemMetaTints.java`,
+  asserted against the original's literals in `ItemMetaTintTest`). **8** ids are
+  measured to draw one sprite for every metadata (`itemessence`, `blockairy`,
+  `blockcandle`, `blockcrystal`, `blockjar`, `blockjarfilleditem`, `blocktable`,
+  `tilearcaneworkbench`) — the phial, jar, workbench and candle art is invariant in
+  4.2.3.5, its variation lives in the overlay tint, the block entity and the label —
+  so they ship no overrides rather than invented ones. `trunkspawner` is the one
+  box-element model (a static cube over `thaumcraft:models/trunk`, where the
+  original's item renderer drew a `ModelChest`), `tilearcaneworkbench`'s item face is
+  BlockTable's `woodplain` (the worktable shape is the *tile* renderer's), and
+  `blockjarfilleditem` is BlockJar's `jar_bottom` face (the animated contents stay
+  tile-entity rendered). 119 lang keys + 5 tab labels added for metas that had no
+  label; creative tabs now carry one entry per metadata the original showed, built
+  through the block's own int property so a tab can never offer a metadata the
+  block cannot place. `ItemMetaAppearanceGameTest` grew to 8 registry-derived probes
+  (expected sets enumerated from `BuiltInRegistries.ITEM` and the shipped lang, never
+  hardcoded), taking the suite from 130 to **138** required tests. Not shipped:
+  the renderers' live behaviour (jar contents, thaumometer dial, workbench table),
+  the in-world per-state art (arcane ear bell top, candle/crystal/ore block-side
+  colour, node shape) which rides with SPINE-4 and the tile-renderer cards, and 3D
+  block items. BD-17 updated to **PARTIAL**; the mechanism is recorded as **D-019**.
 - **First authored container screen** (`TC-M7-04-s-cr1`): `TrunkScreen` extends 1.21.1
   `AbstractContainerScreen`; `ModClientScreens` registers it on the mod bus through
   `RegisterMenuScreensEvent`, client-only, bound to the trunk menu type. Gate: 372 unit

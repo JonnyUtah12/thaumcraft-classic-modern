@@ -7,6 +7,9 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
+import com.jonnyutah12.thaumcraftclassic.blocks.VariantStateItems;
+import com.jonnyutah12.thaumcraftclassic.items.ItemMetaAppearance;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -70,8 +73,27 @@ public final class ModCreativeTabs {
                     .icon(ModCreativeTabs::iconStack)
                     .displayItems((params, output) -> {
                         for (final Item item : BuiltInRegistries.ITEM) {
-                            if (isShippedCatalogItem(item)) {
+                            if (!isShippedCatalogItem(item)) {
+                                continue;
+                            }
+                            // BD-17: the original's tab listed one entry per
+                            // metadata (its CreativeTabs.getDisplayItemStacks
+                            // walked Item.getSubItems, and every family item here
+                            // registers hasSubtypes(true) / is a multi-variant
+                            // block). Each entry carries thaumcraft:item_meta
+                            // plus the 1.21.1 appearance mirror, so creative
+                            // search shows — and gives — the variant it names.
+                            final String path = BuiltInRegistries.ITEM.getKey(item).getPath();
+                            final int[] metas = ItemMetaAppearance.tabMetasOf(item);
+                            if (metas.length == 0) {
                                 output.accept(item);
+                                continue;
+                            }
+                            for (final int meta : metas) {
+                                final ItemStack entry = metaStack(item, meta);
+                                if (entry != null) {
+                                    output.accept(entry);
+                                }
                             }
                         }
                     })
@@ -100,7 +122,25 @@ public final class ModCreativeTabs {
      */
     private static ItemStack iconStack() {
         final ItemStack stack = new ItemStack(CatalogResources.ITEM_RESOURCE.get());
-        stack.set(ModDataComponents.ITEM_META.get(), 0);
+        ItemMetaAppearance.mirror(stack, 0); // BD-17: meta + appearance mirror
+        return stack;
+    }
+
+    /**
+     * The tab entry for one metadata of a shipped family. A block item's
+     * variant must exist on the block (registry-derived: the {@code variant}
+     * property's range is the authority), so a family table that ever names a
+     * variant the block does not have drops the entry instead of shipping a
+     * stack that cannot place.
+     */
+    private static ItemStack metaStack(final Item item, final int meta) {
+        if (item instanceof BlockItem blockItem) {
+            // The block's own int property (registry-derived) is the authority:
+            // a meta it cannot hold gets no entry, never a stack that cannot place.
+            return ItemMetaAppearance.variantStack(blockItem, meta);
+        }
+        final ItemStack stack = new ItemStack(item);
+        ItemMetaAppearance.mirror(stack, meta);
         return stack;
     }
 

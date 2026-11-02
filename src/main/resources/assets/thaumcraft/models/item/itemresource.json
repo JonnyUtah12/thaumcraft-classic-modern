@@ -2,5 +2,102 @@
   "parent": "minecraft:item/generated",
   "textures": {
     "layer0": "thaumcraft:item/alumentum"
-  }
+  },
+  "overrides": [
+    {
+      "predicate": "custom_model_data",
+      "value": 0,
+      "model": "thaumcraft:itemmeta/itemresource_0"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 1,
+      "model": "thaumcraft:itemmeta/itemresource_1"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 2,
+      "model": "thaumcraft:itemmeta/itemresource_2"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 3,
+      "model": "thaumcraft:itemmeta/itemresource_3"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 4,
+      "model": "thaumcraft:itemmeta/itemresource_4"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 5,
+      "model": "thaumcraft:itemmeta/itemresource_5"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 6,
+      "model": "thaumcraft:itemmeta/itemresource_6"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 7,
+      "model": "thaumcraft:itemmeta/itemresource_7"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 8,
+      "model": "thaumcraft:itemmeta/itemresource_8"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 9,
+      "model": "thaumcraft:itemmeta/itemresource_9"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 10,
+      "model": "thaumcraft:itemmeta/itemresource_10"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 11,
+      "model": "thaumcraft:itemmeta/itemresource_11"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 12,
+      "model": "thaumcraft:itemmeta/itemresource_12"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 13,
+      "model": "thaumcraft:itemmeta/itemresource_13"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 14,
+      "model": "thaumcraft:itemmeta/itemresource_14"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 15,
+      "model": "thaumcraft:itemmeta/itemresource_15"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 16,
+      "model": "thaumcraft:itemmeta/itemresource_16"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 17,
+      "model": "thaumcraft:itemmeta/itemresource_17"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 18,
+      "model": "thaumcraft:itemmeta/itemresource_18"
+    }
+  ]
 }

@@ -563,3 +563,78 @@ renderers" as not implemented, so the fix must say which half it closes.
 exit 0 (379 unit / 0 failures / 1 skipped). The asset gates
 `check_asset_paths.py` (2929 assets) and `check_content_mapping.py`
 (1001 entries / 910 done) run inside `build` and stayed green.
+
+
+## D-019: per-metadata appearance ships as `minecraft:custom_model_data` overrides, not per-meta ids
+
+**Status:** Accepted (2026-11-02, `t_f04c44fb`, branch `wt/t_f04c44fb`).
+
+**Context.** D-018 kept one registered id per metadata family with
+`thaumcraft:item_meta` / `thaumcraft:block_item_meta`. That fixed searchability
+and recipes, and left BD-17 open: every metadata of a family drew the same
+`models/item/<id>.json`, and the four ids whose 1.7.10 draw was an item renderer
+(`ItemTrunkSpawnerRenderer`, `ItemJarFilledRenderer`, the thaumometer, the
+arcane-workbench table) drew flat art. 4.2.3.5 distinguishes them: item classes
+answer `getIconFromDamage(meta)`, and a block item is drawn by
+`RenderBlocks.renderBlockAsItem`, i.e. `block.getIcon(0, meta)`.
+
+**Decision.**
+
+1. `items/ItemMetaAppearance.java` is the single **measured** table of
+   family → metadata → sprites, every row cited to the file:line of the
+   4.2.3.5 class that registers the icon and picks it for that metadata. An
+   id whose original draws one sprite for every metadata goes into
+   `NO_PER_META_APPEARANCE` with the citation that proves it.
+2. The stack's metadata is mirrored into **`minecraft:custom_model_data`** —
+   a vanilla 1.21.1 item property registered in `ItemProperties` over
+   `ItemOverrides`, keyed off a data component — by the same factories that
+   write `thaumcraft:item_meta` / `thaumcraft:block_item_meta`
+   (`ItemMetaAppearance.mirror`). The family's base model carries an
+   `overrides` array pointing at `models/itemmeta/<id>_<meta>.json`.
+3. The per-meta models and the override arrays are **generated** from the
+   table by `scripts/generate_itemmeta_models.py`, and `checkItemMetaModels`
+   (in `check`, therefore in `build`) re-runs it with `--check`, so the Java
+   table, the JSON models and the override wiring cannot drift. The same rows
+   also drive the per-meta display names and the creative-tab entries — one
+   source of truth.
+4. A block item's creative entry is built through the block's own int
+   metadata property (`VariantStateItems.META_CARRIER_PROPERTIES`: `variant`,
+   then `age`), never from a raw int, so a tab entry can never describe a
+   metadata the block cannot place. Out-of-range table rows ship as an
+   explicitly labelled broken entry, which is the honest signal.
+5. Per-metadata colour ships as `RegisterColorHandlersEvent.Item` handlers
+   (`items/ItemMetaTints.java`), one id per table entry, with the original's
+   colour source cited in the javadoc and its literals asserted in
+   `ItemMetaTintTest`.
+6. The four renderer ids keep the vanilla block-item path plus a measured
+   sprite; `trunkspawner` gets a box-element model. No custom `ItemStackRenderState`
+   renderer is written.
+
+**Consequences.**
+
+- Two metadata of one family are visually distinct in inventory, hand, creative
+  and the search index, each with its own label and tab entry.
+- The mechanism is 1.21.1's own: no new registry, no id churn, no per-meta
+  registration, and the SPINE-3 model gate keeps covering every chain.
+- The mirror is a compatibility copy for the model system. `thaumcraft:item_meta`
+  stays the authoritative metadata: recipe, loot, lang and gameplay code read
+  it, and `ItemMetaAppearanceGameTest` asserts that every stack the factories
+  build carries both with equal values.
+- Custom-model-data overrides are a **client** concept, so the tint registration
+  and the model wiring are client-side (`client/ItemMetaClient.java`); the headless
+  gates (`-Ptc.noCurios`) prove nothing server-side depends on them.
+- Not covered, and recorded as such: the renderers' live behaviour (jar contents
+  and glow, the thaumometer's vis-seeking dial, the workbench's table model),
+  the in-world per-state art (arcane ear bell top at `renderState == 1`, the
+  candle/crystal/ore block-side colours, the node shape) which belongs to
+  SPINE-4's blockstates work and the tile-renderer cards, and 3D block items.
+
+**Alternatives rejected.**
+
+- Per-metadata registered ids — rejected by D-018 (catalog, lang, tab, loot and
+  recipe churn).
+- `neoforge:iitem` (`IItem`): available in NeoForge 21.1.259, but it buys
+  nothing the overrides array lacks and adds a registration per metadata.
+- A hand-written `ItemStackRenderState` / `ItemStackRenderStateExtensions`
+  renderer per id: re-implements the item model system, loses atlas batching,
+  and puts per-meta art outside the JSON gate.

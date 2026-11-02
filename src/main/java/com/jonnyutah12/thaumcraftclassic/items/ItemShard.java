@@ -35,7 +35,9 @@ public class ItemShard extends Item {
             throw new IllegalArgumentException("ItemShard meta out of range: " + meta);
         }
         final ItemStack stack = new ItemStack(com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources.ITEM_SHARD.get());
-        stack.set(ModDataComponents.ITEM_META.get(), meta);
+        // BD-17: the authoritative meta plus the 1.21.1 appearance mirror the
+        // model overrides key on, so label and sprite can never disagree.
+        ItemMetaAppearance.mirror(stack, meta);
         return stack;
     }
 

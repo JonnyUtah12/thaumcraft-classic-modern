@@ -52,7 +52,7 @@ public class ItemNugget extends Item {
             throw new IllegalArgumentException("ItemNugget meta out of range: " + meta);
         }
         final ItemStack stack = new ItemStack(CatalogResources.ITEM_NUGGET.get());
-        stack.set(ModDataComponents.ITEM_META.get(), meta);
+        ItemMetaAppearance.mirror(stack, meta); // BD-17: meta + appearance mirror
         return stack;
     }
 

@@ -90,7 +90,7 @@ public class ItemPhial extends Item implements IEssentiaContainerItem {
     /** The original's {@code new ItemStack(this, 1, meta)}. */
     public static ItemStack stack(final int meta) {
         final ItemStack stack = new ItemStack(CatalogEssentiaStorage.ITEM_ESSENCE.get());
-        stack.set(ModDataComponents.ITEM_META.get(), meta);
+        ItemMetaAppearance.mirror(stack, meta); // BD-17: meta + appearance mirror
         return stack;
     }
 

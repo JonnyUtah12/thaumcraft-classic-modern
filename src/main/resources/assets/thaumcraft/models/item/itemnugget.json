@@ -2,5 +2,82 @@
   "parent": "minecraft:item/generated",
   "textures": {
     "layer0": "thaumcraft:item/nuggetiron"
-  }
+  },
+  "overrides": [
+    {
+      "predicate": "custom_model_data",
+      "value": 0,
+      "model": "thaumcraft:itemmeta/itemnugget_0"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 1,
+      "model": "thaumcraft:itemmeta/itemnugget_1"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 2,
+      "model": "thaumcraft:itemmeta/itemnugget_2"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 3,
+      "model": "thaumcraft:itemmeta/itemnugget_3"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 4,
+      "model": "thaumcraft:itemmeta/itemnugget_4"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 5,
+      "model": "thaumcraft:itemmeta/itemnugget_5"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 6,
+      "model": "thaumcraft:itemmeta/itemnugget_6"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 7,
+      "model": "thaumcraft:itemmeta/itemnugget_7"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 16,
+      "model": "thaumcraft:itemmeta/itemnugget_16"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 17,
+      "model": "thaumcraft:itemmeta/itemnugget_17"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 18,
+      "model": "thaumcraft:itemmeta/itemnugget_18"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 19,
+      "model": "thaumcraft:itemmeta/itemnugget_19"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 20,
+      "model": "thaumcraft:itemmeta/itemnugget_20"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 21,
+      "model": "thaumcraft:itemmeta/itemnugget_21"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 31,
+      "model": "thaumcraft:itemmeta/itemnugget_31"
+    }
+  ]
 }

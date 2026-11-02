@@ -2,5 +2,27 @@
   "parent": "minecraft:item/generated",
   "textures": {
     "layer0": "thaumcraft:item/bauble_amulet"
-  }
+  },
+  "overrides": [
+    {
+      "predicate": "custom_model_data",
+      "value": 0,
+      "model": "thaumcraft:itemmeta/itembaubleblanks_0"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 1,
+      "model": "thaumcraft:itemmeta/itembaubleblanks_1"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 2,
+      "model": "thaumcraft:itemmeta/itembaubleblanks_2"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 3,
+      "model": "thaumcraft:itemmeta/itembaubleblanks_3"
+    }
+  ]
 }

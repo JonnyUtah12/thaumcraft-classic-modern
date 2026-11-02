@@ -48,7 +48,7 @@ public class ItemLootBag extends Item {
     /** Convenience for creative tabs / tests: a bag of one rarity. */
     public static ItemStack withRarity(final Item item, final int rarity) {
         final ItemStack stack = new ItemStack(item);
-        stack.set(ModDataComponents.ITEM_META.get(), rarity);
+        ItemMetaAppearance.mirror(stack, rarity); // BD-17: rarity meta + appearance mirror
         return stack;
     }
 

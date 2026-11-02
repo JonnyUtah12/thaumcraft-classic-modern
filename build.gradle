@@ -433,8 +433,25 @@ if (assetOverlayIsFixture) {
     sliceOriginalParticleSprites.configure { dependsOn makeAssetOverlayFixture }
 }
 
+def checkItemMetaModels = tasks.register("checkItemMetaModels", Exec) {
+    group = 'verification'
+    description = 'BD-17 (t_f04c44fb): the per-meta item models under ' +
+            'models/itemmeta and the overrides arrays on models/item must be ' +
+            'exactly what scripts/generate_itemmeta_models.py derives from ' +
+            'ItemMetaAppearance.java and docs/asset-mapping.csv — --check ' +
+            'writes nothing and fails on drift, so the shipped models can ' +
+            'never silently disagree with the Java table that drives the labels.'
+    def table = file('src/main/java/com/jonnyutah12/thaumcraftclassic/items/ItemMetaAppearance.java')
+    def mapping = file('docs/asset-mapping.csv')
+    def models = fileTree('src/main/resources/assets/thaumcraft/models')
+    inputs.file(table)
+    inputs.file(mapping)
+    inputs.files(models)
+    commandLine 'python3', file('scripts/generate_itemmeta_models.py').absolutePath, '--check'
+}
+
 tasks.named('check') {
-    dependsOn checkAssetPathsCodeOnlyJar, checkAssetPathsOverlayJar
+    dependsOn checkAssetPathsCodeOnlyJar, checkAssetPathsOverlayJar, checkItemMetaModels
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {

@@ -2,5 +2,62 @@
   "parent": "minecraft:item/generated",
   "textures": {
     "layer0": "thaumcraft:block/pedestal_side"
-  }
+  },
+  "overrides": [
+    {
+      "predicate": "custom_model_data",
+      "value": 0,
+      "model": "thaumcraft:itemmeta/blockstonedevice_0"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 1,
+      "model": "thaumcraft:itemmeta/blockstonedevice_1"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 2,
+      "model": "thaumcraft:itemmeta/blockstonedevice_2"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 5,
+      "model": "thaumcraft:itemmeta/blockstonedevice_5"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 8,
+      "model": "thaumcraft:itemmeta/blockstonedevice_8"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 9,
+      "model": "thaumcraft:itemmeta/blockstonedevice_9"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 10,
+      "model": "thaumcraft:itemmeta/blockstonedevice_10"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 11,
+      "model": "thaumcraft:itemmeta/blockstonedevice_11"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 12,
+      "model": "thaumcraft:itemmeta/blockstonedevice_12"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 13,
+      "model": "thaumcraft:itemmeta/blockstonedevice_13"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 14,
+      "model": "thaumcraft:itemmeta/blockstonedevice_14"
+    }
+  ]
 }

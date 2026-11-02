@@ -2,5 +2,47 @@
   "parent": "minecraft:item/generated",
   "textures": {
     "layer0": "thaumcraft:block/woodplain"
-  }
+  },
+  "overrides": [
+    {
+      "predicate": "custom_model_data",
+      "value": 0,
+      "model": "thaumcraft:itemmeta/blockwoodendevice_0"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 1,
+      "model": "thaumcraft:itemmeta/blockwoodendevice_1"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 2,
+      "model": "thaumcraft:itemmeta/blockwoodendevice_2"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 4,
+      "model": "thaumcraft:itemmeta/blockwoodendevice_4"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 5,
+      "model": "thaumcraft:itemmeta/blockwoodendevice_5"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 6,
+      "model": "thaumcraft:itemmeta/blockwoodendevice_6"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 7,
+      "model": "thaumcraft:itemmeta/blockwoodendevice_7"
+    },
+    {
+      "predicate": "custom_model_data",
+      "value": 8,
+      "model": "thaumcraft:itemmeta/blockwoodendevice_8"
+    }
+  ]
 }
