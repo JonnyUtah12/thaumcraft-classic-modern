@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "variant=0": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0"
+    },
+    "variant=1": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1"
+    }
+  }
+}

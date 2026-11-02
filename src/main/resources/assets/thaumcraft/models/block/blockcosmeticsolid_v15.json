@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "down": "thaumcraft:block/es_1",
+    "up": "thaumcraft:block/es_1",
+    "north": "thaumcraft:block/es_p",
+    "south": "thaumcraft:block/es_p",
+    "west": "thaumcraft:block/es_p",
+    "east": "thaumcraft:block/es_p"
+  }
+}

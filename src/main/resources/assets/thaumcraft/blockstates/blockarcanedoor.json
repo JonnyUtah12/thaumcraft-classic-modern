@@ -1,0 +1,52 @@
+{
+  "variants": {
+    "facing=north,half=top,open=true": {
+      "model": "thaumcraft:block/blockarcanedoor_top_open_north"
+    },
+    "facing=north,half=bottom,open=true": {
+      "model": "thaumcraft:block/blockarcanedoor_bottom_open_north"
+    },
+    "facing=north,half=top,open=false": {
+      "model": "thaumcraft:block/blockarcanedoor_top_closed_north"
+    },
+    "facing=north,half=bottom,open=false": {
+      "model": "thaumcraft:block/blockarcanedoor_bottom_closed_north"
+    },
+    "facing=east,half=top,open=true": {
+      "model": "thaumcraft:block/blockarcanedoor_top_open_east"
+    },
+    "facing=east,half=bottom,open=true": {
+      "model": "thaumcraft:block/blockarcanedoor_bottom_open_east"
+    },
+    "facing=east,half=top,open=false": {
+      "model": "thaumcraft:block/blockarcanedoor_top_closed_east"
+    },
+    "facing=east,half=bottom,open=false": {
+      "model": "thaumcraft:block/blockarcanedoor_bottom_closed_east"
+    },
+    "facing=south,half=top,open=true": {
+      "model": "thaumcraft:block/blockarcanedoor_top_open_south"
+    },
+    "facing=south,half=bottom,open=true": {
+      "model": "thaumcraft:block/blockarcanedoor_bottom_open_south"
+    },
+    "facing=south,half=top,open=false": {
+      "model": "thaumcraft:block/blockarcanedoor_top_closed_south"
+    },
+    "facing=south,half=bottom,open=false": {
+      "model": "thaumcraft:block/blockarcanedoor_bottom_closed_south"
+    },
+    "facing=west,half=top,open=true": {
+      "model": "thaumcraft:block/blockarcanedoor_top_open_west"
+    },
+    "facing=west,half=bottom,open=true": {
+      "model": "thaumcraft:block/blockarcanedoor_bottom_open_west"
+    },
+    "facing=west,half=top,open=false": {
+      "model": "thaumcraft:block/blockarcanedoor_top_closed_west"
+    },
+    "facing=west,half=bottom,open=false": {
+      "model": "thaumcraft:block/blockarcanedoor_bottom_closed_west"
+    }
+  }
+}

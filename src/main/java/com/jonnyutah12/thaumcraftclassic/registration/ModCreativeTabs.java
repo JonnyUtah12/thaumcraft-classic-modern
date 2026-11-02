@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -81,6 +82,21 @@ public final class ModCreativeTabs {
     /** True for every registered {@code thaumcraft} item that is shipped content. */
     public static boolean isShippedCatalogItem(final Item item) {
         final ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
+        return ThaumcraftClassic.MOD_ID.equals(id.getNamespace())
+                && !isTestFixtureId(id.getPath());
+    }
+
+    /**
+     * The block twin of {@link #isShippedCatalogItem}: every registered
+     * {@code thaumcraft} block that is shipped content. SPINE-4's
+     * {@code BlockStateCoverageGameTest} derives its expected blockstate set
+     * from this, so a block a later card registers is gated by the probe the
+     * moment it ships, and a {@code -Dthaumcraft.testprobe=true} fixture block
+     * stays out of the shipped contract by the same rule that keeps it out of
+     * the tab.
+     */
+    public static boolean isShippedCatalogBlock(final Block block) {
+        final ResourceLocation id = BuiltInRegistries.BLOCK.getKey(block);
         return ThaumcraftClassic.MOD_ID.equals(id.getNamespace())
                 && !isTestFixtureId(id.getPath());
     }

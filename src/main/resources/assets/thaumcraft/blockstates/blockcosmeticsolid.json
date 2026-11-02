@@ -1,0 +1,52 @@
+{
+  "variants": {
+    "variant=0": {
+      "model": "thaumcraft:block/blockcosmeticsolid_v0"
+    },
+    "variant=1": {
+      "model": "thaumcraft:block/blockcosmeticsolid_v1"
+    },
+    "variant=2": {
+      "model": "thaumcraft:block/blockcosmeticsolid_v2"
+    },
+    "variant=3": {
+      "model": "thaumcraft:block/blockcosmeticsolid_v3"
+    },
+    "variant=4": {
+      "model": "thaumcraft:block/blockcosmeticsolid_v4"
+    },
+    "variant=5": {
+      "model": "thaumcraft:block/blockcosmeticsolid_v5"
+    },
+    "variant=6": {
+      "model": "thaumcraft:block/blockcosmeticsolid_v6"
+    },
+    "variant=7": {
+      "model": "thaumcraft:block/blockcosmeticsolid_v7"
+    },
+    "variant=8": {
+      "model": "thaumcraft:block/blockcosmeticsolid_v8"
+    },
+    "variant=9": {
+      "model": "thaumcraft:block/blockcosmeticsolid_v9"
+    },
+    "variant=10": {
+      "model": "thaumcraft:block/blockcosmeticsolid_v10"
+    },
+    "variant=11": {
+      "model": "thaumcraft:block/blockcosmeticsolid_v11"
+    },
+    "variant=12": {
+      "model": "thaumcraft:block/blockcosmeticsolid_v12"
+    },
+    "variant=13": {
+      "model": "thaumcraft:block/blockcosmeticsolid_v13"
+    },
+    "variant=14": {
+      "model": "thaumcraft:block/blockcosmeticsolid_v14"
+    },
+    "variant=15": {
+      "model": "thaumcraft:block/blockcosmeticsolid_v15"
+    }
+  }
+}

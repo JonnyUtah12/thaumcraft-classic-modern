@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "thaumcraft:block/obsidiantile"
-  }
+  "parent": "thaumcraft:block/blockcosmeticsolid_v0"
 }

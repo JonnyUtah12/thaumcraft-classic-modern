@@ -1,0 +1,52 @@
+{
+  "variants": {
+    "variant=0": {
+      "model": "thaumcraft:block/blockcandle_stem"
+    },
+    "variant=1": {
+      "model": "thaumcraft:block/blockcandle_stem"
+    },
+    "variant=2": {
+      "model": "thaumcraft:block/blockcandle_stem"
+    },
+    "variant=3": {
+      "model": "thaumcraft:block/blockcandle_stem"
+    },
+    "variant=4": {
+      "model": "thaumcraft:block/blockcandle_stem"
+    },
+    "variant=5": {
+      "model": "thaumcraft:block/blockcandle_stem"
+    },
+    "variant=6": {
+      "model": "thaumcraft:block/blockcandle_stem"
+    },
+    "variant=7": {
+      "model": "thaumcraft:block/blockcandle_stem"
+    },
+    "variant=8": {
+      "model": "thaumcraft:block/blockcandle_stem"
+    },
+    "variant=9": {
+      "model": "thaumcraft:block/blockcandle_stem"
+    },
+    "variant=10": {
+      "model": "thaumcraft:block/blockcandle_stem"
+    },
+    "variant=11": {
+      "model": "thaumcraft:block/blockcandle_stem"
+    },
+    "variant=12": {
+      "model": "thaumcraft:block/blockcandle_stem"
+    },
+    "variant=13": {
+      "model": "thaumcraft:block/blockcandle_stem"
+    },
+    "variant=14": {
+      "model": "thaumcraft:block/blockcandle_stem"
+    },
+    "variant=15": {
+      "model": "thaumcraft:block/blockcandle_stem"
+    }
+  }
+}

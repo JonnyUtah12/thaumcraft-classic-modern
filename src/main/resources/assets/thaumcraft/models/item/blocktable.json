@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "thaumcraft:block/woodplain"
-  }
+  "parent": "thaumcraft:block/blocktable_table"
 }

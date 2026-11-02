@@ -1,0 +1,22 @@
+{
+  "variants": {
+    "type=bottom,variant=0": {
+      "model": "thaumcraft:block/blockcosmeticdoubleslabwood_v0_bottom"
+    },
+    "type=top,variant=0": {
+      "model": "thaumcraft:block/blockcosmeticdoubleslabwood_v0_top"
+    },
+    "type=double,variant=0": {
+      "model": "thaumcraft:block/blockcosmeticdoubleslabwood_v0_double"
+    },
+    "type=bottom,variant=1": {
+      "model": "thaumcraft:block/blockcosmeticdoubleslabwood_v1_bottom"
+    },
+    "type=top,variant=1": {
+      "model": "thaumcraft:block/blockcosmeticdoubleslabwood_v1_top"
+    },
+    "type=double,variant=1": {
+      "model": "thaumcraft:block/blockcosmeticdoubleslabwood_v1_double"
+    }
+  }
+}

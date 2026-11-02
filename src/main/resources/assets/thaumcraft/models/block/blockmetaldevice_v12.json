@@ -1,0 +1,37 @@
+{
+  "textures": {
+    "t": "thaumcraft:block/brainbox"
+  },
+  "elements": [
+    {
+      "from": [3.0, 3.0, 3.0],
+      "to": [13.0, 13.0, 13.0],
+      "faces": {
+        "down": {
+          "uv": [3, 3, 13, 13],
+          "texture": "#t"
+        },
+        "up": {
+          "uv": [3, 3, 13, 13],
+          "texture": "#t"
+        },
+        "north": {
+          "uv": [3, 3, 13, 13],
+          "texture": "#t"
+        },
+        "south": {
+          "uv": [3, 3, 13, 13],
+          "texture": "#t"
+        },
+        "west": {
+          "uv": [3, 3, 13, 13],
+          "texture": "#t"
+        },
+        "east": {
+          "uv": [3, 3, 13, 13],
+          "texture": "#t"
+        }
+      }
+    }
+  ]
+}

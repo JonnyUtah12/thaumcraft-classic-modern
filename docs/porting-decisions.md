@@ -558,6 +558,46 @@ renderers" as not implemented, so the fix must say which half it closes.
    original's block items displayed in 1.7.10 inventory.
 
 **Verification.** RED: `runGameTestServer` exit 1 — "2 required tests failed"
+## D-019 — Block models name the sprite the original's `getIcon` registers, and the boxes its renderer draws (SPINE-4, `t_4f36e7d7`)
+
+**Status: Accepted.**
+
+**Context.** SPINE-3 shipped item models and deferred the block half (BD-17): 28 of 29
+shipped blocks had no blockstate, so every placed block rendered the missing-model cube.
+4.2.3.5 has no blockstate/model files to copy (D-004: its asset tree ships `textures/`,
+`lang/`, `sounds/`, `shader/` only) — it decides a block's appearance in code: the icon its
+`Block.getIcon`/`getConnectedIcon` returns for that meta/side, and, for the device families,
+the boxes its `ISMR.renderWorldBlock` sets up between `setBlockBounds` calls.
+
+**Decision.**
+1. **The sprite is the original's answer for that state**, not a guess and not a
+   neighbouring family's texture: `blockcosmeticsolid` meta 2 → `paving_stone_travel`,
+   meta 9/10 → `golem_stone_side` + `golem_stone_top[_active]` (`BlockCosmeticSolid.java:79-107`);
+   the alchemical furnace takes `al_furnace_top`/`al_furnace_front_off`/`al_furnace_side`
+   (`BlockStoneDevice.java:97-104`, `BlockStoneDeviceRenderer.java:146-160`).
+2. **The geometry is the original's box list.** Where the ISMR composes boxes
+   (`BlockStoneDeviceRenderer.java:269-330`, `BlockMetalDeviceRenderer.java:115-200`,
+   `BlockManaPod.java:79-100`, `BlockWoodenDevice.java:222-227`) the model reproduces them
+   at 1/16 scale, top-anchored where the original is top-anchored.
+3. **Where the original renders a meta through a TileEntityRenderer the port has not
+   ported**, the model uses the block's own registered icon on the block's own bounds — a
+   visible stand-in, recorded per meta in BD-18 — and where the ISMR explicitly declines to
+   draw a meta (`BlockWoodenDeviceRenderer.java:231-236`) the model is the item-render art
+   the original used in the inventory, or an empty `{"elements": []}` model for the metas the
+   original renders as nothing (stone device 3 "air").
+4. **Every sprite must be a published row of `docs/asset-mapping.csv`** (the D-004/D-005
+   contract). 88 rows are annotated with the models that consume them; none needed to move
+   UNUSED → published, because all 114 sprites the chains name were already published.
+5. **The gate is registry-derived and the RED is real.** The 5 `BlockStateCoverageGameTest`
+   probes enumerate `BuiltInRegistries.BLOCK` through `ModCreativeTabs.isShippedCatalogBlock`;
+   RED was measured on `407a572` with the probe committed and the assets absent (exit 1,
+   "1 of 29 shipped blocks have a blockstate"), so the gate is what turns green, not a
+   tautology.
+
+**Consequences.** A placed block renders the original's faces for every state the port
+registers; dynamic per-tile appearance stays BD-18 and the per-meta item/renderer half stays
+BD-17 / `t_f04c44fb`. The block-item models of 23 blocks switch to the 3D block form, which
+is what 1.7.10's block items showed.
 (51 of 52 items had no model / 51 chains did not resolve). GREEN: exit 0
 "All 130 required tests passed"; `-Ptc.noCurios` 130/130; `./gradlew build`
 exit 0 (379 unit / 0 failures / 1 skipped). The asset gates

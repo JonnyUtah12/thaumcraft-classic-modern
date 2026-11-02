@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "thaumcraft:block/planks_greatwood"
-  }
+  "parent": "thaumcraft:block/blockcosmeticdoubleslabwood_v0_double"
 }

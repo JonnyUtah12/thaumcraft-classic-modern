@@ -1,0 +1,40 @@
+{
+  "variants": {
+    "variant=0": {
+      "model": "thaumcraft:block/blockmirror_v0"
+    },
+    "variant=1": {
+      "model": "thaumcraft:block/blockmirror_v1"
+    },
+    "variant=2": {
+      "model": "thaumcraft:block/blockmirror_v2"
+    },
+    "variant=3": {
+      "model": "thaumcraft:block/blockmirror_v3"
+    },
+    "variant=4": {
+      "model": "thaumcraft:block/blockmirror_v4"
+    },
+    "variant=5": {
+      "model": "thaumcraft:block/blockmirror_v5"
+    },
+    "variant=6": {
+      "model": "thaumcraft:block/blockmirror_v6"
+    },
+    "variant=7": {
+      "model": "thaumcraft:block/blockmirror_v7"
+    },
+    "variant=8": {
+      "model": "thaumcraft:block/blockmirror_v8"
+    },
+    "variant=9": {
+      "model": "thaumcraft:block/blockmirror_v9"
+    },
+    "variant=10": {
+      "model": "thaumcraft:block/blockmirror_v10"
+    },
+    "variant=11": {
+      "model": "thaumcraft:block/blockmirror_v11"
+    }
+  }
+}

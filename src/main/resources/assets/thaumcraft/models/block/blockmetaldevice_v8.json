@@ -1,0 +1,38 @@
+{
+  "textures": {
+    "u": "thaumcraft:block/lamp_grow_top_off",
+    "s": "thaumcraft:block/lamp_grow_side_off"
+  },
+  "elements": [
+    {
+      "from": [4.0, 2.0, 4.0],
+      "to": [12.0, 14.0, 12.0],
+      "faces": {
+        "down": {
+          "uv": [4, 4, 12, 12],
+          "texture": "#s"
+        },
+        "up": {
+          "uv": [4, 4, 12, 12],
+          "texture": "#u"
+        },
+        "north": {
+          "uv": [4, 2, 12, 14],
+          "texture": "#s"
+        },
+        "south": {
+          "uv": [4, 2, 12, 14],
+          "texture": "#s"
+        },
+        "west": {
+          "uv": [4, 2, 12, 14],
+          "texture": "#s"
+        },
+        "east": {
+          "uv": [4, 2, 12, 14],
+          "texture": "#s"
+        }
+      }
+    }
+  ]
+}

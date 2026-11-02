@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "thaumcraft:block/crate_side_0"
-  }
+  "parent": "thaumcraft:block/blocklootcrate_v0"
 }

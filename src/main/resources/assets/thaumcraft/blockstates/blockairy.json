@@ -1,0 +1,43 @@
+{
+  "variants": {
+    "variant=0": {
+      "model": "thaumcraft:block/blockairy_airy"
+    },
+    "variant=1": {
+      "model": "thaumcraft:block/blockairy_airy"
+    },
+    "variant=2": {
+      "model": "thaumcraft:block/blockairy_airy"
+    },
+    "variant=3": {
+      "model": "thaumcraft:block/blockairy_airy"
+    },
+    "variant=4": {
+      "model": "thaumcraft:block/blockairy_airy"
+    },
+    "variant=5": {
+      "model": "thaumcraft:block/blockairy_airy"
+    },
+    "variant=6": {
+      "model": "thaumcraft:block/blockairy_airy"
+    },
+    "variant=7": {
+      "model": "thaumcraft:block/blockairy_airy"
+    },
+    "variant=8": {
+      "model": "thaumcraft:block/blockairy_airy"
+    },
+    "variant=9": {
+      "model": "thaumcraft:block/blockairy_airy"
+    },
+    "variant=10": {
+      "model": "thaumcraft:block/blockairy_airy"
+    },
+    "variant=11": {
+      "model": "thaumcraft:block/blockairy_airy"
+    },
+    "variant=12": {
+      "model": "thaumcraft:block/blockairy_airy"
+    }
+  }
+}

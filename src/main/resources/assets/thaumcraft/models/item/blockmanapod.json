@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "thaumcraft:block/manapod_stem_0"
-  }
+  "parent": "thaumcraft:block/blockmanapod_stem0"
 }

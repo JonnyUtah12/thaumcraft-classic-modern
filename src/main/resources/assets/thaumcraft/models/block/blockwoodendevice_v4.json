@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "down": "thaumcraft:block/arcaneearbelltop",
+    "up": "thaumcraft:block/arcaneearbelltop",
+    "north": "thaumcraft:block/arcaneearbellside",
+    "south": "thaumcraft:block/arcaneearbellside",
+    "west": "thaumcraft:block/arcaneearbellside",
+    "east": "thaumcraft:block/arcaneearbellside"
+  }
+}

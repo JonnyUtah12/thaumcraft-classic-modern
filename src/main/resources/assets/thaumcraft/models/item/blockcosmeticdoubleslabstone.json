@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "thaumcraft:block/arcane_stone"
-  }
+  "parent": "thaumcraft:block/blockcosmeticdoubleslabstone_v0_double"
 }

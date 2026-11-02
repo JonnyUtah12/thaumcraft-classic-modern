@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "thaumcraft:block/urn_side_0"
-  }
+  "parent": "thaumcraft:block/blocklooturn_v0"
 }

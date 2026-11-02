@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "down": "thaumcraft:block/tallowblock_top",
+    "up": "thaumcraft:block/tallowblock_top",
+    "north": "thaumcraft:block/tallowblock",
+    "south": "thaumcraft:block/tallowblock",
+    "west": "thaumcraft:block/tallowblock",
+    "east": "thaumcraft:block/tallowblock"
+  }
+}

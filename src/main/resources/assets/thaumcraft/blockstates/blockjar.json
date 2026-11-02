@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "variant=0": {
+      "model": "thaumcraft:block/blockjar_v0"
+    },
+    "variant=1": {
+      "model": "thaumcraft:block/blockjar_v1"
+    },
+    "variant=2": {
+      "model": "thaumcraft:block/blockjar_v2"
+    },
+    "variant=3": {
+      "model": "thaumcraft:block/blockjar_v3"
+    }
+  }
+}

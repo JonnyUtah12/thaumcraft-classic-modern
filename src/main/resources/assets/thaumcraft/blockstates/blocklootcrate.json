@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "variant=0": {
+      "model": "thaumcraft:block/blocklootcrate_v0"
+    },
+    "variant=1": {
+      "model": "thaumcraft:block/blocklootcrate_v1"
+    },
+    "variant=2": {
+      "model": "thaumcraft:block/blocklootcrate_v2"
+    }
+  }
+}

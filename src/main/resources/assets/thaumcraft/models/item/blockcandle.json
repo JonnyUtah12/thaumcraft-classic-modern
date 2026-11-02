@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "thaumcraft:block/candle"
-  }
+  "parent": "thaumcraft:block/blockcandle_stem"
 }

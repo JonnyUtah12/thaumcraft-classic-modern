@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "down": "thaumcraft:block/arcane_stone",
+    "up": "thaumcraft:block/golem_stone_top",
+    "north": "thaumcraft:block/golem_stone_side",
+    "south": "thaumcraft:block/golem_stone_side",
+    "west": "thaumcraft:block/golem_stone_side",
+    "east": "thaumcraft:block/golem_stone_side"
+  }
+}

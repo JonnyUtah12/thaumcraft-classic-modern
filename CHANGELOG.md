@@ -8,6 +8,36 @@ Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 ## [Unreleased]
 
 Work heading for `0.1.0-alpha.5`, gated per merge on `main`.
+- **SPINE-4 blockstate + block model coverage: the placed block is the asset that was
+  missing.** At `407a572` the shipped jar carried **1** blockstate
+  (`blockstates/blockcustomore.json`); 28 of the 29 shipped blocks rendered the
+  missing-model cube in world, and their items drew the block's flat icon. This card
+  commits **28 blockstates + 158 `models/block/*.json`** (all port-authored, D-004) covering
+  29 blocks and **542 registered states**, with the sprite and the geometry taken from the
+  original's own draw code: `BlockCosmeticSolid.getIcon` per meta (`BlockCosmeticSolid.java:79-107`),
+  the infusion-matrix pedestal/wand-pedestal/focus box stacks
+  (`BlockStoneDeviceRenderer.java:269-330`), the lamp, grate and brainbox boxes
+  (`BlockMetalDeviceRenderer.java:115-200`), the arcane-ear bell icons
+  (`BlockWoodenDevice.java:121-125`), the pressure-plate heights (`BlockWoodenDevice.java:222-227`),
+  the ceiling-hung manapod stems for all 8 growth stages (`BlockManaPod.java:54-100`), the
+  jar, crate, urn, candle, mirror and door art each class registers. 88 rows of
+  `docs/asset-mapping.csv` are annotated with the models that consume them; **0 rows had to
+  move UNUSED → published** — every sprite these models name was already a published overlay
+  path, so a code-only jar resolves them all to the placeholder by design (D-004). 23
+  block-item models move from `minecraft:item/generated` to the **3D `thaumcraft:block/<id>`**
+  form. Five new `BlockStateCoverageGameTest` probes derive their expected set from the live
+  block registry (`BuiltInRegistries.BLOCK` via `ModCreativeTabs.isShippedCatalogBlock`,
+  fixture scaffolding excluded): a blockstate per shipped block, the converse (0 dead
+  blockstates), the variant-key set equals the registered state set (an illegal property key
+  is the 1.21.1 form of a silently dropped state), every chain resolves with explicit
+  namespaces, and every chain sprite is published when an overlay is installed. RED → GREEN:
+  `runGameTestServer` exit 1 at `407a572` with the probe committed and the assets absent
+  ("28 of 29 registered thaumcraft blocks have no /assets/thaumcraft/blockstates/<id>.json —
+  they render the missing-model cube in world"), exit 0 with 135/135 required tests after
+  (130 baseline + 5 new); `-Ptc.noCurios` and `./gradlew build` quoted in the card. What a
+  static model cannot express — the alchemical furnace's 27-icon `calculateTexture` face
+  machine, the lit/charged lamp swaps, the candle's 16-colour `getBlockColor` tint, the
+  jar/crystal/table/armature TileEntityRenderer art — is recorded as **BD-18**, not claimed.
 
 **SPINE-3 Item model coverage closes the “items are not visible/searchable” repro: 51
   port-authored `models/item/<id>.json` (52 total) so every registered item renders a
@@ -30,8 +60,8 @@ Work heading for `0.1.0-alpha.5`, gated per merge on `main`.
   jar) and enforces §15 rule 9 across models/lang/tabs. Models are port-authored and
   committed; the original’s textures stay overlay-only, so a code-only jar still
   resolves every model to the placeholder — by design. Per-meta appearance (19/7/15/16
-  metas), 3D block-item models, blockstates for the other 51 blocks and the 4 custom
-  item renderers are filed as BD-17, not claimed. RED → GREEN: `runGameTestServer` exit
+  metas) and the 4 custom item renderers are filed as BD-17, not claimed (the blockstates,
+  block models and the 3D block-item form landed with SPINE-4 below). RED → GREEN: `runGameTestServer` exit
   1 (“51 of 52 registered thaumcraft items have no
   /assets/thaumcraft/models/item/<id>.json”, “51 item model chains do not resolve”)
   before the models landed, exit 0 (“All 130 required tests passed”) after;

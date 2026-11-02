@@ -1,0 +1,28 @@
+{
+  "variants": {
+    "variant=0": {
+      "model": "thaumcraft:block/blockcrystal_cluster"
+    },
+    "variant=1": {
+      "model": "thaumcraft:block/blockcrystal_cluster"
+    },
+    "variant=2": {
+      "model": "thaumcraft:block/blockcrystal_cluster"
+    },
+    "variant=3": {
+      "model": "thaumcraft:block/blockcrystal_cluster"
+    },
+    "variant=4": {
+      "model": "thaumcraft:block/blockcrystal_cluster"
+    },
+    "variant=5": {
+      "model": "thaumcraft:block/blockcrystal_cluster"
+    },
+    "variant=6": {
+      "model": "thaumcraft:block/blockcrystal_cluster"
+    },
+    "variant=7": {
+      "model": "thaumcraft:block/blockcrystal_cluster"
+    }
+  }
+}

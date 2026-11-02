@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "thaumcraft:block/furnace0"
-  }
+  "parent": "thaumcraft:block/blockarcanefurnace_v0"
 }

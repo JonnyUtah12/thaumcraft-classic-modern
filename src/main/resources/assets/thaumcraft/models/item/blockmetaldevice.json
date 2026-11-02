@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "thaumcraft:block/metalbase"
-  }
+  "parent": "thaumcraft:block/blockmetaldevice_v0"
 }

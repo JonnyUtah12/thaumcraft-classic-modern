@@ -1,0 +1,31 @@
+{
+  "variants": {
+    "variant=0": {
+      "model": "thaumcraft:block/blockwoodendevice_v0"
+    },
+    "variant=1": {
+      "model": "thaumcraft:block/blockwoodendevice_v1"
+    },
+    "variant=2": {
+      "model": "thaumcraft:block/blockwoodendevice_v2"
+    },
+    "variant=3": {
+      "model": "thaumcraft:block/blockwoodendevice_v3"
+    },
+    "variant=4": {
+      "model": "thaumcraft:block/blockwoodendevice_v4"
+    },
+    "variant=5": {
+      "model": "thaumcraft:block/blockwoodendevice_v5"
+    },
+    "variant=6": {
+      "model": "thaumcraft:block/blockwoodendevice_v6"
+    },
+    "variant=7": {
+      "model": "thaumcraft:block/blockwoodendevice_v7"
+    },
+    "variant=8": {
+      "model": "thaumcraft:block/blockwoodendevice_v8"
+    }
+  }
+}
