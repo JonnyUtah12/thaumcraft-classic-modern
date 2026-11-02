@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
  * {@code BlockLifterRenderer.java:50-89}: {@code bb = 180} when
  * {@code !tile.gettingPower()} (59-63), the bottom glow at 64-66 tinted
  * {@code BlockCustomOreItem.colors[4]} (57), the side glows at 69-83 tinted
- * {@code 0xDDDDDD} (68). The sprite is the block's own {@code iconGlow}
+ * {@code 0xDD11FF} (68). The sprite is the block's own {@code iconGlow}
  * ({@code BlockLifter.java:39} → {@code thaumcraft:animatedglow}); the
  * levitator has no lit sprite and no top glow face.
  *

@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -551,14 +552,52 @@ public final class BlockStateCoverageGameTest {
                     continue;
                 }
                 swapping++;
-                final List<String> sprites = new ArrayList<>();
+                final Map<String, Set<String>> byModel = new LinkedHashMap<>();
                 for (final String model : groupModels) {
-                    sprites.add(String.join(",", spritesOfModel(model)));
+                    byModel.put(model, spritesOfModel(model));
                 }
-                if (new LinkedHashSet<>(sprites).size() < 2) {
+                final List<String> spriteSets = new ArrayList<>();
+                for (final Set<String> sprites : byModel.values()) {
+                    spriteSets.add(String.join(",", sprites));
+                }
+                if (new LinkedHashSet<>(spriteSets).size() < 2) {
                     problems.add(entry.getKey() + " group " + group.getKey() + " swaps the model between "
                             + property.getName() + "'s values but every model names the same sprites ("
                             + groupModels + ") — the state change would not change the appearance");
+                    continue;
+                }
+                // The swap has to name the original's LIT sprites, not just any
+                // different ones. The uncharged model carries the `_off` suffix
+                // the original uses for that face (BlockMetalDevice.java:124-136
+                // answers icon[15]/icon[14] = lamp_grow_top_off/lamp_grow_side_off
+                // for an uncharged growth lamp, and :125-131 answers
+                // icon[13]/icon[12] = lamp_grow_top/lamp_grow_side once the tile's
+                // charges > 0), so the expectation is derived from the shipped off
+                // model here rather than from a sprite list.
+                final Set<String> litSprites = new LinkedHashSet<>();
+                final List<Set<String>> offSprites = new ArrayList<>();
+                for (final Set<String> sprites : byModel.values()) {
+                    final Set<String> off = new LinkedHashSet<>();
+                    for (final String sprite : sprites) {
+                        if (sprite.endsWith("_off")) {
+                            off.add(sprite);
+                        }
+                    }
+                    if (off.isEmpty()) {
+                        litSprites.addAll(sprites);
+                    } else {
+                        offSprites.add(off);
+                    }
+                }
+                for (final Set<String> off : offSprites) {
+                    for (final String sprite : off) {
+                        final String lit = sprite.substring(0, sprite.length() - "_off".length());
+                        if (!litSprites.contains(lit)) {
+                            problems.add(entry.getKey() + " group " + group.getKey() + " swaps to a model that"
+                                    + " never names " + lit + " — the charged state must draw the lit sprite the"
+                                    + " original picks for the face " + sprite + " covers");
+                        }
+                    }
                 }
             }
             if (swapping == 0) {

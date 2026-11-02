@@ -603,3 +603,54 @@ is what 1.7.10's block items showed.
 exit 0 (379 unit / 0 failures / 1 skipped). The asset gates
 `check_asset_paths.py` (2929 assets) and `check_content_mapping.py`
 (1001 entries / 910 done) run inside `build` and stayed green.
+
+## D-020 — Appearance the original recomputed per frame becomes a published block state, not a renderer (BD-18, `t_065502ba`)
+
+**Status: Accepted.**
+
+**Context.** 4.2.3.5 decides part of a block's look inside its render hooks, from live tile
+data, every frame: `BlockMetalDevice.java:117-155` returns the growth/fertility lamp's
+`lamp_grow_top`/`lamp_grow_side` (or `lamp_fert_*`) pair instead of the `*_off` pair whenever
+`TileArcaneLamp*.charges > 0`, and `getLightValue` follows at `:792-815` (15 charged, 8 not);
+`BlockLifterRenderer.java:50-89` draws an `animatedglow` shell around the levitator — bottom
+face tinted `BlockCustomOreItem.colors[4]` (`:57`, drawn at `y - 0.01` only when the block
+above is solid, `:64-66`), four sides tinted `0xDD11FF` (`:68-83`) — at the full-bright
+lightmap while the tile is **not** powered (`:59-63`); `BlockCandle.java:76-78` returns
+`Utils.colors[metadata]` (`Utils.java:50-52`, 16 colours) for a single greyscale stem, and the
+same value answers `colorRepresentative` at `:52-54`. 1.21.1 has none of those hooks: a
+blockstate JSON maps a state to a model, and the connected-texture/colour callbacks fire on the
+client with no state to write.
+
+**Decision.**
+1. **The tile publishes the original's condition into a block state property.**
+   `DeviceDynamicState.publishAppearance()` writes the property from the tile's own server tick
+   (`BlockMetalDevice.CHARGED`, `BlockLifter.POWERED`) with `BLOCK|FLAG_NO_NOTIFIER`-free
+   updates so the block entity survives the write. The condition is the original's, read from
+   the original's fields (`TileArcaneLamp.use/charges`, the levitator's power query).
+2. **The appearance is a model per state**, so the blockstate names it: 30
+   `blockmetaldevice` keys (15 variants × `charged`, with `blockmetaldevice_v8_lit` /
+   `blockmetaldevice_v13_lit` for the two lamps that light) and 2 `blocklifter` keys
+   (`powered=false` → the glow shell, `powered=true` → the plain cube). Variants that never
+   lit in the original keep one model for both values, which the coverage probe allows
+   explicitly.
+3. **Colour is a tint, never a baked texture.** Every candle face carries `tintindex 0`;
+   `DeviceBlockColors` resolves it from the state's `variant` for the block and from the
+   stack's variant carrier for the item — the item frame has no `Level`, so a state-only
+   source would lose the colour there.
+4. **No `ModelData`/`ModelTransformer`, no BE-aware model, no TER** for these three. A
+   state-addressable appearance is readable by a comparator/observer/loot table and by the
+   coverage gate, survives a save/load with no client tick, and keeps the lit look identical on
+   a dedicated server's light map.
+5. **Two original details are recorded, not faked:** the shell's full-bright lightmap
+   (`bb = 180`) and its per-face "draw only if that neighbour is solid" gate, which the JSON
+   spells as `cullface`. The levitator ships no `BlockItem`, so the original's
+   `renderInventoryBlock` shells have no port-side counterpart.
+6. **Colour subscribers must declare `bus = EventBusSubscriber.Bus.MOD`.** FML's default is the
+   game bus, where `RegisterColorHandlersEvent` never fires: the pre-existing
+   `OreBlockColors` subscriber was silently dead and is fixed here. A source-text unit probe
+   now fails for any `RegisterColorHandlersEvent` subscriber that omits the bus.
+
+**Consequences.** The lit lamp, the glowing levitator and the 16-colour candle are expressible,
+queryable and gated on a code-only jar; the alchemical furnace's 27-icon face machine, the
+remaining lit-swap wiring and the TER art stay BD-18, and the item-side per-meta work stays
+BD-17 / `t_f04c44fb`.

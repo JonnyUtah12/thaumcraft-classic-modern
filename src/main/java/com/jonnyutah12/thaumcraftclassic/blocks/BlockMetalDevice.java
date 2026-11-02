@@ -66,6 +66,11 @@ public class BlockMetalDevice extends BlockDeviceBase implements DeviceDynamicSt
                             state.getValue(CHARGED) ? 15 : 8;
                     default -> 0;
                 }));
+        // 1.21.1 orders a BooleanProperty's values true-first, so stateDefinition
+        // .any() — the default this constructor would otherwise inherit — puts a
+        // freshly placed lamp in its LIT state. The original's fresh lamp has
+        // charges == 0 and draws the *_off pair (BlockMetalDevice.java:124-136).
+        registerDefaultState(stateDefinition.any().setValue(CHARGED, false));
     }
 
     /** The {@code variant} and {@code charged} properties; the base cannot add

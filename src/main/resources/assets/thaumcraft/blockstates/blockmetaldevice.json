@@ -1,48 +1,93 @@
 {
   "variants": {
-    "variant=0": {
+    "variant=0,charged=false": {
       "model": "thaumcraft:block/blockmetaldevice_v0"
     },
-    "variant=1": {
+    "variant=0,charged=true": {
+      "model": "thaumcraft:block/blockmetaldevice_v0"
+    },
+    "variant=1,charged=false": {
       "model": "thaumcraft:block/blockmetaldevice_v1"
     },
-    "variant=2": {
+    "variant=1,charged=true": {
+      "model": "thaumcraft:block/blockmetaldevice_v1"
+    },
+    "variant=2,charged=false": {
       "model": "thaumcraft:block/blockmetaldevice_v2"
     },
-    "variant=3": {
+    "variant=2,charged=true": {
+      "model": "thaumcraft:block/blockmetaldevice_v2"
+    },
+    "variant=3,charged=false": {
       "model": "thaumcraft:block/blockmetaldevice_v3"
     },
-    "variant=4": {
+    "variant=3,charged=true": {
+      "model": "thaumcraft:block/blockmetaldevice_v3"
+    },
+    "variant=4,charged=false": {
       "model": "thaumcraft:block/blockmetaldevice_v4"
     },
-    "variant=5": {
+    "variant=4,charged=true": {
+      "model": "thaumcraft:block/blockmetaldevice_v4"
+    },
+    "variant=5,charged=false": {
       "model": "thaumcraft:block/blockmetaldevice_v5"
     },
-    "variant=6": {
+    "variant=5,charged=true": {
+      "model": "thaumcraft:block/blockmetaldevice_v5"
+    },
+    "variant=6,charged=false": {
       "model": "thaumcraft:block/blockmetaldevice_v6"
     },
-    "variant=7": {
+    "variant=6,charged=true": {
+      "model": "thaumcraft:block/blockmetaldevice_v6"
+    },
+    "variant=7,charged=false": {
       "model": "thaumcraft:block/blockmetaldevice_v7"
     },
-    "variant=8": {
+    "variant=7,charged=true": {
+      "model": "thaumcraft:block/blockmetaldevice_v7"
+    },
+    "variant=8,charged=false": {
       "model": "thaumcraft:block/blockmetaldevice_v8"
     },
-    "variant=9": {
+    "variant=8,charged=true": {
+      "model": "thaumcraft:block/blockmetaldevice_v8_lit"
+    },
+    "variant=9,charged=false": {
       "model": "thaumcraft:block/blockmetaldevice_v9"
     },
-    "variant=10": {
+    "variant=9,charged=true": {
+      "model": "thaumcraft:block/blockmetaldevice_v9"
+    },
+    "variant=10,charged=false": {
       "model": "thaumcraft:block/blockmetaldevice_v10"
     },
-    "variant=11": {
+    "variant=10,charged=true": {
+      "model": "thaumcraft:block/blockmetaldevice_v10"
+    },
+    "variant=11,charged=false": {
       "model": "thaumcraft:block/blockmetaldevice_v11"
     },
-    "variant=12": {
+    "variant=11,charged=true": {
+      "model": "thaumcraft:block/blockmetaldevice_v11"
+    },
+    "variant=12,charged=false": {
       "model": "thaumcraft:block/blockmetaldevice_v12"
     },
-    "variant=13": {
+    "variant=12,charged=true": {
+      "model": "thaumcraft:block/blockmetaldevice_v12"
+    },
+    "variant=13,charged=false": {
       "model": "thaumcraft:block/blockmetaldevice_v13"
     },
-    "variant=14": {
+    "variant=13,charged=true": {
+      "model": "thaumcraft:block/blockmetaldevice_v13_lit"
+    },
+    "variant=14,charged=false": {
+      "model": "thaumcraft:block/blockmetaldevice_v14"
+    },
+    "variant=14,charged=true": {
       "model": "thaumcraft:block/blockmetaldevice_v14"
     }
   }

@@ -6,7 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.component.BlockItemStateProperties;
-import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
 import org.junit.jupiter.api.Test;
 
@@ -87,11 +87,11 @@ class DeviceTintRegistrationTest {
     void levitatorGlowTintsAreTheOriginals() {
         // BlockLifterRenderer.java:57 tints the BOTTOM glow face
         // BlockCustomOreItem.colors[4] = 40960; lines 68-83 tint the four side
-        // glow faces 14488063 (0xDDDDDD). There is no top glow face.
+        // glow faces 14488063 (0xDD11FF). There is no top glow face.
         assertEquals(40960, DeviceTints.LIFTER_GLOW_BOTTOM,
                 "BlockLifterRenderer.java:57 tints the bottom glow face BlockCustomOreItem.colors[4] = 40960");
         assertEquals(14488063, DeviceTints.LIFTER_GLOW_SIDE,
-                "BlockLifterRenderer.java:68-83 tint the side glow faces 14488063 (0xDDDDDD)");
+                "BlockLifterRenderer.java:68-83 tint the side glow faces 14488063 (0xDD11FF)");
     }
 
     // ---------------------------------------------------- model tinted faces
@@ -115,7 +115,7 @@ class DeviceTintRegistrationTest {
     void levitatorGlowShellIsTintedWithTheOriginalsIndexes() {
         // BlockLifterRenderer.java:50-89 composes the levitator cube with a
         // glow shell: the bottom face (colours[4], 57-66) and the four sides
-        // (0xDDDDDD, 68-83), each side gated on its neighbour being solid.
+        // (0xDD11FF, 68-83), each side gated on its neighbour being solid.
         // There is NO top glow face — assert the model does not invent one.
         final JsonObject model = model("blocklifter_lifter_glow");
         final JsonArray elements = require(model, "elements");
@@ -124,20 +124,19 @@ class DeviceTintRegistrationTest {
 
         final JsonObject base = elements.get(0).getAsJsonObject();
         final JsonObject baseFaces = base.getAsJsonObject("faces");
-        assertEquals("thaumcraft:block/liftertop", baseFaces.getAsJsonObject("up").get("texture").getAsString(),
+        assertEquals("thaumcraft:block/liftertop", sprite(model, baseFaces.getAsJsonObject("up")),
                 "BlockLifter.java:36 the levitator's top sprite is liftertop");
-        assertEquals("thaumcraft:block/lifterside", baseFaces.getAsJsonObject("north").get("texture").getAsString(),
+        assertEquals("thaumcraft:block/lifterside", sprite(model, baseFaces.getAsJsonObject("north")),
                 "BlockLifter.java:38 the levitator's side sprite is lifterside");
         assertEquals("thaumcraft:block/arcaneearbottom",
-                baseFaces.getAsJsonObject("down").get("texture").getAsString(),
+                sprite(model, baseFaces.getAsJsonObject("down")),
                 "BlockLifter.java:37 the levitator's bottom sprite is arcaneearbottom");
 
         final JsonObject glowFaces = new JsonObject();
         for (int i = 1; i < elements.size(); i++) {
             for (final Map.Entry<String, JsonElement> face
                     : elements.get(i).getAsJsonObject().getAsJsonObject("faces").entrySet()) {
-                if ("thaumcraft:block/animatedglow".equals(face.getValue().getAsJsonObject()
-                        .get("texture").getAsString())) {
+                if ("thaumcraft:block/animatedglow".equals(sprite(model, face.getValue().getAsJsonObject()))) {
                     glowFaces.add(face.getKey(), face.getValue());
                 }
             }
@@ -151,7 +150,7 @@ class DeviceTintRegistrationTest {
         for (final String side : new String[]{"north", "south", "west", "east"}) {
             final JsonObject face = glowFaces.getAsJsonObject(side);
             assertEquals(1, face.get("tintindex").getAsInt(),
-                    "the " + side + " glow is the 0xDDDDDD face (BlockLifterRenderer.java:68) -> tintindex 1");
+                    "the " + side + " glow is the 0xDD11FF face (BlockLifterRenderer.java:68) -> tintindex 1");
             assertFalse(face.get("shade").getAsBoolean(),
                     "the glow draws unshaded, matching the original's full-bright lightmap (bb = 180, line 60)");
             assertEquals(side, face.get("cullface").getAsString(),
@@ -166,14 +165,18 @@ class DeviceTintRegistrationTest {
     void itemTintFollowsTheStacksVariantCarrier() {
         // An item frame renders the block item, and the block item is coloured
         // from its variant carrier — the same read DeviceBlockColors performs.
-        final ItemStack stack = new ItemStack(new Item(new Item.Properties()));
+        // A unit test runs with the registries frozen: constructing an Item here
+        // throws, so the probe exercises the component read on a vanilla stack —
+        // the variant carrier is item-agnostic, and the game test covers the
+        // shipped candle's own stack end to end.
+        final ItemStack stack = new ItemStack(Items.STONE);
         stack.set(DataComponents.BLOCK_STATE, new BlockItemStateProperties(Map.of("variant", "5")));
         final Integer carried = VariantStateItems.variantOf(stack);
         assertEquals(5, carried, "the variant must read back out of the minecraft:block_state component");
         assertEquals(REFERENCE_COLOURS[5], DeviceTints.colourForVariant(carried),
                 "a lime candle in an item frame must draw the lime tint");
 
-        final ItemStack plain = new ItemStack(new Item(new Item.Properties()));
+        final ItemStack plain = new ItemStack(Items.STONE);
         assertNull(VariantStateItems.variantOf(plain),
                 "a stack carrying no variant resolves to no tint source (the handler draws white)");
     }
@@ -218,9 +221,16 @@ class DeviceTintRegistrationTest {
                 continue;
             }
             subscribers++;
-            final int at = text.indexOf("@EventBusSubscriber");
-            assertTrue(at >= 0, source + " registers colour handlers with no @EventBusSubscriber at all");
-            final String annotation = text.substring(at, text.indexOf('\n', at));
+            // Only the ANNOTATION line counts: a javadoc mention of the
+            // annotation is not a subscription, and scanning prose reported a
+            // documented subscriber as an offender.
+            final String annotation = java.util.Arrays.stream(text.split("\n"))
+                    .map(String::strip)
+                    .filter(line -> line.startsWith("@EventBusSubscriber"))
+                    .findFirst()
+                    .orElse("");
+            assertTrue(!annotation.isEmpty(),
+                    source + " registers colour handlers with no EventBusSubscriber annotation line at all");
             if (!annotation.contains("bus = EventBusSubscriber.Bus.MOD")) {
                 offenders.append("\n").append(source.getFileName())
                         .append(" [").append(annotation.trim()).append(']');
@@ -235,6 +245,18 @@ class DeviceTintRegistrationTest {
     }
 
     // ------------------------------------------------------------- helpers
+
+    /** A face's sprite, with a {@code #key} reference resolved through the model's own {@code textures}. */
+    private static String sprite(final JsonObject model, final JsonObject face) {
+        String texture = face.get("texture").getAsString();
+        while (texture.startsWith("#")) {
+            final String key = texture.substring(1);
+            assertTrue(model.has("textures") && model.getAsJsonObject("textures").has(key),
+                    "the model references #" + key + " but declares no such texture entry");
+            texture = model.getAsJsonObject("textures").get(key).getAsString();
+        }
+        return texture;
+    }
 
     private static JsonObject model(final String name) {
         try (InputStream in = DeviceTintRegistrationTest.class

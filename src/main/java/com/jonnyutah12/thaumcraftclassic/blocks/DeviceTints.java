@@ -68,12 +68,12 @@ public final class DeviceTints {
      * green in that array's 5th slot) and lines 64-66 draw the glow on the
      * block's BOTTOM face at {@code y - 0.01}, gated on the block above being
      * solid. Lines 68-83 then set the colour to {@code 14488063}
-     * ({@code 0xDDDDDD}) and draw the four side glow faces at a 0.01 inset,
+     * ({@code 0xDD11FF}) and draw the four side glow faces at a 0.01 inset,
      * each gated on its neighbour being solid. The levitator has no top glow
      * face at all.</p>
      */
     public static final int LIFTER_GLOW_BOTTOM = 0x00A000;
-    public static final int LIFTER_GLOW_SIDE = 0xDDDDDD;
+    public static final int LIFTER_GLOW_SIDE = 0xDD11FF; // 14488063, the literal at :68
 
     private DeviceTints() {
     }

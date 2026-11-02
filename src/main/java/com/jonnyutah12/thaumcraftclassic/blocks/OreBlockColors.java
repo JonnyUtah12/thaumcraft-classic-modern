@@ -15,8 +15,14 @@ import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
  * overlay per metadata via glColor3f with {@code BlockCustomOreItem.colors};
  * the port carries the same values through the model's tintindex 0 faces.
  * Cinnabar/amber models have no tinted faces, so they are unaffected.</p>
+ *
+ * <p>{@code bus = EventBusSubscriber.Bus.MOD} is not decoration:
+ * {@code RegisterColorHandlersEvent} fires on the mod bus during client setup,
+ * and FML's default is the game bus, where this handler would never run and
+ * the overlay would silently draw untinted (BD-18, t_065502ba — pinned by
+ * {@code DeviceTintRegistrationTest.everyColourHandlerSubscriberDeclaresTheModBus}).</p>
  */
-@EventBusSubscriber(modid = ThaumcraftClassic.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = ThaumcraftClassic.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class OreBlockColors {
 
     @SubscribeEvent

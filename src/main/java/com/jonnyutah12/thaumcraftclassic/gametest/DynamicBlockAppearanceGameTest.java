@@ -63,7 +63,7 @@ public final class DynamicBlockAppearanceGameTest {
                         BlockMetalDevice.VARIANT_LAMP_GROWTH);
         helper.setBlock(pos, lamp);
 
-        final BlockEntity blockEntity = helper.getLevel().getBlockEntity(pos);
+        final BlockEntity blockEntity = helper.getBlockEntity(pos);
         helper.assertTrue(blockEntity instanceof TileArcaneLampGrowth
                         && blockEntity.getType() == CatalogDevices.TILE_ARCANE_LAMP_GROWTH.get(),
                 "metal device variant 8 must place the growth-lamp tile the lit swap reads, got " + blockEntity
@@ -83,7 +83,7 @@ public final class DynamicBlockAppearanceGameTest {
         helper.assertTrue(stateAt(helper, pos).getLightEmission() == 15,
                 "BlockMetalDevice.getLightValue: a charged growth lamp lit 15, got "
                         + stateAt(helper, pos).getLightEmission());
-        helper.assertTrue(helper.getLevel().getBlockEntity(pos) == tile,
+        helper.assertTrue(helper.getBlockEntity(pos) == tile,
                 "publishing the appearance property replaced the block state — the lamp's block entity "
                         + "(its essentia inventory) must survive the write");
 
@@ -110,7 +110,7 @@ public final class DynamicBlockAppearanceGameTest {
         final BlockPos pos = new BlockPos(1, 3, 1);
         helper.setBlock(pos, CatalogFurniture.BLOCK_LIFTER.get().defaultBlockState());
 
-        final BlockEntity blockEntity = helper.getLevel().getBlockEntity(pos);
+        final BlockEntity blockEntity = helper.getBlockEntity(pos);
         helper.assertTrue(blockEntity instanceof TileLifter
                         && blockEntity.getType() == CatalogFurniture.TILE_LIFTER.get(),
                 "the levitator must place the tile the power query reads, got " + blockEntity
@@ -125,7 +125,7 @@ public final class DynamicBlockAppearanceGameTest {
         tile.serverTick();
         helper.assertTrue(stateAt(helper, pos).getValue(BlockLifter.POWERED),
                 "a powered levitator must publish powered=true so the blockstate drops the glow shell (it is not pushing)");
-        helper.assertTrue(helper.getLevel().getBlockEntity(pos) == tile,
+        helper.assertTrue(helper.getBlockEntity(pos) == tile,
                 "the levitator's block entity (its lift column) must survive the appearance write");
 
         helper.setBlock(pos.east(), Blocks.AIR.defaultBlockState());
@@ -177,7 +177,7 @@ public final class DynamicBlockAppearanceGameTest {
             helper.assertTrue(placed.getValue(variant) == colourIndex,
                     "the shipped candle must keep its variant in the world state (the tint source), got "
                             + placed);
-            final ItemStack drop = candle.getCloneItemStack(helper.getLevel(), pos, placed);
+            final ItemStack drop = candle.getCloneItemStack(helper.getLevel(), helper.absolutePos(pos), placed);
             final Integer carried = VariantStateItems.variantOf(drop);
             helper.assertTrue(carried != null && carried == colourIndex,
                     "a variant-" + colourIndex + " candle's stack must carry its variant (the item frame has"
@@ -194,7 +194,11 @@ public final class DynamicBlockAppearanceGameTest {
 
     /** The shipped state at a position (the write must land on the world state). */
     private static BlockState stateAt(final GameTestHelper helper, final BlockPos pos) {
-        return helper.getLevel().getBlockState(pos);
+        // GameTestHelper.setBlock/getBlockEntity take positions RELATIVE to the
+        // test structure; Level.getBlockState does not translate, so reading
+        // through the raw level needs the absolute position or the probe reads
+        // the world under the test island.
+        return helper.getLevel().getBlockState(helper.absolutePos(pos));
     }
 
     /**

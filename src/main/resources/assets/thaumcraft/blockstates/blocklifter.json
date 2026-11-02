@@ -1,6 +1,9 @@
 {
   "variants": {
-    "": {
+    "powered=false": {
+      "model": "thaumcraft:block/blocklifter_lifter_glow"
+    },
+    "powered=true": {
       "model": "thaumcraft:block/blocklifter_lifter"
     }
   }
