@@ -56,15 +56,15 @@ public enum GolemCoreTask {
     /** 3 Harvest — {@code AIHarvestCrops}. */
     HARVEST(3, "Harvest",
             List.of("AIHarvestCrops"),
-            ItemsNeeded.NONE, false),
+            ItemsNeeded.NONE, true),
     /** 4 Guard — {@code [AIDartAttack when the decoration has "R"], AIGolemAttackOnCollide} + targets. */
     GUARD(4, "Guard",
             List.of("AIGolemAttackOnCollide", "AIHurtByTarget", "AINearestAttackableTarget"),
-            ItemsNeeded.NONE, false),
+            ItemsNeeded.NONE, true),
     /** 5 Decanting — {@code AILiquidEmpty, AILiquidGather, AILiquidGoto}. */
     DECANTING(5, "Decanting",
             List.of("AILiquidEmpty", "AILiquidGather", "AILiquidGoto"),
-            ItemsNeeded.NONE, false),
+            ItemsNeeded.NONE, true),
     /** 6 Alchemy — {@code AIEssentiaEmpty, AIEssentiaGather, AIEssentiaGoto}. */
     ALCHEMY(6, "Alchemy",
             List.of("AIEssentiaEmpty", "AIEssentiaGather", "AIEssentiaGoto"),
@@ -72,7 +72,7 @@ public enum GolemCoreTask {
     /** 7 Chop — {@code AIHarvestLogs}. */
     CHOP(7, "Chop",
             List.of("AIHarvestLogs"),
-            ItemsNeeded.NONE, false),
+            ItemsNeeded.NONE, true),
     /** 8 Use — {@code AIHomeReplace, AIUseItem, AIHomeTake}. */
     USE(8, "Use",
             List.of("AIHomeReplace", "AIUseItem", "AIHomeTake"),
@@ -80,7 +80,7 @@ public enum GolemCoreTask {
     /** 9 Butcher — {@code [AIDartAttack when the decoration has "R"], AIGolemAttackOnCollide} + {@code AINearestButcherTarget}. */
     BUTCHER(9, "Butcher",
             List.of("AIGolemAttackOnCollide", "AINearestButcherTarget"),
-            ItemsNeeded.NONE, false),
+            ItemsNeeded.NONE, true),
     /** 10 Sorting — {@code AIHomeReplace, AISortingPlace, AISortingGoto, AIHomeTakeSorting}. */
     SORTING(10, "Sorting",
             List.of("AIHomeReplace", "AISortingPlace", "AISortingGoto", "AIHomeTakeSorting"),
@@ -148,9 +148,16 @@ public enum GolemCoreTask {
     }
 
     /**
-     * Whether this card ported the core's task. False means the mapping is
-     * pinned but the act/goal classes are not written yet, so the runtime
+     * Whether this port ships the core's task: {@code EntityGolemBase.setupGolem()}
+     * installs the core's goal classes and {@link #action()} names the step. False
+     * means the mapping is pinned but the goals are not written, so the runtime
      * installs nothing for that core and no probe may claim its behaviour.
+     *
+     * <p>The one {@code false} left is {@link #FISHING}: its only goal,
+     * {@code AIFish}, spawns {@code EntityGolemBobber}, which ships with
+     * TC-M6-08-s-c (t_d0a98369). {@code AIDartAttack} is likewise gated on
+     * {@code EntityGolemDart} and is the one goal name in
+     * {@link #guardDecorationGoalNames()} that is not installed.</p>
      */
     public boolean implemented() {
         return this.implemented;
@@ -194,6 +201,11 @@ public enum GolemCoreTask {
             case 6 -> GolemTaskAction.ESSENTIA_EMPTY; // AIEssentiaEmpty (the jar arm)
             case 8 -> GolemTaskAction.HOME_TAKE;      // AIHomeTake (after AIUseItem)
             case 10 -> GolemTaskAction.SORTING_PLACE; // AISortingPlace
+            case 3 -> GolemTaskAction.HARVEST_CROPS;  // AIHarvestCrops (goal-driven)
+            case 4 -> GolemTaskAction.MELEE_ATTACK;   // AIGolemAttackOnCollide + targets (goal-driven)
+            case 5 -> GolemTaskAction.LIQUID_EMPTY;   // AILiquidEmpty (goal-driven)
+            case 7 -> GolemTaskAction.CHOP_LOGS;      // AIHarvestLogs (goal-driven)
+            case 9 -> GolemTaskAction.MELEE_ATTACK;   // AIGolemAttackOnCollide + butcher target (goal-driven)
             default -> GolemTaskAction.NONE;
         };
     }
@@ -248,6 +260,20 @@ public enum GolemCoreTask {
         /** Push the carried essentia into the nearest jar with room. */
         ESSENTIA_EMPTY,
         /** Distribute the home container's goods into marked containers that already hold them. */
-        SORTING_PLACE
+        SORTING_PLACE,
+        /**
+         * Reap ripe crops in reach and replant them — {@code AIHarvestCrops}.
+         * Goal-driven: unlike the four act-method actions there is no
+         * {@code EntityGolemBase} act method; the goal's own {@code tick()} is the
+         * step that mutates the world, so {@code runCoreTaskStep()} returns false
+         * for it by design.
+         */
+        HARVEST_CROPS,
+        /** Fell logs in reach — {@code AIHarvestLogs}. Goal-driven, see {@link #HARVEST_CROPS}. */
+        CHOP_LOGS,
+        /** Melee the current target — {@code AIGolemAttackOnCollide}. Goal-driven. */
+        MELEE_ATTACK,
+        /** Pour the carried fluid into the home fluid handler — {@code AILiquidEmpty}. Goal-driven. */
+        LIQUID_EMPTY
     }
 }

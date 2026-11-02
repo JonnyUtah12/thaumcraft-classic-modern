@@ -11,14 +11,46 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
+import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.navigation.GroundPathNavigation;
 import net.minecraft.world.entity.animal.AbstractGolem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.fluids.FluidStack;
 
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIAvoidCreeperSwell;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIEmptyDrop;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIEmptyGoto;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIEmptyPlace;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIEssentiaEmpty;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIEssentiaGather;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIEssentiaGoto;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIFillGoto;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIFillTake;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIGolemAttackOnCollide;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIHarvestCrops;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIHarvestLogs;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIHomeDrop;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIHomePlace;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIHomeReplace;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIHomeTake;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIHomeTakeSorting;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIHurtByTarget;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIItemPickup;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AILiquidEmpty;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AILiquidGather;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AILiquidGoto;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AINearestAttackableTarget;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AINearestButcherTarget;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIOpenDoor;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIReturnHome;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AISortingGoto;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AISortingPlace;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.ai.AIUseItem;
 import com.jonnyutah12.thaumcraftclassic.items.golems.ItemGolemCore;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileJarFillable;
 
@@ -686,9 +718,16 @@ public class EntityGolemBase extends AbstractGolem {
         return this.markers;
     }
 
-    /** Original {@code setMarkers(ArrayList<Marker>)}. */
+    /**
+     * Original {@code setMarkers(ArrayList<Marker>)}
+     * ({@code reference/decompiled/thaumcraft/thaumcraft/common/entities/golems/
+     * EntityGolemBase.java:729-731}), which assigns the argument straight to the
+     * field — so {@code null} is legal input there (an unmarked golem carries a null
+     * list). The port keeps a defensive copy, and maps the legal {@code null} to an
+     * empty list so the original's call shape never throws here.
+     */
     public void setMarkers(final List<Marker> markers) {
-        this.markers = new ArrayList<>(markers);
+        this.markers = markers == null ? new ArrayList<>() : new ArrayList<>(markers);
     }
 
     /** Adds a marker (the GUI and the bell both do this); refuses a duplicate on the same face. */
@@ -905,7 +944,136 @@ public class EntityGolemBase extends AbstractGolem {
     public void setup(final int side) {
         this.setHomeFacing(side);
         this.applyMaterialTraits();
+        this.setupGolem();
         this.setupGolemInventory();
+    }
+
+    /**
+     * The original's goal installation — {@code setupGolem()}
+     * ({@code reference/decompiled/thaumcraft/thaumcraft/common/entities/golems/
+     * EntityGolemBase.java:214-296}), transcribed case by case with the
+     * original's selector indices (TC-M6-08-s-b2).
+     *
+     * <p>The 1.7.10 shape is two lists: {@code field_70714_bg} (the movement/
+     * task goals, {@code EntityAITasks}) and {@code field_70715_bh} (the target
+     * selectors, {@code EntityAITargetSelectorTasks}); 1.21.1's {@code
+     * goalSelector} / {@code targetSelector} are the same two lists, so the
+     * priority numbers below are the original's {@code addTask(index, ...)}
+     * arguments verbatim. {@link GolemCoreTask#goalNames()} pins the same table
+     * and a game test asserts this method agrees with it.</p>
+     *
+     * <p><b>Gating.</b> Nothing is installed for {@code getCore() == -1} (the
+     * original's {@code if (this.getCore() > -1)} at :217 and the switch's
+     * default arm), which keeps a core-less golem inert. Two names in
+     * {@link GolemCoreTask#goalNames()} are deliberately NOT installed because
+     * their entities live in a sibling card: {@code AIDartAttack} (needs
+     * {@code EntityGolemDart}; the original installs it at index 2 only when the
+     * decoration carries "R", so that index is left free) and {@code AIFish}
+     * (needs {@code EntityGolemBobber}, core 11 — so core 11 installs no task
+     * goal at all and {@link GolemCoreTask#implemented()} stays false for it).</p>
+     *
+     * <p><b>Deviation BD-18:</b> the original clears only the task list
+     * ({@code field_70714_bg.field_75782_a.clear()}, :216) and never the target
+     * list, because in 1.7.10 it is called once per placement/core change and
+     * duplicate target tasks were tolerated. This port is also called on every
+     * {@code readAdditionalSaveData} (the load path, the original's :693), so
+     * 1.21.1's {@code GoalSelector} — which has no list-clear, only
+     * {@code removeAllGoals(Predicate)} — is cleared for BOTH selectors first,
+     * otherwise each load stacks another copy of the Guard target goals.</p>
+     */
+    public void setupGolem() {
+        this.goalSelector.removeAllGoals(goal -> true);
+        this.targetSelector.removeAllGoals(goal -> true);
+
+        final int core = this.getCore();
+        if (core < 0) {
+            // Original :217 — the whole installation is inside "core > -1".
+            return;
+        }
+
+        // Original :218-219 — AIAvoidCreeperSwell for every real core, index 0.
+        this.goalSelector.addGoal(0, new AIAvoidCreeperSwell(this));
+
+        switch (core) {
+            case 0 -> { // Fill — :223-228
+                this.goalSelector.addGoal(0, new AIHomeReplace(this));
+                this.goalSelector.addGoal(1, new AIHomePlace(this));
+                this.goalSelector.addGoal(2, new AIHomeDrop(this));
+                this.goalSelector.addGoal(3, new AIFillTake(this));
+                this.goalSelector.addGoal(4, new AIFillGoto(this));
+            }
+            case 1 -> { // Empty — :230-235
+                this.goalSelector.addGoal(0, new AIHomeReplace(this));
+                this.goalSelector.addGoal(1, new AIEmptyPlace(this));
+                this.goalSelector.addGoal(2, new AIEmptyDrop(this));
+                this.goalSelector.addGoal(3, new AIEmptyGoto(this));
+                this.goalSelector.addGoal(4, new AIHomeTake(this));
+            }
+            case 2 -> { // Gather — :237-240
+                this.goalSelector.addGoal(0, new AIHomeReplace(this));
+                this.goalSelector.addGoal(1, new AIHomePlace(this));
+                this.goalSelector.addGoal(2, new AIItemPickup(this));
+            }
+            case 3 -> { // Harvest — :242
+                this.goalSelector.addGoal(2, new AIHarvestCrops(this));
+            }
+            case 4 -> { // Guard — :244-250 (the decoration "R" dart arm is the gated AIDartAttack, index 2)
+                if (this.getDecoration().contains("R")) {
+                    // SEAM: AIDartAttack is not installed — EntityGolemDart ships with
+                    // TC-M6-08-s-c (t_d0a98369). Index 2 is left free for it.
+                }
+                this.goalSelector.addGoal(3, new AIGolemAttackOnCollide(this));
+                this.targetSelector.addGoal(1, new AIHurtByTarget(this));
+                this.targetSelector.addGoal(2, new AINearestAttackableTarget(this, 0, true));
+            }
+            case 5 -> { // Decanting — :256-259
+                this.goalSelector.addGoal(1, new AILiquidEmpty(this));
+                this.goalSelector.addGoal(2, new AILiquidGather(this));
+                this.goalSelector.addGoal(3, new AILiquidGoto(this));
+            }
+            case 6 -> { // Alchemy — :261-264
+                this.goalSelector.addGoal(1, new AIEssentiaEmpty(this));
+                this.goalSelector.addGoal(2, new AIEssentiaGather(this));
+                this.goalSelector.addGoal(3, new AIEssentiaGoto(this));
+            }
+            case 7 -> { // Chop — :266
+                this.goalSelector.addGoal(2, new AIHarvestLogs(this));
+            }
+            case 8 -> { // Use — :268-271 (the original installs AIHomeReplace and AIUseItem BOTH at 0)
+                this.goalSelector.addGoal(0, new AIHomeReplace(this));
+                this.goalSelector.addGoal(0, new AIUseItem(this));
+                this.goalSelector.addGoal(4, new AIHomeTake(this));
+            }
+            case 9 -> { // Butcher — :273-279
+                if (this.getDecoration().contains("R")) {
+                    // SEAM: AIDartAttack, see the Guard arm.
+                }
+                this.goalSelector.addGoal(3, new AIGolemAttackOnCollide(this));
+                this.targetSelector.addGoal(1, new AINearestButcherTarget(this, 0, true));
+            }
+            case 10 -> { // Sorting — :281-285
+                this.goalSelector.addGoal(0, new AIHomeReplace(this));
+                this.goalSelector.addGoal(1, new AISortingPlace(this));
+                this.goalSelector.addGoal(3, new AISortingGoto(this));
+                this.goalSelector.addGoal(4, new AIHomeTakeSorting(this));
+            }
+            case 11 -> {
+                // Fishing — :287: the original installs AIFish at index 2. NOT ported:
+                // it spawns EntityGolemBobber, which ships with TC-M6-08-s-c
+                // (t_d0a98369). Installing nothing keeps the core inert, which is what
+                // GolemCoreTask.implemented() reports for FISHING.
+            }
+            default -> {
+                // Blank core (100) / unknown: the original's switch has no default arm.
+            }
+        }
+
+        // The original's common tail — :289-296.
+        this.goalSelector.addGoal(5, new AIOpenDoor(this, true));
+        this.goalSelector.addGoal(6, new AIReturnHome(this));
+        this.goalSelector.addGoal(7, new LookAtPlayerGoal(
+                this, net.minecraft.world.entity.player.Player.class, 6.0F));
+        this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
     }
 
     /**
@@ -1041,6 +1209,11 @@ public class EntityGolemBase extends AbstractGolem {
             this.colors[a] = savedColors[a];
         }
         this.syncHealth();
+        // Original EntityGolemBase.java:693-694 — the load path re-runs setupGolem()
+        // and setupGolemInventory() once the core is read, so a loaded golem gets the
+        // goals its saved core owes. setupGolem clears both selectors first (BD-18).
+        this.setupGolem();
+        this.setupGolemInventory();
     }
 
     private void syncHealth() {
@@ -1294,6 +1467,10 @@ public class EntityGolemBase extends AbstractGolem {
             case HOME_TAKE -> this.actHomeTake();
             case ESSENTIA_EMPTY -> this.actEssentiaEmpty();
             case SORTING_PLACE -> this.actSortingPlace();
+            // The goal-driven cores (Harvest 3, Guard 4, Decanting 5, Chop 7,
+            // Butcher 9) mutate the world inside their goal's tick(); the goal is
+            // installed by setupGolem() and there is no act method to drive here.
+            case HARVEST_CROPS, CHOP_LOGS, MELEE_ATTACK, LIQUID_EMPTY -> false;
             case NONE -> false;
         };
     }

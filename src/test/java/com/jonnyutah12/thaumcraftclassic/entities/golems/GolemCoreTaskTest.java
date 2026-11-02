@@ -148,11 +148,15 @@ class GolemCoreTaskTest {
     }
 
     /**
-     * The act half of each core's task. The card requires a probe per task this
+     * The task half of each core. The card requires a probe per task this
      * card <em>implements</em>, so this test pins the invariant the probes rely
      * on: a core is {@link GolemCoreTask#implemented()} exactly when it carries a
-     * real act step. It deliberately does not hard-code <em>which</em> six cores
-     * those are, so the follow-up card can widen the set without breaking this.
+     * real {@link GolemCoreTask.GolemTaskAction} — an act step on the entity, or
+     * (since TC-M6-08-s-b2) a goal the installed goal classes run. The hard
+     * assertions below name the shipped set: eleven cores implemented after
+     * b2's goal port, and Fishing (11) the single honest {@code false}, because
+     * its only goal {@code AIFish} spawns {@code EntityGolemBobber}, which ships
+     * with TC-M6-08-s-c.
      */
     @Test
     void aCoreIsImplementedExactlyWhenItCarriesAnActStep() {
@@ -167,6 +171,24 @@ class GolemCoreTaskTest {
         assertTrue(GolemCoreTask.ALCHEMY.implemented(), "the Alchemy core's act step is ported");
         assertTrue(GolemCoreTask.USE.implemented(), "the Use core's act step is ported");
         assertTrue(GolemCoreTask.SORTING.implemented(), "the Sorting core's act step is ported");
+        // TC-M6-08-s-b2: the goal classes landed for the remaining real cores.
+        assertTrue(GolemCoreTask.HARVEST.implemented(), "core 3 installs AIHarvestCrops");
+        assertTrue(GolemCoreTask.GUARD.implemented(), "core 4 installs AIGolemAttackOnCollide + its target goals");
+        assertTrue(GolemCoreTask.DECANTING.implemented(), "core 5 installs the AILiquid* trio");
+        assertTrue(GolemCoreTask.CHOP.implemented(), "core 7 installs AIHarvestLogs");
+        assertTrue(GolemCoreTask.BUTCHER.implemented(), "core 9 installs AIGolemAttackOnCollide + AINearestButcherTarget");
+        assertFalse(GolemCoreTask.FISHING.implemented(),
+                "core 11 is the one core with no ported goal: AIFish needs EntityGolemBobber (TC-M6-08-s-c)");
+        assertEquals(GolemCoreTask.GolemTaskAction.HARVEST_CROPS, GolemCoreTask.HARVEST.action(),
+                "core 3's step is the crop goal");
+        assertEquals(GolemCoreTask.GolemTaskAction.CHOP_LOGS, GolemCoreTask.CHOP.action(),
+                "core 7's step is the log goal");
+        assertEquals(GolemCoreTask.GolemTaskAction.MELEE_ATTACK, GolemCoreTask.GUARD.action(),
+                "core 4's step is the melee goal");
+        assertEquals(GolemCoreTask.GolemTaskAction.MELEE_ATTACK, GolemCoreTask.BUTCHER.action(),
+                "core 9's step is the same melee goal, targeting animals");
+        assertEquals(GolemCoreTask.GolemTaskAction.LIQUID_EMPTY, GolemCoreTask.DECANTING.action(),
+                "core 5's step is the liquid empty goal");
 
         // The act each implemented core drives, pinned from the source goal it replaces.
         assertEquals(GolemCoreTask.GolemTaskAction.HOME_PLACE, GolemCoreTask.FILL.action(),

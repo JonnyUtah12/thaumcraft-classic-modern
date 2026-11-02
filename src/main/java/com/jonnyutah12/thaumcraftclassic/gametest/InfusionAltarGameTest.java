@@ -570,6 +570,10 @@ public final class InfusionAltarGameTest {
                 pedestalWith(helper, new BlockPos(5, 2, 1), new ItemStack(net.minecraft.world.item.Items.GLASS_PANE));
         final TestProbeContent.ProbeAspectSource source =
                 seedAspectSource(helper, new BlockPos(3, 2, 1), "potentia", 5);
+        // ProbeAspectSource.drainedTotal() is a process-wide static and the game tests run
+        // concurrently, so the absolute total is not a fact about THIS craft: the golem fluid
+        // probes drain the same counter. Baseline it here and assert the delta.
+        final int drainedBaseline = TestProbeContent.ProbeAspectSource.drainedTotal();
 
         // The original's onWandRightClick: first use arms the matrix, second
         // use starts a craft against whatever the pedestals hold.
@@ -595,9 +599,11 @@ public final class InfusionAltarGameTest {
 
         // Both essentia units were taken from the seeded source, the component
         // pedestal is empty, and the central pedestal now holds the result.
-        helper.assertTrue(TestProbeContent.ProbeAspectSource.drainedTotal() == 2,
+        helper.assertTrue(TestProbeContent.ProbeAspectSource.drainedTotal() - drainedBaseline == 2,
                 "the recipe's two potentia must have been drained, got "
-                        + TestProbeContent.ProbeAspectSource.drainedTotal());
+                        + (TestProbeContent.ProbeAspectSource.drainedTotal() - drainedBaseline)
+                        + " (total " + TestProbeContent.ProbeAspectSource.drainedTotal()
+                        + ", baseline " + drainedBaseline + ")");
         helper.assertTrue(componentPedestal.getItem(0).isEmpty(),
                 "the component item must have been consumed");
         final ItemStack result = centreOf(helper, ALTAR.below(2)).getItem(0);
