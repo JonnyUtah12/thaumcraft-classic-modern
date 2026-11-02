@@ -514,8 +514,11 @@ public class TileResearchTable extends BlockEntity implements WorldlyContainer, 
     protected void saveAdditional(final CompoundTag tag, final HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         // The original's keys and shape (TileResearchTable.java:43-95): "Inventory"
-        // with a "Slot" byte and the inline item, "nextRecalc", and "bonusAspects"
-        // as a list of {tag} compounds — one entry per aspect.
+        // entries carry the "Slot" byte, and the 1.7.10 item written INLINE into that
+        // entry (id/Count/Damage). 1.21 items are component-based, so the port keeps
+        // the "Slot" byte and nests the modern item under "Item" — the same contract,
+        // rendered in the new item format (BD-19 records the shape). "nextRecalc", and
+        // "bonusAspects" as a list of {tag} compounds — one entry per aspect.
         final ListTag items = new ListTag();
         for (int i = 0; i < contents.length; i++) {
             final ItemStack stack = contents[i];
@@ -533,7 +536,13 @@ public class TileResearchTable extends BlockEntity implements WorldlyContainer, 
         for (final Aspect aspect : bonusAspects.getAspects()) {
             if (aspect != null && bonusAspects.getAmount(aspect) > 0) {
                 final CompoundTag entry = new CompoundTag();
-                entry.putString("tag", aspect.getName());
+                // The original writes the registry TAG ("aer"), not getName()
+                // ("Aer") — TileResearchTable.java:88. The tag is what the load
+                // resolves through Aspect.getAspect into a registry id, and a
+                // capital is not a legal path character, so writing the display
+                // name made every non-empty bonus pool unload as a
+                // ResourceLocationException on the first chunk load.
+                entry.putString("tag", aspect.getTag());
                 bonus.add(entry);
             }
         }
