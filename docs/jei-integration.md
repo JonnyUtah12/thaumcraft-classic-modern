@@ -175,6 +175,25 @@ this card** — an over-strict assertion in
 someone else's probe is that card's finding to make, not this one's to paper
 over.
 
+**Update (t_20ad0211, landed):** the ore probe is deterministic —
+`OreDropGameTest.dropsAround` now counts only the ore's own drop family with
+everything in the capture box discarded, which is the scoping the card
+directed, and the silk probe's primary claim is the
+`minecraft:block_state` variant component. The loot table is untouched. The
+mechanism column needs one correction: `empty_24.nbt` is not a button filler
+— its NBT root decodes to `size` only (an all-air footprint) — and the
+"structure fills air with buttons" is not the template's doing. The game test
+server itself places a command block and a floating stone button beside every
+cell (`GameTestInfo.java:268` →
+`StructureUtils.addCommandBlockAndButtonToStartTest`), at
+`structurePos+(1,0,-2)` at rotation NONE, half a block from the y=1 capture
+row. 1.21.1 `ButtonBlock` has no pop-off drop (`updateShape` turns to AIR
+silently), and watcher builds of this suite — green runs with a field-wide
+item scan every 2 ticks and state-transition watches on every in-scan-region
+cell-frame button — saw zero `stone_button` item entities and zero button
+block transitions. The red run's stack is a foreign item that drifted into
+the box; the scoped count makes the probe immune to it.
+
 ## Observing it (the test-copy caveat)
 
 The disposable test copy `~/minecraft mods/atm10-test/mods` holds **0**

@@ -9,6 +9,22 @@ Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
 Work heading for `0.1.0-alpha.5`, gated per merge on `main`.
 
+- **Ore-drop probe determinism** (`t_20ad0211`, SPINE-4 follow-up): the six
+  `OreDropGameTest` captures now count only the ore's own drop family
+  (`thaumcraft:blockcustomore` item / `thaumcraft:itemshard` /
+  `thaumcraft:itemresource`) and discard everything in the capture box, and
+  the silk probe's primary claim is the `minecraft:block_state` component
+  carrying the broken variant — the count is a statement about the ore, not
+  about the shared game-test field. The SPINE-4 flake (run 5 of 5, 127 tests)
+  captured a foreign `minecraft:stone_button` stack drifting in from the
+  game-test server's per-cell start markers (`GameTestInfo.java:268` places a
+  floating stone button at `structurePos+(1,0,-2)`; 21.1 `ButtonBlock` has no
+  pop-off drop, and `empty_24.nbt` places nothing — the card's
+  "template filler" attribution is corrected in `docs/jei-integration.md`).
+  The drop table is untouched. Gates: **10 consecutive `runGameTestServer`
+  runs, 127/127** (the card asks 5; the SPINE-4 shape was 4-green-1-red),
+  `./gradlew build` exit 0 with 394 unit tests / 0 failures (1 skipped);
+  `docs/testing.md` records the cell-frame and capture-box discipline.
 - **Optional recipe-browser categories** (`SPINE-4` / `t_aebd14cf`): four JEI
   categories, one per custom recipe type (`thaumcraft:arcane_workbench`,
   `thaumcraft:crucible`, `thaumcraft:infusion`, `thaumcraft:infusion_enchantment`),

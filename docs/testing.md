@@ -67,6 +67,23 @@ without the evidence for its stages.
   widens the packing footprint), and a probe whose assertions depend on a world
   scan measures DELTAS over an ambient baseline scan, never absolute totals.
   Prefer both over reordering tests: the layout is not stable across runs.
+- **Drop-capture boxes reach the cell frame, and the cell frame is
+  framework-territory.** The game test server places a command block and a
+  floating stone button beside every test cell: `GameTestInfo.prepareTestStructure`
+  calls `StructureUtils.addCommandBlockAndButtonToStartTest`
+  (`GameTestInfo.java:268`) — putting the
+  button at `structurePos + (1, 0, -2)` at rotation NONE, one block below the
+  cell floor row. `empty_24.nbt` places nothing (its NBT root carries only
+  `size` — the template is all air), so that is all the frame the probe's
+  world sees. 1.21.1 `ButtonBlock` has no pop-off drop (no `onPlace` pop;
+  `updateShape` turns to AIR silently), and a watcher run of the suite saw
+  zero item entities field-wide on green runs — so a foreign `stone_button`
+  **stack** landing in a capture (the SPINE-4 flake, run 5 of 5 at 127 tests)
+  is a drifting stack, not the template. Discipline: a probe that counts
+  collected stacks scopes the count to the drop family of the block under
+  test — `OreDropGameTest.dropsAround` filters by `ItemStack.is` over the
+  family and discards everything in the box — so "exactly one stack" is a
+  claim about the tested block, not a census of the test field.
 - A `@GameTest` body that touches a block entity must not park the server
   thread. The game test server shuts down by unloading chunks
   (`LevelChunk.clearAllBlockEntities` → `BlockEntity.setRemoved`), and a

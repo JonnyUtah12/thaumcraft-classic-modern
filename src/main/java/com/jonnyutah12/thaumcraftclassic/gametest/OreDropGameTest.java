@@ -59,6 +59,21 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
  * hook {@code ServerPlayerGameMode.destroyBlock} calls with the player's real
  * tool, so fortune/silk-touch read the enchanted pickaxe exactly as in play.
  * No internal methods.</p>
+ *
+ * <p>Determinism (t_20ad0211): the game tests share one level and pack onto a
+ * grid, and the capture box below a break is ±2 blocks around the broken
+ * block, so it reaches into the cell frame and its neighbours. The field
+ * carries a foreign {@code minecraft:stone_button} item entity under some
+ * interleavings, and the observed SPINE-4 flake (run 5 of 5, 127 tests) put
+ * exactly that stack in a silk-touch capture. The drop TABLE is correct
+ * (SPINE-1's {@code data/thaumcraft/loot_table/blocks/blockcustomore.json},
+ * untouched), so the assertion is scoped where the card directs: every count
+ * below is taken over the ore's own drop family — the block item, the primal
+ * shards, the amber resource — which is what "exactly one stack" claims,
+ * not a census of the test field. Everything inside the capture box is still
+ * discarded; only the counted set is scoped. The silk probe's real subject,
+ * the {@code minecraft:block_state} component carrying the broken block's
+ * variant, is asserted explicitly (presence + variant equality).</p>
  */
 @GameTestHolder(ThaumcraftClassic.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -74,12 +89,31 @@ public final class OreDropGameTest {
         return ModBlocks.BLOCK_CUSTOM_ORE.get().defaultBlockState().setValue(BlockCustomOre.VARIANT, variant);
     }
 
-    /** The item stacks the break just spawned near pos, as stacks. */
+    /**
+     * The ore's own drop family: the block item (cinnabar v0 + every silk-touch
+     * drop), the primal shards (v1-6) and the amber resource (v7). No other item
+     * id can come out of breaking this block, so a capture containing one is
+     * field contamination, not an ore behaviour.
+     */
+    private static boolean isOreFamilyDrop(final ItemStack stack) {
+        return stack.is(ModItems.BLOCK_CUSTOM_ORE_ITEM.get())
+                || stack.is(CatalogResources.ITEM_SHARD.get())
+                || stack.is(CatalogResources.ITEM_RESOURCE.get());
+    }
+
+    /**
+     * The stacks the break just spawned near pos, scoped to the ore's drop
+     * family. Everything in the box is discarded (the field stays clean for
+     * the next break); only ore-family stacks are counted, so "exactly one
+     * stack" is a claim about the ore, not about the test field — a foreign
+     * stone_button item entity from the shared game-test grid (see the class
+     * javadoc, t_20ad0211) can sit inside the inflated box.
+     */
     private static List<ItemStack> dropsAround(final GameTestHelper helper, final BlockPos pos) {
         final AABB box = new AABB(pos).inflate(2.0D);
-        final List<ItemStack> stacks = helper.getLevel().getEntitiesOfClass(ItemEntity.class, box)
-                .stream().map(ItemEntity::getItem).toList();
-        helper.getLevel().getEntitiesOfClass(ItemEntity.class, box).forEach(ItemEntity::discard);
+        final List<ItemEntity> items = helper.getLevel().getEntitiesOfClass(ItemEntity.class, box);
+        final List<ItemStack> stacks = items.stream().map(ItemEntity::getItem).filter(OreDropGameTest::isOreFamilyDrop).toList();
+        items.forEach(ItemEntity::discard);
         helper.getLevel().getEntitiesOfClass(ExperienceOrb.class, box).forEach(ExperienceOrb::discard);
         return stacks;
     }
