@@ -66,6 +66,7 @@ public final class ModRegistration {
         CatalogBaubles.init(); // TC-M8-02 bauble items
 
         ModDataComponents.DATA_COMPONENT_TYPES.register(modEventBus);
+        ModLootNumberProviders.register(modEventBus); // SPINE-1 fortuned_uniform rolls
         ModBlocks.BLOCKS.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITY_TYPES.register(modEventBus);
