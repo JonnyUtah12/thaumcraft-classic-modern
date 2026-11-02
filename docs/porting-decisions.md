@@ -500,3 +500,66 @@ golem research entries already shipped, and the 96 golem rows already in
 `content-mapping.csv`. Golems were also removed from TC-M6-06-s
 (`t_26136494`), which had been carrying "elemental + golem + taint mob" in one
 150-iteration budget.
+
+## D-018 — Item models are port-authored, and the sprite they name is the original's own icon (SPINE-3, `t_15e43d12`)
+
+**Status: Accepted.**
+
+**Context.** The user's playability report says items are invisible/unsearchable.
+Measured on `ebf6030`: 52 registered items, **1** committed item model
+(`models/item/blockcustomore.json`). An item with no model JSON renders the
+missing-model placeholder, and its textures are absent from the code-only jar
+anyway (D-004). The alpha.3/alpha.4 release notes already list "item models and
+renderers" as not implemented, so the fix must say which half it closes.
+
+**Decision.**
+
+1. **One model per registered id** at
+   `src/main/resources/assets/thaumcraft/models/item/<id>.json`. Meta-carrying
+   families (`itemresource` 19 metas, `itemshard` 7, `itemnugget` 15,
+   `blockcosmeticopaque` 16) stay **one id** with the
+   `thaumcraft:item_meta` / `block_item_meta` component, so they get **one**
+   model; per-meta appearance is recorded as BD-17, not silently collapsed.
+2. **A model is authored, never copied** (D-004). 4.2.3.5 registers item icons
+   in code — its asset tree has no item model files — so every committed model
+   is ours (MIT), and it names original textures **by path** through the
+   overlay's `items`→`item` / `blocks`→`block` remap (D-005).
+3. **The sprite must be the original's icon.** The card forbids the lazy
+   `thaumcraft:item/<id>` guess: each model's `layer0` is the sprite the
+   original's own item/block class registered as icon index 0 (e.g.
+   `itemcompassstone` → `item/sinister_stone`, `blockairy` → `item/taint_over_2`
+   from `BlockAiryItem`, `tilearcaneworkbench` → `models/worktable`,
+   `itemessence` → `item/phial` + `item/essence`). Three items whose original
+   draw was a custom **renderer** with a blank registered icon
+   (`blockjarfilleditem`, `itemthaumometer`, `trunkspawner`) use the original's
+   own art as a flat sprite (`block/jar_side`, the vanilla compass face,
+   `models/trunk`) because the port ships no item renderer — stated in the model,
+   the CSV rows and BD-17.
+4. **Every named sprite must be a published overlay path.** `asset-mapping.csv`
+   is the contract, so a model that names an UNUSED texture is a contract break.
+   The four `ItemNuggetEdible` ids (`itemnuggetbeef/chicken/pork/fish`) register
+   the original's `nuggetbeef/chicken/pork/fish` icons
+   (`reference/.../config/ConfigItems.java:399-405`), so those 4 rows moved
+   UNUSED → published and the unused-asset inventory went 42 → 38. The card's
+   "39 registered items" count is the same registry read in the same tree state
+   as SPINE-2 (which measured 52); this card reports 52 and says so.
+5. **The gate derives its expected set from the registry.** A hardcoded model
+   list can never go red, so `ItemModelCoverageGameTest` enumerates
+   `BuiltInRegistries.ITEM` (via `ModCreativeTabs.isShippedCatalogItem`, which
+   also excludes the `testprobe` fixture fixtures) and asserts a model per id,
+   the converse (no dead models), chain resolution with explicit namespaces,
+   sprite resolution **when an overlay is installed** (self-disabling with a
+   logged note when it is not, so the code-only release artifact stays green),
+   and §15 rule 9 lang/tab consistency.
+6. **Scope stays honest.** Models only: blockstates/block models for the other
+   51 blocks, 3D block-item rendering, per-meta models and the 4 custom item
+   renderers are follow-up cards (BD-17). The block-item models use the
+   `minecraft:item/generated` form with the block's own icon, which is what the
+   original's block items displayed in 1.7.10 inventory.
+
+**Verification.** RED: `runGameTestServer` exit 1 — "2 required tests failed"
+(51 of 52 items had no model / 51 chains did not resolve). GREEN: exit 0
+"All 130 required tests passed"; `-Ptc.noCurios` 130/130; `./gradlew build`
+exit 0 (379 unit / 0 failures / 1 skipped). The asset gates
+`check_asset_paths.py` (2929 assets) and `check_content_mapping.py`
+(1001 entries / 910 done) run inside `build` and stayed green.

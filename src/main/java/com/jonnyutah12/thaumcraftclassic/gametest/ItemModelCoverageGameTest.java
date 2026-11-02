@@ -89,6 +89,13 @@ public final class ItemModelCoverageGameTest {
      */
     private static final String OVERLAY_PROBE_SPRITE = "textures/block/amberore.png";
 
+    /**
+     * Vanilla sprites are only checkable when the vanilla jar is on this
+     * classpath; probe one known vanilla texture instead of assuming.
+     */
+    private static final boolean VANILLA_PROBE_PRESENT =
+            ItemModelCoverageGameTest.class.getResource("/assets/minecraft/textures/item/paper.png") != null;
+
     private ItemModelCoverageGameTest() {
     }
 
@@ -285,6 +292,20 @@ public final class ItemModelCoverageGameTest {
                                     + sprite.substring(ThaumcraftClassic.MOD_ID.length() + 1) + ".png";
                             if (!classResourceExists(texturePath)) {
                                 unresolved.add(ref + " [" + entry.getKey() + " = " + sprite + "] -> " + texturePath);
+                            }
+                        } else if (sprite.startsWith("minecraft:")) {
+                            // A vanilla fallback sprite (the overlay publishes no
+                            // original art for this item) is a real 1.21.1 asset
+                            // or it renders magenta; the vanilla jar is on the
+                            // game-test classpath, so the same classloader check
+                            // closes that defect class.
+                            refs++;
+                            final String vanillaPath = "assets/minecraft/textures/"
+                                    + sprite.substring("minecraft:".length()) + ".png";
+                            if (VANILLA_PROBE_PRESENT && ItemModelCoverageGameTest.class
+                                    .getResource("/" + vanillaPath) == null) {
+                                unresolved.add(ref + " [" + entry.getKey() + " = " + sprite
+                                        + "] -> " + vanillaPath + " (not in the vanilla jar)");
                             }
                         }
                     }
