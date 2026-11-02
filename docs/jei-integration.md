@@ -169,8 +169,9 @@ This lane's two probes draw from no level RNG and no block-breaking region, so
 they are not the cause; adding game tests shifts the interleaving, which is why
 the failure surfaced on the 127-test branch and not on the 125-test parent. Both
 probes need determinism work in their own cards (pin the level RNG; scope the
-drop capture to the broken block), tracked as the follow-up cards created from
-this one. **No probe was loosened on this card** — an over-strict assertion in
+drop capture to the broken block), filed as **t_7bf6a4d0** (node death-spiral)
+and **t_20ad0211** (ore silk-touch drop capture). **No probe was loosened on
+this card** — an over-strict assertion in
 someone else's probe is that card's finding to make, not this one's to paper
 over.
 
