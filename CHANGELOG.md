@@ -17,6 +17,17 @@ Work heading for `0.1.0-alpha.5`, gated per merge on `main`.
   screens exist in the wip tree is measured false (0 screen classes in `src`, 0 in
   `wip-salvage`), so the rest are authoring work, not porting.
 
+- **CI green for the first time since the FX merge** (`t_028f9bf8`): every branch was
+  red from 2026-10-29 on `:sliceOriginalParticleSprites` — the build-time slicer indexes
+  16px cells of the 256x256 `textures/misc/particles.png`, while the CI asset fixture
+  wrote 1x1 placeholder PNGs, so the build job's overlay-jar step failed in ~1s with
+  `(x + width) is outside of Raster` (main runs 40938034742 / 41145956204 / 41146088447).
+  The fixture now writes that one sheet at its real size — every other placeholder stays
+  1x1 — and the slicer states the sheet-size contract in its own failure message. Gate:
+  CI run 41452841483 (jobs build / game-test-no-curios / runServer) on the code tip
+  `79eb001`; locally 379 unit tests / 0 failures / 1 skipped and 116/116 game tests with
+  and without Curios.
+
 ## [0.1.0-alpha.4] - 2026-10-28
 
 Fourth pre-release. Still deliberately a pre-release, not playable end-to-end:

@@ -189,6 +189,14 @@ to the sheet cell the original indexes — an off-by-one in `col = idx % 16` /
 `row = idx / 16` fails the test rather than shipping a wrong-looking particle,
 (3) no sliced sprite is left unnamed by a definition.
 
+The **fixture carries the same contract**: CI has no sheet (D-004), so
+`scripts/make_asset_overlay_fixture.py` writes `textures/misc/particles.png` at
+its real **256x256** — the one placeholder that must have dimensions, because
+the slicer indexes cells in it; every other placeholder stays 1x1 since the
+path gates read paths, not pixels. A 1x1 sheet there is what kept every branch
+red from 2026-10-29 to 2026-11-02 (`(x + width) is outside of Raster`); the
+slicer now fails with the file, its measured size and the required size named.
+
 The sheet's other 246 cells stay untouched: the FX families that index them
 (`FXBoreParticles`, `FXVisSparkle`, the wisp and beam art) are on their own
 cards, and slicing a cell no particle names would put dead art in every jar.
