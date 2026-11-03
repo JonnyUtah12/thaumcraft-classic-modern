@@ -241,10 +241,13 @@ public final class DynamicBlockAppearanceGameTest {
                         + "(the icon is registered at BlockStoneDevice.java:77 and answered at :165-171), got " + lit);
         helper.assertTrue(lit.getLightEmission() == 12,
                 "BlockStoneDevice.java:216-220: meta 0 with a burning tile lit 12, got " + lit.getLightEmission());
-        helper.assertTrue(!lit.hasBlockEntity(),
+        final net.minecraft.world.level.block.entity.BlockEntity be =
+                helper.getLevel().getBlockEntity(helper.absolutePos(pos));
+        helper.assertTrue(be == null,
                 "the furnace's tile — the publisher of this flag — is content-mapping row "
-                        + "thaumcraft:tilealchemyfurnace (not_started); the shipped state contract must not "
-                        + "depend on the machine tile");
+                        + "thaumcraft:tilealchemyfurnace (not_started), and meta 0 gets no block entity from "
+                        + "DeviceTileFactory; the shipped state contract must not depend on the machine tile, "
+                        + "got " + be);
 
         // The flag belongs to the furnace alone: the runic matrix keeps its static
         // 10 for both burning values (BlockStoneDevice.java:221-223), and the

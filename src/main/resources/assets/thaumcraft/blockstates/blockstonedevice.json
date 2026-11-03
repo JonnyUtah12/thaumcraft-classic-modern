@@ -1,48 +1,93 @@
 {
   "variants": {
-    "variant=0": {
+    "variant=0,burning=false": {
       "model": "thaumcraft:block/blockstonedevice_v0"
     },
-    "variant=1": {
+    "variant=0,burning=true": {
+      "model": "thaumcraft:block/blockstonedevice_v0_lit"
+    },
+    "variant=1,burning=false": {
       "model": "thaumcraft:block/blockstonedevice_v1"
     },
-    "variant=2": {
+    "variant=1,burning=true": {
+      "model": "thaumcraft:block/blockstonedevice_v1"
+    },
+    "variant=2,burning=false": {
       "model": "thaumcraft:block/blockstonedevice_v2"
     },
-    "variant=3": {
+    "variant=2,burning=true": {
+      "model": "thaumcraft:block/blockstonedevice_v2"
+    },
+    "variant=3,burning=false": {
       "model": "thaumcraft:block/blockstonedevice_v3"
     },
-    "variant=4": {
+    "variant=3,burning=true": {
+      "model": "thaumcraft:block/blockstonedevice_v3"
+    },
+    "variant=4,burning=false": {
       "model": "thaumcraft:block/blockstonedevice_v4"
     },
-    "variant=5": {
+    "variant=4,burning=true": {
+      "model": "thaumcraft:block/blockstonedevice_v4"
+    },
+    "variant=5,burning=false": {
       "model": "thaumcraft:block/blockstonedevice_v5"
     },
-    "variant=6": {
+    "variant=5,burning=true": {
+      "model": "thaumcraft:block/blockstonedevice_v5"
+    },
+    "variant=6,burning=false": {
       "model": "thaumcraft:block/blockstonedevice_v6"
     },
-    "variant=7": {
+    "variant=6,burning=true": {
+      "model": "thaumcraft:block/blockstonedevice_v6"
+    },
+    "variant=7,burning=false": {
       "model": "thaumcraft:block/blockstonedevice_v7"
     },
-    "variant=8": {
+    "variant=7,burning=true": {
+      "model": "thaumcraft:block/blockstonedevice_v7"
+    },
+    "variant=8,burning=false": {
       "model": "thaumcraft:block/blockstonedevice_v8"
     },
-    "variant=9": {
+    "variant=8,burning=true": {
+      "model": "thaumcraft:block/blockstonedevice_v8"
+    },
+    "variant=9,burning=false": {
       "model": "thaumcraft:block/blockstonedevice_v9"
     },
-    "variant=10": {
+    "variant=9,burning=true": {
+      "model": "thaumcraft:block/blockstonedevice_v9"
+    },
+    "variant=10,burning=false": {
       "model": "thaumcraft:block/blockstonedevice_v10"
     },
-    "variant=11": {
+    "variant=10,burning=true": {
+      "model": "thaumcraft:block/blockstonedevice_v10"
+    },
+    "variant=11,burning=false": {
       "model": "thaumcraft:block/blockstonedevice_v11"
     },
-    "variant=12": {
+    "variant=11,burning=true": {
+      "model": "thaumcraft:block/blockstonedevice_v11"
+    },
+    "variant=12,burning=false": {
       "model": "thaumcraft:block/blockstonedevice_v12"
     },
-    "variant=13": {
+    "variant=12,burning=true": {
+      "model": "thaumcraft:block/blockstonedevice_v12"
+    },
+    "variant=13,burning=false": {
       "model": "thaumcraft:block/blockstonedevice_v13"
     },
-    "variant=14": {
+    "variant=13,burning=true": {
+      "model": "thaumcraft:block/blockstonedevice_v13"
+    },
+    "variant=14,burning=false": {
+      "model": "thaumcraft:block/blockstonedevice_v14"
+    },
+    "variant=14,burning=true": {
       "model": "thaumcraft:block/blockstonedevice_v14"
     }
   }

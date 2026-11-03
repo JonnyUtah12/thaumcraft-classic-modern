@@ -269,8 +269,8 @@ class DeviceTintRegistrationTest {
                 "the burning furnace must name a model of its own — BlockStoneDevice.java:165-171 answers a"
                         + " different sprite while the tile burns");
 
-        final JsonObject unlit = model(unlitRef.substring(unlitRef.indexOf(':') + 1));
-        final JsonObject lit = model(litRef.substring(litRef.indexOf(':') + 1));
+        final JsonObject unlit = model(unlitRef.substring(unlitRef.lastIndexOf('/') + 1));
+        final JsonObject lit = model(litRef.substring(litRef.lastIndexOf('/') + 1));
         for (final String side : new String[]{"north", "south", "east", "west"}) {
             assertEquals("thaumcraft:block/al_furnace_front_off", texture(unlit, side),
                     "BlockStoneDevice.java:76 registers al_furnace_front_off and :101-103 answers it for the"
@@ -305,8 +305,9 @@ class DeviceTintRegistrationTest {
         assertTrue(source.contains("animateTick"),
                 "BlockStoneDevice.java:194-212 is the original's randomDisplayTick; the port's animateTick"
                         + " override is where that particle box lives");
-        assertTrue(source.contains("Particles.FLAME") && source.contains("Particles.SMOKE"),
-                "the original spawned 'smoke' and 'flame' at each rim position (:203-210)");
+        assertTrue(source.contains("ParticleTypes.FLAME") && source.contains("ParticleTypes.SMOKE"),
+                "the original spawned 'smoke' and 'flame' at each rim position (:203-210) — 1.21.1's "
+                        + "names for those two are ParticleTypes.SMOKE / ParticleTypes.FLAME");
         assertTrue(source.contains("getValue(BURNING)"),
                 "the box must be gated on the published burning state — the tile that knows it is burning"
                         + " is content-mapping thaumcraft:tilealchemyfurnace, not_started");

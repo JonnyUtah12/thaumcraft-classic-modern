@@ -567,13 +567,75 @@ public final class BlockStateCoverageGameTest {
                     continue;
                 }
                 // The swap has to name the original's LIT sprites, not just any
-                // different ones. The uncharged model carries the `_off` suffix
-                // the original uses for that face (BlockMetalDevice.java:124-136
-                // answers icon[15]/icon[14] = lamp_grow_top_off/lamp_grow_side_off
-                // for an uncharged growth lamp, and :125-131 answers
-                // icon[13]/icon[12] = lamp_grow_top/lamp_grow_side once the tile's
-                // charges > 0), so the expectation is derived from the shipped off
-                // model here rather than from a sprite list.
+                // different ones. The unlit model carries the `_off` suffix the
+                // original uses for that face, and the original's lit twin is
+                // spelled two ways across the pairs: the lamp pair drops the
+                // suffix ({@code BlockMetalDevice.java:124-136}:
+                // lamp_grow_top_off/lamp_grow_side_off uncharged →
+                // lamp_grow_top/lamp_grow_side once charges > 0) and the furnace
+                // pair swaps it for `_on` ({@code BlockStoneDevice.java:76-77}
+                // register al_furnace_front_off/al_furnace_front_on; :165-171
+                // answers one for the other while the tile burns). The check is
+                // per FACE, not per model: every face of the off model that
+                // names a `*_off` sprite must be answered on the SAME face of
+                // the lit model by one of the two twin spellings. A model-level
+                // set check misses the mutation that re-points ONE face of the
+                // lit model back at the off sprite while the other faces keep
+                // the twin — the set still contains the twin; the face does not.
+                final Map<String, Map<String, Set<String>>> litFaces = new LinkedHashMap<>();
+                final Map<String, Map<String, Set<String>>> offFaces = new LinkedHashMap<>();
+                for (final Map.Entry<String, Set<String>> byModelEntry : byModel.entrySet()) {
+                    boolean off = false;
+                    for (final String sprite : byModelEntry.getValue()) {
+                        if (sprite.endsWith("_off")) {
+                            off = true;
+                            break;
+                        }
+                    }
+                    if (off) {
+                        offFaces.put(byModelEntry.getKey(), facesOfModel(byModelEntry.getKey()));
+                    } else {
+                        litFaces.put(byModelEntry.getKey(), facesOfModel(byModelEntry.getKey()));
+                    }
+                }
+                for (final Map.Entry<String, Map<String, Set<String>>> offEntry : offFaces.entrySet()) {
+                    for (final Map.Entry<String, Map<String, Set<String>>> litEntry : litFaces.entrySet()) {
+                        for (final Map.Entry<String, Set<String>> face : offEntry.getValue().entrySet()) {
+                            if (litEntry.getValue().isEmpty()) {
+                                continue; // the lit model names no faces (a pure parent chain) — the set rule below covers it
+                            }
+                            final Set<String> here = litEntry.getValue().get(face.getKey());
+                            for (final String sprite : face.getValue()) {
+                                if (!sprite.endsWith("_off")) {
+                                    continue;
+                                }
+                                final String base = sprite.substring(0, sprite.length() - "_off".length());
+                                final Set<String> litHere = here == null ? Set.of() : here;
+                                // A lit face that itself carries an _off sprite is the
+                                // unlit model in this pairing (the loop pairs every
+                                // model with every other) — the twin rule is the
+                                // set pass below's job for that ordering.
+                                boolean litFaceIsOff = false;
+                                for (final String candidate : litHere) {
+                                    if (candidate.endsWith("_off")) {
+                                        litFaceIsOff = true;
+                                        break;
+                                    }
+                                }
+                                if (litFaceIsOff) {
+                                    continue;
+                                }
+                                if (!litHere.contains(base + "_on") && !litHere.contains(base)) {
+                                    problems.add(entry.getKey() + " group " + group.getKey() + " swaps to a model whose"
+                                            + " face " + face.getKey() + " never names " + base + "_on or " + base
+                                            + " (it names " + (here == null ? "no such face" : litHere)
+                                            + ") — the lit state must draw the twin the original picks for the face "
+                                            + sprite + " covers (" + property.getName() + ")");
+                                }
+                            }
+                        }
+                    }
+                }
                 final Set<String> litSprites = new LinkedHashSet<>();
                 final List<Set<String>> offSprites = new ArrayList<>();
                 for (final Set<String> sprites : byModel.values()) {
@@ -591,11 +653,11 @@ public final class BlockStateCoverageGameTest {
                 }
                 for (final Set<String> off : offSprites) {
                     for (final String sprite : off) {
-                        final String lit = sprite.substring(0, sprite.length() - "_off".length());
-                        if (!litSprites.contains(lit)) {
+                        final String base = sprite.substring(0, sprite.length() - "_off".length());
+                        if (!litSprites.contains(base + "_on") && !litSprites.contains(base)) {
                             problems.add(entry.getKey() + " group " + group.getKey() + " swaps to a model that"
-                                    + " never names " + lit + " — the charged state must draw the lit sprite the"
-                                    + " original picks for the face " + sprite + " covers");
+                                    + " never names " + base + "_on or " + base + " — the lit state must draw the"
+                                    + " twin sprite the original picks for the face " + sprite + " covers");
                         }
                     }
                 }
@@ -696,7 +758,82 @@ public final class BlockStateCoverageGameTest {
         return sprites;
     }
 
+    /**
+     * The sprites a model draws per FACE: flat {@code textures} entries keyed by
+     * a face name (the cube-parent spelling) plus every {@code elements} face,
+     * {@code #alias} values resolved through the naming model's own
+     * {@code textures} map, across the parent chain. This is the geometry-level
+     * view the per-face swap rule needs — the set view above cannot see WHICH
+     * face carries a sprite.
+     */
+    private static Map<String, Set<String>> facesOfModel(final String modelRef) {
+        final Map<String, Set<String>> faces = new LinkedHashMap<>();
+        final Deque<String> chain = new ArrayDeque<>();
+        final Set<String> seen = new LinkedHashSet<>();
+        chain.add(modelRef);
+        while (!chain.isEmpty()) {
+            final String ref = chain.poll();
+            if (!seen.add(ref) || !ref.contains(":")) {
+                continue;
+            }
+            if (!ref.substring(0, ref.indexOf(':')).equals(ThaumcraftClassic.MOD_ID)) {
+                continue;
+            }
+            final JsonObject model = parseAsset("models/" + ref.substring(ref.indexOf(':') + 1) + ".json");
+            if (model == null) {
+                continue;
+            }
+            final JsonObject textures = model.has("textures") ? model.getAsJsonObject("textures") : null;
+            if (textures != null) {
+                for (final Map.Entry<String, JsonElement> texture : textures.entrySet()) {
+                    if (!FACES.contains(texture.getKey())) {
+                        continue;
+                    }
+                    final String sprite = resolveSprite(textures, texture.getValue().getAsString());
+                    if (sprite != null) {
+                        faces.computeIfAbsent(texture.getKey(), k -> new LinkedHashSet<>()).add(sprite);
+                    }
+                }
+            }
+            if (model.has("elements")) {
+                for (final JsonElement element : model.getAsJsonArray("elements")) {
+                    final JsonObject elementFaces = element.getAsJsonObject().getAsJsonObject("faces");
+                    if (elementFaces == null) {
+                        continue;
+                    }
+                    for (final Map.Entry<String, JsonElement> face : elementFaces.entrySet()) {
+                        final JsonElement texture = face.getValue().getAsJsonObject().get("texture");
+                        if (texture == null) {
+                            continue;
+                        }
+                        final String sprite = resolveSprite(textures, texture.getAsString());
+                        if (sprite != null) {
+                            faces.computeIfAbsent(face.getKey(), k -> new LinkedHashSet<>()).add(sprite);
+                        }
+                    }
+                }
+            }
+            if (model.has("parent") && model.get("parent").getAsString().startsWith(ThaumcraftClassic.MOD_ID + ":")) {
+                chain.add(model.get("parent").getAsString());
+            }
+        }
+        return faces;
+    }
+
+    /** Resolve a {@code #alias} texture value to a literal sprite, same-model chain. */
+    private static String resolveSprite(final JsonObject textures, String value) {
+        int depth = 0;
+        while (value != null && value.startsWith("#") && textures != null && depth++ < 16) {
+            final JsonElement next = textures.get(value.substring(1));
+            value = next == null ? null : next.getAsString();
+        }
+        return value != null && !value.startsWith("#") && value.contains(":") ? value : null;
+    }
+
     // ------------------------------------------------------------------ helpers
+
+    /** The face-name vocabulary a model's flat {@code textures} map uses. */
+    private static final Set<String> FACES = Set.of("down", "up", "north", "south", "east", "west");
 
     /** Registered shipped blocks, keyed by registry id path. */
     private static Map<String, Block> shippedBlocks() {

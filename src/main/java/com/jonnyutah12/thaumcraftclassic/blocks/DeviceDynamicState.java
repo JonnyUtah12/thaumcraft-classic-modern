@@ -32,6 +32,14 @@ import net.minecraft.world.level.block.state.properties.Property;
  *     ({@code BlockLifterRenderer.java:50-89}: the bottom + four side glow
  *     faces, with the full-bright {@code bb = 180} while
  *     {@code !tile.gettingPower()}).</li>
+ *   <li>{@link BlockStoneDevice#BURNING} — the alchemical furnace swaps its
+ *     whole side ring to {@code al_furnace_front_on} while the tile burns
+ *     ({@code BlockStoneDevice.java:165-171}, icons registered at
+ *     {@code :76-77}), lights 12 with the same flag ({@code :216-220}) and
+ *     spawns its fire-box particles ({@code :194-212}); the furnace's tile is
+ *     content-mapping row {@code thaumcraft:tilealchemyfurnace}
+ *     (not_started), so nothing writes {@code burning=true} until that tile
+ *     lands, and the state-side contract ships first (BD-18 slice 2b).</li>
  * </ul>
  *
  * <h2>The condition the tile reports</h2>
