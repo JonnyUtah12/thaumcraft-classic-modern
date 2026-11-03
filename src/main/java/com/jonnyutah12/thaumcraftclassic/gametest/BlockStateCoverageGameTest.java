@@ -103,8 +103,16 @@ public final class BlockStateCoverageGameTest {
             "minecraft:block/door_top_right", List.of("top"),
             "minecraft:block/door_bottom_right_open", List.of("bottom"),
             "minecraft:block/door_top_right_open", List.of("top"),
-            // vanilla air declares no geometry and reads no texture key — the model for the
-            // metas 4.2.3.5 declines to draw (stone device 3 "air", BlockStoneDeviceRenderer:263)
+            // vanilla air declares no geometry and reads no texture key (its model file is the
+            // 4-byte `{}` in the 1.21.1 client jar). 4.2.3.5's device ISMRs hand a meta to that
+            // blank by emitting no faces — wooden device metas 0/4/5/8 at
+            // `BlockWoodenDeviceRenderer.java:231-232` (`return false`), stone device metas
+            // 2/3/4/6/7/9/10/11/13/14 on the fall-through tail at
+            // `BlockStoneDeviceRenderer.java:319-322` (the branch chain draws 0/12 at :265-268,
+            // 1 at :269-278, 5 at :279-288, 8 at :289-316; `:263` is the method's own line) —
+            // and every one of those metas is drawn in world by a TileEntityRenderer, so the
+            // blank is not the player's appearance. D-021 keeps the entry available for the
+            // card that ships the renderer; `everyBlockStateModelChainDrawsFaces` gates it.
             "minecraft:block/air", List.of());
 
     private BlockStateCoverageGameTest() {
@@ -694,6 +702,344 @@ public final class BlockStateCoverageGameTest {
             }
         }
         return sprites;
+    }
+
+    /**
+     * D-021 (t_47316a9b): <b>no shipped blockstate key names a model chain that
+     * draws zero faces.</b>
+     *
+     * <p>4.2.3.5's device ISMRs hand whole metas to a blank: the wooden-device
+     * renderer answers {@code return false} for every meta outside {1,2,3,6,7}
+     * ({@code BlockWoodenDeviceRenderer.java:231-232}, metas 0/4/5/8) and the
+     * stone-device renderer's branch chain emits no faces for metas
+     * 2/3/4/6/7/9/10/11/13/14 — those metas fall through the draws at
+     * {@code BlockStoneDeviceRenderer.java:265-268} (0/12), {@code :269-278} (1),
+     * {@code :279-288} (5) and {@code :289-316} (8) to the tail at
+     * {@code :319-322}, which sets graphics hints, resets the bounds and
+     * {@code return true} without ever calling {@code renderStandardBlock}
+     * (SRG {@code func_147784_q}). That is not the player's appearance: the
+     * decline transfers the draw to the tile's renderer, and 4.2.3.5 registers
+     * one for every one of these metas — bellows {@code ClientProxy.java:473},
+     * bore base {@code :467}, bore {@code :466}, banner {@code :472}, runic
+     * matrix {@code :491}, infusion pillar {@code :492}, node converter
+     * {@code :501}, node stabiliser {@code :502}, focal manipulator
+     * {@code :513}, flux scrubber {@code :515}.</p>
+     *
+     * <p>A meta the port blanks with a {@code minecraft:block/air} chain
+     * therefore renders an <em>invisible block</em> in a tree that ships no
+     * block-entity renderer for that tile — invisible, walkable, and for the
+     * runic matrix it even emits light 10 ({@code BlockStoneDevice.java:214-222}).
+     * D-021's answer is to keep a visible model and to blank nothing. The
+     * exemption list below is empty by design: the card that ships a
+     * {@code BlockEntityRenderer} for one of these tiles may blank that meta's
+     * static model and adds the model id there, with that renderer's citation as
+     * its reason.</p>
+     *
+     * <p>Face counts come from the shipped JSON plus {@link #VANILLA_GEOMETRY}
+     * for the vanilla parents: a {@code runGameTestServer} run is a dedicated
+     * server and has no {@code /assets/minecraft/models/**} on its classpath, so
+     * reading the vanilla files at runtime silently skips the gate (the first
+     * version of this probe did exactly that, and walked a 0-face chain green —
+     * the lesson, recorded in D-021).</p>
+     */
+    @GameTest(template = "empty")
+    public static void everyBlockStateModelChainDrawsFaces(final GameTestHelper helper) {
+        final List<String> blank = new ArrayList<>();
+        int keys = 0;
+        int exempt = 0;
+        for (final Map.Entry<String, Block> entry : shippedBlocks().entrySet()) {
+            final JsonObject json = loadObject("blockstates/" + entry.getKey() + ".json");
+            if (json == null || json.get("variants") == null) {
+                continue;
+            }
+            for (final Map.Entry<String, JsonElement> variant : json.getAsJsonObject("variants").entrySet()) {
+                for (final String model : modelsOf(variant.getValue())) {
+                    keys++;
+                    if (ZERO_FACE_MODEL_EXEMPTIONS.containsKey(model)) {
+                        exempt++;
+                        continue;
+                    }
+                    if (facesInChain(model, blank) == 0) {
+                        blank.add(entry.getKey() + " key '" + variant.getKey() + "' names " + model
+                                + " — a chain with zero faces draws an invisible block");
+                    }
+                }
+            }
+        }
+        ThaumcraftClassic.LOGGER.info("[D-021] face contract: {} blockstate model references walked, "
+                + "{} draw nothing, {} exempt by the renderer rule", keys, blank.size(), exempt);
+        helper.assertTrue(keys > 0,
+                "no blockstate model references were walked — this probe can never fail; the asset tree "
+                        + "is not on the runtime classpath");
+        helper.assertTrue(blank.isEmpty(),
+                blank.size() + " blockstate model references draw nothing (D-021 keeps every meta the "
+                        + "ISMR declines visible because 4.2.3.5 draws them through a TileEntityRenderer "
+                        + "— BlockWoodenDeviceRenderer.java:231-232 and BlockStoneDeviceRenderer.java:319-322 "
+                        + "hand those metas to the tile, ClientProxy.java:466-515 registers the renderers, "
+                        + "and the port ships no renderer for them): " + preview(blank));
+        helper.succeed();
+    }
+
+    /**
+     * D-021 (t_47316a9b): the metas the original's ISMR declines to draw, pinned
+     * one by one with the line that declines them.
+     *
+     * <p>Three things are checked for every meta in {@link #ISMR_DECLINED_METAS}:
+     * the shipped model chain for that state draws faces (the port ships no
+     * renderer for the tile, so this model <em>is</em> the block's appearance);
+     * the four Infusion Pillar metas — one name in the original's own language
+     * file, {@code en_US.lang:259-263} — render the pillar art that
+     * {@code TileInfusionPillarRenderer.java:28} binds, so the family cannot
+     * render three visible pillars and one invisible one; and the family's
+     * {@code models/item/<id>.json} draws, which is the port's side of "keep the
+     * inventory art": 1.21.1 picks one model per item id (BD-17), so the tab and
+     * quick-move icon is that item model and never a blockstate key —
+     * {@code blockstonedevice.json} parents {@code blockstonedevice_v1} and
+     * {@code blockwoodendevice.json} parents {@code blockwoodendevice_v0}, the
+     * plain cubes the original's ISMR inventory path drew for every meta
+     * ({@code BlockStoneDeviceRenderer.java:65-76} + {@code :78-83},
+     * {@code BlockWoodenDeviceRenderer.java:225-232}), while the blockstate half
+     * carries the in-world look. The two halves are separate files in 1.21.1, so
+     * a meta's world model can carry the tile's art without touching the tab.</p>
+     */
+    @GameTest(template = "empty")
+    public static void ismrDeclinedDeviceMetasKeepVisibleArt(final GameTestHelper helper) {
+        final List<String> problems = new ArrayList<>();
+        final List<String> visible = new ArrayList<>();
+        for (final DeclinedMeta meta : ISMR_DECLINED_METAS) {
+            final Block block = shippedBlocks().get(meta.block());
+            if (block == null) {
+                problems.add(meta.block() + " is not a shipped catalog block — the pinned set is stale");
+                continue;
+            }
+            final String model = modelForVariant(meta.block(), meta.meta());
+            if (model == null) {
+                problems.add(meta.block() + " has no blockstate key addressing variant=" + meta.meta()
+                        + " — D-001's variant property must name every meta the ISMR declines ("
+                        + meta.ismr() + ")");
+                continue;
+            }
+            final int faces = facesInChain(model, problems);
+            if (faces == 0 && !ZERO_FACE_MODEL_EXEMPTIONS.containsKey(model)) {
+                problems.add(meta.block() + " variant=" + meta.meta() + " names " + model
+                        + " which draws zero faces — the original declines the ISMR draw for this meta at "
+                        + meta.ismr() + " and hands it to " + meta.renderer()
+                        + "; the port ships no renderer for that tile, so the block would be invisible");
+                continue;
+            }
+            visible.add(meta.block() + ":" + meta.meta() + "=" + faces);
+            if (meta.pillar()) {
+                final Set<String> sprites = spritesOfModel(model);
+                if (!sprites.equals(Set.of(PILLAR_SPRITE))) {
+                    problems.add(meta.block() + " variant=" + meta.meta() + " is an Infusion Pillar "
+                            + "(en_US.lang:259-263) whose model names " + sprites + " — the four pillar "
+                            + "metas must share the pillar art TileInfusionPillarRenderer.java:28 binds ("
+                            + PILLAR_SPRITE + ") so the family renders as one thing");
+                }
+            }
+        }
+        for (final String id : List.of("blockstonedevice", "blockwoodendevice")) {
+            final JsonObject item = parseAsset("models/item/" + id + ".json");
+            final String parent = item != null && item.has("parent") ? item.get("parent").getAsString() : null;
+            if (parent == null || facesInChain(parent, problems) == 0) {
+                problems.add(id + " item model draws nothing — the player would see no icon in the tab, "
+                        + "in quick-move or in an item frame (BD-17 picks one model per item id, so this "
+                        + "file is the inventory art the ISMR's inventory path drew)");
+            }
+        }
+        ThaumcraftClassic.LOGGER.info("[D-021] ISMR-declined metas: {} pinned, faces {}, {} problems",
+                ISMR_DECLINED_METAS.size(), visible, problems.size());
+        helper.assertTrue(problems.isEmpty(),
+                problems.size() + " ISMR-declined-meta contracts are broken: " + preview(problems));
+        helper.succeed();
+    }
+
+    /**
+     * A meta the original's ISMR declines to draw, with the line that declines
+     * it and the renderer that draws it in world instead. Every entry was read
+     * out of {@code reference/decompiled/thaumcraft/thaumcraft/} for this card.
+     */
+    private record DeclinedMeta(String block, int meta, String ismr, String renderer) {
+        /** True for the metas the original names "Infusion Pillar". */
+        boolean pillar() {
+            return block.equals("blockstonedevice") && (meta == 3 || meta == 4 || meta == 6 || meta == 7);
+        }
+    }
+
+    private static final String PILLAR_SPRITE = "thaumcraft:models/pillar";
+
+    /** The metas the original's static draw declines; see the two probes' javadocs. */
+    private static final List<DeclinedMeta> ISMR_DECLINED_METAS = List.of(
+            // Wooden device: renderWorldBlock draws the ear (1) at :189-230 and a full cube for
+            // 2/3/6/7 at :233-236; every other meta reaches :231 and `return false` at :232.
+            new DeclinedMeta("blockwoodendevice", 0, "BlockWoodenDeviceRenderer.java:231-232",
+                    "TileBellowsRenderer (ClientProxy.java:473)"),
+            new DeclinedMeta("blockwoodendevice", 4, "BlockWoodenDeviceRenderer.java:231-232",
+                    "TileArcaneBoreBaseRenderer (ClientProxy.java:467)"),
+            new DeclinedMeta("blockwoodendevice", 5, "BlockWoodenDeviceRenderer.java:231-232",
+                    "TileArcaneBoreRenderer (ClientProxy.java:466)"),
+            new DeclinedMeta("blockwoodendevice", 8, "BlockWoodenDeviceRenderer.java:231-232",
+                    "TileBannerRenderer (ClientProxy.java:472)"),
+            // Stone device: the branch chain draws 0/12 (:265-268), 1 (:269-278), 5 (:279-288),
+            // 8 (:289-316); the rest fall to the tail at :319-322, which emits no faces.
+            new DeclinedMeta("blockstonedevice", 2, "BlockStoneDeviceRenderer.java:319-322",
+                    "TileRunicMatrixRenderer for TileInfusionMatrix (ClientProxy.java:491)"),
+            new DeclinedMeta("blockstonedevice", 3, "BlockStoneDeviceRenderer.java:319-322",
+                    "TileInfusionPillarRenderer (ClientProxy.java:492)"),
+            new DeclinedMeta("blockstonedevice", 4, "BlockStoneDeviceRenderer.java:319-322",
+                    "TileInfusionPillarRenderer (ClientProxy.java:492)"),
+            new DeclinedMeta("blockstonedevice", 6, "BlockStoneDeviceRenderer.java:319-322",
+                    "TileInfusionPillarRenderer (ClientProxy.java:492)"),
+            new DeclinedMeta("blockstonedevice", 7, "BlockStoneDeviceRenderer.java:319-322",
+                    "TileInfusionPillarRenderer (ClientProxy.java:492)"),
+            new DeclinedMeta("blockstonedevice", 9, "BlockStoneDeviceRenderer.java:319-322",
+                    "TileNodeStabilizerRenderer (ClientProxy.java:502)"),
+            new DeclinedMeta("blockstonedevice", 10, "BlockStoneDeviceRenderer.java:319-322",
+                    "TileNodeStabilizerRenderer (ClientProxy.java:502)"),
+            new DeclinedMeta("blockstonedevice", 11, "BlockStoneDeviceRenderer.java:319-322",
+                    "TileNodeConverterRenderer (ClientProxy.java:501)"),
+            new DeclinedMeta("blockstonedevice", 13, "BlockStoneDeviceRenderer.java:319-322",
+                    "TileFocalManipulatorRenderer (ClientProxy.java:513)"),
+            new DeclinedMeta("blockstonedevice", 14, "BlockStoneDeviceRenderer.java:319-322",
+                    "TileFluxScrubberRenderer (ClientProxy.java:515)"));
+
+    /**
+     * Models a shipped blockstate may name with zero faces. Empty today: the
+     * rule is that a meta goes blank in the static chain only once the card
+     * shipping the {@code BlockEntityRenderer} for its tile lands, and the
+     * reason quoted there is that renderer's citation.
+     */
+    private static final Map<String, String> ZERO_FACE_MODEL_EXEMPTIONS = Map.of();
+
+    /**
+     * What a vanilla model file contributes to a chain: its <em>own</em>
+     * {@code elements} face count, its parent, and whether it is the item
+     * generator (which declares no elements and bakes one quad per sprite
+     * layer). Every row was read out of the 1.21.1 client jar the pinned
+     * {@code MC_VERSION 1.21.1-21.1.259} resolves from —
+     * {@code assets/minecraft/models/block/air.json} is the four-byte empty
+     * object, {@code cube.json} draws six faces over {@code block/block},
+     * {@code slab} and {@code slab_top} draw six, and the four
+     * {@code door_*_right*} halves draw five each. A vanilla parent with no row
+     * is a problem, never a skip: an unlisted parent must not be able to hide a
+     * 0-face chain.
+     */
+    private record VanillaGeometry(String parent, int ownFaces, boolean generatedQuad) {
+    }
+
+    private static final Map<String, VanillaGeometry> VANILLA_GEOMETRY = Map.ofEntries(
+            Map.entry("minecraft:block/air", new VanillaGeometry("", 0, false)),
+            Map.entry("minecraft:block/block", new VanillaGeometry("", 0, false)),
+            Map.entry("minecraft:block/cube", new VanillaGeometry("minecraft:block/block", 6, false)),
+            Map.entry("minecraft:block/cube_all", new VanillaGeometry("minecraft:block/cube", 0, false)),
+            Map.entry("minecraft:block/door_bottom_right", new VanillaGeometry("", 5, false)),
+            Map.entry("minecraft:block/door_bottom_right_open", new VanillaGeometry("", 5, false)),
+            Map.entry("minecraft:block/door_top_right", new VanillaGeometry("", 5, false)),
+            Map.entry("minecraft:block/door_top_right_open", new VanillaGeometry("", 5, false)),
+            Map.entry("minecraft:block/slab", new VanillaGeometry("minecraft:block/block", 6, false)),
+            Map.entry("minecraft:block/slab_top", new VanillaGeometry("", 6, false)),
+            Map.entry("minecraft:block/builtin/generated", new VanillaGeometry("", 0, true)),
+            Map.entry("minecraft:item/generated", new VanillaGeometry("minecraft:block/builtin/generated", 0, true)));
+
+    /** The model the blockstate names for a {@code variant}-only block's meta. */
+    private static String modelForVariant(final String path, final int meta) {
+        final JsonObject json = loadObject("blockstates/" + path + ".json");
+        if (json == null || json.get("variants") == null) {
+            return null;
+        }
+        for (final Map.Entry<String, JsonElement> variant : json.getAsJsonObject("variants").entrySet()) {
+            for (final String pair : variant.getKey().isEmpty()
+                    ? List.<String>of() : List.of(variant.getKey().split(","))) {
+                if (pair.equals("variant=" + meta)) {
+                    for (final String model : modelsOf(variant.getValue())) {
+                        return model;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /** Every model one blockstate variant names — a door names two halves. */
+    private static List<String> modelsOf(final JsonElement entry) {
+        final List<String> models = new ArrayList<>();
+        if (entry.isJsonArray()) {
+            for (final JsonElement element : entry.getAsJsonArray()) {
+                final String model = modelOf(element.getAsJsonObject());
+                if (!model.isEmpty()) {
+                    models.add(model);
+                }
+            }
+        } else {
+            final String model = modelOf(entry.getAsJsonObject());
+            if (!model.isEmpty()) {
+                models.add(model);
+            }
+        }
+        return models;
+    }
+
+    /**
+     * Faces a model chain draws: every face in every {@code elements} array of
+     * the thaumcraft models in the chain, plus {@link #VANILLA_GEOMETRY} for the
+     * vanilla parents. A chain that reaches the item generator counts as one.
+     * Unknown vanilla parents are reported through {@code problems}.
+     */
+    private static int facesInChain(final String modelRef, final List<String> problems) {
+        int faces = 0;
+        final Deque<String> chain = new ArrayDeque<>();
+        final Set<String> seen = new LinkedHashSet<>();
+        chain.add(modelRef);
+        while (!chain.isEmpty()) {
+            final String ref = chain.poll();
+            if (!seen.add(ref) || !ref.contains(":")) {
+                continue;
+            }
+            final int split = ref.indexOf(':');
+            final String namespace = ref.substring(0, split);
+            final String path = ref.substring(split + 1);
+            if (namespace.equals(ThaumcraftClassic.MOD_ID)) {
+                final JsonObject model = parseAsset("models/" + path + ".json");
+                if (model == null) {
+                    continue; // the resolving probes own a missing model file
+                }
+                faces += facesOf(model);
+                if (model.has("parent")) {
+                    chain.add(model.get("parent").getAsString());
+                }
+            } else if (namespace.equals("minecraft")) {
+                final VanillaGeometry geometry = VANILLA_GEOMETRY.get(ref);
+                if (geometry == null) {
+                    problems.add("vanilla parent " + ref + " has no row in VANILLA_GEOMETRY — add it with "
+                            + "the face count read from the 1.21.1 client jar at assets/minecraft/models/"
+                            + path + ".json, so the face contract cannot be hidden by an unlisted parent");
+                    continue;
+                }
+                faces += geometry.ownFaces();
+                if (geometry.generatedQuad()) {
+                    faces = Math.max(faces, 1);
+                }
+                if (!geometry.parent().isEmpty()) {
+                    chain.add(geometry.parent());
+                }
+            }
+        }
+        return faces;
+    }
+
+    private static int facesOf(final JsonObject model) {
+        int faces = 0;
+        final JsonElement elements = model.get("elements");
+        if (elements == null || !elements.isJsonArray()) {
+            return 0;
+        }
+        for (final JsonElement element : elements.getAsJsonArray()) {
+            final JsonElement elementFaces = element.getAsJsonObject().get("faces");
+            if (elementFaces != null && elementFaces.isJsonObject()) {
+                faces += elementFaces.getAsJsonObject().size();
+            }
+        }
+        return faces;
     }
 
     // ------------------------------------------------------------------ helpers
