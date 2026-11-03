@@ -617,6 +617,130 @@ public final class BlockStateCoverageGameTest {
         helper.succeed();
     }
 
+    /**
+     * BD-18 slice 1 (t_fd5265f3): the alchemical furnace's 27-icon face
+     * machine, shipped as states.
+     *
+     * <p>{@code BlockArcaneFurnace.java:43-49} registers 27 icons
+     * {@code thaumcraft:furnace<N>} <em>skipping 8 and 24</em>;
+     * {@code calculateTexture} ({@code :57-156}) picks the face icon from the
+     * block's metadata, the vertical-run level ({@code :158-177}) and
+     * {@code add} (a metadata-10 nozzle touching a face, {@code :61-63}), and
+     * the ISMR ({@code BlockArcaneFurnaceRenderer.java:16-59}, 72 lines) draws
+     * the base plate's cube with {@code overrideBlockTexture = Blocks.lava}
+     * plus a fire pass, and the nozzle's three art quads on the side of the
+     * plate its west / east / north / else-+Z branch found. The port has no
+     * render hook, so the tile publishes the condition
+     * ({@code stack}/{@code attached}) and the blockstate names a model per
+     * value (D-020). This probe reads the shipped JSON back out and requires
+     * every registered state to name the faces that table answers, for the two
+     * metadata the port ships (0 and 10 — the shell metas are TC-M4-06-m).</p>
+     */
+    @GameTest(template = "empty")
+    public static void arcanefurnaceFaceshiptheoriginalsfacemachine(final GameTestHelper helper) {
+        final Block furnace = shippedBlocks().get("blockarcanefurnace");
+        helper.assertTrue(furnace != null,
+                "the registry ships no thaumcraft:blockarcanefurnace — this probe can never fail");
+        final Property<?> variant = furnace.getStateDefinition().getProperty("variant");
+        final Property<?> stack = furnace.getStateDefinition().getProperty("stack");
+        final Property<?> attached = furnace.getStateDefinition().getProperty("attached");
+        final List<String> problems = new ArrayList<>();
+        if (variant == null) {
+            helper.succeed(); // the registry probe owns a missing variant property
+        }
+        if (stack == null || attached == null) {
+            problems.add("the furnace registers no published face-machine properties: the run level and the"
+                    + " touching partner half are the inputs calculateTexture reads (BlockArcaneFurnace.java:57-177)"
+                    + " and the blockstate can only name a model per value — registered properties "
+                    + furnace.getStateDefinition().getProperties());
+        }
+
+        int checked = 0;
+        for (final BlockState state : furnace.getStateDefinition().getPossibleStates()) {
+            final String ref = ArcaneFurnaceFaceTable.modelRef(furnace, state);
+            if (ref == null) {
+                problems.add("registered state " + state + " is addressed by no single blockstate key naming one"
+                        + " model — the face machine must be reachable for every value combination");
+                continue;
+            }
+            final ArcaneFurnaceFaceTable.Model model = ArcaneFurnaceFaceTable.model(ref);
+            if (model == null) {
+                problems.add("state " + state + " names " + ref + ", which is not a committed model");
+                continue;
+            }
+            checked++;
+            for (final String sprite : model.sprites()) {
+                if (ArcaneFurnaceFaceTable.NEVER_REGISTERED.contains(sprite)) {
+                    problems.add(model.ref() + " names " + sprite + ", one of the two icons"
+                            + " BlockArcaneFurnace.java:43-49 never registers (the loop skips 8 and 24) and"
+                            + " docs/asset-mapping.csv does not publish");
+                }
+            }
+            final int variantValue = ((Number) state.getValue(variant)).intValue();
+            if (variantValue == 0) {
+                // The base plate: every face is the lava the ISMR overrides to,
+                // plus the fire pass the renderer issues right after the cube.
+                for (final String face : List.of("down", "up", "north", "south", "west", "east")) {
+                    if (!ArcaneFurnaceFaceTable.SPRITE_LAVA.equals(model.faces().get(face))) {
+                        problems.add("the base plate's model " + model.ref() + " names "
+                                + model.faces().get(face) + " on the " + face + " face; the original draws"
+                                + " every face with overrideBlockTexture = Blocks.lava (BlockArcaneFurnaceRenderer.java:19-21)");
+                    }
+                }
+                if (!model.sprites().contains(ArcaneFurnaceFaceTable.SPRITE_FIRE)) {
+                    problems.add("the base plate's model " + model.ref() + " never names"
+                            + " thaumcraft:block/fire_0 — the ISMR runs the fire pass on the plate right after"
+                            + " the cube (BlockArcaneFurnaceRenderer.java:23)");
+                }
+                continue;
+            }
+            final int stackValue = stack == null ? -1 : ((Number) state.getValue(stack)).intValue();
+            final int attachedValue = attached == null ? -1 : ((Number) state.getValue(attached)).intValue();
+            final String bodySide = ArcaneFurnaceFaceTable.nozzleBodySide(stackValue);
+            for (final String side : List.of("north", "south", "west", "east")) {
+                if (!bodySide.equals(model.faces().get(side))) {
+                    problems.add("the nozzle's model " + model.ref() + " names " + model.faces().get(side)
+                            + " on the " + side + " face at stack=" + stackValue + "; calculateTexture answers"
+                            + " icon[7] for a level other than 9 and icon[6] for the mid of a run"
+                            + " (BlockArcaneFurnace.java:104-155) -> " + bodySide);
+                }
+            }
+            for (final String cap : List.of("down", "up")) {
+                if (!ArcaneFurnaceFaceTable.nozzleBodyCap().equals(model.faces().get(cap))) {
+                    problems.add("the nozzle's model " + model.ref() + " names " + model.faces().get(cap)
+                            + " on the " + cap + " face; the original's answer for metadata 10 is icon[27] on"
+                            + " a 27-slot array (no legitimate sprite, BlockArcaneFurnace.java:71-77), so the"
+                            + " port pins " + ArcaneFurnaceFaceTable.nozzleBodyCap());
+                }
+            }
+            final String artSide = ArcaneFurnaceFaceTable.artSideFor(attachedValue);
+            final java.util.Map<String, String> artByTexture = new java.util.LinkedHashMap<>();
+            for (final ArcaneFurnaceFaceTable.Art art : model.arts()) {
+                artByTexture.put(art.texture(), art.side());
+            }
+            for (final String texture : List.of(ArcaneFurnaceFaceTable.FURNACE13,
+                    ArcaneFurnaceFaceTable.FURNACE15, ArcaneFurnaceFaceTable.SPRITE_FIRE)) {
+                if (!artSide.equals(artByTexture.get(texture))) {
+                    problems.add("the nozzle model " + model.ref() + " for attached=" + attachedValue
+                            + " draws its " + texture + " quad on " + artByTexture.get(texture) + "; the"
+                            + " ISMR's west/east/north/else-+Z branch draws the plate, the nozzle face and the"
+                            + " flame on the side of the base plate it finds (BlockArcaneFurnaceRenderer.java:26-56)"
+                            + " -> " + artSide);
+                }
+            }
+        }
+        ThaumcraftClassic.LOGGER.info("[BD-18] furnace face machine: {} registered state(s) checked against the"
+                + " 4.2.3.5 face table, {} registered state(s) total", checked,
+                furnace.getStateDefinition().getPossibleStates().size());
+        helper.assertTrue(checked == furnace.getStateDefinition().getPossibleStates().size() && checked >= 42,
+                "only " + checked + " of " + furnace.getStateDefinition().getPossibleStates().size()
+                        + " furnace states resolve to a model — the published face machine needs variant x stack"
+                        + " x attached (2 x 3 x 7 = 42) addressed by unambiguous blockstate keys");
+        helper.assertTrue(problems.isEmpty(),
+                problems.size() + " furnace face-machine contracts are broken: " + preview(problems));
+        helper.succeed();
+    }
+
     /** True when a blockstate key names the property (no wildcard on it). */
     private static boolean keyAddressesProperty(final String key, final Property<?> property) {
         if (key.isEmpty()) {

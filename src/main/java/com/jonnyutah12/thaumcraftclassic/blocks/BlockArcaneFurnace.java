@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -49,12 +50,45 @@ import javax.annotation.Nullable;
  * metas' drops (nether brick, quartz, and a vanilla furnace for the nozzle)
  * and the block-pick sparkle on right-click are TC-M7-01 / the shell card.</p>
  */
-public class BlockArcaneFurnace extends Block implements EntityBlock {
+public class BlockArcaneFurnace extends Block implements EntityBlock, DeviceDynamicState {
 
     /** 0 = base plate (original metadata 0), 1 = nozzle (metadata 10). */
     public static final IntegerProperty VARIANT = IntegerProperty.create("variant", 0, 1);
     public static final int VARIANT_BASE = 0;
     public static final int VARIANT_NOZZLE = 1;
+
+    /**
+     * The vertical-run level the original read out of the blocks above and
+     * below: {@code calculateLevel} ({@code BlockArcaneFurnace.java:158-177})
+     * answers 9 for the mid of a run, 18 for the top of one and 0 standalone.
+     * Published as a state (D-020) because for the metadata-10 nozzle that
+     * value picks the side face — {@code level != 9 ? icon[7] : icon[6]}
+     * ({@code :104-155}) — and 1.21.1 has no per-frame render hook to recompute
+     * it in.
+     */
+    public static final IntegerProperty STACK = IntegerProperty.create("stack", 0, 2);
+    /** The original's 0 (standalone). */
+    public static final int STACK_STANDALONE = 0;
+    /** The original's 18 (top of a vertical run). */
+    public static final int STACK_TOP = 1;
+    /** The original's 9 (mid of a vertical run). */
+    public static final int STACK_MID = 2;
+
+    /**
+     * Which side the machine's other half touches this block: the {@code add}
+     * gate of {@code calculateTexture} — {@code add = 3} when
+     * {@code BlockUtils.isBlockTouchingOnSide(world, x, y, z, this, 10, side)}
+     * finds a metadata-10 nozzle on that face ({@code :61-63},
+     * {@code BlockUtils.java:342-379}). The value is the
+     * {@link net.minecraft.core.Direction} ordinal; {@link #ATTACHED_NONE} is
+     * the original's {@code add == 0}. The ISMR draws its three art quads on
+     * the side of the base plate it finds in its west / east / north / else-+Z
+     * branch ({@code BlockArcaneFurnaceRenderer.java:26-56}), so this value
+     * picks the model geometry.
+     */
+    public static final IntegerProperty ATTACHED = IntegerProperty.create("attached", 0, 6);
+    /** No partner half touching — the original's {@code add == 0}. */
+    public static final int ATTACHED_NONE = 6;
 
     /** Original base bounds: 0.0 → 0.25. */
     private static final VoxelShape BASE_SHAPE = Block.box(0.0D, 0.0D, 0.0D, 16.0D, 4.0D, 16.0D);
@@ -69,12 +103,35 @@ public class BlockArcaneFurnace extends Block implements EntityBlock {
                 .noOcclusion()
                 .strength(10.0F, 500.0F)
                 .lightLevel(state -> 13));
-        registerDefaultState(stateDefinition.any().setValue(VARIANT, VARIANT_BASE));
+        // stateDefinition.any() takes the FIRST value of every property, and
+        // for an IntegerProperty that is its minimum — STACK_STANDALONE and
+        // ATTACHED_DOWN, i.e. a fresh furnace would default to a lit face
+        // machine. Name the resting values explicitly (D-020; the same trap bit
+        // the parent card's BooleanProperty).
+        registerDefaultState(stateDefinition.any()
+                .setValue(VARIANT, VARIANT_BASE)
+                .setValue(STACK, STACK_STANDALONE)
+                .setValue(ATTACHED, ATTACHED_NONE));
     }
 
     @Override
     protected void createBlockStateDefinition(final StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(VARIANT);
+        builder.add(VARIANT, STACK, ATTACHED);
+    }
+
+    /**
+     * The published dynamic-appearance property: the run level, which is the
+     * face machine's input that changes the <em>sprite</em> a model names (the
+     * nozzle's sides, {@code BlockArcaneFurnace.java:104-155}). {@code attached}
+     * changes geometry only — the three art quads move to the side of the plate
+     * the ISMR found — so it is gated by the face-table probe
+     * ({@code BlockStateCoverageGameTest#arcanefurnaceFaceshiptheoriginalsfacemachine}),
+     * which reads the quad placement back out of the shipped JSON, not by the
+     * sprite-set rule here.
+     */
+    @Override
+    public Property<?> dynamicAppearanceProperty() {
+        return STACK;
     }
 
     /**
