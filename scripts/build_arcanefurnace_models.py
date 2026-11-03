@@ -222,6 +222,85 @@ def nozzle_model(side: str, stack: int) -> dict:
     }
 
 
+# --------------------------------------------------------------------- shell
+# TC-M4-06-m (t_5eb27d02): the nine shell metas 1-9 of the 3x3x3 machine, and
+# the face rule ``calculateTexture`` answers for them
+# (``common/blocks/BlockArcaneFurnace.java:57-156``), transcribed branch by
+# branch:
+#
+# ``:61-63``  ``add = 3`` when the block touching THIS face is this block with
+#             metadata 10 — the nozzle (``BlockUtils.java:342-379``) — and
+#             ``add`` then joins the face index on the four side faces.
+# ``:66-70``  side 1 (up) at the top of a vertical run (``level == 18``):
+#             metas 2, 4, 6, 8 answer a cap of their own — 16, 17, 26, 25.
+# ``:71-84``  the caps (side 0 down, side 1 up) with no nozzle on that face:
+#             metadata 5 answers ``icon[10]``; every other metadata answers
+#             ``icon[(meta-1)%3 + (meta-1)/3*9]`` — the 3x3 grid position inside
+#             the 27-icon atlas, which is exactly the scan order
+#             ``WandManager.replaceArcaneFurnace`` (:457-480) numbered the
+#             machine's cells with. ``add == 3`` falls through to ``:85``'s
+#             ``default:``, which answers ``icon[7]`` / ``icon[6]``.
+# ``:86-127``  the four side faces: 1.7.10's ordinals are 0 down, 1 up, 2 north,
+#             3 south, 4 west, 5 east (the ISMR's west/east/north/else-+Z branch
+#             at ``BlockArcaneFurnaceRenderer.java:26-56`` pins the mapping).
+#             Each side names the three columns that face it — north 1/2/3,
+#             south 7/8/9, west 1/4/7, east 3/6/9 — as
+#             ``icon[k + level + add]``, and every other metadata (the corners)
+#             falls to ``level != 9 ? icon[7] : icon[6]``.
+# ``:158-177``  ``calculateLevel``: 9 = mid of a vertical run, 18 = top of a
+#             run, 0 = standalone. The port ships that as ``stack`` 2 / 1 / 0.
+#
+# The icons this rule can answer are 0-7, 9-14, 16-23, 25, 26 — icons 8 and 24
+# are never registered (``:43-49``) and the rule never reaches them, which is
+# what the assertions below check.
+SHELL_SIDES = ("down", "up", "north", "south", "west", "east")
+SHELL_LEVEL_FOR_STACK = {0: 0, 1: 18, 2: 9}
+SHELL_GRID_OF_META = {meta: (meta - 1) % 3 + (meta - 1) // 3 * 9 for meta in range(1, 10)}
+SHELL_TOP_CAP_AT_18 = {2: 16, 4: 17, 6: 26, 8: 25}
+SHELL_SIDE_COLUMN = {
+    2: {1: 2, 2: 1, 3: 0},   # north
+    3: {7: 0, 8: 1, 9: 2},   # south
+    4: {1: 0, 4: 1, 7: 2},   # west
+    5: {3: 2, 6: 1, 9: 0},   # east
+}
+
+
+def shell_icon(meta: int, stack: int, add: int, side: int) -> int:
+    """``calculateTexture``'s icon index for shell metadata ``meta`` (1-9) on
+    1.7.10's side ``side``, at the run level ``stack`` answers, with the
+    neighbour gate ``add`` (0 or 3)."""
+    level = SHELL_LEVEL_FOR_STACK[stack]
+    if side in (0, 1):
+        if side == 1 and level == 18 and meta in SHELL_TOP_CAP_AT_18:
+            return SHELL_TOP_CAP_AT_18[meta]
+        if add != 3:
+            return 10 if meta == 5 else SHELL_GRID_OF_META[meta]
+        return 6
+    column = SHELL_SIDE_COLUMN[side]
+    if meta in column:
+        return column[meta] + level + add
+    return 7 if level != 9 else 6
+
+
+def shell_model(meta: int, stack: int, attached: int) -> dict:
+    """One shell cell's model: the full cube 1.7.10's metadata 1-9 drew (its
+    bounds are the whole block, ``setBlockBoundsBasedOnState`` :193-213 has no
+    branch for the shell metas), with every face's sprite answered by
+    ``calculateTexture`` (:57-156) for this metadata, this run level and this
+    ``attached`` side — the side whose face gets the ``add = 3`` answer
+    (``:61-63``, ``BlockUtils.java:342-379``)."""
+    faces = {}
+    for index, face in enumerate(SHELL_SIDES):
+        add = 3 if index == attached else 0
+        icon = shell_icon(meta, stack, add, index)
+        faces[face] = {
+            "uv": [0, 0, 16, 16],
+            "texture": f"thaumcraft:block/furnace{icon}",
+            "cullface": face,
+        }
+    return {"elements": [{"from": [0.0, 0.0, 0.0], "to": [16.0, 16.0, 16.0], "faces": faces}]}
+
+
 def write(path: Path, document: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
@@ -249,6 +328,26 @@ def main() -> None:
                 "model": "thaumcraft:block/blockarcanefurnace_v0_lit"}
             variants[f"variant=1,stack={stack},attached={attached}"] = {
                 "model": f"thaumcraft:block/{name}"}
+
+    # TC-M4-06-m: the nine shell metas of the 3x3x3, one model per
+    # (variant, stack, attached) — the face machine's three inputs are the same
+    # three properties the plate and the nozzle publish, so the shell needs no
+    # new property. The shell's variant is the original's metadata + 1, so
+    # variant 2..10 carries grid 1..9.
+    for stack in (0, 1, 2):
+        for attached in range(0, 7):
+            for grid in range(1, 10):
+                variant = grid + 1
+                name = f"blockarcanefurnace_v{variant}"
+                if stack:
+                    name += f"_stack{stack}"
+                if attached != 6:
+                    name += f"_a{attached}"
+                model = MODELS / f"{name}.json"
+                write(model, shell_model(grid, stack, attached))
+                written.append(model)
+                variants[f"variant={variant},stack={stack},attached={attached}"] = {
+                    "model": f"thaumcraft:block/{name}"}
 
     blockstate = BLOCKSTATES / "blockarcanefurnace.json"
     write(blockstate, {"variants": variants})

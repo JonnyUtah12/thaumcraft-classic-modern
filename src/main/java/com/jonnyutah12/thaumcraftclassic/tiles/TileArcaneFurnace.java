@@ -1,6 +1,7 @@
 package com.jonnyutah12.thaumcraftclassic.tiles;
 
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
+import com.jonnyutah12.thaumcraftclassic.blocks.ArcaneFurnaceStructure;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockArcaneFurnace;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockDeviceBase;
 import com.jonnyutah12.thaumcraftclassic.blocks.DeviceDynamicState;
@@ -149,6 +150,15 @@ public class TileArcaneFurnace extends BlockEntity implements BlockDeviceBase.Ti
         if (this.level == null || this.level.isClientSide) {
             return;
         }
+        // TC-M4-06-m: a cell the grid publish moved into the shell is not a base
+        // plate. The original's createTileEntity (:355-362) hands those metas the
+        // nozzle tile (2,4,5,6,8) or no tile at all (1,3,7,9), and
+        // ArcaneFurnaceStructure.publish swaps the tile to match the metadata.
+        // Until that lands the cell publishes its faces and does not cook.
+        if (BlockArcaneFurnace.isShell(this.level.getBlockState(this.worldPosition))) {
+            publishAppearance();
+            return;
+        }
         if (this.facingX == -5) {
             getFacing();
         }
@@ -197,6 +207,13 @@ public class TileArcaneFurnace extends BlockEntity implements BlockDeviceBase.Ti
             return;
         }
         final BlockState state = this.level.getBlockState(worldPosition);
+        if (BlockArcaneFurnace.isShell(state)) {
+            // TC-M4-06-m: this tile was placed as a plate and the grid publish
+            // moved the cell into the shell — the shell's three face-machine
+            // inputs (grid, run level, add gate) all come from the structure.
+            ArcaneFurnaceStructure.publish(this.level, worldPosition);
+            return;
+        }
         DeviceDynamicState.sync(this, BlockArcaneFurnace.STACK,
                 BlockArcaneFurnace.stackFor(
                         BlockArcaneFurnace.calculateLevel(this.level, worldPosition, state)));

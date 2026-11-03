@@ -2,6 +2,7 @@ package com.jonnyutah12.thaumcraftclassic.tiles;
 
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.aspect.IEssentiaTransport;
+import com.jonnyutah12.thaumcraftclassic.blocks.ArcaneFurnaceStructure;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockArcaneFurnace;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockDeviceBase;
 import com.jonnyutah12.thaumcraftclassic.blocks.DeviceDynamicState;
@@ -75,6 +76,18 @@ public class TileArcaneFurnaceNozzle extends BlockEntity
         if (this.level == null) {
             return;
         }
+        // TC-M4-06-m: the original hands this tile to the shell metas 2, 4, 5, 6
+        // and 8 as well (createTileEntity :355-362), so a formed 3×3×3 runs
+        // several nozzle tiles. Their faces publish (they sit in the machine and
+        // the face machine reads them); the FIRE-essentia draw stays on the
+        // registered nozzle, because the port's TC-M4-06-s extraction rates are
+        // pinned per furnace and a five-way feed is TC-M4-06 behaviour (BD-18
+        // records the delta).
+        final BlockState state = this.level.getBlockState(this.worldPosition);
+        if (BlockArcaneFurnace.isShell(state)) {
+            publishAppearance();
+            return;
+        }
         if (this.facing == null && this.furnace == null) {
             this.facing = null;
             for (final Direction dir : Direction.values()) {
@@ -98,12 +111,21 @@ public class TileArcaneFurnaceNozzle extends BlockEntity
      * BD-18 slice 1 (t_fd5265f3): publish this nozzle's face-machine inputs
      * (D-020) — the run level, and the side its art lands on. Same shape as
      * {@link TileArcaneFurnace#publishAppearance()}.
+     *
+     * <p>On a shell meta (TC-M4-06-m, t_5eb27d02) the cell is not the nozzle:
+     * its art is the grid's, the {@code add} gate asks for a metadata-10
+     * neighbour, and its grid position comes from the plate anchor, so
+     * {@link ArcaneFurnaceStructure#publish} answers all three.</p>
      */
     public void publishAppearance() {
         if (this.level == null || this.level.isClientSide) {
             return;
         }
         final BlockState state = this.level.getBlockState(worldPosition);
+        if (BlockArcaneFurnace.isShell(state)) {
+            ArcaneFurnaceStructure.publish(this.level, worldPosition);
+            return;
+        }
         DeviceDynamicState.sync(this, BlockArcaneFurnace.STACK,
                 BlockArcaneFurnace.stackFor(
                         BlockArcaneFurnace.calculateLevel(this.level, worldPosition, state)));

@@ -230,6 +230,69 @@ final class ArcaneFurnaceFaceTable {
         };
     }
 
+    // ------------------------------------------------------------------ shell
+    // TC-M4-06-m (t_5eb27d02): the face rule of the nine shell metas 1-9,
+    // transcribed from calculateTexture (BlockArcaneFurnace.java:57-156) the same
+    // way the nozzle's rules above were, so a probe can ask "what does the
+    // original answer this face" for a shell cell and compare it with the shipped
+    // model. The rule is the authority; the generator
+    // (scripts/build_arcanefurnace_models.py) mirrors it, and the coverage probe
+    // reads the shipped JSON back out.
+
+    /** 1.7.10's side ordinals: 0 down, 1 up, 2 north, 3 south, 4 west, 5 east. */
+    static final List<String> SHELL_SIDES =
+            List.of("down", "up", "north", "south", "west", "east");
+    /** {@code calculateLevel}'s answer ({@code :158-177}) per shipped {@code stack} value. */
+    static final int[] SHELL_LEVEL_FOR_STACK = {0, 18, 9};
+    /** The caps' atlas index for a shell metadata — {@code (meta-1)%3 + (meta-1)/3*9} ({@code :78-84}). */
+    static final int[] SHELL_GRID_OF_META = new int[10];
+    /** The caps at the top of a vertical run ({@code :66-70}): meta → icon. */
+    static final int[] SHELL_TOP_CAP_AT_18 = new int[10];
+    /** The side faces ({@code :86-127}): 1.7.10 side → metadata → the icon's column. */
+    static final Map<Integer, Map<Integer, Integer>> SHELL_SIDE_COLUMN = Map.of(
+            2, Map.of(1, 2, 2, 1, 3, 0),   // north: metas 1, 2, 3
+            3, Map.of(7, 0, 8, 1, 9, 2),   // south: metas 7, 8, 9
+            4, Map.of(1, 0, 4, 1, 7, 2),   // west:  metas 1, 4, 7
+            5, Map.of(3, 2, 6, 1, 9, 0));  // east:  metas 3, 6, 9
+
+    static {
+        for (int meta = 1; meta <= 9; meta++) {
+            SHELL_GRID_OF_META[meta] = (meta - 1) % 3 + (meta - 1) / 3 * 9;
+        }
+        SHELL_TOP_CAP_AT_18[2] = 16;
+        SHELL_TOP_CAP_AT_18[4] = 17;
+        SHELL_TOP_CAP_AT_18[6] = 26;
+        SHELL_TOP_CAP_AT_18[8] = 25;
+    }
+
+    /**
+     * The icon {@code calculateTexture} answers for a shell cell: metadata
+     * {@code meta} (1-9), the run level the {@code stack} property carries, and
+     * the neighbour gate {@code add} (3 when a metadata-10 nozzle touches this
+     * face, {@code :61-63}) on 1.7.10's side {@code side}.
+     */
+    static int shellIcon(final int meta, final int stack, final int add, final int side) {
+        final int level = SHELL_LEVEL_FOR_STACK[stack];
+        if (side == 0 || side == 1) {
+            if (side == 1 && level == 18 && SHELL_TOP_CAP_AT_18[meta] != 0) {
+                return SHELL_TOP_CAP_AT_18[meta];
+            }
+            if (add != 3) {
+                return meta == 5 ? 10 : SHELL_GRID_OF_META[meta];
+            }
+            return 6;
+        }
+        final Map<Integer, Integer> column = SHELL_SIDE_COLUMN.get(side);
+        final Integer columnIcon = column == null ? null : column.get(meta);
+        return columnIcon != null ? columnIcon + level + add : (level != 9 ? 7 : 6);
+    }
+
+    /** The sprite the original answers for a shell face, in shipped-name form. */
+    static String shellFace(final int meta, final int stack, final int attached, final String side) {
+        final int ordinal = SHELL_SIDES.indexOf(side);
+        return "thaumcraft:block/furnace" + shellIcon(meta, stack, ordinal == attached ? 3 : 0, ordinal);
+    }
+
     // ------------------------------------------------------------- plumbing
 
     static String blockId(final Block block) {

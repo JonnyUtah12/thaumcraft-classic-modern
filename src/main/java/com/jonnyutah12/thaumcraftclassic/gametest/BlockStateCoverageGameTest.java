@@ -619,6 +619,101 @@ public final class BlockStateCoverageGameTest {
     }
 
     /**
+     * TC-M4-06-m (t_5eb27d02): the nine shell metas of the 3×3×3 machine, so the
+     * grid half of that face machine is reachable.
+     *
+     * <p>{@code WandManager.replaceArcaneFurnace} ({@code :457-480}) numbered the
+     * machine's cells 1..9 per layer with the x axis fastest, and
+     * {@code calculateTexture} reads that number back as
+     * {@code (meta-1)%3 + (meta-1)/3*9} — the 3×3 layout of the 27-icon atlas
+     * ({@code :78-84}: metas 1-9 → 0,1,2 / 9,10,11 / 18,19,20) — plus the
+     * run-level and {@code add} terms. The port ships the same three inputs as
+     * properties, so this probe asks, for every registered shell state, that the
+     * model the blockstate names draws the face that table answers: the atlas
+     * grid on the caps, the column sprite on the four sides, the {@code add = 3}
+     * answer on the side a nozzle touches, the {@code icon[10]} centre under the
+     * plate, and the {@code icon[16]}/{@code 17}/{@code 26}/{@code 25} caps at
+     * the top of a vertical run. The expected set is derived from the shipped
+     * state definition, so a variant that is not registered is a problem here
+     * (the shell metas were TC-M4-06-m, and the plate/nozzle probe above owns
+     * those two).</p>
+     */
+    @GameTest(template = "empty")
+    public static void arcanefurnaceshellfacesshiptheoriginalgrid(final GameTestHelper helper) {
+        final Block furnace = shippedBlocks().get("blockarcanefurnace");
+        helper.assertTrue(furnace != null,
+                "the registry ships no thaumcraft:blockarcanefurnace — this probe can never fail");
+        final Property<?> variant = furnace.getStateDefinition().getProperty("variant");
+        final Property<?> stack = furnace.getStateDefinition().getProperty("stack");
+        final Property<?> attached = furnace.getStateDefinition().getProperty("attached");
+        helper.assertTrue(variant != null && stack != null && attached != null,
+                "the furnace registers no variant/stack/attached properties: the grid position, the run"
+                        + " level and the touching nozzle are the three inputs calculateTexture reads"
+                        + " (BlockArcaneFurnace.java:57-177) — registered properties "
+                        + furnace.getStateDefinition().getProperties());
+
+        final List<String> problems = new ArrayList<>();
+        final Set<Integer> shellVariants = new LinkedHashSet<>();
+        final Set<String> shellModels = new LinkedHashSet<>();
+        int checked = 0;
+        for (final BlockState state : furnace.getStateDefinition().getPossibleStates()) {
+            final int variantValue = ((Number) state.getValue(variant)).intValue();
+            if (variantValue < 2) {
+                continue; // the plate (0) and the nozzle (1) are the probe above's
+            }
+            shellVariants.add(variantValue);
+            final int meta = variantValue - 1;   // the original's metadata = grid + 1
+            final int stackValue = ((Number) state.getValue(stack)).intValue();
+            final int attachedValue = ((Number) state.getValue(attached)).intValue();
+            final String ref = ArcaneFurnaceFaceTable.modelRef(furnace, state);
+            if (ref == null) {
+                problems.add("registered shell state " + state + " is addressed by no blockstate key naming"
+                        + " one model — the grid's faces must be reachable for every value combination");
+                continue;
+            }
+            final ArcaneFurnaceFaceTable.Model model = ArcaneFurnaceFaceTable.model(ref);
+            if (model == null) {
+                problems.add("shell state " + state + " names " + ref + ", which is not a committed model");
+                continue;
+            }
+            shellModels.add(ref);
+            checked++;
+            for (final String sprite : model.sprites()) {
+                if (ArcaneFurnaceFaceTable.NEVER_REGISTERED.contains(sprite)) {
+                    problems.add(model.ref() + " names " + sprite + ", one of the two icons"
+                            + " BlockArcaneFurnace.java:43-49 never registers (the loop skips 8 and 24)");
+                }
+            }
+            for (final String side : ArcaneFurnaceFaceTable.SHELL_SIDES) {
+                final String want = ArcaneFurnaceFaceTable.shellFace(meta, stackValue, attachedValue, side);
+                final String got = model.faces().get(side);
+                if (!want.equals(got)) {
+                    problems.add("shell state " + state + " (metadata " + meta + ") draws " + got + " on the "
+                            + side + " face; calculateTexture answers " + want
+                            + " — grid " + ArcaneFurnaceFaceTable.shellIcon(meta, 0, 0, side == "down" ? 0 : 1)
+                            + " plus the run level and the add gate (BlockArcaneFurnace.java:57-156)");
+                }
+            }
+        }
+        helper.assertTrue(shellVariants.size() >= 9,
+                "the shipped state definition carries " + shellVariants.size() + " shell variants"
+                        + " (values >= 2): the 3x3x3 machine's nine shell metas 1-9 are what make the grid"
+                        + " rules reachable, and a player cannot build the machine without them —"
+                        + " registered variants " + shellVariants);
+        helper.assertTrue(checked >= 9 * 3 * 7,
+                "only " + checked + " shell states resolve to a committed model; the face machine has 9 grid"
+                        + " positions x 3 run levels x 7 touching sides = 189 reachable states");
+        helper.assertTrue(shellModels.size() >= 27,
+                "the " + checked + " shell states address " + shellModels.size()
+                        + " distinct models: the grid rules draw from the 27-icon set"
+                        + " (BlockArcaneFurnace.java:33, :43-49), so fewer than 27 models means the grid"
+                        + " positions are collapsed onto one face");
+        helper.assertTrue(problems.isEmpty(), problems.size() + " shell face contracts are broken: "
+                + preview(problems));
+        helper.succeed();
+    }
+
+    /**
      * BD-18 slice 1 (t_fd5265f3): the alchemical furnace's 27-icon face
      * machine, shipped as states.
      *
@@ -694,6 +789,9 @@ public final class BlockStateCoverageGameTest {
                             + " the cube (BlockArcaneFurnaceRenderer.java:23)");
                 }
                 continue;
+            }
+            if (variantValue >= 2) {
+                continue; // the nine shell metas are the grid probe's (TC-M4-06-m, above)
             }
             final int stackValue = stack == null ? -1 : ((Number) state.getValue(stack)).intValue();
             final int attachedValue = attached == null ? -1 : ((Number) state.getValue(attached)).intValue();
