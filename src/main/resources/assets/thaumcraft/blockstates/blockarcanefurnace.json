@@ -1,10 +1,130 @@
 {
   "variants": {
-    "variant=0": {
-      "model": "thaumcraft:block/blockarcanefurnace_v0"
+    "variant=0,stack=0,attached=0": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
     },
-    "variant=1": {
-      "model": "thaumcraft:block/blockarcanefurnace_v1"
+    "variant=1,stack=0,attached=0": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_south"
+    },
+    "variant=0,stack=0,attached=1": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=0,attached=1": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_south"
+    },
+    "variant=0,stack=0,attached=2": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=0,attached=2": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_north"
+    },
+    "variant=0,stack=0,attached=3": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=0,attached=3": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_south"
+    },
+    "variant=0,stack=0,attached=4": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=0,attached=4": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_west"
+    },
+    "variant=0,stack=0,attached=5": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=0,attached=5": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_east"
+    },
+    "variant=0,stack=0,attached=6": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=0,attached=6": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_south"
+    },
+    "variant=0,stack=1,attached=0": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=1,attached=0": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_south"
+    },
+    "variant=0,stack=1,attached=1": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=1,attached=1": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_south"
+    },
+    "variant=0,stack=1,attached=2": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=1,attached=2": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_north"
+    },
+    "variant=0,stack=1,attached=3": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=1,attached=3": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_south"
+    },
+    "variant=0,stack=1,attached=4": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=1,attached=4": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_west"
+    },
+    "variant=0,stack=1,attached=5": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=1,attached=5": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_east"
+    },
+    "variant=0,stack=1,attached=6": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=1,attached=6": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_south"
+    },
+    "variant=0,stack=2,attached=0": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=2,attached=0": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_south_stacked"
+    },
+    "variant=0,stack=2,attached=1": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=2,attached=1": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_south_stacked"
+    },
+    "variant=0,stack=2,attached=2": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=2,attached=2": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_north_stacked"
+    },
+    "variant=0,stack=2,attached=3": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=2,attached=3": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_south_stacked"
+    },
+    "variant=0,stack=2,attached=4": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=2,attached=4": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_west_stacked"
+    },
+    "variant=0,stack=2,attached=5": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=2,attached=5": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_east_stacked"
+    },
+    "variant=0,stack=2,attached=6": {
+      "model": "thaumcraft:block/blockarcanefurnace_v0_lit"
+    },
+    "variant=1,stack=2,attached=6": {
+      "model": "thaumcraft:block/blockarcanefurnace_v1_south_stacked"
     }
   }
 }

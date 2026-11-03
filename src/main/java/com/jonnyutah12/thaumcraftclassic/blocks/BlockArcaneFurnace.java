@@ -120,6 +120,59 @@ public class BlockArcaneFurnace extends Block implements EntityBlock, DeviceDyna
     }
 
     /**
+     * The original's vertical-run test, transcribed from
+     * {@code calculateLevel} ({@code BlockArcaneFurnace.java:158-177}): 9 for
+     * the mid of a vertical run of same-metadata parts, 18 for the top of a run
+     * (the part above matches and the part below does not), 0 standalone.
+     *
+     * <p>Both quirks of the original are kept deliberately. It reads the
+     * neighbour's metadata and normalises 0 and 10 — the two metadata a furnace
+     * part carries — to its own, so a <em>non</em>-furnace neighbour (air reads
+     * 0) always passes the metadata test and only the same-block test keeps it
+     * out; and it normalises a plate (metadata 0) above a nozzle (metadata 10)
+     * to the nozzle's own metadata, so a plate over a nozzle counts as the same
+     * run. 1.21.1 has no block metadata, so a non-furnace neighbour contributes
+     * 0 here, matching {@code world.getBlockMetadata} on air.</p>
+     */
+    public static int calculateLevel(final BlockGetter level, final BlockPos pos, final BlockState state) {
+        final int meta = originalMetaOf(state);
+        final BlockState above = level.getBlockState(pos.above());
+        final BlockState below = level.getBlockState(pos.below());
+        final int metaAbove = normaliseMeta(originalMetaOf(above), meta);
+        final int metaBelow = normaliseMeta(originalMetaOf(below), meta);
+        final boolean sameAbove = isFurnacePart(above);
+        final boolean sameBelow = isFurnacePart(below);
+        if (meta == metaAbove && meta == metaBelow && sameAbove && sameBelow) {
+            return 9;
+        }
+        return meta != metaAbove || !sameAbove || meta == metaBelow && sameBelow ? 0 : 18;
+    }
+
+    /** {@code calculateLevel}'s answer as the published {@link #STACK} value. */
+    public static int stackFor(final int level) {
+        return switch (level) {
+            case 9 -> STACK_MID;
+            case 18 -> STACK_TOP;
+            default -> STACK_STANDALONE;
+        };
+    }
+
+    /** The shipped variant carrying the original's metadata (0 = 0, 1 = 10). */
+    public static int originalMetaOf(final BlockState state) {
+        return isFurnacePart(state)
+                ? (state.getValue(VARIANT) == VARIANT_NOZZLE ? 10 : 0)
+                : 0;
+    }
+
+    private static int normaliseMeta(final int meta, final int own) {
+        return meta == 0 || meta == 10 ? own : meta;
+    }
+
+    private static boolean isFurnacePart(final BlockState state) {
+        return state.is(CatalogEssentiaStorage.BLOCK_ARCANE_FURNACE.get());
+    }
+
+    /**
      * The published dynamic-appearance property: the run level, which is the
      * face machine's input that changes the <em>sprite</em> a model names (the
      * nozzle's sides, {@code BlockArcaneFurnace.java:104-155}). {@code attached}

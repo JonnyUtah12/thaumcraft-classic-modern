@@ -3,6 +3,7 @@ package com.jonnyutah12.thaumcraftclassic.tiles;
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockArcaneFurnace;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockDeviceBase;
+import com.jonnyutah12.thaumcraftclassic.blocks.DeviceDynamicState;
 import com.jonnyutah12.thaumcraftclassic.recipes.SmeltingBonuses;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
 import net.minecraft.core.BlockPos;
@@ -176,7 +177,58 @@ public class TileArcaneFurnace extends BlockEntity implements BlockDeviceBase.Ti
         if (this.furnaceCookTime == 0 && !cookedflag) {
             startCook();
         }
+        publishAppearance();
     }
+
+    /**
+     * BD-18 slice 1 (t_fd5265f3): publish this plate's face-machine inputs
+     * (D-020). 4.2.3.5 read them live inside its render hooks every frame;
+     * 1.21.1 has no such hook, so the block state carries them and the shipped
+     * blockstate names a model per value.
+     *
+     * <p>Same shape as {@link TileArcaneLamp#publishCharged()} and
+     * {@link TileLifter#publishPowered()}: {@link #serverTick()} calls it every
+     * tick — the original recomputed per frame, so the value must follow the
+     * neighbours and must not latch — and {@code ArcaneFurnaceFaceMachineGameTest}
+     * drives it directly.</p>
+     */
+    public void publishAppearance() {
+        if (this.level == null || this.level.isClientSide) {
+            return;
+        }
+        final BlockState state = this.level.getBlockState(worldPosition);
+        DeviceDynamicState.sync(this, BlockArcaneFurnace.STACK,
+                BlockArcaneFurnace.stackFor(
+                        BlockArcaneFurnace.calculateLevel(this.level, worldPosition, state)));
+        DeviceDynamicState.sync(this, BlockArcaneFurnace.ATTACHED, attachedNozzleSide());
+    }
+
+    /**
+     * The side of the nozzle wired to this plate — the {@code add} gate of
+     * {@code calculateTexture}: {@code add = 3} when
+     * {@code BlockUtils.isBlockTouchingOnSide(world, x, y, z, this, 10, side)}
+     * finds a metadata-10 nozzle on that face ({@code BlockArcaneFurnace.java:61-63},
+     * {@code BlockUtils.java:342-379}), and the original queried that for every
+     * face it drew ({@code :71-84} changes the top/bottom icon on it).
+     *
+     * <p>The scan walks the eject direction's order — west, east, north, default
+     * south ({@link #getFacing()}) — then the two faces that scan ignores, so
+     * the published value answers the original's per-side question for all six.
+     * Nothing attached is the original's {@code add == 0}
+     * ({@link BlockArcaneFurnace#ATTACHED_NONE}).</p>
+     */
+    private int attachedNozzleSide() {
+        for (final Direction side : NOZZLE_SCAN_ORDER) {
+            if (isNozzleAt(worldPosition.relative(side))) {
+                return side.ordinal();
+            }
+        }
+        return BlockArcaneFurnace.ATTACHED_NONE;
+    }
+
+    /** West, east, north, south (the eject scan's order), then up and down. */
+    private static final Direction[] NOZZLE_SCAN_ORDER = {
+            Direction.WEST, Direction.EAST, Direction.NORTH, Direction.SOUTH, Direction.UP, Direction.DOWN};
 
     /** Original: the tick the cook hit 0 — eject the first smeltable slot's result. */
     private void finishCook() {

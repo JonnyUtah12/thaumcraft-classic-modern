@@ -79,6 +79,7 @@ public final class BlockStateCoverageGameTest {
     private static final String ASSET_ROOT = "/assets/" + ThaumcraftClassic.MOD_ID + "/";
     private static final String BLOCKSTATE_DIR = ASSET_ROOT + "blockstates/";
     private static final String MODELS_BLOCK_DIR = ASSET_ROOT + "models/block/";
+    private static final String MODELS_ITEM_DIR = ASSET_ROOT + "models/item/";
 
     /** Present in every real overlay (and the CI fixture overlay): see SPINE-3. */
     private static final String OVERLAY_PROBE_SPRITE = "textures/block/amberore.png";
@@ -861,7 +862,48 @@ public final class BlockStateCoverageGameTest {
                 }
             }
         }
+        // A block's inventory icon is the original's Block.getIcon answer, not
+        // its ISMR's world look, so the model the item names is a second,
+        // legitimate way for a block model to be live: the alchemical furnace
+        // ships the furnace0 cube for the inventory (BlockArcaneFurnace.getIcon
+        // -> icon[0]) and the lava plate + fire cross for the world
+        // (BlockArcaneFurnaceRenderer.java:19-23), and the item's parent keeps
+        // the former reachable once the blockstate stops naming it.
+        models.addAll(itemModelParents());
         return models;
+    }
+
+    /** The models shipped item models name as their {@code parent}. */
+    private static Set<String> itemModelParents() {
+        final java.net.URL dir = BlockStateCoverageGameTest.class.getResource(MODELS_ITEM_DIR);
+        if (dir == null) {
+            return Set.of();
+        }
+        final Path root;
+        try {
+            root = Path.of(dir.toURI());
+        } catch (java.net.URISyntaxException e) {
+            throw new IllegalStateException("the shipped asset tree is not addressable on the classpath: "
+                    + MODELS_ITEM_DIR, e);
+        }
+        if (!Files.isDirectory(root)) {
+            return Set.of(); // packaged in a jar: the resource-path gates above are the coverage
+        }
+        final Set<String> parents = new LinkedHashSet<>();
+        try (Stream<Path> walk = Files.walk(root)) {
+            for (final Path file : walk.filter(f -> f.getFileName().toString().endsWith(".json")).toList()) {
+                final String relative = MODELS_ITEM_DIR
+                        + root.relativize(file).toString().replace(java.io.File.separatorChar, '/');
+                final JsonObject json = loadObject(relative.substring("/assets/".length() + ThaumcraftClassic.MOD_ID.length() + 1));
+                final JsonElement parent = json == null ? null : json.get("parent");
+                if (parent != null) {
+                    parents.add(parent.getAsString());
+                }
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return parents;
     }
 
     /** Every {@code thaumcraft:block/<name>} model file committed in the tree. */

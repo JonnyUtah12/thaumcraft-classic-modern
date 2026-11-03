@@ -2,7 +2,9 @@ package com.jonnyutah12.thaumcraftclassic.tiles;
 
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.aspect.IEssentiaTransport;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockArcaneFurnace;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockDeviceBase;
+import com.jonnyutah12.thaumcraftclassic.blocks.DeviceDynamicState;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -89,6 +91,52 @@ public class TileArcaneFurnaceNozzle extends BlockEntity
         if (this.furnace != null && ArcaneFurnaceLogic.nozzleCanDraw(this.furnace.speedyTime) && drawEssentia()) {
             this.furnace.speedyTime = ArcaneFurnaceLogic.speedyAfterDraw(this.furnace.speedyTime);
         }
+        publishAppearance();
+    }
+
+    /**
+     * BD-18 slice 1 (t_fd5265f3): publish this nozzle's face-machine inputs
+     * (D-020) — the run level, and the side its art lands on. Same shape as
+     * {@link TileArcaneFurnace#publishAppearance()}.
+     */
+    public void publishAppearance() {
+        if (this.level == null || this.level.isClientSide) {
+            return;
+        }
+        final BlockState state = this.level.getBlockState(worldPosition);
+        DeviceDynamicState.sync(this, BlockArcaneFurnace.STACK,
+                BlockArcaneFurnace.stackFor(
+                        BlockArcaneFurnace.calculateLevel(this.level, worldPosition, state)));
+        DeviceDynamicState.sync(this, BlockArcaneFurnace.ATTACHED, artSide());
+    }
+
+    /**
+     * The side of the base plate the ISMR draws its three art quads on: a 4-way
+     * branch — plate to the west, else east, else north, <em>else the
+     * unconditional +Z (south)</em> ({@code BlockArcaneFurnaceRenderer.java:26-56},
+     * which never tests the fourth branch). A plate above or below matches none
+     * of the three checks, so it publishes {@link BlockArcaneFurnace#ATTACHED_NONE},
+     * and the shipped blockstate gives that value the same +Z (south) model as
+     * {@code attached=south}: the original draws the identical art in both
+     * cases.
+     */
+    private int artSide() {
+        for (final Direction side : ART_BRANCH_ORDER) {
+            if (isBaseAt(worldPosition.relative(side))) {
+                return side.ordinal();
+            }
+        }
+        return BlockArcaneFurnace.ATTACHED_NONE;
+    }
+
+    /** The ISMR's branch order: west, east, north, then the +Z fallback. */
+    private static final Direction[] ART_BRANCH_ORDER = {
+            Direction.WEST, Direction.EAST, Direction.NORTH, Direction.SOUTH};
+
+    private boolean isBaseAt(final BlockPos pos) {
+        final BlockState state = this.level.getBlockState(pos);
+        return state.is(CatalogEssentiaStorage.BLOCK_ARCANE_FURNACE.get())
+                && state.getValue(BlockArcaneFurnace.VARIANT) == BlockArcaneFurnace.VARIANT_BASE;
     }
 
     /** Original {@code drawEssentia}: one FIRE unit from the connectable in front. */

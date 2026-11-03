@@ -1,0 +1,154 @@
+{
+  "textures": {
+    "side": "thaumcraft:block/furnace6",
+    "cap": "thaumcraft:block/furnace7",
+    "plate": "thaumcraft:block/furnace13",
+    "nozzle": "thaumcraft:block/furnace15",
+    "fire": "minecraft:block/fire_0"
+  },
+  "elements": [
+    {
+      "from": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "to": [
+        16.0,
+        16.0,
+        16.0
+      ],
+      "faces": {
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#cap",
+          "cullface": "down"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#cap",
+          "cullface": "up"
+        },
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#side",
+          "cullface": "north"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#side",
+          "cullface": "south"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#side",
+          "cullface": "west"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#side",
+          "cullface": "east"
+        }
+      }
+    },
+    {
+      "from": [
+        0.0,
+        0.0,
+        -10.08
+      ],
+      "to": [
+        16.0,
+        16.0,
+        -9.92
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#plate"
+        }
+      }
+    },
+    {
+      "from": [
+        0.0,
+        0.0,
+        -12.88
+      ],
+      "to": [
+        16.0,
+        16.0,
+        -12.72
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#nozzle"
+        }
+      }
+    },
+    {
+      "from": [
+        0.0,
+        0.0,
+        -14.48
+      ],
+      "to": [
+        16.0,
+        24.0,
+        -14.32
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#fire"
+        }
+      }
+    }
+  ]
+}

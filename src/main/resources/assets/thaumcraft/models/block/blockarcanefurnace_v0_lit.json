@@ -1,0 +1,246 @@
+{
+  "textures": {
+    "lava": "minecraft:block/lava_still",
+    "fire": "minecraft:block/fire_0"
+  },
+  "elements": [
+    {
+      "from": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "to": [
+        16.0,
+        16.0,
+        16.0
+      ],
+      "faces": {
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#lava",
+          "cullface": "down"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#lava",
+          "cullface": "up"
+        },
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#lava",
+          "cullface": "north"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#lava",
+          "cullface": "south"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#lava",
+          "cullface": "west"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#lava",
+          "cullface": "east"
+        }
+      }
+    },
+    {
+      "from": [
+        -0.5,
+        0.0,
+        8.0
+      ],
+      "to": [
+        16.5,
+        22.4,
+        8.0
+      ],
+      "rotation": {
+        "origin": [
+          8.0,
+          8.0,
+          8.0
+        ],
+        "axis": "z",
+        "angle": 22.5
+      },
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#fire"
+        },
+        "south": {
+          "uv": [
+            0,
+            16,
+            16,
+            0
+          ],
+          "texture": "#fire"
+        }
+      }
+    },
+    {
+      "from": [
+        -0.5,
+        0.0,
+        8.0
+      ],
+      "to": [
+        16.5,
+        22.4,
+        8.0
+      ],
+      "rotation": {
+        "origin": [
+          8.0,
+          8.0,
+          8.0
+        ],
+        "axis": "z",
+        "angle": -22.5
+      },
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#fire"
+        },
+        "south": {
+          "uv": [
+            0,
+            16,
+            16,
+            0
+          ],
+          "texture": "#fire"
+        }
+      }
+    },
+    {
+      "from": [
+        8.0,
+        0.0,
+        -0.5
+      ],
+      "to": [
+        8.0,
+        22.4,
+        16.5
+      ],
+      "rotation": {
+        "origin": [
+          8.0,
+          8.0,
+          8.0
+        ],
+        "axis": "x",
+        "angle": 22.5
+      },
+      "faces": {
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#fire"
+        },
+        "west": {
+          "uv": [
+            0,
+            16,
+            16,
+            0
+          ],
+          "texture": "#fire"
+        }
+      }
+    },
+    {
+      "from": [
+        8.0,
+        0.0,
+        -0.5
+      ],
+      "to": [
+        8.0,
+        22.4,
+        16.5
+      ],
+      "rotation": {
+        "origin": [
+          8.0,
+          8.0,
+          8.0
+        ],
+        "axis": "x",
+        "angle": -22.5
+      },
+      "faces": {
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#fire"
+        },
+        "west": {
+          "uv": [
+            0,
+            16,
+            16,
+            0
+          ],
+          "texture": "#fire"
+        }
+      }
+    }
+  ]
+}
