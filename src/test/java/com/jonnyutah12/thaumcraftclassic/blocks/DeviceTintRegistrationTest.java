@@ -244,7 +244,105 @@ class DeviceTintRegistrationTest {
                         + "silently missing in game:" + offenders);
     }
 
+    // ------------------------------ BD-18 slice 2b (t_45b89dd2): the lit furnace ring
+
+    @Test
+    void burningFurnaceBlockstatePinsEveryKeyAndSwapsTheFrontRing() {
+        // BlockStoneDevice.java:153-177 (getConnectedIcon): meta 0 (the alchemical
+        // furnace, :155) answers iconFurnace[3] = al_furnace_front_on (:77) on every
+        // side while the tile isBurning() (:165-171), and iconFurnace[2] =
+        // al_furnace_front_off (:76; the plain getIcon side answer at :101-103)
+        // otherwise. metas 1/5/8/12 delegate to the super answer (:172-174) — no
+        // other stone device swaps.
+        final JsonObject variants = asset("blockstates/blockstonedevice.json").getAsJsonObject("variants");
+
+        for (final Map.Entry<String, JsonElement> entry : variants.entrySet()) {
+            assertTrue(entry.getKey().contains("burning="),
+                    "blockstonedevice blockstate key '" + entry.getKey() + "' leaves burning a wildcard — one model"
+                            + " would be pinned for both the burning and the unburning furnace"
+                            + " (BlockStoneDevice.java:153-177 swaps per value)");
+        }
+
+        final String unlitRef = blockstateModel(variants, "variant=0,burning=false");
+        final String litRef = blockstateModel(variants, "variant=0,burning=true");
+        assertFalse(litRef.equals(unlitRef),
+                "the burning furnace must name a model of its own — BlockStoneDevice.java:165-171 answers a"
+                        + " different sprite while the tile burns");
+
+        final JsonObject unlit = model(unlitRef.substring(unlitRef.indexOf(':') + 1));
+        final JsonObject lit = model(litRef.substring(litRef.indexOf(':') + 1));
+        for (final String side : new String[]{"north", "south", "east", "west"}) {
+            assertEquals("thaumcraft:block/al_furnace_front_off", texture(unlit, side),
+                    "BlockStoneDevice.java:76 registers al_furnace_front_off and :101-103 answers it for the"
+                            + " furnace's sides — the unburning model must name it for " + side);
+            assertEquals("thaumcraft:block/al_furnace_front_on", texture(lit, side),
+                    "BlockStoneDevice.java:77 registers al_furnace_front_on and :165-171 answers it while the"
+                            + " tile burns — the burning model must name it for " + side);
+        }
+        assertEquals("thaumcraft:block/al_furnace_top", texture(unlit, "up"),
+                "BlockStoneDevice.java:75/:98: the furnace top is al_furnace_top when unlit");
+        assertEquals("thaumcraft:block/al_furnace_top", texture(lit, "up"),
+                "the top-face swap is the VIS branch (:157-163 answers al_furnace_top_filled while"
+                        + " TileAlchemyFurnace.vis > 0) — a tile-driven condition the port's furnace tile"
+                        + " (content-mapping thaumcraft:tilealchemyfurnace, not_started) has not shipped, so"
+                        + " the burning model must not invent a top change");
+
+        for (int v = 1; v <= 14; v++) {
+            assertEquals(blockstateModel(variants, "variant=" + v + ",burning=false"),
+                    blockstateModel(variants, "variant=" + v + ",burning=true"),
+                    "the original's swap is gated on meta 0 (:155) and metas 1/5/8/12 delegate to the super"
+                            + " answer (:172-174) — stone device meta " + v + " never swaps its faces");
+        }
+    }
+
+    @Test
+    void burningFurnaceFireParticlesFollowTheState() throws Exception {
+        // BlockStoneDevice.java:194-212 (randomDisplayTick): while the tile is
+        // burning, smoke + flame spawn at the four rim offsets around the top
+        // (f1 = y + 0.2 + r*5/16, f3 = 0.52, f4 = r*0.5 - 0.25 — eight particles,
+        // smoke and flame at each of the four positions).
+        final String source = readSource("blocks/BlockStoneDevice.java");
+        assertTrue(source.contains("animateTick"),
+                "BlockStoneDevice.java:194-212 is the original's randomDisplayTick; the port's animateTick"
+                        + " override is where that particle box lives");
+        assertTrue(source.contains("Particles.FLAME") && source.contains("Particles.SMOKE"),
+                "the original spawned 'smoke' and 'flame' at each rim position (:203-210)");
+        assertTrue(source.contains("getValue(BURNING)"),
+                "the box must be gated on the published burning state — the tile that knows it is burning"
+                        + " is content-mapping thaumcraft:tilealchemyfurnace, not_started");
+    }
+
     // ------------------------------------------------------------- helpers
+
+    /** A blockstate variant key's model reference. */
+    private static String blockstateModel(final JsonObject variants, final String key) {
+        final JsonObject entry = variants.getAsJsonObject(key);
+        assertNotNull(entry, "the blockstate ships no key '" + key + "'");
+        return entry.get("model").getAsString();
+    }
+
+    /** A cube-parent model's texture-map entry for a face, {@code #alias} resolved. */
+    private static String texture(final JsonObject model, final String face) {
+        final JsonObject textures = model.getAsJsonObject("textures");
+        assertNotNull(textures, "the model declares no textures map");
+        String value = textures.get(face).getAsString();
+        while (value.startsWith("#")) {
+            final String key = value.substring(1);
+            assertTrue(textures.has(key), "the model references #" + key + " but declares no such entry");
+            value = textures.get(key).getAsString();
+        }
+        return value;
+    }
+
+    private static JsonObject asset(final String path) {
+        try (InputStream in = DeviceTintRegistrationTest.class
+                .getResourceAsStream("/assets/thaumcraft/" + path)) {
+            assertNotNull(in, path + " must be on the test classpath");
+            return JsonParser.parseReader(new java.io.InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
     /** A face's sprite, with a {@code #key} reference resolved through the model's own {@code textures}. */
     private static String sprite(final JsonObject model, final JsonObject face) {

@@ -4,6 +4,7 @@ import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockCandle;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockLifter;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockMetalDevice;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockStoneDevice;
 import com.jonnyutah12.thaumcraftclassic.blocks.DeviceTints;
 import com.jonnyutah12.thaumcraftclassic.blocks.VariantStateItems;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
@@ -19,6 +20,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -187,6 +189,71 @@ public final class DynamicBlockAppearanceGameTest {
             helper.assertTrue(DeviceTints.colourForVariant(carried) == DeviceTints.colourForVariant(colourIndex),
                     "the item-side tint for variant " + colourIndex + " must equal the world tint");
         }
+        helper.succeed();
+    }
+
+    /**
+     * BD-18 slice 2b (t_45b89dd2): the alchemical furnace's lit face ring follows a
+     * published {@code burning} state. The original swapped the whole side ring from
+     * the tile's burning flag inside its connected-texture hook
+     * ({@code BlockStoneDevice.java:153-177}: {@code :165-171} answers
+     * {@code iconFurnace[3] = al_furnace_front_on} (registered at {@code :77}) while
+     * {@code TileAlchemyFurnace.isBurning()}, {@code iconFurnace[2] =
+     * al_furnace_front_off} (registered at {@code :76}, and the plain
+     * {@code getIcon} side answer at {@code :101-103}) otherwise), and the same flag
+     * lit the block to 12 ({@code :216-220}). The port does not ship the furnace's
+     * tile yet (content-mapping row {@code thaumcraft:tilealchemyfurnace},
+     * not_started), so the machine card publishes the flag through
+     * {@link DeviceDynamicState#sync} when it lands; this probe pins the state-side
+     * contract that publication will drive: the default is the unlit value, the
+     * light follows the flag, and the swap is the furnace's own (meta 2's static 10
+     * is untouched, {@code :221-223}).
+     */
+    @GameTest(template = "empty")
+    public static void burningFurnaceFacesFollowTheBurningState(final GameTestHelper helper) {
+        final BlockStoneDevice block = CatalogDevices.BLOCK_STONE_DEVICE.get();
+        final IntegerProperty variant = variantProperty(block);
+        final var burning = block.getStateDefinition().getProperty("burning");
+        helper.assertTrue(burning instanceof BooleanProperty,
+                "the alchemical furnace must publish a boolean 'burning' state property — "
+                        + "BlockStoneDevice.java:165-171 swaps the front-face ring on the tile's burning flag and "
+                        + ":216-220 lights 12 with it; a blockstate model can only follow a published state (D-020), "
+                        + "got properties " + block.getStateDefinition().getProperties());
+        final BooleanProperty fire = (BooleanProperty) burning;
+
+        final BlockPos pos = new BlockPos(1, 3, 1);
+        helper.setBlock(pos, block.withVariant(BlockStoneDevice.VARIANT_ALCHEMY_FURNACE));
+        final BlockState placed = stateAt(helper, pos);
+        helper.assertTrue(placed.getValue(variant) == BlockStoneDevice.VARIANT_ALCHEMY_FURNACE,
+                "the alchemical furnace is stone device meta 0 (BlockStoneDevice.java:155), got " + placed);
+        helper.assertTrue(!placed.getValue(fire),
+                "a freshly placed alchemical furnace is unlit (BlockStoneDevice.java:165-171 answers "
+                        + "al_furnace_front_off for a furnace that is not burning): 1.21.1 orders a "
+                        + "BooleanProperty true-first, so the registered default must pin burning=false explicitly");
+        helper.assertTrue(placed.getLightEmission() == 0,
+                "an unburning alchemical furnace emits no light (BlockStoneDevice.java:214-226 falls through to "
+                        + "the super answer), got " + placed.getLightEmission());
+
+        helper.setBlock(pos, placed.setValue(fire, true));
+        final BlockState lit = stateAt(helper, pos);
+        helper.assertTrue(lit.getValue(fire),
+                "the burning value must survive placement so the blockstate picks the al_furnace_front_on model "
+                        + "(the icon is registered at BlockStoneDevice.java:77 and answered at :165-171), got " + lit);
+        helper.assertTrue(lit.getLightEmission() == 12,
+                "BlockStoneDevice.java:216-220: meta 0 with a burning tile lit 12, got " + lit.getLightEmission());
+        helper.assertTrue(!lit.hasBlockEntity(),
+                "the furnace's tile — the publisher of this flag — is content-mapping row "
+                        + "thaumcraft:tilealchemyfurnace (not_started); the shipped state contract must not "
+                        + "depend on the machine tile");
+
+        // The flag belongs to the furnace alone: the runic matrix keeps its static
+        // 10 for both burning values (BlockStoneDevice.java:221-223), and the
+        // original's face swap is gated on meta 0 (:155) with metas 1/5/8/12
+        // delegating to the super answer (:172-174).
+        helper.setBlock(pos, block.withVariant(BlockStoneDevice.VARIANT_RUNIC_MATRIX).setValue(fire, true));
+        helper.assertTrue(stateAt(helper, pos).getLightEmission() == 10,
+                "BlockStoneDevice.java:221-223: meta 2 lit a static 10 — the burning flag is decoration there, "
+                        + "got " + stateAt(helper, pos).getLightEmission());
         helper.succeed();
     }
 
