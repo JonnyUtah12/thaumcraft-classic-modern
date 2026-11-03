@@ -654,3 +654,103 @@ client with no state to write.
 queryable and gated on a code-only jar; the alchemical furnace's 27-icon face machine, the
 remaining lit-swap wiring and the TER art stay BD-18, and the item-side per-meta work stays
 BD-17 / `t_f04c44fb`.
+
+## D-021 — The metas the original's ISMR declines to draw keep a visible model; the blank is reserved for the renderer card (BD-18 slice 5, `t_47316a9b`)
+
+**Status: Accepted.**
+
+**Context.** 4.2.3.5 draws the device blocks through one `ISimpleBlockRenderingHandler`
+per block, and both of them decline whole metas:
+
+- `BlockWoodenDeviceRenderer.renderWorldBlock` draws the arcane ear (meta 1) at
+  `:189-230` and a full cube for metas 2/3/6/7 at `:233-236`; every other meta reaches
+  `:231` and `return false` at `:232` — metas **0/4/5/8** (bellows, bore base, arcane
+  bore, banner) get no static geometry in world. The card's `:231-236` range spans the
+  declination *and* the draw that follows it.
+- `BlockStoneDeviceRenderer.renderWorldBlock` draws metas 0/12 (`:265-268`), 1
+  (`:269-278`), 5 (`:279-288`) and 8 (`:289-316`). Every other meta —
+  **2/3/4/6/7/9/10/11/13/14** — falls through to the tail at `:319-322`, which sets the
+  graphics hints, resets the render bounds and `return true`s without ever calling
+  `renderStandardBlock` (SRG `func_147784_q`). The card's `:263` is the method's own
+  declaration line; the metas that draw nothing are those ten, not "meta 3", and the
+  list is ten metas, not one.
+- Declining is not "the block is invisible". It hands the pixels to the tile: 4.2.3.5
+  registers a `TileEntitySpecialRenderer` for **every** declined meta — bellows
+  `ClientProxy.java:473`, bore `:466`, bore base `:467`, banner `:472`, runic matrix
+  `:491`, infusion pillar `:492`, node converter `:501`, node stabiliser `:502`, focal
+  manipulator `:513`, flux scrubber `:515` (all inside `setupTileRenderers()`, which
+  opens at `:464`; the card's `client/proxy/ClientProxy.java` path does not exist in
+  `reference/decompiled/` — the file is `client/ClientProxy.java`) — and the inventory
+  half draws the same art:
+  `renderInventoryBlock` calls the TER dispatcher for wooden metas 0/4/5/8
+  (`BlockWoodenDeviceRenderer.java:20-31`, `:178-181`) and stone metas 2/9/10/11/13/14
+  (`BlockStoneDeviceRenderer.java:73-75`, `:234-239`, `:254-259`), with
+  `shouldRender3DInInventory` true at `:240-242` / `:325-327`. Only the stone pillar
+  metas 3/4/6/7 have no inventory branch at all.
+
+The port ships no `BlockEntityRenderer` for these tiles (the TER half is BD-18 slice 4,
+`t_6563ce50`), so a static model is the entire appearance — and one shipped key made
+that appearance nothing: `models/block/blockstonedevice_v3.json` was
+`{"parent":"minecraft:block/air"}`. That is not a spare id. `TileInfusionPillar` is
+hosted on variants 3/4 (`TileInfusionPillar.java:11-12`, `CatalogInfusion.java:88`);
+the original's creative list never offers metas 3/4/6/7 (`BlockStoneDevice.java:180-192`
+lists 0/1/2/5/8/9/10/11/12/13/14), so a player meets the pillar in the world, not in the
+tab; and the runic matrix (meta 2, the other declined-and-now-visible meta) is the one
+state of this block that emits light (`BlockStoneDevice.java:214-226`, 10 — port
+`BlockStoneDevice.java:52`): blanked, that family reads as a glowing, walkable,
+invisible block.
+
+**Decision.**
+
+1. **Blank nothing in the static chain.** A meta the ISMR declines keeps a model that
+   draws faces, because in this tree the model *is* the renderer. `render-nothing`, the
+   option the card offered, reproduces the original's in-world blank only in a build
+   that also ships the tile's renderer; without it the port ships an invisible block
+   where the original drew a bellows, a bore, a banner, a runic matrix, a pillar, a
+   stabiliser, a converter, a focal manipulator or a scrubber.
+2. **"World blank vs inventory art" is not one choice in 1.21.1**, so the card's binary
+   dissolves: the blockstate names the **world** half and `models/item/<id>.json` names
+   the **inventory** half, and BD-17 (one model per item id) means the second file can
+   never be blanked by the first. Inventory half: unchanged —
+   `models/item/blockstonedevice.json` parents `blockstonedevice_v1` and
+   `blockwoodendevice.json` parents `blockwoodendevice_v0`, plain cubes, which is what
+   the original's `getIcon` hands these families (`BlockStoneDevice.java:150`
+   `iconPedestal[1]` tail; `BlockWoodenDevice.java:100-134`). World half: the family
+   stand-in the block's own icon rules pick (D-019).
+3. **The one shipped blank becomes the pillar cube.** `blockstonedevice_v3.json` is now
+   `minecraft:block/cube_all` + `thaumcraft:models/pillar`, byte-identical to the
+   `v4`/`v6`/`v7` siblings, because metas 3/4/6/7 are one furniture family — one name in
+   the original's language file (`en_US.lang:259-263`, "Infusion Pillar") and one sheet
+   in the tile renderer (`TileInfusionPillarRenderer.java:28`) — and the sibling metas
+   already render that sheet. The `getIcon` tail (`pedestal_top`) was the alternative;
+   the family won.
+4. **No meta is removed.** All 15 stone and 9 wooden keys stay in the blockstate and the
+   catalog gate (`ModCreativeTabs.isShippedCatalogBlock`), because D-001's meta→variant
+   mapping has to decode every meta the original can place — the creative tab is not the
+   only source of a placed meta, as the pillar metas show.
+5. **The blank is reserved, not deleted.** `BlockStateCoverageGameTest.ZERO_FACE_MODEL_EXEMPTIONS`
+   (keyed by model id, reason = that renderer's citation) is empty today and is where
+   the card that ships a `BlockEntityRenderer` blanks the meta it now draws.
+   `VANILLA_PARENT_KEYS` keeps its `minecraft:block/air` row so the sprite contract
+   still describes the blank model that card will name.
+6. **The face contract is a table, not a runtime read.** `VANILLA_GEOMETRY` spells each
+   vanilla parent's own face count and parent, read out of the 1.21.1 client jar's
+   `assets/minecraft/models/**` (`air.json` is the four-byte empty object, `cube.json`
+   draws six over `block/block`, `slab`/`slab_top` six, each `door_*_right*` half five).
+   A `runGameTestServer` run is a dedicated server with **no** vanilla model JSONs on its
+   classpath: the first version of this probe read them at runtime and gated on their
+   presence, so it self-skipped and walked the 0-face chain green (141/141, exit 0). A
+   vanilla parent with no row is a failure, never a skip, so an unlisted parent cannot
+   hide a blank chain.
+
+**Consequences.** The pillar family renders as one thing and stops being invisible; the
+face contract is gated over all 519 shipped blockstate model references; the ISMR cell of
+BD-18 closes with the two real citations. Two residuals are recorded, not faked: the
+original's per-meta 3D tile art — in world (`ClientProxy.java:466-515`) and in the
+inventory (`renderInventoryBlock` → TER dispatcher) — stays BD-18 slice 4 / BD-17, and the
+bore/bellows/banner sheets cannot become model textures in the port: the bore sheet
+(`textures/models/Bore.png`, `TileArcaneBoreRenderer.java:21`,
+`TileArcaneBoreBaseRenderer.java:19`) is not publishable under its own name because a
+1.21.1 resource path is `[a-z0-9/._-]` only (`ResourceLocation.java:263-273`) and
+`models/Bore` carries an uppercase `B`, so the bore metas keep the `getIcon` art
+(`arcaneearbell*`) as their visible stand-in.
