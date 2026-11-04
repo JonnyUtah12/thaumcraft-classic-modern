@@ -49,6 +49,12 @@ the suite to green (exit 0).
   before the models landed, exit 0 (“All 130 required tests passed”) after;
   `-Ptc.noCurios` 130/130; `./gradlew build` exit 0 (379 unit / 0 failures / 1 skipped).
 
+## [Unreleased]
+
+Landed on the integration branch after the `v0.1.0-alpha.5` tag: the armour
+slice, the taint root-cause, enchantment registration, and two build fixes. Not
+released; every number below is from a gate run on the merged tree.
+
 **Taint — the Ethereal Bloom's cleansing disc (TC-M5-04-s-b2).** The disc
 acceptance probe shipped on `wt/taint-b1` reported that 4 of the 16 biome
 palette cells under the bloom never cleansed (`MISSING=[2_0, 2_1, 2_2, 2_3]`).
@@ -183,6 +189,18 @@ original *display strings*. See **D-016**, still open.
   BUILD SUCCESSFUL (242 `textures/block`, 236 `textures/item`, 904 mapped targets, 0
   missing); merged tree 411 unit tests / 0 failures, 134/134 game tests with and without
   Curios.
+
+- **The item-model gate caught the integration's own gap** (SPINE-3, extended): on the merged
+  tree `runGameTestServer` failed **2 required tests** — `everyitemmodelchainresolves` and
+  `everyshippeditemhasamodeljson`, “11 of 63 registered thaumcraft items have no
+  `/assets/thaumcraft/models/item/<id>.json`” — because the armour and taint slices registered
+  items without models. 11 port-authored models added: 7 armour (`clothboots`/`clothchest`/
+  `clothlegs`/`thaumiumboots`/`thaumiumchest`/`thaumiumhelm`/`thaumiumlegs`/`gogglesrevealing`)
+  and 3 block items (`greatwoodsapling`/`taint_soil`/`taint_fibres`), each `minecraft:item/generated`
+  with a namespaced `layer0` on a published overlay path, each cited in `docs/asset-mapping.csv`.
+  Item coverage is now 63/63. Rule for the next slice: an item registration lands with its
+  `models/item/<id>.json`, because on this tree a missing icon fails a required test.
+
 
 ## [0.1.0-alpha.4] - 2026-10-28
 
