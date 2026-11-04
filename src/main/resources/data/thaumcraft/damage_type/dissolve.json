@@ -1,0 +1,7 @@
+{
+  "message_id": "thaumcraft.dissolve",
+  "exhaustion": 0.1,
+  "scaling": "when_caused_by_living_non_player",
+  "effects": "hurt",
+  "_comment": "Original DamageSourceThaumcraft.dissolve: setDamageBypassesArmor() (TC4), dealt by Liquid Death (BlockFluidDeath.onEntityCollidedWithBlock, 2.0 per contact). 21.1.259 has no magic DamageEffects profile; the bypass is applied at the emitter (BlockFluidDeath deals it armour-ignoring). msgId 'thaumcraft.dissolve' resolves death.attack.thaumcraft.dissolve[.player] with the original strings. Wired by fluids/BlockFluidDeath."
+}

@@ -119,6 +119,11 @@ public final class BlockVariantNames {
         // "Ethereal Bloom", is the cleansing agent; the icon of meta 5 is
         // spelled manashroom while the original's display name is Vishroom.
         put(table, "blockcustomplant", "blockCustomPlant", range(0, 5));
+        // The eldritch family: meta 6 (the doorway frame variant the
+        // original keyed 7) is unnamed; blockEldritchNothing has no
+        // tile.<id>.<meta>.name keys in the original at all.
+        put(table, "blockeldritch", "blockEldritch",
+                new int[] {0, 1, 2, 3, 4, 5, 7, 8, 9, 10});
         // The slabs: the original keyed these two families by name, not meta.
         putNamed(table, "blockcosmeticslabstone", "blockCosmeticSlabStone",
                 new String[] {"arcane", "eldritch"});

@@ -1,0 +1,7 @@
+{
+  "message_id": "thaumcraft.taint",
+  "exhaustion": 0.1,
+  "scaling": "when_caused_by_living_non_player",
+  "effects": "hurt",
+  "_comment": "Original DamageSourceThaumcraft.taint: setDamageBypassesArmor() + setMagicDamage() (TC4). 21.1.259's DamageEffects has no magic profile (removed in 1.21), so the type carries the plain hurt profile and the armour-ignoring bypass is applied by the emitters (taint biome contact / taintacle-adjacent effects, TC-M6-06 wires the emitters). msgId 'thaumcraft.taint' makes 1.21.1 resolve the death.attack.thaumcraft.taint lang keys, which ship the original death.attack.taint[.player] strings. Exhaustion 0.1 is the vanilla multiplier. Registered now so taint damage and its death message resolve."
+}
