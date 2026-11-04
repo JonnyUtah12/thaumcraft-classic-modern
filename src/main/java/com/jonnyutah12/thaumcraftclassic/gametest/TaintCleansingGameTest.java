@@ -233,6 +233,34 @@ public final class TaintCleansingGameTest {
     }
 
     /**
+     * Wipe the pre-taint record map for every chunk covering a field.
+     *
+     * The record of a column's pre-taint biome is stored per chunk under the
+     * chunk-local key of the 4x4 biome cell containing it
+     * ({@code TaintBiomes.cellKey}), because 1.21.1 biomes are 4x4x4 quarts and
+     * a per-column record is not representable. Two consequences the fixture has
+     * to respect: a record written for one column answers the restore of every
+     * column in that cell, and which cells of a chunk two legs of this probe
+     * share depends on where the game-test pad was dropped in the world — the
+     * same code passes on one pad position and fails on another. A leg that
+     * asserts the plains fallback therefore starts from a clean record map
+     * instead of trusting that no earlier leg touched its cells.
+     */
+    private static void clearBiomeRecords(final ServerLevel level, final BlockPos centre, final int radius) {
+        final int minChunkX = (centre.getX() - radius) >> 4;
+        final int maxChunkX = (centre.getX() + radius) >> 4;
+        final int minChunkZ = (centre.getZ() - radius) >> 4;
+        final int maxChunkZ = (centre.getZ() + radius) >> 4;
+        for (int cx = minChunkX; cx <= maxChunkX; cx++) {
+            for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
+                level.getChunk(cx, cz).setData(
+                        com.jonnyutah12.thaumcraftclassic.player.ModAttachments.BIOME_RECORD.get(),
+                        new java.util.HashMap<String, String>());
+            }
+        }
+    }
+
+    /**
      * Paint a square field of one biome around a centre.
      *
      * @param record true to go through {@code setBiomeAtAndSync} — the shipped
@@ -615,7 +643,18 @@ public final class TaintCleansingGameTest {
         // recorded, and the palette answer IS the taint biome — the case the
         // original's `if (biome == biomeTaint) biome = Plains` line covers.
         final BlockPos bloomB = helper.absolutePos(new BlockPos(24, 8, 8));
+        // The premise of this leg is "no record", and the record map is per chunk
+        // keyed by the 4x4 biome cell. Leg A converts columns in the same chunk(s)
+        // as this field, and a record it leaves in a cell that a leg B column
+        // shares answers that column's restore with forest, so the plains fallback
+        // never runs. Which cells collide depends on where the pad was dropped in
+        // the world — the legs are not record-disjoint by construction, so the
+        // fixture clears the map and then re-checks its own premise.
+        clearBiomeRecords(level, bloomB, PAINT_RADIUS);
         paintBiome(level, bloomB, PAINT_RADIUS, taint, false);
+        helper.assertTrue(TaintBiomes.isTaintBiome(TaintBiomes.biomeAt(level, bloomB)),
+                "leg B fixture: after painting, the bloom column must read taint with no record, got "
+                        + TaintBiomes.biomeAt(level, bloomB).getRegisteredName());
         int firedB = 0;
         int toPlains = 0;
         final StringBuilder fallbackFails = new StringBuilder();
@@ -648,6 +687,13 @@ public final class TaintCleansingGameTest {
                 "fixture: leg C's two columns must be in different palette cells, got "
                         + cellKeyOf(recorded.getX(), recorded.getZ()) + " and "
                         + cellKeyOf(bare.getX(), bare.getZ()));
+
+        // Same premise as leg B: the `bare` half must have no record, and an
+        // earlier leg that converted columns in this chunk can leave one in the
+        // cell — the pad's world position decides whether it does. Clear, then
+        // let the recorded half create its own record below.
+        clearBiomeRecords(level, recorded, 4);
+        clearBiomeRecords(level, bare, 4);
 
         paintBiome(level, recorded, 0, forest, false);
         TaintBiomes.setBiomeAtAndSync(level, recorded.getX(), recorded.getZ(), taint); // records forest

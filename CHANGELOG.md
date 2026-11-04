@@ -190,6 +190,15 @@ original *display strings*. See **D-016**, still open.
   missing); merged tree 411 unit tests / 0 failures, 134/134 game tests with and without
   Curios.
 
+- **The merge caught a probe the slice branches passed** (TC-M5-04-s): `runGameTestServer` on the integration tree
+  failed 1 required test — `bloomrestoresThePreTaintBiomeFromTheRecord` leg B, “21/22 columns restored to plains;
+  the restore answered -6,-6=minecraft:forest”. The pre-taint record is stored per chunk under the 4×4 biome-cell key
+  (1.21.1 biomes are 4×4×4 quarts, so 1.7.10's per-column record has no per-column equivalent), which means a record
+  written by an earlier leg answers a later leg's restore in the same cell — and which cells collide depends on where
+  the game-test pad is dropped, so the same probe passes on one tree and fails on another. Fixture fix, mod code
+  untouched: legs B and C clear the record map over their chunks and re-check their premise. BD-18 states the
+  granularity as the deviation.
+
 - **The item-model gate caught the integration's own gap** (SPINE-3, extended): on the merged
   tree `runGameTestServer` failed **2 required tests** — `everyitemmodelchainresolves` and
   `everyshippeditemhasamodeljson`, “11 of 63 registered thaumcraft items have no
