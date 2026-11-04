@@ -74,14 +74,35 @@ public final class OreDropGameTest {
         return ModBlocks.BLOCK_CUSTOM_ORE.get().defaultBlockState().setValue(BlockCustomOre.VARIANT, variant);
     }
 
+    /**
+     * The only item ids the shipped {@code blockcustomore} loot table can
+     * emit. Game-test structures share one level and pack by template size, so
+     * a neighbouring probe's cell can sit within the sweep box and its own
+     * dropped stacks (measured: a vanilla {@code stone_button}) show up in the
+     * box. The drop under test is identified by identity, not by "whatever is
+     * in the box" — a probe that asserts on the raw box contents is a
+     * flake that moves every time the batch grows.
+     */
+    private static boolean isOreDrop(final ItemStack stack) {
+        return stack.is(ModItems.BLOCK_CUSTOM_ORE_ITEM.get())
+                || stack.is(CatalogResources.ITEM_SHARD.get())
+                || stack.is(CatalogResources.ITEM_RESOURCE.get());
+    }
+
     /** The item stacks the break just spawned near pos, as stacks. */
     private static List<ItemStack> dropsAround(final GameTestHelper helper, final BlockPos pos) {
         final AABB box = new AABB(pos).inflate(2.0D);
-        final List<ItemStack> stacks = helper.getLevel().getEntitiesOfClass(ItemEntity.class, box)
+        final List<ItemStack> all = helper.getLevel().getEntitiesOfClass(ItemEntity.class, box)
                 .stream().map(ItemEntity::getItem).toList();
         helper.getLevel().getEntitiesOfClass(ItemEntity.class, box).forEach(ItemEntity::discard);
         helper.getLevel().getEntitiesOfClass(ExperienceOrb.class, box).forEach(ExperienceOrb::discard);
-        return stacks;
+        final List<ItemStack> foreign = all.stream().filter(stack -> !isOreDrop(stack)).toList();
+        if (!foreign.isEmpty()) {
+            ThaumcraftClassic.LOGGER.info("[SPINE-1] {} foreign stack(s) in the drop box at {} — a neighbouring "
+                    + "structure in the shared game-test level, not this block's drop: {}",
+                    foreign.size(), pos, foreign);
+        }
+        return all.stream().filter(OreDropGameTest::isOreDrop).toList();
     }
 
     /** Sums the experience value of the orbs the break just spawned. */
