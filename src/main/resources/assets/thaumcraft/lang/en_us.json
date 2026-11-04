@@ -144,6 +144,8 @@
   "container.thaumcraft.spa": "Arcane Spa",
   "entity.thaumcraft.wisp": "Wisp",
   "entity.thaumcraft.firebat": "Firebat",
+  "entity.thaumcraft.brainyzombie": "Angry Zombie",
+  "entity.thaumcraft.giantbrainyzombie": "Furious Zombie",
   "entity.thaumcraft.specialitemgrate": "Magic Item",
   "item.ItemAmuletVis.text": "Slowly recharges held wands",
   "item.capacity.text": "Capacity",

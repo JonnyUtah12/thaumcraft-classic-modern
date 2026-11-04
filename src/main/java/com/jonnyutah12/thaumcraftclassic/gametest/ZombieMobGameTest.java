@@ -1,6 +1,8 @@
 package com.jonnyutah12.thaumcraftclassic.gametest;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.BrainyZombieAiLogic;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityGiantBrainyZombie;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
@@ -22,6 +24,7 @@ import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -78,6 +81,13 @@ public final class ZombieMobGameTest {
         final Mob mob = (Mob) spawned;
         final BlockPos at = helper.absolutePos(new BlockPos(1, 3, 1));
         mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0.0F, 0.0F);
+        // Harness fixture, not ported behaviour: an "empty" pad has no floor, so
+        // a WALKING mob falls out of the structure's ticking area and the server
+        // stops ticking it (measured on this pad: 12 mob ticks across 65 probe
+        // ticks, all of them before the fall). The flying mobs of the sibling
+        // cards never notice; a zombie does. Gravity off keeps it in the box so
+        // the goal selectors and the per-tick body run at the server's cadence.
+        mob.setNoGravity(true);
         level.addFreshEntity(mob);
         return mob;
     }
@@ -91,6 +101,7 @@ public final class ZombieMobGameTest {
         final BlockPos at = helper.absolutePos(new BlockPos(1, 3, 1));
         mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0.0F, 0.0F);
         mob.readAdditionalSaveData(saved);
+        mob.setNoGravity(true);                                  // see spawn()
         level.addFreshEntity(mob);
         return mob;
     }
@@ -180,10 +191,10 @@ public final class ZombieMobGameTest {
                 "the port kept 1.21.1's BreakDoorGoal; 1.7.10 had no door-breaking goal");
         // The melee / wander / look trio, at the parent's slots.
         helper.assertTrue(zombie.goalSelector.getAvailableGoals().stream()
-                        .anyMatch(g -> g.getGoal().getClass() == MeleeAttackGoal.class
-                                && g.getPriority() == 4),
-                "the angry zombie has no melee-attack goal at goal slot 4 (the 1.7.10 "
-                        + "EntityAIAttackOnCollide slot in the zombie parent)");
+                        .anyMatch(g -> g.getGoal() instanceof MeleeAttackGoal
+                                && g.getPriority() == 2),
+                "the angry zombie has no melee-attack goal at the zombie parent's slot 2 "
+                        + "(Zombie.java:110 — the 1.7.10 EntityAIAttackOnCollide analogue)");
         helper.assertTrue(zombie.goalSelector.getAvailableGoals().stream()
                         .anyMatch(g -> g.getGoal().getClass() == WaterAvoidingRandomStrollGoal.class
                                 && g.getPriority() == 7),
@@ -191,11 +202,17 @@ public final class ZombieMobGameTest {
         helper.assertTrue(zombie.goalSelector.getAvailableGoals().stream()
                         .anyMatch(g -> g.getGoal().getClass() == LookAtPlayerGoal.class
                                 && g.getPriority() == 8),
-                "the angry zombie has no watch-closest goal at goal slot 8 (1.7.10 EntityAIWatchClosest)");
+                "the angry zombie has no watch-closest goal at the parent's slot 8 "
+                        + "(Zombie.java:104 — the 1.7.10 EntityAIWatchClosest analogue)");
+        helper.assertTrue(zombie.goalSelector.getAvailableGoals().stream()
+                        .noneMatch(g -> g.getGoal() instanceof net.minecraft.world.entity.ai.goal.RemoveBlockGoal),
+                "the port kept a turtle-egg raid goal (RemoveBlockGoal family, Zombie.java:103); "
+                        + "1.7.10 had no turtle eggs");
         helper.assertTrue(zombie.goalSelector.getAvailableGoals().stream()
                         .anyMatch(g -> g.getGoal().getClass() == RandomLookAroundGoal.class
-                                && g.getPriority() == 9),
-                "the angry zombie has no look-idle goal at goal slot 9 (1.7.10 EntityAILookIdle)");
+                                && g.getPriority() == 8),
+                "the angry zombie has no look-idle goal at the parent's slot 8 "
+                        + "(Zombie.java:105 — the 1.7.10 EntityAILookIdle analogue)");
         // Target set: the player / villager / iron-golem trio of the zombie
         // parent, plus the original's own hurt-by-target at slot 1.
         helper.assertTrue(zombie.targetSelector.getAvailableGoals().size() == 4,
@@ -215,18 +232,28 @@ public final class ZombieMobGameTest {
     public static void angryZombieTargetsTheNearestPlayer(final GameTestHelper helper) {
         final Mob zombie = spawn(helper, "brainyzombie");
         final ServerLevel level = helper.getLevel();
-        final Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        // The target goal of the 1.7.10 zombie parent (the
+        // EntityAINearestAttackableTarget trio: player / villager / iron golem,
+        // which 1.21.1 installs at Zombie.java:114-116) must be live: a zombie
+        // that never acquires a target is a zombie whose AI was stripped too
+        // far. The scan walks the LEVEL's entities, so the target has to be a
+        // real level entity — GameTestHelper#makeMockPlayer hands back a ServerPlayer
+        // that was never added (measured: 0 players found in the pad), and a
+        // vanilla target goal can never see it. A villager is the parent's own
+        // target family, needs no player, and the gametest server runs at
+        // NORMAL difficulty, so the monster-target gate is open.
+        final Villager villager = new Villager(net.minecraft.world.entity.EntityType.VILLAGER, level);
         final BlockPos at = helper.absolutePos(new BlockPos(1, 3, 1));
-        player.setPos(at.getX() + 2.5, at.getY(), at.getZ() + 0.5);
-        helper.runAtTickTime(helper.getTick() + 30L, () -> {
-            // The target goal of the 1.7.10 zombie parent (EntityAINearestAttackable
-            // Target for EntityPlayer) must be live: a zombie that never sees the
-            // player is a zombie whose AI was stripped too far.
-            helper.assertTrue(zombie.getTarget() == player,
-                    "the angry zombie did not acquire the mock player as its target; the "
-                            + "parent's nearest-player target goal is not installed (target="
-                            + zombie.getTarget() + ")");
-            player.discard();
+        villager.moveTo(at.getX() + 3.5, at.getY(), at.getZ() + 0.5, 0.0F, 0.0F);
+        level.addFreshEntity(villager);
+        helper.runAtTickTime(helper.getTick() + 40L, () -> {
+            helper.assertTrue(zombie.getTarget() == villager,
+                    "the angry zombie did not acquire the villager 3 blocks away as its target; the "
+                            + "parent's nearest-target goal is not installed (target="
+                            + zombie.getTarget() + ", tickCount=" + zombie.tickCount
+                            + ", difficulty=" + level.getDifficulty() + ", villagers in the pad="
+                            + level.getEntitiesOfClass(Villager.class, mobBox(helper)).size() + ")");
+            villager.discard();
             zombie.discard();
             helper.succeed();
         });
@@ -301,13 +328,16 @@ public final class ZombieMobGameTest {
     public static void furiousZombieAngerGrowsOnDamageAndRewritesItsDamage(final GameTestHelper helper) {
         final Mob giant = spawn(helper, "giantbrainyzombie");
         final ServerLevel level = helper.getLevel();
-        // :44-47 — every attackEntityFrom: anger = min(2.0, anger + 0.1)
+        // :44-47 — every attackEntityFrom raises the anger by 0.1 to the 2.0 cap
+        // (:45), and it happens BEFORE super.attackEntityFrom, so a killing blow
+        // raises it too.
         for (int i = 0; i < 20; i++) {
             giant.hurt(level.damageSources().generic(), 0.1F);
             if (giant.isDeadOrDying()) {
                 giant.setHealth(60.0F);
             }
         }
+        giant.clearFire();      // the pad sets mobs alight; a fire hurt re-caps the anger
         final CompoundTag hit = giant.saveWithoutId(new CompoundTag());
         helper.assertTrue(hit.contains("Anger"),
                 "the furious zombie does not persist its anger value (:30-41)");
@@ -315,19 +345,51 @@ public final class ZombieMobGameTest {
         helper.assertTrue(Math.abs(angerAfter - 2.0F) < 1.0E-4F,
                 "after 20 hits the furious zombie's anger is not the original cap 2.0 (:45) but "
                         + angerAfter);
-        // The scaled box at anger 2.0: 0.6 x 3.2 = 1.92, 1.8 x 3.2 = 5.76 (:24)
-        final var dims = giant.getDimensions(giant.getPose());
-        helper.assertTrue(Math.abs(dims.width() - 1.92F) < 1.0E-3F
-                        && Math.abs(dims.height() - 5.76F) < 1.0E-3F,
-                "the angry furious zombie is not at the 2.0-anger box 1.92 x 5.76 (:24) but "
-                        + dims.width() + " x " + dims.height());
-        // :27 — every living-update tick rewrites attack damage to
-        // 7.0 + (anger - 1) * 5 = 12.0 at anger 2.0. The write lands on the
-        // mob's next server AI tick, so the deferred block waits for it.
-        helper.runAtTickTime(helper.getTick() + 5L, () -> {
-            helper.assertTrue(Math.abs(giant.getAttributeBaseValue(Attributes.ATTACK_DAMAGE) - 12.0) < 1.0E-3,
-                    "the furious zombie's attack damage at anger 2.0 is not 7.0 + (2.0 - 1) * 5.0 "
-                            + "(:27) but " + giant.getAttributeBaseValue(Attributes.ATTACK_DAMAGE));
+        // :24 and :27 ride the per-tick update. The probe FEEDS the mob its own
+        // tick() — probe ticks are not a valid clock for a per-tick rate on an
+        // empty pad (see spawn()) — so the mob advances by exactly the number of
+        // ticks the math below assumes. The pair's own figures (1.2 + anger,
+        // 7.0 + (anger - 1) * 5.0) are pinned exactly by BrainyZombieAiLogicTest;
+        // here the contract is that the live box and the live attack base TRACK
+        // that value (the failure this probe guards is the box sitting at the
+        // anger-1.0 size 1.32 x 3.96).
+        helper.runAtTickTime(helper.getTick() + 3L, () -> {
+            // The clock is the mob's per-tick body, driven here, and the
+            // measurement is self-contained IN THIS LEG: the server ticks the
+            // mobs of a ticking area from ServerLevel#tickNonPassenger (which
+            // increments the mob's tickCount at :772 and calls tick() at :777),
+            // and it is single-threaded, so no server tick interleaves a probe
+            // leg. Anger at the top of the leg, N driven ticks, anger at the
+            // bottom: the delta is exactly N x 0.002 by construction.
+            final float from = giant.saveWithoutId(new CompoundTag()).getFloat("Anger");
+            helper.assertTrue(from <= 2.0F && from > 1.9F,
+                    "the anger after the 20 hits is off the 2.0 cap band (:45) and cannot anchor a "
+                            + "decay measurement: anger " + from + " at tickCount " + giant.tickCount
+                            + " hp " + giant.getHealth());
+            for (int i = 0; i < 3; i++) {
+                giant.clearFire();          // the pad sets mobs alight; see the decay probe
+                giant.tick();
+            }
+            final float now = giant.saveWithoutId(new CompoundTag()).getFloat("Anger");
+            helper.assertTrue(Math.abs(now - (from - 3 * BrainyZombieAiLogic.ANGER_DECAY_PER_TICK))
+                            < 1.0E-4F,
+                    "3 driven mob ticks did not decay the anger by exactly 3 x 0.002 (:22-23): " + from
+                            + " -> " + now);
+            final double wantDamage = 7.0 + (now - 1.0F) * 5.0;                       // :27
+            helper.assertTrue(Math.abs(giant.getAttributeBaseValue(Attributes.ATTACK_DAMAGE)
+                            - wantDamage) < 1.0E-6,
+                    "the furious zombie's attack base is not 7.0 + (anger - 1) * 5.0 (:27) at anger "
+                            + now + ": got " + giant.getAttributeBaseValue(Attributes.ATTACK_DAMAGE)
+                            + " want " + wantDamage);
+            final double wantScale = 1.2 + now;                                       // :16, :24
+            final var dims = giant.getDimensions(giant.getPose());
+            helper.assertTrue(Math.abs(dims.width() - 0.6F * wantScale) < 1.0E-3F
+                            && Math.abs(dims.height() - 1.8F * wantScale) < 1.0E-3F,
+                    "the hitbox does not track the anger (:24): box " + dims.width() + " x "
+                            + dims.height() + " at anger " + now + " wants "
+                            + 0.6 * wantScale + " x " + 1.8 * wantScale
+                            + " (the unscaled angry-zombie box would be 0.6 x 1.95, the "
+                            + "anger-1.0 size 1.32 x 3.96)");
             giant.discard();
             helper.succeed();
         });
@@ -336,23 +398,96 @@ public final class ZombieMobGameTest {
     @GameTest(template = "empty", timeoutTicks = 600)
     public static void furiousZombieAngerDecaysAndTheBoxShrinksBack(final GameTestHelper helper) {
         // :30-33 — the anger data value (watcher index 20) starts at 1.0; a save
-        // that carries a higher value decays at 0.002 per tick while it is
-        // above 1.0 (:22-23), resizing the box as it goes (:24).
+        // that carries 2.0 decays at 0.002 while it is above 1.0 (:22-23),
+        // resizing the box from (1.2 + anger) as it goes (:24).
+        //
+        // The rate is measured per TICK OF THE MOB, not per probe tick. Two
+        // facts about the harness make that measurable (both measured on this
+        // pad): a WALKING mob on an "empty" pad falls out of the structure's
+        // ticking area and the server stops ticking it (12 mob ticks across 65
+        // probe ticks), so the probes keep the mob in the box with no gravity;
+        // and the mob's own tickCount is incremented by ServerLevel#tickNonPassenger
+        // (:772), not by Entity#tick, so a rate over driven ticks must be
+        // measured INSIDE one leg, where no server tick can interleave.
         final CompoundTag saved = new CompoundTag();
         saved.putFloat("Anger", 2.0F);
-        final Mob giant = spawnLoaded(helper, "giantbrainyzombie", saved);
-        final var start = giant.getDimensions(giant.getPose());
-        helper.runAtTickTime(helper.getTick() + 60L, () -> {
-            final CompoundTag now = giant.saveWithoutId(new CompoundTag());
-            final float anger = now.getFloat("Anger");
-            helper.assertTrue(anger < 2.0F - 0.1F && anger > 1.0F,
-                    "after 60 ticks the anger did not decay toward 1.0 (:22-23): " + anger);
-            helper.assertTrue(Math.abs(anger - (2.0F - 60 * 0.002F)) < 1.0E-2F,
-                    "the anger decay is not 0.002 per tick (:23): " + anger);
+        final EntityGiantBrainyZombie giant = (EntityGiantBrainyZombie)
+                spawnLoaded(helper, "giantbrainyzombie", saved);
+        helper.assertTrue(Math.abs(giant.getAnger() - 2.0F) < 1.0E-4F,
+                "a save's Anger value did not load onto the furious zombie (:39-41)");
+        // The ctor sized the box from the anger the entity was CONSTRUCTED with
+        // (1.0) and 1.7.10 reads the save after construction, so the first
+        // per-tick update is what resizes it to (1.2 + 2.0).
+        final float[] base = new float[4];
+        helper.runAtTickTime(helper.getTick() + 5L, () -> {
+            base[0] = giant.getAnger();
+            base[1] = giant.tickCount;
+            helper.assertTrue(base[1] > 0.0F,
+                    "the furious zombie is not in the server's entity tick list (tickCount 0): "
+                            + "ServerLevel#tickNonPassenger increments the mob's counter (:772) before "
+                            + "calling tick() (:777), so a zero counter means the mob sits outside the "
+                            + "structure's ticking area and no per-tick rate can be read from it");
+            final var settled = giant.getDimensions(giant.getPose());
+            base[2] = settled.width();
+            base[3] = settled.height();
+            helper.assertTrue(Math.abs(base[2] - 0.6F * (1.2F + base[0])) < 1.0E-3F
+                            && Math.abs(base[3] - 1.8F * (1.2F + base[0])) < 1.0E-3F,
+                    "the loaded fury did not resize its box to (1.2 + anger) on its first update "
+                            + "(:24): " + base[2] + " x " + base[3] + " at anger " + base[0]);
+            // :23 is a PER-MOB-TICK rate, so the probe drives the mob's OWN
+            // tick() and measures the delta on the mob's counter: probe ticks
+            // are not a valid clock on this pad (see spawn()) and 0.002 across
+            // a handful of server ticks is under the float noise. 250 driven
+            // ticks move 2.0 to ~1.5 — measurable, and clear of the 1.0 floor
+            // (:22) at which the decay stops.
+            // The pad's terrain is NOT neutral: a mob in the cell a walking mob
+            // gets catches the world's fire (measured: DamageSource (onFire),
+            // health 60 -> 58), and every hurt raises the anger to the 2.0 cap
+            // (:44-46), which poisons any rate read from it. The probe clears the
+            // fire so the anger ledger is decay-only, then asserts the step on
+            // EVERY driven tick — 250 x 0.002, each one pinned, with the pad's
+            // own interference named in the message if it comes back.
+            final int drive = 250;
+            for (int i = 0; i < drive; i++) {
+                final float before = giant.getAnger();
+                giant.clearFire();
+                giant.tick();
+                final float after = giant.getAnger();
+                helper.assertTrue(Math.abs(after - (before - BrainyZombieAiLogic.ANGER_DECAY_PER_TICK))
+                                < 1.0E-4F,
+                        "driven mob tick " + i + " did not decay the anger by exactly 0.002 (:22-23): "
+                                + before + " -> " + after + " (hp " + giant.getHealth() + " src "
+                                + giant.getLastDamageSource() + " tickCount " + giant.tickCount + ")");
+            }
+            helper.assertTrue(!giant.isRemoved(),
+                    "the driven furious zombie left the level mid-probe (health "
+                            + giant.getHealth() + ")");
+            final float anger = giant.getAnger();
+            helper.assertTrue(anger < base[0] && anger > BrainyZombieAiLogic.ANGER_FLOOR,
+                    "the anger did not decay from " + base[0] + " over " + drive + " driven mob ticks "
+                            + "(:22-23): " + anger + " | server tickCount " + giant.tickCount);
+            // The driven count IS the tick count of this leg: the server cannot
+            // interleave a mob tick inside a probe leg (single-threaded), and
+            // tick() does not touch the mob's tickCount — the server owns it
+            // (ServerLevel#tickNonPassenger:772).
+            final float want = base[0] - BrainyZombieAiLogic.ANGER_DECAY_PER_TICK * drive;  // :23
+            helper.assertTrue(Math.abs(anger - want) < 1.0E-3F,
+                    "the anger decay is not 0.002 per tick (:23): " + anger + " after " + drive
+                            + " driven mob ticks from " + base[0] + " wants " + want);
             final var dims = giant.getDimensions(giant.getPose());
-            helper.assertTrue(dims.width() < start.width() && dims.height() < start.height(),
-                    "the shrinking anger did not shrink the box (:24): " + start.width() + " x "
-                            + start.height() + " -> " + dims.width() + " x " + dims.height());
+            helper.assertTrue(dims.width() < base[2] && dims.height() < base[3],
+                    "the shrinking anger did not shrink the box (:24): " + base[2] + " x " + base[3]
+                            + " -> " + dims.width() + " x " + dims.height());
+            helper.assertTrue(Math.abs(dims.width() - 0.6F * (1.2F + anger)) < 1.0E-3F
+                            && Math.abs(dims.height() - 1.8F * (1.2F + anger)) < 1.0E-3F,
+                    "the box is not (1.2 + anger) times the 0.6 x 1.8 base (:24): "
+                            + dims.width() + " x " + dims.height() + " at anger " + anger);
+            // :27 — the every-tick attack rewrite tracks the SAME decayed value.
+            helper.assertTrue(Math.abs(giant.getAttributeBaseValue(Attributes.ATTACK_DAMAGE)
+                            - (7.0 + (anger - 1.0F) * 5.0)) < 1.0E-6,
+                    "the attack base is not 7.0 + (anger - 1) * 5.0 (:27) after " + drive
+                            + " driven mob ticks: " + giant.getAttributeBaseValue(Attributes.ATTACK_DAMAGE)
+                            + " at anger " + anger);
             giant.discard();
             helper.succeed();
         });
@@ -373,13 +508,14 @@ public final class ZombieMobGameTest {
         int items = 0;
         for (int i = 0; i < kills; i++) {
             final Mob mob = (Mob) registered(helper, path).create(level);
-            mob.moveTo(at.getX() + 0.5, at.getY() + i * 0.0, at.getZ() + 0.5, 0.0F, 0.0F);
+            mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0.0F, 0.0F);
             level.addFreshEntity(mob);
             mob.hurt(level.damageSources().playerAttack(killer), 1000.0F);
+            helper.assertTrue(mob.isDeadOrDying(), "the probe's kill of thaumcraft:" + path
+                    + " (death " + i + ") did not kill the mob, so the drop roll never ran");
         }
         killer.discard();
-        for (final ItemEntity drop : level.getEntitiesOfClass(ItemEntity.class,
-                mobBox(helper))) {
+        for (final ItemEntity drop : level.getEntitiesOfClass(ItemEntity.class, mobBox(helper))) {
             if (drop.getItem().is(expected)) {
                 items += drop.getItem().getCount();
             }
@@ -399,10 +535,11 @@ public final class ZombieMobGameTest {
         // average 5 * 3 * 0.5 = 7.5 flesh with sd 1.5: 7.5 +- 3 sd is [3, 12].
         // The brain branch (:50-51) names thaumcraft:itemzombiebrain, which this
         // port has not registered, so it must never appear (the gate).
-        final int flesh = countDeathDrops(helper, "brainyzombie", Items.ROTTEN_FLESH, 5);
-        helper.assertTrue(flesh >= 3 && flesh <= 12,
-                "5 angry-zombie deaths left " + flesh + " rotten flesh; the original rolls 3 coin "
-                        + "flips of 1 each per death (:44-46), so the rate must sit near 7.5");
+        final int flesh = countDeathDrops(helper, "brainyzombie", Items.ROTTEN_FLESH, 10);
+        helper.assertTrue(flesh >= 9 && flesh <= 21,
+                "10 angry-zombie deaths left " + flesh + " rotten flesh; the original rolls 3 coin "
+                        + "flips of 1 each per death (:44-46), so the rate must sit near 15 "
+                        + "(3sd of the binomial is 9-21)");
         final ServerLevel level = helper.getLevel();
         for (final ItemEntity drop : level.getEntitiesOfClass(ItemEntity.class, mobBox(helper))) {
             final Item item = drop.getItem().getItem();
@@ -425,15 +562,27 @@ public final class ZombieMobGameTest {
         // 60 +- 3 sd is [37, 83]. The brain branch (:70-71) is velocity 2.0 and
         // the same unregistered item, so it is gated out exactly as for the
         // angry zombie.
-        final int flesh = countDeathDrops(helper, "giantbrainyzombie", Items.ROTTEN_FLESH, 5);
-        helper.assertTrue(flesh >= 37 && flesh <= 83,
-                "5 furious-zombie deaths left " + flesh + " rotten flesh; the original rolls 2 loops "
-                        + "of 6 coin flips dropping 2 each (:58-66), so the rate must sit near 60");
+        final int flesh = countDeathDrops(helper, "giantbrainyzombie", Items.ROTTEN_FLESH, 10);
+        helper.assertTrue(flesh >= 87 && flesh <= 153,
+                "10 furious-zombie deaths left " + flesh + " rotten flesh; the original rolls 2 loops "
+                        + "of 6 coin flips dropping 2 each (:58-66), so the rate must sit near 120 "
+                        + "(3sd of the binomial is 87-153)");
         final ServerLevel level = helper.getLevel();
+        final net.minecraft.resources.ResourceLocation ItemResourceId =
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+                        ThaumcraftClassic.MOD_ID, "itemresource");
+        // The furious zombie has TWO drop bodies: func_70628_a (:57-73) and the
+        // func_70600_l (:75-89) replacement of vanilla dropAllLoot, which picks
+        // one of thaumium / carrot / potato / amber per death on the entity RNG.
         for (final ItemEntity drop : level.getEntitiesOfClass(ItemEntity.class, mobBox(helper))) {
-            helper.assertTrue(drop.getItem().is(Items.ROTTEN_FLESH),
-                    "a furious zombie dropped an item outside the original's dropFewItems body "
-                            + "(:57-73): " + BuiltInRegistries.ITEM.getKey(drop.getItem().getItem()));
+            final ResourceLocation key = BuiltInRegistries.ITEM.getKey(drop.getItem().getItem());
+            helper.assertTrue(drop.getItem().is(Items.ROTTEN_FLESH)
+                            || drop.getItem().is(Items.CARROT)
+                            || drop.getItem().is(Items.POTATO)
+                            || ItemResourceId.equals(key),
+                    "a furious zombie dropped " + key + ", outside the pair's two drop bodies: "
+                            + "rotten flesh (:58-66) and the 4-way dropAllLoot replacement "
+                            + "thaumium / carrot / potato / amber (:76-88)");
         }
         helper.succeed();
     }

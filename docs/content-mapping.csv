@@ -314,8 +314,8 @@ Thaumcraft:ExplosiveOrb,thaumcraft:explosiveorb,entity,Explosive Fireball,not_st
 Thaumcraft:Ember,thaumcraft:ember,entity,,not_started,not_tested,,class=EntityEmber mod_index=16
 Thaumcraft:Golem,thaumcraft:golem,entity,Golem,not_started,not_tested,,class=EntityGolemBase mod_index=17
 Thaumcraft:TravelingTrunk,thaumcraft:travelingtrunk,entity,Traveling Trunk,not_started,not_tested,,class=EntityTravelingTrunk mod_index=18
-Thaumcraft:BrainyZombie,thaumcraft:brainyzombie,entity,Angry Zombie,not_started,not_tested,,class=EntityBrainyZombie mod_index=19
-Thaumcraft:GiantBrainyZombie,thaumcraft:giantbrainyzombie,entity,Furious Zombie,not_started,not_tested,,class=EntityGiantBrainyZombie mod_index=20
+Thaumcraft:BrainyZombie,thaumcraft:brainyzombie,entity,Angry Zombie,done,tested,,class=EntityBrainyZombie mod_index=19 - TC-M6-06-s-c2 port; anger 1.0 start decay 0.002 cap 2.0; party buff 2.0 + 0.5 per neighbour to 5.0; size 1.2+anger; attack 7.0 + 5.0 per anger over 1.0; 5 goal slots override vanilla's 8
+Thaumcraft:GiantBrainyZombie,thaumcraft:giantbrainyzombie,entity,Furious Zombie,done,tested,,class=EntityGiantBrainyZombie mod_index=20 - TC-M6-06-s-c2 port; anger cap 2.0 + doubled damage; size x2; xp 14 + 2 per point over 20; damage rewrite 7.0 + 5.0 per anger over 1.0; drops x4 and 12 flesh flips of 2; the 1.7.10 scale hook is ported on the box
 Thaumcraft:Wisp,thaumcraft:wisp,entity,Wisp,done,tested,,class=EntityWisp
 Thaumcraft:Firebat,thaumcraft:firebat,entity,Firebat,done,tested,,class=EntityFireBat mod_index=22
 Thaumcraft:Pech,thaumcraft:pech,entity,Pech Forager,not_started,not_tested,,class=EntityPech mod_index=23
