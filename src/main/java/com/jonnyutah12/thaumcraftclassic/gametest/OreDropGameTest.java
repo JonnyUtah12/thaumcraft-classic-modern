@@ -17,6 +17,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.GameType;
@@ -94,6 +95,26 @@ public final class OreDropGameTest {
         return total;
     }
 
+
+    /** The stacks this probe's own break produced: those carrying the item it owns.
+     *
+     *  The scan box is inflate(2.0) around the broken cell and the harness packs probe
+     *  structures by the biggest template in the batch, so a neighbouring pad's cells can
+     *  sit inside that box. With the eldritch templates in the batch the cinnabar probe's
+     *  box overlapped a grass cell and its wheat_seeds drop answered the ore contract
+     *  ("got 2 stacks [1 minecraft:wheat_seeds, 1 thaumcraft:blockcustomore]"). The
+     *  contract is about the ore, so the assertion runs on the owned subset and the
+     *  foreign stacks are NAMED in the failure message rather than counted. A real
+     *  regression still bites: a duplicated loot pool grows the owned subset, and a drop
+     *  that changed item or stopped happening empties it. */
+    private static List<ItemStack> ownedBy(final List<ItemStack> stacks, final Item owner) {
+        return stacks.stream().filter(stack -> stack.is(owner)).toList();
+    }
+
+    private static List<ItemStack> foreignTo(final List<ItemStack> stacks, final Item owner) {
+        return stacks.stream().filter(stack -> !stack.is(owner)).toList();
+    }
+
     /** The shipped player-break dispatch: ServerPlayerGameMode.destroyBlock calls exactly this. */
     private static void playerBreak(final GameTestHelper helper, final BlockPos pos, final ItemStack tool) {
         final BlockState state = helper.getLevel().getBlockState(pos);
@@ -130,9 +151,12 @@ public final class OreDropGameTest {
             helper.setBlock(1, 1, 1, oreState(BlockCustomOre.VARIANT_CINNABAR));
             helper.getLevel().destroyBlock(pos, true, null);
             final List<ItemStack> drops = dropsAround(helper, pos);
-            helper.assertTrue(drops.size() == 1,
-                    "cinnabar ore drops exactly the block, got " + drops.size() + " stacks " + drops);
-            final ItemStack drop = drops.get(0);
+            final List<ItemStack> ore = ownedBy(drops, ModItems.BLOCK_CUSTOM_ORE_ITEM.get());
+            helper.assertTrue(ore.size() == 1,
+                    "cinnabar ore drops exactly the block, got " + ore.size() + " ore stacks " + ore
+                            + "; foreign stacks in the scan box (neighbouring pad): "
+                            + foreignTo(drops, ModItems.BLOCK_CUSTOM_ORE_ITEM.get()));
+            final ItemStack drop = ore.get(0);
             helper.assertTrue(drop.is(ModItems.BLOCK_CUSTOM_ORE_ITEM.get()),
                     "cinnabar ore drops the ore block itself (it is furnace-smelted to quicksilver), got " + drop);
             helper.assertTrue(drop.getCount() == 1, "cinnabar drop is exactly 1, got " + drop.getCount());
@@ -155,13 +179,15 @@ public final class OreDropGameTest {
                 helper.setBlock(x, 1, 1, oreState(variant));
                 helper.getLevel().destroyBlock(pos, true, null);
                 final List<ItemStack> drops = dropsAround(helper, pos);
-                final int count = drops.size();
+                final List<ItemStack> shards = ownedBy(drops, CatalogResources.ITEM_SHARD.get());
+                final int count = shards.size();
                 observedMin = Math.min(observedMin, count);
                 observedMax = Math.max(observedMax, count);
                 helper.assertTrue(count >= 1 && count <= 2,
                         "infused stone v" + variant + " drops 1..2 shard stacks (1 + rand.nextInt(2 + 0)), got "
-                                + count + " " + drops);
-                for (final ItemStack drop : drops) {
+                                + count + " shard stacks " + shards + "; foreign stacks in the scan box "
+                                + "(neighbouring pad): " + foreignTo(drops, CatalogResources.ITEM_SHARD.get()));
+                for (final ItemStack drop : shards) {
                     helper.assertTrue(drop.is(CatalogResources.ITEM_SHARD.get()),
                             "infused stone v" + variant + " drops itemshard, got " + drop);
                     helper.assertTrue(metaOf(drop) == variant - 1,
@@ -188,9 +214,12 @@ public final class OreDropGameTest {
             helper.setBlock(x, 1, 1, oreState(BlockCustomOre.VARIANT_AMBER));
             helper.getLevel().destroyBlock(pos, true, null);
             final List<ItemStack> drops = dropsAround(helper, pos);
-            helper.assertTrue(drops.size() == 1,
-                    "amber bearing stone drops exactly one resource stack, got " + drops.size() + " " + drops);
-            final ItemStack drop = drops.get(0);
+            final List<ItemStack> amber = ownedBy(drops, CatalogResources.ITEM_RESOURCE.get());
+            helper.assertTrue(amber.size() == 1,
+                    "amber bearing stone drops exactly one resource stack, got " + amber.size()
+                            + " resource stacks " + amber + "; foreign stacks in the scan box (neighbouring pad): "
+                            + foreignTo(drops, CatalogResources.ITEM_RESOURCE.get()));
+            final ItemStack drop = amber.get(0);
             helper.assertTrue(drop.is(CatalogResources.ITEM_RESOURCE.get()),
                     "amber bearing stone drops itemresource, got " + drop);
             helper.assertTrue(metaOf(drop) == 6,
@@ -214,9 +243,12 @@ public final class OreDropGameTest {
             helper.setBlock(x, 1, 1, oreState(variant));
             playerBreak(helper, pos, silk);
             final List<ItemStack> drops = dropsAround(helper, pos);
-            helper.assertTrue(drops.size() == 1,
-                    "a silk-touched v" + variant + " ore drops exactly one stack, got " + drops.size() + " " + drops);
-            final ItemStack drop = drops.get(0);
+            final List<ItemStack> ore = ownedBy(drops, ModItems.BLOCK_CUSTOM_ORE_ITEM.get());
+            helper.assertTrue(ore.size() == 1,
+                    "a silk-touched v" + variant + " ore drops exactly one stack, got " + ore.size()
+                            + " ore stacks " + ore + "; foreign stacks in the scan box (neighbouring pad): "
+                            + foreignTo(drops, ModItems.BLOCK_CUSTOM_ORE_ITEM.get()));
+            final ItemStack drop = ore.get(0);
             helper.assertTrue(drop.is(ModItems.BLOCK_CUSTOM_ORE_ITEM.get()),
                     "silk touch drops the ore block itself (1.7.10 harvestBlock bypasses getDrops — no silk branch "
                             + "there), got " + drop);
@@ -247,13 +279,15 @@ public final class OreDropGameTest {
                 helper.setBlock(x, 1, 1, oreState(variant));
                 playerBreak(helper, pos, fortune3);
                 final List<ItemStack> drops = dropsAround(helper, pos);
-                final int count = drops.size();
+                final List<ItemStack> shards = ownedBy(drops, CatalogResources.ITEM_SHARD.get());
+                final int count = shards.size();
                 observedMin = Math.min(observedMin, count);
                 observedMax = Math.max(observedMax, count);
                 helper.assertTrue(count >= 1 && count <= 5,
                         "fortune III infused stone v" + variant + " drops 1..5 shards (1 + rand.nextInt(2 + 3)), got "
-                                + count + " " + drops);
-                for (final ItemStack drop : drops) {
+                                + count + " shard stacks " + shards + "; foreign stacks in the scan box "
+                                + "(neighbouring pad): " + foreignTo(drops, CatalogResources.ITEM_SHARD.get()));
+                for (final ItemStack drop : shards) {
                     helper.assertTrue(drop.is(CatalogResources.ITEM_SHARD.get())
                                     && metaOf(drop) == variant - 1 && drop.getCount() == 1,
                             "every fortune drop is one size-1 shard stack of meta " + (variant - 1)
@@ -273,9 +307,12 @@ public final class OreDropGameTest {
             helper.setBlock(amberX, 1, 1, oreState(BlockCustomOre.VARIANT_AMBER));
             playerBreak(helper, amberPos, fortune3);
             final List<ItemStack> drops = dropsAround(helper, amberPos);
-            helper.assertTrue(drops.size() == 1,
-                    "amber drops one resource stack, got " + drops.size() + " " + drops);
-            final ItemStack drop = drops.isEmpty() ? ItemStack.EMPTY : drops.get(0);
+            final List<ItemStack> amber = ownedBy(drops, CatalogResources.ITEM_RESOURCE.get());
+            helper.assertTrue(amber.size() == 1,
+                    "amber drops one resource stack, got " + amber.size() + " resource stacks " + amber
+                            + "; foreign stacks in the scan box (neighbouring pad): "
+                            + foreignTo(drops, CatalogResources.ITEM_RESOURCE.get()));
+            final ItemStack drop = amber.isEmpty() ? ItemStack.EMPTY : amber.get(0);
             final int count = drop.getCount();
             amberMin = Math.min(amberMin, count);
             amberMax = Math.max(amberMax, count);
