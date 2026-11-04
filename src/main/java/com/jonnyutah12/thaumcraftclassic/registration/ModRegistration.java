@@ -6,6 +6,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchRealm;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
@@ -167,6 +168,14 @@ public final class ModRegistration {
         // effect on TC-M6-06 / TC-M6-05, and the worldgen biome hook on
         // TC-M5-05.
         CatalogTaint.init(modEventBus);
+        // TC-M6-04f-s: the Eldritch realm's content — blockEldritch (11
+        // variants) + blockEldritchnothing, their tiles (altar, obelisk, cap,
+        // lock, crab spawner, nothing), the pure/death fluids with their
+        // blocks and buckets, the Eldritch Objects mega-item, and the
+        // taint/dissolve damage types (data/thaumcraft/damage_type). The
+        // dimension/portal and structure placement are TC-M6-04f-m; the maze
+        // generation shipped in f252c58.
+        CatalogEldritchRealm.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

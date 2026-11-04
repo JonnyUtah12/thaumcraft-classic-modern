@@ -117,7 +117,19 @@ public final class LocalizationGameTest {
             // TC-M6-07-s: the robe/goggles tooltip line, the original's own key
             // (ItemRobeArmor.java:132-133, ItemGoggles.java:40-42), shipped verbatim.
             Map.entry("tc.visdiscount",
-                    "ItemRobeArmor/ItemGoggles appendHoverText (the original's tc.visdiscount)"));
+                    "ItemRobeArmor/ItemGoggles appendHoverText (the original's tc.visdiscount)"),
+            // Eldritch Objects lore (ItemEldritchObject.addInformation, TC4:81-92)
+            // and the lock's boss-room chat lines (TileEldritchLock:136/220/300/340).
+            Map.entry("item.ItemEldritchObject.text.1", "ItemEldritchObject lore, meta 0"),
+            Map.entry("item.ItemEldritchObject.text.2", "ItemEldritchObject lore, meta 1"),
+            Map.entry("item.ItemEldritchObject.text.3", "ItemEldritchObject lore, meta 1 second line"),
+            Map.entry("item.ItemEldritchObject.text.4", "ItemEldritchObject lore, meta 2"),
+            Map.entry("item.ItemEldritchObject.text.5", "ItemEldritchObject lore, meta 3"),
+            Map.entry("item.ItemEldritchObject.text.6", "ItemEldritchObject lore, meta 3 second line"),
+            Map.entry("tc.boss.crimson", "EldritchBossRoomHost announce (original TileEldritchLock:300)"),
+            Map.entry("tc.boss.golem", "EldritchBossRoomHost announce (original TileEldritchLock:220)"),
+            Map.entry("tc.boss.taint", "EldritchBossRoomHost announce (original TileEldritchLock:340)"),
+            Map.entry("tc.boss.warden", "EldritchBossRoomHost announce (original TileEldritchLock:136)"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always
@@ -128,7 +140,8 @@ public final class LocalizationGameTest {
      */
     private static final Set<String> META_DRIVEN_ITEMS = Set.of(
             "itemresource", "itemshard", "itemnugget", "itemlootbag", "itembaubleblanks",
-            "itemamuletvis", "itemamuletrunic", "itemringrunic", "itemgirdlerunic");
+            "itemamuletvis", "itemamuletrunic", "itemringrunic", "itemgirdlerunic",
+            "itemeldritchobject");
 
     private LocalizationGameTest() {
     }
@@ -336,6 +349,34 @@ public final class LocalizationGameTest {
         }
 
         keys.addAll(CODE_AUTHORED_KEYS.keySet());
+
+        // TC-M6-04f-s: the fluid types (NeoForge's static registry) label
+        // themselves through FluidType.Properties.descriptionId, and the
+        // damage types (datapack registry) label their death message as
+        // death.attack.<message_id> — both families are shipped content,
+        // so the audit walks them like the vanilla static registries above.
+        for (final net.neoforged.neoforge.fluids.FluidType fluidType
+                : net.neoforged.neoforge.registries.NeoForgeRegistries.FLUID_TYPES) {
+            final ResourceLocation id = net.neoforged.neoforge.registries.NeoForgeRegistries.FLUID_TYPES.getKey(fluidType);
+            if (eligible(id)) {
+                keys.add(fluidType.getDescriptionId());
+            }
+        }
+        final net.minecraft.core.Registry<net.minecraft.world.damagesource.DamageType> damageTypes =
+                helper.getLevel().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE);
+        for (final ResourceLocation id : damageTypes.keySet()) {
+            if (eligible(id)) {
+                final String msgId = damageTypes.get(id).msgId();
+                // DeathMessageTypes appends ".player" when the attacking
+                // entity is a player and ".item" when a cause item is
+                // present, so all three key shapes are reachable for every
+                // shipped type (the originals ship taint[.player],
+                // dissolve[.player] and swarm[.item] strings).
+                keys.add("death.attack." + msgId);
+                keys.add("death.attack." + msgId + ".player");
+                keys.add("death.attack." + msgId + ".item");
+            }
+        }
         return keys;
     }
 

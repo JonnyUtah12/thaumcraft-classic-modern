@@ -42,13 +42,15 @@ class LocalizationFileTest {
             "entity.thaumcraft.", "itemGroup.thaumcraft.",
             // 1.21.1 enchantments are datapack entries labelled by their own
             // key shape (TC-M6-05-s-e1c: ench_repair, ench_haste).
-            "enchantment.thaumcraft.");
+            "enchantment.thaumcraft.",
+            "death.attack.thaumcraft.", "fluid.thaumcraft.");
 
     /**
      * Keys the shipped code uses with the original 1.7.10 key shape, kept
      * verbatim so the original strings apply unchanged
      * (ItemAmuletVis:206/209, ItemBaubleBlanks:142, ItemResonator:66-72,
-     * ItemHandMirror:142-158, ResearchManager:460).
+     * ItemHandMirror:142-158, ResearchManager:460, ItemEldritchObject:81-92,
+     * TileEldritchLock:136/220/300/340).
      */
     private static final List<String> LEGACY_KEYS = List.of(
             "item.ItemAmuletVis.text", "item.capacity.text",
@@ -57,7 +59,11 @@ class LocalizationFileTest {
             "tc.researcherror",
             // TC-M6-07-s: the robe/goggles tooltip line, the original's own key
             // (ItemRobeArmor.java:132-133, ItemGoggles.java:40-42).
-            "tc.visdiscount");
+            "tc.visdiscount",
+            "item.ItemEldritchObject.text.1", "item.ItemEldritchObject.text.2",
+            "item.ItemEldritchObject.text.3", "item.ItemEldritchObject.text.4",
+            "item.ItemEldritchObject.text.5", "item.ItemEldritchObject.text.6",
+            "tc.boss.crimson", "tc.boss.golem", "tc.boss.taint", "tc.boss.warden");
 
     /** Registry-derived key shape: lower-case id plus an optional meta/tooltip suffix. */
     private static final Pattern KEY_SHAPE =
@@ -74,7 +80,11 @@ class LocalizationFileTest {
             "item.capacity.text", "item.ItemAmuletVis.text",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
             "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror",
-            "tc.visdiscount");
+            "tc.visdiscount",
+            "item.ItemEldritchObject.text.1", "item.ItemEldritchObject.text.2",
+            "item.ItemEldritchObject.text.3", "item.ItemEldritchObject.text.4",
+            "item.ItemEldritchObject.text.5", "item.ItemEldritchObject.text.6",
+            "tc.boss.crimson", "tc.boss.golem", "tc.boss.taint", "tc.boss.warden");
 
     /**
      * The shipped multi-meta items and the original-metadata domain their
@@ -95,6 +105,7 @@ class LocalizationFileTest {
         metas.put("itemamuletrunic", range(0, 1));
         metas.put("itemringrunic", range(0, 3));
         metas.put("itemgirdlerunic", range(0, 1));
+        metas.put("itemeldritchobject", range(0, 4));
         return java.util.Collections.unmodifiableMap(metas);
     }
 
@@ -226,7 +237,8 @@ class LocalizationFileTest {
                 "itemresource", "ItemResource", "itemshard", "ItemShard", "itemnugget", "ItemNugget",
                 "itemlootbag", "ItemLootBag", "itembaubleblanks", "ItemBaubleBlanks",
                 "itemamuletvis", "ItemAmuletVis", "itemamuletrunic", "ItemAmuletRunic",
-                "itemringrunic", "ItemRingRunic", "itemgirdlerunic", "ItemGirdleRunic");
+                "itemringrunic", "ItemRingRunic", "itemgirdlerunic", "ItemGirdleRunic",
+                "itemeldritchobject", "ItemEldritchObject");
 
         int checked = 0;
         final List<String> mismatches = new java.util.ArrayList<>();
