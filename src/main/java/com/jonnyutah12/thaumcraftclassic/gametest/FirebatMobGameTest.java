@@ -32,7 +32,8 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
  * <p>The literals are read from {@code thaumcraft.common.entities.monster.
  * EntityFireBat} (404 lines) and each assert quotes the line; the same figures
  * exist as named constants on {@code FirebatAiLogic}, pinned world-free by
- * {@code FirebatAiLogicTest}.</p>
+ * {@code FirebatAiLogicTest}. The typed flag-bit probe at the bottom of this
+ * class exercises the port's own five-bit surface.</p>
  */
 @GameTestHolder(ThaumcraftClassic.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -147,5 +148,76 @@ public final class FirebatMobGameTest {
         helper.assertTrue(saved.contains("damBonus"),
                 "the firebat does not save the original's \"damBonus\" key (:385)");
         helper.succeed();
+    }
+
+    // ------------------------------------------------------- typed flag probes
+
+    @GameTest(template = "empty", timeoutTicks = 400)
+    public static void firebatFlagBitsMatchTheOriginalByte(final GameTestHelper helper) {
+        final ServerLevel level = helper.getLevel();
+        final com.jonnyutah12.thaumcraftclassic.entities.monster.EntityFireBat bat =
+                new com.jonnyutah12.thaumcraftclassic.entities.monster.EntityFireBat(
+                        com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEntities.FIREBAT.get(),
+                        level);
+        final BlockPos at = helper.absolutePos(new BlockPos(1, 3, 1));
+        bat.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0.0F, 0.0F);
+        level.addFreshEntity(bat);
+
+        // The ctor calls setIsBatHanging(true) (:31): bit 0 set, other four clear.
+        helper.assertTrue(bat.getIsBatHanging(), "the original's ctor hangs the bat (:31)");
+        helper.assertTrue(!bat.getIsSummoned() && !bat.getIsExplosive() && !bat.getIsDevil()
+                        && !bat.getIsVampire(),
+                "a fresh firebat must carry only the hanging bit (:31, :37)");
+
+        // Each setter rewrites its own bit of the one byte and leaves the rest
+        // alone (:79-148).
+        bat.setIsDevil(true);
+        helper.assertTrue(bat.getIsDevil() && bat.getIsBatHanging() && !bat.getIsSummoned(),
+                "setIsDevil must set bit 3 without touching the others (:120-135)");
+        // setIsDevil (:124-135) re-applies the ATTACK attribute only, and for a
+        // non-summoned bat that write is 1.0 — it writes NO health. The devil
+        // health 15.0 is func_110147_ax:75, i.e. the attribute refresh.
+        helper.assertTrue(bat.getAttributeValue(Attributes.ATTACK_DAMAGE) == 1.0,
+                "setIsDevil on a non-summoned bat leaves attack at the :76 figure (1.0), got "
+                        + bat.getAttributeValue(Attributes.ATTACK_DAMAGE));
+        helper.assertTrue(bat.getAttributeBaseValue(Attributes.MAX_HEALTH) == 5.0,
+                "setIsDevil writes no health in the original (:124-135); the base stays at the "
+                        + "non-devil :75 figure until the refresh, got "
+                        + bat.getAttributeBaseValue(Attributes.MAX_HEALTH));
+
+        // func_110147_ax:75 — a devil bat sits at 15.0 health. 1.21.1 applies
+        // attributes once at spawn, so the port re-applies that figure at the top
+        // of customServerAiStep: it lands on the bat's next AI tick, which is what
+        // the deferred block below waits for.
+        helper.runAtTickTime(helper.getTick() + 4L, () -> {
+            helper.assertTrue(bat.getAttributeBaseValue(Attributes.MAX_HEALTH) == 15.0,
+                    "a devil firebat is not at the original 15.0 health but "
+                            + bat.getAttributeBaseValue(Attributes.MAX_HEALTH) + " (:75)");
+
+            bat.setIsSummoned(true);
+            // func_110147_ax:76 / setIsSummoned:104 — (devil ? 3 : 2) + damBonus
+            helper.assertTrue(bat.getAttributeValue(Attributes.ATTACK_DAMAGE) == 3.0,
+                    "a summoned devil firebat is not at attack 3.0 but "
+                            + bat.getAttributeValue(Attributes.ATTACK_DAMAGE) + " (:76, :104, :133)");
+
+            bat.setIsSummoned(false);
+            helper.assertTrue(bat.getAttributeValue(Attributes.ATTACK_DAMAGE) == 1.0,
+                    "clearing the summon bit must restore the original's attack 1.0 (:76)");
+            helper.assertTrue(bat.getIsDevil() && !bat.getIsSummoned(),
+                    "clearing bit 1 must leave bit 3 set");
+
+            // A save/load round trip carries the five bits through "BatFlags".
+            final CompoundTag saved = bat.saveWithoutId(new CompoundTag());
+            final com.jonnyutah12.thaumcraftclassic.entities.monster.EntityFireBat loaded =
+                    new com.jonnyutah12.thaumcraftclassic.entities.monster.EntityFireBat(
+                            com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEntities.FIREBAT.get(),
+                            level);
+            loaded.readAdditionalSaveData(saved);
+            helper.assertTrue(loaded.getIsDevil() && !loaded.getIsSummoned(),
+                    "the flag bits did not survive the BatFlags round trip (:376-386)");
+            bat.discard();
+            loaded.discard();
+            helper.succeed();
+        });
     }
 }

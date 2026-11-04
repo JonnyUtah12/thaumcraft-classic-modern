@@ -180,13 +180,29 @@ class WispAiLogicTest {
 
     @Test
     void eerieBiomePoolIsTheOriginalSwitchInOrder() {
-        // switch (rand.nextInt(6)) case 0..5
-        assertEquals("DARKNESS", WispAiLogic.eerieAspectForRoll(0));
-        assertEquals("UNDEAD", WispAiLogic.eerieAspectForRoll(1));
-        assertEquals("ENTROPY", WispAiLogic.eerieAspectForRoll(2));
-        assertEquals("ELDRITCH", WispAiLogic.eerieAspectForRoll(3));
-        assertEquals("POISON", WispAiLogic.eerieAspectForRoll(4));
-        assertEquals("DEATH", WispAiLogic.eerieAspectForRoll(5));
+        // switch (rand.nextInt(6)) case 0..5 — and the strings are the tags the
+        // original writes, `this.setType(Aspect.DARKNESS.getTag())`
+        // (EntityWisp.java:123-138), not the Java field names: Aspect.java:36
+        // tenebrae, :49 exanimis, :22 perditio, :40 alienis, :30 venenum,
+        // :34 mortuus. 1.7.10's Aspect.getAspect is `aspects.get(tag)`
+        // (Aspect.java:124) — case-sensitive on the tag — so a pool carrying
+        // "DARKNESS" would never resolve and the drop gate at
+        // EntityWisp.java:278 would never fire.
+        assertEquals("tenebrae", WispAiLogic.eerieAspectForRoll(0));   // DARKNESS
+        assertEquals("exanimis", WispAiLogic.eerieAspectForRoll(1));   // UNDEAD
+        assertEquals("perditio", WispAiLogic.eerieAspectForRoll(2));   // ENTROPY
+        assertEquals("alienis", WispAiLogic.eerieAspectForRoll(3));    // ELDRITCH
+        assertEquals("venenum", WispAiLogic.eerieAspectForRoll(4));    // POISON
+        assertEquals("mortuus", WispAiLogic.eerieAspectForRoll(5));    // DEATH
+        // Every pool value is a registered aspect tag, so the original's drop
+        // gate (Aspect.getAspect(getType()) != null) resolves for a wisp the
+        // eerie switch picked.
+        for (final String tag : WispAiLogic.EERIE_ASPECTS) {
+            org.junit.jupiter.api.Assertions.assertTrue(
+                    com.jonnyutah12.thaumcraftclassic.aspect.AspectDefinitions.all().stream()
+                            .anyMatch(definition -> definition.tag().equals(tag)),
+                    tag + " is not a registered aspect tag — the pool must carry getTag() values");
+        }
     }
 
     @Test
@@ -198,7 +214,8 @@ class WispAiLogicTest {
         assertEquals("AER", WispAiLogic.pickAspectTag(false, 0, 9, 0, 1, primal, compound));
         // nextInt(10) == 0 -> the one-in-ten compound pick
         assertEquals("VITREUS", WispAiLogic.pickAspectTag(false, 0, 0, 0, 1, primal, compound));
-        // the eerie branch ignores both rolls and uses the switch
-        assertEquals("ENTROPY", WispAiLogic.pickAspectTag(true, 2, 0, 0, 1, primal, compound));
+        // the eerie branch ignores both rolls and uses the switch — and the value
+        // is the aspect tag (Aspect.java:22 perditio = ENTROPY), not the field name
+        assertEquals("perditio", WispAiLogic.pickAspectTag(true, 2, 0, 0, 1, primal, compound));
     }
 }

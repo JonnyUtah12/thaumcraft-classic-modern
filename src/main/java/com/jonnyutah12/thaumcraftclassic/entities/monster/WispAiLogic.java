@@ -118,11 +118,26 @@ public final class WispAiLogic {
 
     /**
      * The original's eerie-biome switch pool, in source order:
-     * {@code case 0..5} of {@code switch (rand.nextInt(6))} —
-     * DARKNESS, UNDEAD, ENTROPY, ELDRITCH, POISON, DEATH.
+     * {@code case 0..5} of {@code switch (rand.nextInt(6))}. The values are the
+     * strings the original writes — {@code this.setType(Aspect.DARKNESS.getTag())}
+     * ({@code EntityWisp.java:123-138}) — i.e. the aspect <em>tags</em>, read from
+     * {@code thaumcraft.api.aspects.Aspect}: {@code tenebrae} (DARKNESS,
+     * {@code Aspect.java:36}), {@code exanimis} (UNDEAD, :49), {@code perditio}
+     * (ENTROPY, :22), {@code alienis} (ELDRITCH, :40), {@code venenum} (POISON,
+     * :30) and {@code mortuus} (DEATH, :34).
+     *
+     * <p>The tags are the whole point: 1.7.10's {@code Aspect.getAspect(tag)} is
+     * {@code aspects.get(tag)} ({@code Aspect.java:124-126}) — a case-sensitive
+     * map keyed by the tag — and the wisp's essence drop is gated on
+     * {@code Aspect.getAspect(this.getType()) != null} ({@code EntityWisp.java:278},
+     * the seam this repo ships as {@code EntityWisp.dropCustomDeathLoot}). Storing
+     * the Java field names ("DARKNESS") instead of the tags therefore makes the
+     * gate never fire — and, in 1.21.1, an uppercase path is not even a legal
+     * {@code ResourceLocation} path, so the strict lookup throws. The pool carries
+     * the tag domain.</p>
      */
     public static final String[] EERIE_ASPECTS = {
-            "DARKNESS", "UNDEAD", "ENTROPY", "ELDRITCH", "POISON", "DEATH"
+            "tenebrae", "exanimis", "perditio", "alienis", "venenum", "mortuus"
     };
 
     private WispAiLogic() {

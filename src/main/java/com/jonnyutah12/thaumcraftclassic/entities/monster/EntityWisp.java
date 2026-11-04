@@ -1,10 +1,14 @@
 package com.jonnyutah12.thaumcraftclassic.entities.monster;
 
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
+import com.jonnyutah12.thaumcraftclassic.aspect.AspectList;
+import com.jonnyutah12.thaumcraftclassic.aspect.IEssentiaContainerItem;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
 import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.damagesource.DamageSource;
@@ -17,6 +21,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LightLayer;
@@ -54,9 +59,12 @@ import java.util.List;
  *   <li><b>No goal is registered.</b> {@code registerGoals()} is overridden and
  *       left empty on purpose: adding a {@code FloatGoal} or a wander goal would
  *       change the original's motion. This is asserted by the game probe.</li>
- *   <li><b>Deferred to their own rows:</b> the wisp-essence drop
- *       ({@code ItemWispEssence} + {@code AspectList}, a TC-M6-04 item row), the
- *       zapping FX packet (TC-M7-02/05), the biome spawn lists that populate
+ *   <li><b>Shipped by TC-M6-06-s-c1:</b> the wisp-essence drop — the
+ *       original's {@code func_70628_a} body is
+ *       {@link #dropCustomDeathLoot}: one {@code itemWispEssence} stack
+ *       carrying 2 units of the wisp's own aspect ({@code EntityWisp.java:277-284}, the canDropLoot gate at :290-292).</li>
+ *   <li><b>Deferred to their own rows:</b> the zapping FX packet (the FX lane,
+ *       t_6eb0c413), the biome spawn lists that populate
  *       wisps in the world (worldgen/spawn row), and the 1.7.10
  *       {@code isValidLightLevel}'s temporary {@code field_73008_k} write (a
  *       thunder flag that has no 1.21.1 equivalent).</li>
@@ -121,9 +129,14 @@ public class EntityWisp extends FlyingMob implements Enemy {
         getEntityData().set(DATA_TYPE, tag);
     }
 
-    /** Resolves an aspect by name, ignoring case, so the eerie pool is pinned
-     * by the original's <em>set</em> (DARKNESS..DEATH) without depending on the
-     * tag casing of this port's aspect registry. */
+    /** Resolves an aspect by tag, ignoring case: the pool carries the original's
+     * tag values ({@code Aspect.DARKNESS.getTag()} = {@code tenebrae},
+     * {@code EntityWisp.java:123-138} + {@code Aspect.java:36}) and this lenient
+     * resolver also keeps a {@code "Type"} written by the first wisp slice — the
+     * Java field names, e.g. {@code "DARKNESS"} — resolvable, so an existing save
+     * does not silently lose its aspect label. The strict reference lookup
+     * ({@code Aspect.getAspect(tag)}, {@code Aspect.java:124-126}) is what
+     * {@link #resolvedAspect()} and the drop gate use. */
     private static Aspect aspectByName(final String name) {
         for (final Aspect aspect : Aspect.values()) {
             if (aspect.getTag().equalsIgnoreCase(name)) {
@@ -352,6 +365,60 @@ public class EntityWisp extends FlyingMob implements Enemy {
     @Override
     protected SoundEvent getDeathSound() {
         return ModSounds.WISPDEAD.get(); // original func_70673_aS()
+    }
+
+    // ------------------------------------------------------------------ drop
+
+    /** The wisp's essence drop — the seam this class used to defer
+     * ({@code EntityWisp.java:277-284} of the original):
+     *
+     * <pre>
+     * protected void func_70628_a(boolean flag, int i) {
+     *    if (Aspect.getAspect(this.getType()) != null) {
+     *       ItemStack ess = new ItemStack(ConfigItems.itemWispEssence);
+     *       ((ItemWispEssence)ess.func_77973_b()).setAspects(ess,
+     *             new AspectList().add(Aspect.getAspect(this.getType()), 2));
+     *       this.func_70099_a(ess, 0.0F);
+     *    }
+     * }
+     * </pre>
+     *
+     * <p>One stack of Ethereal Essence carrying <b>2 units of the wisp's own
+     * aspect</b> ({@link WispAiLogic#ESSENCE_DROP}), dropped only when the
+     * stored type resolves in the aspect registry, and thrown with velocity
+     * 0. 1.21.1's seam for 1.7.10's {@code func_70628_a} (dropFewItems) is
+     * {@code dropCustomDeathLoot(ServerLevel, DamageSource, boolean)}, the
+     * mapping this repo already uses for mob drops. The original's
+     * {@code func_70692_ba()} (canDropLoot, {@code EntityWisp.java:290-292})
+     * returns true — i.e. the drop is not looting-gated — and that hook is
+     * deliberately not wired to 1.21.1's {@code shouldDropLoot()}, which gates
+     * the whole death-loot block (see the mob-hook resolutions in the port's
+     * notes).</p>
+     */
+    @Override
+    protected void dropCustomDeathLoot(final ServerLevel level, final DamageSource source,
+            final boolean recentlyHit) {
+        super.dropCustomDeathLoot(level, source, recentlyHit);
+        final ItemStack essence = createEssenceDrop();
+        if (!essence.isEmpty()) {
+            this.spawnAtLocation(essence, 0.0F);
+        }
+    }
+
+    /** The drop this wisp's current state produces: one wisp essence holding
+     * 2 units of its resolved aspect, or {@link ItemStack#EMPTY} when the
+     * stored type is not a registered aspect (the original's {@code if}).
+     * Exposed for the probes. */
+    public ItemStack createEssenceDrop() {
+        final Aspect aspect = Aspect.getAspect(getWispType());
+        if (aspect == null) {
+            return ItemStack.EMPTY;
+        }
+        final ItemStack essence = new ItemStack(CatalogResources.ITEM_WISP_ESSENCE.get());
+        if (essence.getItem() instanceof IEssentiaContainerItem container) {
+            container.setAspects(essence, new AspectList().add(aspect, WispAiLogic.ESSENCE_DROP));
+        }
+        return essence;
     }
 
     // ------------------------------------------------------------------ data

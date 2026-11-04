@@ -143,6 +143,7 @@
   "container.thaumcraft.magicbox": "Magic Box",
   "container.thaumcraft.spa": "Arcane Spa",
   "entity.thaumcraft.wisp": "Wisp",
+  "entity.thaumcraft.firebat": "Firebat",
   "entity.thaumcraft.specialitemgrate": "Magic Item",
   "item.ItemAmuletVis.text": "Slowly recharges held wands",
   "item.capacity.text": "Capacity",

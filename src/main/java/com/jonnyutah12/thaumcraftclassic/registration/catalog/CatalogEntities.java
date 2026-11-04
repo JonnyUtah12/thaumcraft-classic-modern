@@ -1,6 +1,7 @@
 package com.jonnyutah12.thaumcraftclassic.registration.catalog;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityFireBat;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityWisp;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
@@ -45,6 +46,17 @@ public final class CatalogEntities {
                     .clientTrackingRange(8)
                     .build("wisp"));
 
+    /** {@code thaumcraft:firebat} — original {@code EntityFireBat}
+     * (content-mapping {@code Thaumcraft:Firebat}, mod_index 22): the
+     * 0.5 x 0.9 hitbox and the fire immunity ({@code field_70178_ae = true},
+     * {@code EntityFireBat.java:32}) come from the original; health 5.0 and
+     * attack 1.0 are its {@code func_110147_ax} figures (:75-76), with the
+     * devil 15.0 / summoned {@code (devil ? 3 : 2) + damBonus} applied at
+     * runtime by the entity. */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityFireBat>> FIREBAT =
+            ENTITY_TYPES.register("firebat",
+                    () -> EntityFireBat.buildType(MobCategory.MONSTER));
+
     private CatalogEntities() {
     }
 
@@ -55,5 +67,6 @@ public final class CatalogEntities {
 
     private static void onAttributeCreation(final EntityAttributeCreationEvent event) {
         event.put(WISP.get(), EntityWisp.createAttributes().build());
+        event.put(FIREBAT.get(), EntityFireBat.createAttributes().build());
     }
 }

@@ -17,6 +17,17 @@ Work heading for `0.1.0-alpha.5`, gated per merge on `main`.
   screens exist in the wip tree is measured false (0 screen classes in `src`, 0 in
   `wip-salvage`), so the rest are authoring work, not porting.
 
+- **Firebat mob + the wisp's essence drop** (`TC-M6-06-s-c1`): `thaumcraft:firebat` lands as a hand-flown 1.21.1
+  `Mob` - 0.5x0.9 hitbox and fire immunity, 5.0/1.0 attributes with the devil 15.0 and the summoned
+  `(devil ? 3 : 2) + damBonus`, the five bat flags as bits of one byte under the original `BatFlags`/`damBonus`
+  save keys, an empty goal selector with the original's own target provider and melee body driven from
+  `customServerAiStep`, the fire/magic damage refusal, and the hanging/flight/explosion/vampire/spawn-light
+  bodies. `EntityWisp.dropCustomDeathLoot` ships the original's `func_70628_a`: one wisp-essence stack carrying
+  2 units of the wisp's own aspect, gated on the stored type resolving - and the wisp's eerie-biome pool is
+  repaired to the original's `Aspect.<X>.getTag()` values, which is what makes that gate fire. Gate: 416 unit
+  tests / 0 failures / 1 skipped, 127/127 game tests with and without Curios. `BD-17` records the firebat's
+  unmeasurable vanilla drop roll and the deliberately unwired 1.7.10 `isNoAi` hook.
+
 ## [0.1.0-alpha.4] - 2026-10-28
 
 Fourth pre-release. Still deliberately a pre-release, not playable end-to-end:
