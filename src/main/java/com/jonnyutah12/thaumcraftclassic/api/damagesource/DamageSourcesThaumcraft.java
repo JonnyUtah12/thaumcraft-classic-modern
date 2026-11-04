@@ -20,9 +20,16 @@ import net.minecraft.world.level.Level;
  * static helpers {@code causeTentacleDamage} / {@code causeSwarmDamage} that
  * attach a mob as the killer. In 1.21.1 a damage type is datapack content
  * ({@code data/<ns>/damage_type/<id>.json}); 21.1.259's {@code DamageEffects}
- * has no magic profile (removed in 1.21), so the armour-ignoring bypass of
- * taint/dissolve is applied at the emitter (the Liquid Death contact damage
- * and the taint emitters) while the shipped types keep the hurt profile. The
+ * has no armour-bypass and no magic profile (1.21 deleted the 1.20.x
+ * {@code BYPASSES_ARMOR} profiles), so both flags live on damage-type
+ * <em>tags</em>: {@code thaumcraft:taint} and {@code thaumcraft:dissolve} are
+ * named in {@code data/minecraft/tags/damage_type/bypasses_armor.json}
+ * (the {@code setDamageBypassesArmor()} half, which is what
+ * {@code LivingEntity.getDamageAfterArmorAbsorb} reads) and
+ * {@code thaumcraft:taint} in
+ * {@code data/neoforge/tags/damage_type/is_magic.json} (the
+ * {@code setMagicDamage()} half). The shipped types keep the hurt profile and
+ * nothing applies a bypass at an emitter. The
  * {@code message_id} is {@code thaumcraft.<name>}: 1.21.1 builds the death
  * message key as {@code death.attack.<message_id>}, which lands on the
  * original's {@code death.attack.taint[.player]}-style strings under the mod
