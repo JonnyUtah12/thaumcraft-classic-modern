@@ -140,10 +140,16 @@ public class BlockArcaneFurnace extends Block implements EntityBlock, DeviceDyna
                 .noOcclusion()
                 .strength(10.0F, 500.0F)
                 // getLightValue (BlockArcaneFurnace.java:179-182): 13 for the
-                // base plate and the nozzle; every shell meta answers super,
-                // i.e. 0. The nether-brick corners and obsidian edges of the
-                // shell are dark — the glow is the lava plate and the nozzle.
-                .lightLevel(state -> isGlowing(state) ? 13 : 0));
+                // base plate and the nozzle (metadata 0 and 10), super — 0 —
+                // for every shell meta. 1.21.1 answers light per STATE here:
+                // BlockBehaviour$BlockStateBase.<init> calls
+                // properties.lightLevel.applyAsInt(state) as each state is
+                // built, so the answer comes off the variant, exactly where
+                // the original's metadata switch read it. It must not read the
+                // registry: the plate's state is built inside this constructor,
+                // while the block's registry name is still unbound (the
+                // DeferredHolder throws), and the shell is dark.
+                .lightLevel(state -> state.getValue(VARIANT) <= VARIANT_NOZZLE ? 13 : 0));
         // stateDefinition.any() takes the FIRST value of every property, and
         // for an IntegerProperty that is its minimum — STACK_STANDALONE and
         // ATTACHED_DOWN, i.e. a fresh furnace would default to a lit face

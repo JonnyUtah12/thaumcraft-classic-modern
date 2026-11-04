@@ -288,17 +288,27 @@ def shell_model(meta: int, stack: int, attached: int) -> dict:
     branch for the shell metas), with every face's sprite answered by
     ``calculateTexture`` (:57-156) for this metadata, this run level and this
     ``attached`` side — the side whose face gets the ``add = 3`` answer
-    (``:61-63``, ``BlockUtils.java:342-379``)."""
+    (``:61-63``, ``BlockUtils.java:342-379``).
+
+    The sprites are published in the model's ``textures`` map under one alias
+    per face (the plate and nozzle models slice 1 shipped use the same alias
+    style), so the appearance probes read which sprites a state names off the
+    map rather than off face strings."""
+    textures = {}
     faces = {}
     for index, face in enumerate(SHELL_SIDES):
         add = 3 if index == attached else 0
         icon = shell_icon(meta, stack, add, index)
+        textures[face] = f"thaumcraft:block/furnace{icon}"
         faces[face] = {
             "uv": [0, 0, 16, 16],
-            "texture": f"thaumcraft:block/furnace{icon}",
+            "texture": f"#{face}",
             "cullface": face,
         }
-    return {"elements": [{"from": [0.0, 0.0, 0.0], "to": [16.0, 16.0, 16.0], "faces": faces}]}
+    return {
+        "textures": textures,
+        "elements": [{"from": [0.0, 0.0, 0.0], "to": [16.0, 16.0, 16.0], "faces": faces}],
+    }
 
 
 def write(path: Path, document: dict) -> None:

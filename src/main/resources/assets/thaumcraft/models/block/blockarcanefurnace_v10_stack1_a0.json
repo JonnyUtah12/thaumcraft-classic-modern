@@ -1,4 +1,12 @@
 {
+  "textures": {
+    "down": "thaumcraft:block/furnace6",
+    "up": "thaumcraft:block/furnace20",
+    "north": "thaumcraft:block/furnace7",
+    "south": "thaumcraft:block/furnace20",
+    "west": "thaumcraft:block/furnace7",
+    "east": "thaumcraft:block/furnace18"
+  },
   "elements": [
     {
       "from": [
@@ -19,7 +27,7 @@
             16,
             16
           ],
-          "texture": "thaumcraft:block/furnace6",
+          "texture": "#down",
           "cullface": "down"
         },
         "up": {
@@ -29,7 +37,7 @@
             16,
             16
           ],
-          "texture": "thaumcraft:block/furnace20",
+          "texture": "#up",
           "cullface": "up"
         },
         "north": {
@@ -39,7 +47,7 @@
             16,
             16
           ],
-          "texture": "thaumcraft:block/furnace7",
+          "texture": "#north",
           "cullface": "north"
         },
         "south": {
@@ -49,7 +57,7 @@
             16,
             16
           ],
-          "texture": "thaumcraft:block/furnace20",
+          "texture": "#south",
           "cullface": "south"
         },
         "west": {
@@ -59,7 +67,7 @@
             16,
             16
           ],
-          "texture": "thaumcraft:block/furnace7",
+          "texture": "#west",
           "cullface": "west"
         },
         "east": {
@@ -69,7 +77,7 @@
             16,
             16
           ],
-          "texture": "thaumcraft:block/furnace18",
+          "texture": "#east",
           "cullface": "east"
         }
       }
