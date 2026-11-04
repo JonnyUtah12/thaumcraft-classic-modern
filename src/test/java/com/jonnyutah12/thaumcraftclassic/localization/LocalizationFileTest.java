@@ -39,7 +39,10 @@ class LocalizationFileTest {
     /** 1.21.1 key conventions for the content this mod ships. */
     private static final List<String> CURRENT_PREFIXES = List.of(
             "item.thaumcraft.", "block.thaumcraft.", "container.thaumcraft.",
-            "entity.thaumcraft.", "itemGroup.thaumcraft.");
+            "entity.thaumcraft.", "itemGroup.thaumcraft.",
+            // 1.21.1 enchantments are datapack entries labelled by their own
+            // key shape (TC-M6-05-s-e1c: ench_repair, ench_haste).
+            "enchantment.thaumcraft.");
 
     /**
      * Keys the shipped code uses with the original 1.7.10 key shape, kept
@@ -51,7 +54,10 @@ class LocalizationFileTest {
             "item.ItemAmuletVis.text", "item.capacity.text",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
             "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror",
-            "tc.researcherror");
+            "tc.researcherror",
+            // TC-M6-07-s: the robe/goggles tooltip line, the original's own key
+            // (ItemRobeArmor.java:132-133, ItemGoggles.java:40-42).
+            "tc.visdiscount");
 
     /** Registry-derived key shape: lower-case id plus an optional meta/tooltip suffix. */
     private static final Pattern KEY_SHAPE =
@@ -67,7 +73,8 @@ class LocalizationFileTest {
             "item.thaumcraft.itemgolemupgrade.4", "item.thaumcraft.itemgolemupgrade.5",
             "item.capacity.text", "item.ItemAmuletVis.text",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
-            "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror");
+            "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror",
+            "tc.visdiscount");
 
     /**
      * The shipped multi-meta items and the original-metadata domain their

@@ -49,6 +49,63 @@ the suite to green (exit 0).
   before the models landed, exit 0 (“All 130 required tests passed”) after;
   `-Ptc.noCurios` 130/130; `./gradlew build` exit 0 (379 unit / 0 failures / 1 skipped).
 
+**Taint — the Ethereal Bloom's cleansing disc (TC-M5-04-s-b2).** The disc
+acceptance probe shipped on `wt/taint-b1` reported that 4 of the 16 biome
+palette cells under the bloom never cleansed (`MISSING=[2_0, 2_1, 2_2, 2_3]`).
+That was the probe's own fixture, not the mod. `RandomSource.create(long)` is
+`java.util.Random`, whose LCG amplifies a seed difference of one by only
+`0x5DEECE66D` ≈ 2.3e10 inside a 2^48 state, so its **first** `nextInt(8)` moves
+about once every 1400 consecutive seeds. Over the seeds 1..2500 that first draw
+took four values (4, 5, 6, 7); the bloom draws x's pair first, so the roll
+stream spanned x offsets −3..+7 and **never** −5..−7. 69 of the 225 offsets of
+the scan box were never drawn, and the cells that received zero rolls were
+exactly the four reported ones. The biome write path was cleared by
+measurement: 41/41 single-column writes answer for their own column's 4-block
+footprint, the paint taints 625/625 columns, and every disc cell that received
+a roll fired exactly once.
+
+- `rollSeed` spreads seeds by the golden-ratio constant, and the disc probe now
+  also sweeps **every offset of the scan box exactly once** with a scripted
+  `RandomSource` on a fresh paint: "the disc is cleansed" no longer depends on
+  which offsets a seed sequence happens to draw. The scripted queue is supplied
+  x-pair-then-z-pair, which pins the original's draw order.
+- `cellKeyOf` now returns the palette cell's full identity (chunk coord +
+  index). The index `(coord >> 2) & 3` repeats every chunk and the probe paints
+  ±12 columns = two chunks, so an index-only key merged two different cells and
+  made the "missing cell" reading ambiguous.
+- "Never cleanses beyond the disc" is stated at cell granularity, the
+  definition the code already used (`dx > 3 || dz > 3`): a 4×4 cell spans
+  columns at |offset| ≥ 8 as its own BD-15 footprint, so a column filter at
+  |offset| ≥ 8 would flag a correct cleanse.
+- New mutation guard `TaintCleansingRollCoverageTest` (unit, ~50 ms, no world):
+  the roll stream must span ±7 on both axes, every disc cell of every bloom
+  alignment must receive rolls, and the x band −7..−5 must be drawn. Revert the
+  seed spread → 3 of 4 red (`expected: <-7> but was: <-3>`); a fourth test
+  pins the `java.util.Random` degeneracy itself.
+- Gates on this branch: unit **386 / 0 failures / 1 pre-existing skip**;
+  required game tests **All 115 passed** (111 inherited from the taint slice +
+  3 cleansing probes + 1 write-location probe). No new behavioral deviation:
+  the 4×4-block biome footprint is already BD-15, and the original's
+  byte-per-column write shares no palette cell.
+
+Work heading for `0.1.0-alpha.5`, gated per merge on `main`.
+
+- **Enchantments `Repair` and `Haste` are registered** (`TC-M6-05-s-e1c`): the two shipped infusion
+  rows `recipe.201.infusion_enchantment.json` / `recipe.202.infusion_enchantment.json` named
+  `thaumcraft:ench_repair` and `thaumcraft:ench_haste` with nothing behind those ids, so both rows
+  loaded and resolved no enchantment holder — they could never match a pedestal. 1.21.1 keeps
+  enchantments in the **datapack** registry `minecraft:enchantment`, so registration is two JSON
+  payloads under `data/thaumcraft/enchantment/` plus their `enchantment.thaumcraft.*` labels (the
+  original 4.2.3.5 wording: Repair, Haste) and a `ResourceKey` pair on `ModEnchantments` (an id
+  holder, deliberately not a `DeferredRegister` — that registry is not in `BuiltInRegistries`, so a
+  deferred register for it silently never populates). Gates: `EnchantmentRegistrationGameTest`
+  asserts both ids in the live registry, both labels shipped, and both recipe rows resolving a holder;
+  `EnchantmentIdsTest` pins the payload path/id, the codec shape, and that no infusion row names a
+  thaumcraft enchantment outside the pair. `InfusionAltarGameTest` had pinned the old behaviour as an
+  invariant (the 2 rows load and resolve **no** holder); that assertion is flipped to resolvable. **Registration only**: neither payload carries an
+  `enchantment_effects` component, so Repair does not mend and Haste does not speed anything up —
+  the effect bodies are the next slice (`TC-M6-05-s-e2`).
+
 - **First authored container screen** (`TC-M7-04-s-cr1`): `TrunkScreen` extends 1.21.1
   `AbstractContainerScreen`; `ModClientScreens` registers it on the mod bus through
   `RegisterMenuScreensEvent`, client-only, bound to the trunk menu type. Gate: 372 unit
@@ -115,6 +172,17 @@ sounds or models. Stated for accuracy: **232 of the 242 shipped display strings
 are verbatim from the original All-Rights-Reserved `en_US.lang`**, which is
 committed, so the artifact is free of original *binary* assets but not of
 original *display strings*. See **D-016**, still open.
+
+- **Build tooling: the CI asset fixture broke the particle slicer.** The fixture wrote
+  every placeholder PNG as 1x1, and `sliceOriginalParticleSprites` crops a 16x16 grid of
+  16 px cells out of `textures/misc/particles.png`, so every crop fell outside the raster
+  ("(x + width) is outside of Raster", CI run 40938034742). The fixture now generates a
+  real 256x256 solid sheet for that one file, the generator is a task input so a stale
+  fixture cannot survive, and cells outside the raster degrade to a solid stand-in sprite
+  with a logged summary instead of failing the build. Gate: fixture overlay-check
+  BUILD SUCCESSFUL (242 `textures/block`, 236 `textures/item`, 904 mapped targets, 0
+  missing); merged tree 411 unit tests / 0 failures, 134/134 game tests with and without
+  Curios.
 
 ## [0.1.0-alpha.4] - 2026-10-28
 

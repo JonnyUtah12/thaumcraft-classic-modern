@@ -9,6 +9,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
 import com.jonnyutah12.thaumcraftclassic.registration.ModRegistration;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
@@ -21,6 +22,7 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.BlockItemStateProperties;
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.entity.EntityType;
@@ -111,7 +113,11 @@ public final class LocalizationGameTest {
             Map.entry("tc.handmirrorlinkedto", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorlinked", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorerror", "ItemHandMirror link message"),
-            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"));
+            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"),
+            // TC-M6-07-s: the robe/goggles tooltip line, the original's own key
+            // (ItemRobeArmor.java:132-133, ItemGoggles.java:40-42), shipped verbatim.
+            Map.entry("tc.visdiscount",
+                    "ItemRobeArmor/ItemGoggles appendHoverText (the original's tc.visdiscount)"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always
@@ -132,7 +138,7 @@ public final class LocalizationGameTest {
     @GameTest(template = "empty")
     public static void everyRegisteredNameHasAnEntry(final GameTestHelper helper) {
         final JsonObject lang = loadLang(helper);
-        final Set<String> required = requiredKeys();
+        final Set<String> required = requiredKeys(helper);
         final Set<String> missing = new TreeSet<>();
         for (final String key : required) {
             if (!lang.has(key)) {
@@ -235,7 +241,7 @@ public final class LocalizationGameTest {
     @GameTest(template = "empty")
     public static void noDeadLangEntries(final GameTestHelper helper) {
         final JsonObject lang = loadLang(helper);
-        final Set<String> required = requiredKeys();
+        final Set<String> required = requiredKeys(helper);
         final Set<String> dead = new TreeSet<>();
         for (final String key : lang.keySet()) {
             if (required.contains(key) || CODE_AUTHORED_KEYS.containsKey(key)) {
@@ -265,7 +271,7 @@ public final class LocalizationGameTest {
     // ------------------------------------------------------------------ helpers
 
     /** Every translation key the live registries make reachable, plus the keys the code passes to translatable(). */
-    private static Set<String> requiredKeys() {
+    private static Set<String> requiredKeys(final GameTestHelper helper) {
         final Set<String> keys = new LinkedHashSet<>();
 
         for (final Block block : BuiltInRegistries.BLOCK) {
@@ -313,6 +319,19 @@ public final class LocalizationGameTest {
             final ResourceLocation id = BuiltInRegistries.CREATIVE_MODE_TAB.getKey(tab);
             if (eligible(id)) {
                 keys.add("itemGroup.thaumcraft." + id.getPath());
+            }
+        }
+
+        // 1.21.1 enchantments are datapack entries, so their live set only
+        // exists on this server: each one is labelled by enchantment.<ns>.<path>
+        // (the payload's `description` translate key), read from the level's
+        // dynamic registry provider — the same accessor
+        // RegistrationGameTest.DATAPACK_KINDS resolves kind=enchantment rows.
+        final Registry<Enchantment> enchantments =
+                helper.getLevel().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
+        for (final ResourceLocation id : enchantments.keySet()) {
+            if (eligible(id)) {
+                keys.add("enchantment." + id.getNamespace() + "." + id.getPath());
             }
         }
 

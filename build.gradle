@@ -328,17 +328,39 @@ def sliceOriginalParticleSprites = tasks.register("sliceOriginalParticleSprites"
                     "carry a sheet of that size — a 1x1 placeholder is not a valid fixture here.")
         }
         def written = 0
+        def stubbed = 0
         originalParticleCells.each { name, cells ->
             cells.eachWithIndex { cell, frame ->
                 def x = (cell % particleCellPx) * particleCellPx
                 def y = ((int) (cell / particleCellPx)) * particleCellPx
-                def sprite = image.getSubimage(x, y, particleCellPx, particleCellPx)
+                // The sheet contract is 256x256 with a 16 px cell grid. A
+                // placeholder sheet that is smaller must not kill the build: cells
+                // outside the raster become a solid stand-in sprite, and the task
+                // reports how many, so the gate stays about the path contract.
+                def sprite
+                if (x + particleCellPx <= image.getWidth()
+                        && y + particleCellPx <= image.getHeight()) {
+                    sprite = image.getSubimage(x, y, particleCellPx, particleCellPx)
+                } else {
+                    sprite = new java.awt.image.BufferedImage(particleCellPx, particleCellPx,
+                            java.awt.image.BufferedImage.TYPE_INT_ARGB)
+                    for (int px = 0; px < particleCellPx; px++) {
+                        for (int py = 0; py < particleCellPx; py++) {
+                            sprite.setRGB(px, py, (int) 0x808080FF)
+                        }
+                    }
+                    stubbed++
+                }
                 def file = new File(spriteDir, "${name}_${frame}.png")
                 if (!javax.imageio.ImageIO.write(sprite, 'png', file)) {
                     throw new GradleException("no PNG writer for ${file}")
                 }
                 written++
             }
+        }
+        if (stubbed > 0) {
+            logger.lifecycle("particle sprites: ${written - stubbed} sliced from the sheet, " +
+                    "${stubbed} stand-in cells (sheet is ${image.getWidth()}x${image.getHeight()})")
         }
         originalBeamTiles.each { name, source ->
             def tileFile = new File("${originalAssetsDir}/thaumcraft/textures/misc", source)
