@@ -5,9 +5,21 @@ Format: Keep a Changelog; versioning: Semantic Versioning (see
 `docs/release-process.md`). Project versions are independent of the pinned
 Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
-## [Unreleased]
+## [0.1.0-alpha.5] - 2026-11-03
 
-Work heading for `0.1.0-alpha.5`, gated per merge on `main`.
+Fifth pre-release — 28 commits past alpha.4. Still a pre-release, not playable
+end-to-end; see Known limitations. Per-system status: `docs/FEATURE_MATRIX.md`;
+deviations: `docs/BEHAVIORAL_DEVIATIONS.md`.
+
+**Headline: the missing-texture defect is fixed.** The alpha.4 notes recorded
+that every block and item rendered the magenta/black missing-texture pattern
+*even in an asset-included build*, because the overlay copied the original
+1.7.10 plural `textures/blocks/` layout while 1.21.1 resolves the singular
+`textures/block/`. That path remap (TC-M7-01-s-a) landed and this is the first
+release to carry it. Verified by mutation rather than by a green suite:
+commenting the rename map out (`'blocks': 'block'` in `build.gradle`) makes
+`OriginalTextureOverlayTest` FAIL (exit 1); restoring it byte-identically returns
+the suite to green (exit 0).
 
 **SPINE-3 Item model coverage closes the “items are not visible/searchable” repro: 51
   port-authored `models/item/<id>.json` (52 total) so every registered item renders a
@@ -55,6 +67,54 @@ Work heading for `0.1.0-alpha.5`, gated per merge on `main`.
   CI run 41452841483 (jobs build / game-test-no-curios / runServer) on the code tip
   `79eb001`; locally 379 unit tests / 0 failures / 1 skipped and 116/116 game tests with
   and without Curios.
+
+### Added
+- **Ore drops** (SPINE-1): `blockcustomore` shipped with NO loot table, so all
+  eight variants dropped nothing, silently. `data/thaumcraft/loot_table/blocks/
+  blockcustomore.json` now ports `BlockCustomOre.getDrops` 1:1 — variant 0
+  (Cinnabar Ore) drops the ore itself (furnace-smelted to quicksilver later);
+  variants 1-6 (infused stone) drop `thaumcraft:itemshard` with
+  `thaumcraft:item_meta` = variant-1, count `1 + rand(2+fortune)` as ONE STACK
+  PER UNIT; variant 7 (Amber Bearing Stone) drops `thaumcraft:itemresource` with
+  `item_meta` 6, count `1 + rand(fortune+1)` via `apply_bonus` /
+  `uniform_bonus_count`. Silk touch returns the block with its variant preserved,
+  matching 1.7.10's vanilla `harvestBlock` path. The
+  `thaumcraft:fortuned_uniform` number provider is registered in
+  `ModLootNumberProviders`.
+- **Creative tab** (SPINE-2): `ModCreativeTabs` declared a tab registry but
+  registered no tab, so nothing was searchable in creative mode. One tab now
+  enumerates the live `thaumcraft`-namespace item registry rather than a
+  hardcoded list, filters the test-fixture ids, and titles itself with the
+  1.21.1 `itemGroup.<namespace>.<id>` convention.
+
+### Verification at this tag
+- `./gradlew clean build` exit 0. **379 unit tests, 0 failures, 1 skipped**
+  (measured 2026-11-03); **130 required game tests** passed, up from 116 at
+  alpha.4. The alpha.4 figure of 368 units was measured on a different tree and
+  is superseded.
+- **Mutation-proved gates, not just green runs:** hiding
+  `blockcustomore.json` makes **5** required tests fail (`runGameTestServer`
+  exit 1), and restoring it byte-identically returns green (exit 0).
+- Independent `validate-resource-pack.sh --strict` over an asset-included jar:
+  all 52 item models are valid JSON and every texture reference resolves. Its one
+  ERROR is inherited from the source — `textures/models/ripple.png.mcmeta` has no
+  `ripple.png`, and the original tree is identical — and its one WARNING is a
+  vanilla texture (`minecraft:item/compass_00`, present in
+  `minecraft_1.21.1_client.jar`) that a mod-scoped validator cannot see.
+
+### Known limitations
+Not implemented: wands and foci casting, most GUI screens, the Thaumonomicon UI,
+essentia transport, taint, enchantment registration, armor, entities, the
+infusion matrix's rune rendering, and the traveling trunk (seam only). **Golems
+are implemented on branches and are NOT in this build** — they need the shared
+entity/AI base (`entities/ai` goals plus a mob-inventory base), neither of which
+exists yet.
+
+**Artifact policy:** the attached jar is **code-only** — no original textures,
+sounds or models. Stated for accuracy: **232 of the 242 shipped display strings
+are verbatim from the original All-Rights-Reserved `en_US.lang`**, which is
+committed, so the artifact is free of original *binary* assets but not of
+original *display strings*. See **D-016**, still open.
 
 ## [0.1.0-alpha.4] - 2026-10-28
 
