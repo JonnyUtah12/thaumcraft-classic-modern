@@ -75,6 +75,27 @@ mapped targets, 0 missing) and code-only mode, fixture overlay-check rc=0 with
 `41881766519` success. Not released; every number below is from a gate run on the
 merged tree.
 
+Also entering the next build: the **eldritch realm** (TC-M6-04f-s-i, `wt/eld-int` @
+`ca933c3`, merged at `6beb7f0`) — its block and item catalog, the realm's pads, 15
+content rows flipped, item-model coverage **63 → 68**, and **BD-20** recorded for the
+damage-type armour bypass that is not implemented at all. Gates on that merge tree:
+unit **424 / 0 failures / 2 skipped**, `runGameTestServer` **All 157 required tests
+passed** in both the Curios and `-Ptc.noCurios` modes, asset path contract green
+(908 mapped targets, 0 missing).
+
+**Ore drop probes assert on the stacks they own (`c81ca8a`).** The drop scans counted
+every item entity in a 2-block box around the broken cell, so once the eldritch pads
+changed how the harness packs probe batches, a neighbouring pad's grass seed answered
+the cinnabar contract — `got 2 stacks [1 minecraft:wheat_seeds,
+1 thaumcraft:blockcustomore]` — in the Curios run, while the same tree passed
+`-Ptc.noCurios`. The fixture changed, not the mod. All six scan sites now assert on the
+**owned** subset and name the foreign stacks in the failure message. Both axes are
+proved by mutating `BlockCustomOre#getDrops`: the ore returning itself twice turns
+`cinnabardropsitselfexactlyone` and `silktouchdropstheblockwithitsvariant` red, and the
+ore returning one extra shard stack turns `fortunescalestheoriginalcurves` (6 stacks
+against a 1..5 bound) and `infusedstonedropsitsprimalshards` (3 against 1..2) red. The
+mutated file was restored byte-identically each time, sha256 against HEAD.
+
 **Taint — the Ethereal Bloom's cleansing disc (TC-M5-04-s-b2).** The disc
 acceptance probe shipped on `wt/taint-b1` reported that 4 of the 16 biome
 palette cells under the bloom never cleansed (`MISSING=[2_0, 2_1, 2_2, 2_3]`).
