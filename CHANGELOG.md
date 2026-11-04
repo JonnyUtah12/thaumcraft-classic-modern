@@ -62,9 +62,18 @@ the suite to green (exit 0).
 
 ## [Unreleased]
 
-Landed on the integration branch after the `v0.1.0-alpha.5` tag: the armour
-slice, the taint root-cause, enchantment registration, and two build fixes. Not
-released; every number below is from a gate run on the merged tree.
+Landed on `main` after the `v0.1.0-alpha.5` tag **and inside the replaced
+artifact** (built from `7c4ebaf`): the armour slice, the taint root-cause,
+enchantment registration, item models for all 63 registered items, and two build
+fixes. Landed on `main` **after** that artifact, so it enters the next build: the
+wisp FX family (TC-M7-02-c-s-f1c, `wt/fx-f1` @ `74d562e`, merged at `663386f`),
+gated on that merge tree — unit **417 / 0 failures / 2 skipped**,
+`runGameTestServer` **All 151 required tests passed**, `-Ptc.noCurios` **All 151**,
+asset path contract green in overlay mode (248 block + 247 item textures, 908
+mapped targets, 0 missing) and code-only mode, fixture overlay-check rc=0 with
+**50 particle sprites** sliced (13 wisp sprites added to the 37), CI
+`41881766519` success. Not released; every number below is from a gate run on the
+merged tree.
 
 **Taint — the Ethereal Bloom's cleansing disc (TC-M5-04-s-b2).** The disc
 acceptance probe shipped on `wt/taint-b1` reported that 4 of the 16 biome
