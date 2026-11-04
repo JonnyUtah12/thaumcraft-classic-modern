@@ -7,6 +7,17 @@ Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
 ## [0.1.0-alpha.5] - 2026-11-03
 
+
+The artifact on this release was **replaced on 2026-11-04**: it is built from `7c4ebaf`, not
+`5ee1dae`, and the tag moved with it. On top of the alpha.5 spine the shipped jar now carries
+the armour slice, the taint root-cause, enchantment registration (`Repair`, `Haste`), item
+models for all 63 registered items, the CI particle-sheet fixture fix, and a probe-premise fix
+(the pre-taint record is keyed by 4x4 biome cell, so a probe leg must clear it). Gate numbers
+on that tree: unit 417 / 0 failures / 2 skipped; `runGameTestServer` All 149 required tests
+passed; `-Ptc.noCurios` All 149; asset path contract green in code-only + real overlay +
+fixture overlay modes (908 mapped targets, 0 missing). The published jar is code-only: 973
+entries, 0 texture entries.
+
 Fifth pre-release — 28 commits past alpha.4. Still a pre-release, not playable
 end-to-end; see Known limitations. Per-system status: `docs/FEATURE_MATRIX.md`;
 deviations: `docs/BEHAVIORAL_DEVIATIONS.md`.
