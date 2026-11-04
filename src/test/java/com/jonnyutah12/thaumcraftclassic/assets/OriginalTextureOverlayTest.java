@@ -137,8 +137,13 @@ class OriginalTextureOverlayTest {
 
         assertEquals(940, textureRows,
                 "the reference tree ships 940 texture files (docs/original-asset-inventory.md)");
-        assertEquals(36, unusedRows,
-                "42 assets are unused overall (docs/original-asset-inventory.md); 36 of them are textures");
+        // SPINE-3 (t_15e43d12) moved four rows out of UNUSED: the port's
+        // ItemNuggetEdible ids (itemnuggetbeef/chicken/pork/fish) now have item
+        // models, and the original registers exactly those icon names
+        // (reference config/ConfigItems.java:399-405), so 4 textures that the
+        // 1.7.10 code never referenced are referenced by the port.
+        assertEquals(32, unusedRows,
+                "38 assets are unused overall (docs/original-asset-inventory.md); 32 of them are textures");
         assertEquals(FILES_PER_LEGACY_DIR.keySet(), rowsPerLegacyDir.keySet(),
                 "CSV texture directories (measured: " + rowsPerLegacyDir + ")");
         for (Map.Entry<String, Integer> expected : FILES_PER_LEGACY_DIR.entrySet()) {

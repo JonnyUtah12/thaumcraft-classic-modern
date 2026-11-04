@@ -11,6 +11,7 @@ Investigated 2026-10-17 (this project) and 2026-10-16 (sibling project
 | `thaumcraft-api` repo, branch `1.7.10` (commit `ced30ed35097d53cdb2a843d705477e52896e54b`) | **MIT, Copyright (c) 2013 Azanor** | `LICENSE` file in the repo (verified) | API interface shapes/constants may be adapted with attribution. NOTE: this is the API only — it does not license the implementation JAR or assets. |
 | `Baubles` repo, branch `1.7.10` (commit `2ad0bd6ee34752ab0a81562ed59803ae804d9fec`) | **CC BY-NC-SA 3.0** (repo README) | Verified 2026-10-16; JAR itself embeds no license text | NC/SA incompatible with this MIT project; Baubles code is not vendored or adapted. Slot semantics are re-implemented from documented behavior. |
 | Textures/models/sounds/lang inside the TC JAR | All Rights Reserved (same as implementation) | Part of the unlicensed artifact | Not committed. Overlaid locally at build time from the user's own JAR (docs/porting-decisions.md D-004). |
+| `assets/thaumcraft/models/**/*.json` in **this** repository | **MIT (our own authorship)** — the model JSONs are port-authored, never copied: 4.2.3.5 registers item icons in code (no item model files exist in the original's asset tree) | Diffed against `reference/assets/` (which ships `textures/`, `lang/`, `sounds/` and `shader/` only — no `models/`) | Committed. They reference original textures by **path** (`thaumcraft:item/alumentum`), and the PNG at that path is All Rights Reserved and overlay-only, so a code-only jar resolves the path to the missing-texture placeholder — the model files alone ship no original art |
 
 ## This repository
 
@@ -71,7 +72,7 @@ in docs and task notes, never pasted into committed sources.
 
 `src/main/resources/assets/thaumcraft/lang/en_us.json` is committed to this
 public repository and is included in the code-only release artifact. Of its
-**241 shipped values, 231 appear verbatim in the original 4.2.3.5 `en_US.lang`**
+**242 shipped values, 232 appear verbatim in the original 4.2.3.5 `en_US.lang`** (SPINE-2 added the tab label, en_US.lang:670 verbatim)
 (All Rights Reserved); 10 are authored for port-created ids. Measured
 2026-10-28 by comparing shipped values against the original file.
 

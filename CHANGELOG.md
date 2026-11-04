@@ -9,6 +9,34 @@ Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
 Work heading for `0.1.0-alpha.5`, gated per merge on `main`.
 
+**SPINE-3 Item model coverage closes the “items are not visible/searchable” repro: 51
+  port-authored `models/item/<id>.json` (52 total) so every registered item renders a
+  real icon in inventory, hand, the hotbar, the container grid, the recipe book and the
+  creative search index.** Each model names the sprite the **original’s own item class**
+  registered as its icon (verified per class against `reference/decompiled/`) — not a
+  guessed `thaumcraft:item/<id>` — e.g. `itemcompassstone` → `item/sinister_stone`,
+  `blockairy` → `item/taint_over_2` (the original’s `BlockAiryItem` icon),
+  `tilearcaneworkbench` → `models/worktable`, `itemessence` → `item/phial` +
+  `item/essence`. Every sprite the chains name is a published overlay path: 42 rows of
+  `docs/asset-mapping.csv`, of which 4 move the original’s per-nugget icons
+  `nuggetbeef.png`, `nuggetchicken.png`, `nuggetpork.png` and `nuggetfish.png`
+  (registered for the 4 `ItemNuggetEdible` ids at `ConfigItems.java:399-405`) from
+  UNUSED to published, taking the unused-asset inventory 42 → 38 (38 of them textures).
+  A new `ItemModelCoverageGameTest` derives its expected item set from the live registry
+  (52 shipped items, fixture scaffolding excluded — never a hardcoded list), checks the
+  converse (0 dead models), resolves every model chain with explicit namespaces,
+  resolves every chain sprite **when a local overlay is installed** (self-disabling
+  under D-004’s code-only release, vanilla stand-ins checked against the 1.21.1 client
+  jar) and enforces §15 rule 9 across models/lang/tabs. Models are port-authored and
+  committed; the original’s textures stay overlay-only, so a code-only jar still
+  resolves every model to the placeholder — by design. Per-meta appearance (19/7/15/16
+  metas), 3D block-item models, blockstates for the other 51 blocks and the 4 custom
+  item renderers are filed as BD-17, not claimed. RED → GREEN: `runGameTestServer` exit
+  1 (“51 of 52 registered thaumcraft items have no
+  /assets/thaumcraft/models/item/<id>.json”, “51 item model chains do not resolve”)
+  before the models landed, exit 0 (“All 130 required tests passed”) after;
+  `-Ptc.noCurios` 130/130; `./gradlew build` exit 0 (379 unit / 0 failures / 1 skipped).
+
 - **First authored container screen** (`TC-M7-04-s-cr1`): `TrunkScreen` extends 1.21.1
   `AbstractContainerScreen`; `ModClientScreens` registers it on the mod bus through
   `RegisterMenuScreensEvent`, client-only, bound to the trunk menu type. Gate: 372 unit
