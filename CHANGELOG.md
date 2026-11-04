@@ -96,6 +96,16 @@ ore returning one extra shard stack turns `fortunescalestheoriginalcurves` (6 st
 against a 1..5 bound) and `infusedstonedropsitsprimalshards` (3 against 1..2) red. The
 mutated file was restored byte-identically each time, sha256 against HEAD.
 
+- **Firebat mob + the wisp's essence drop** (`TC-M6-06-s-c1`): `thaumcraft:firebat` lands as a hand-flown 1.21.1
+  `Mob` - 0.5x0.9 hitbox and fire immunity, 5.0/1.0 attributes with the devil 15.0 and the summoned
+  `(devil ? 3 : 2) + damBonus`, the five bat flags as bits of one byte under the original `BatFlags`/`damBonus`
+  save keys, an empty goal selector with the original's own target provider and melee body driven from
+  `customServerAiStep`, the fire/magic damage refusal, and the hanging/flight/explosion/vampire/spawn-light
+  bodies. `EntityWisp.dropCustomDeathLoot` ships the original's `func_70628_a`: one wisp-essence stack carrying
+  2 units of the wisp's own aspect, gated on the stored type resolving - and the wisp's eerie-biome pool is
+  repaired to the original's `Aspect.<X>.getTag()` values, which is what makes that gate fire. Gate: 416 unit
+  tests / 0 failures / 1 skipped, 127/127 game tests with and without Curios. `BD-21` records the firebat's
+  unmeasurable vanilla drop roll and the deliberately unwired 1.7.10 `isNoAi` hook.
 **Taint — the Ethereal Bloom's cleansing disc (TC-M5-04-s-b2).** The disc
 acceptance probe shipped on `wt/taint-b1` reported that 4 of the 16 biome
 palette cells under the bloom never cleansed (`MISSING=[2_0, 2_1, 2_2, 2_3]`).

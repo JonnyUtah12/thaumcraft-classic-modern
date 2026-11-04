@@ -314,5 +314,7 @@
   "tc.resonator1": "Contains %1$s %2$s essentia",
   "tc.resonator2": "Suction %1$s %2$s",
   "tc.resonator3": "Untyped",
-  "tc.visdiscount": "Vis discount"
+  "tc.visdiscount": "Vis discount",
+  "entity.thaumcraft.wisp": "Wisp",
+  "entity.thaumcraft.firebat": "Firebat"
 }
