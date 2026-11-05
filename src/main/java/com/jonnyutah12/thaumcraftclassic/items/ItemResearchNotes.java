@@ -9,6 +9,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.M3ResearchContent;
 import com.jonnyutah12.thaumcraftclassic.research.NotePuzzle;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchEntryData;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchManager;
+import com.jonnyutah12.thaumcraftclassic.menus.ResearchNoteMenu;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchNoteData;
 import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
 import net.minecraft.ChatFormatting;
@@ -19,6 +20,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -282,6 +284,21 @@ public class ItemResearchNotes extends Item {
                 level.playSound(null, serverPlayer, ModSounds.WRITE.value(), SoundSource.PLAYERS, 0.75F, 1.0F);
             }
             return InteractionResultHolder.consume(stack);
+        }
+
+        // TC-M3-04-s-iii: the hex-grid note screen. The original GUI opens at
+        // the research-table block (BlockTable.useBlockOn, gui_id 10) with an
+        // empty note slot — the player places the note into it themselves, and
+        // right-clicking a filled note in the original does nothing. The
+        // note-item right-click is the port's seam to that screen (BD-20): the
+        // menu opens with the same two slots, and the note rides into slot 1
+        // by the original's own shift-click arm. A completed note opens too:
+        // that is the original's duplicate display (RESEARCHDUPE-gated).
+        if (note != null) {
+            serverPlayer.openMenu(new SimpleMenuProvider(
+                    (menuId, inv, p) -> new ResearchNoteMenu(menuId, inv),
+                    ResearchNoteMenu.title()));
+            return InteractionResultHolder.success(stack);
         }
 
         return InteractionResultHolder.pass(stack);

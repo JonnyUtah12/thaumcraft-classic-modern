@@ -2,6 +2,7 @@ package com.jonnyutah12.thaumcraftclassic.client;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.M3ResearchContent;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -25,10 +26,12 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
  * dedicated server: {@code RegisterMenuScreensEvent} only fires on the client,
  * and the screen class is client-only, so loading it on the server side
  * ({@code runServer}, {@code runGameTestServer}) would be a classloading
- * hazard. Only one screen is registered today — {@link TrunkScreen} for
- * {@code CatalogTrinketsLoot.GUI_TRUNK}; the hand-mirror and decon-table
- * screens, and every other GUI id, are follow-up TC-M7-04 cards. The crucible
- * has no menu type at all, so its screen cannot be wired here.</p>
+ * hazard. Two screens are registered today: {@link TrunkScreen} for
+ * {@code CatalogTrinketsLoot.GUI_TRUNK}, and {@link ResearchNoteScreen} — the
+ * minimal placeholder, BD-20 — for {@code M3ResearchContent.GUI_RESEARCH_NOTE}
+ * (TC-M3-04-s-iii); the hand-mirror and decon-table screens, the hex-grid note
+ * screen and every other GUI id are follow-up cards. The crucible has no menu
+ * type at all, so its screen cannot be wired here.</p>
  */
 @EventBusSubscriber(modid = ThaumcraftClassic.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ModClientScreens {
@@ -43,6 +46,10 @@ public final class ModClientScreens {
     @SubscribeEvent
     public static void onRegisterScreens(final RegisterMenuScreensEvent event) {
         event.register(CatalogTrinketsLoot.GUI_TRUNK.get(), TrunkScreen::new);
+        // TC-M3-04-s-iii: the research-note menu's MINIMAL placeholder screen —
+        // the MenuType must be screen-complete (BD-20); the hex-grid drawing is
+        // the note-screen presentation card.
+        event.register(M3ResearchContent.GUI_RESEARCH_NOTE.get(), ResearchNoteScreen::new);
     }
 
     private ModClientScreens() {
