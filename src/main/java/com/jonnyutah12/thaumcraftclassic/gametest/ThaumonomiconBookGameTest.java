@@ -6,6 +6,7 @@ import com.jonnyutah12.thaumcraftclassic.network.ModNetwork;
 import com.jonnyutah12.thaumcraftclassic.network.payload.OpenThaumonomiconPayload;
 import com.jonnyutah12.thaumcraftclassic.player.ModAttachments;
 import com.jonnyutah12.thaumcraftclassic.player.PlayerKnowledgeData;
+import com.jonnyutah12.thaumcraftclassic.research.ResearchBrowserModel;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchEntryData;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchManager;
 import com.google.gson.JsonObject;
@@ -34,7 +35,10 @@ import net.neoforged.neoforge.network.connection.ConnectionType;
 import net.neoforged.neoforge.network.payload.SyncAttachmentsPayload;
 import net.neoforged.neoforge.network.registration.ChannelAttributes;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -211,6 +215,192 @@ public final class ThaumonomiconBookGameTest {
                         && lang.get(titleKey).getAsString().length() > 0,
                 titleKey + " must ship in en_us.json: it is the book screen's own title (BD-22)");
         helper.succeed();
+    }
+
+    // ---------------------------------------------------------------- BOOK-2
+    // The category tab strip and the entry listing, measured on the live graph.
+    // The expected set is read out of the shipped JSON with a raw parser, so
+    // the probe asserts the listing against the DATA (6 categories / 201
+    // entries) and not against the loader that already parsed it: a hardcoded
+    // id list in a probe can never go red, and the card's gate is that every
+    // entry of the graph renders a row and nothing outside it does.
+
+    @GameTest(template = "empty")
+    public static void bookTabStripIsTheGraphsCategoriesInRegistrationOrder(final GameTestHelper helper) {
+        final JsonObject categories = loadJsonResource(helper,
+                "/data/" + ThaumcraftClassic.MOD_ID + "/research_graph/categories.json");
+
+        final List<String> expectedKeys = new ArrayList<>();
+        final Map<String, String> expectedLabels = new LinkedHashMap<>();
+        final Map<String, Integer> expectedOrder = new LinkedHashMap<>();
+        for (final com.google.gson.JsonElement element : categories.getAsJsonArray("categories")) {
+            final JsonObject category = element.getAsJsonObject();
+            expectedKeys.add(category.get("key").getAsString());
+            expectedLabels.put(category.get("key").getAsString(), category.get("nameEnUs").getAsString());
+            expectedOrder.put(category.get("key").getAsString(), category.get("order").getAsInt());
+        }
+
+        final ResearchBrowserModel model = ResearchBrowserModel.forShippedGraph();
+        final List<ResearchBrowserModel.Tab> tabs = model.tabs();
+        final List<String> tabKeys = new ArrayList<>();
+        for (final ResearchBrowserModel.Tab tab : tabs) {
+            tabKeys.add(tab.key());
+        }
+        helper.assertTrue(expectedKeys.size() == tabs.size(),
+                "the tab strip renders " + tabs.size() + " tabs, the shipped categories.json has "
+                        + expectedKeys.size() + " categories: " + tabKeys);
+        helper.assertTrue(expectedKeys.equals(tabKeys),
+                "the tab strip must be the graph's categories in the data's registration order "
+                        + "(GuiResearchBrowser.java:480-491 iterates the category keySet), got " + tabKeys);
+        for (final ResearchBrowserModel.Tab tab : tabs) {
+            helper.assertTrue(expectedLabels.get(tab.key()).equals(tab.label()),
+                    "tab " + tab.key() + " must carry the category display name from the graph, got \""
+                            + tab.label() + "\"");
+            helper.assertTrue(expectedOrder.get(tab.key()) == tab.order(),
+                    "tab " + tab.key() + " must carry the order field from categories.json");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void bookRowsCoverEveryGraphEntryAndNothingOutsideIt(final GameTestHelper helper) {
+        final JsonObject entries = loadJsonResource(helper,
+                "/data/" + ThaumcraftClassic.MOD_ID + "/research_graph/entries.json");
+
+        final List<String> expectedKeys = new ArrayList<>();
+        final Map<String, String> expectedCategory = new LinkedHashMap<>();
+        final Map<String, String> expectedLabel = new LinkedHashMap<>();
+        for (final com.google.gson.JsonElement element : entries.getAsJsonArray("entries")) {
+            final JsonObject entry = element.getAsJsonObject();
+            final String key = entry.get("key").getAsString();
+            expectedKeys.add(key);
+            expectedCategory.put(key, entry.get("category").getAsString());
+            final com.google.gson.JsonElement label = entry.get("nameEnUs");
+            expectedLabel.put(key, label == null || label.isJsonNull() ? key : label.getAsString());
+        }
+        helper.assertTrue(entries.get("entryCount").getAsInt() == expectedKeys.size(),
+                "entries.json declares " + entries.get("entryCount").getAsInt() + " entries and carries "
+                        + expectedKeys.size() + " — the data itself is the premise of this probe");
+
+        final ResearchBrowserModel model = ResearchBrowserModel.forShippedGraph();
+
+        // Every entry of the graph renders exactly one row, somewhere.
+        final List<String> rendered = new ArrayList<>();
+        for (final ResearchBrowserModel.Tab tab : model.tabs()) {
+            for (final ResearchBrowserModel.Row row : model.rows(tab.key())) {
+                rendered.add(row.key());
+                helper.assertTrue(tab.key().equals(expectedCategory.get(row.key())),
+                        "row " + row.key() + " is listed under tab " + tab.key() + " but the graph puts it in "
+                                + expectedCategory.get(row.key()));
+                final String label = expectedLabel.get(row.key());
+                helper.assertTrue(label.equals(row.label()),
+                        "row " + row.key() + " must be labelled from entries.json, got \"" + row.label() + "\"");
+            }
+        }
+        helper.assertTrue(rendered.size() == expectedKeys.size(),
+                "the book renders " + rendered.size() + " rows for " + expectedKeys.size()
+                        + " entries of the shipped graph (a row missing, or a row rendered twice)");
+        helper.assertTrue(new java.util.HashSet<>(rendered).equals(new java.util.HashSet<>(expectedKeys)),
+                "the rendered row set is not exactly the entry set of the shipped graph");
+
+        // The converse: an entry the graph does not have renders nothing.
+        helper.assertTrue(model.row(BOOK2_PROBE_KEY) == null,
+                "a key that is not in the graph must resolve to no row at all");
+        for (final ResearchBrowserModel.Tab tab : model.tabs()) {
+            helper.assertTrue(tab.entryCount() == model.rows(tab.key()).size(),
+                    "tab " + tab.key() + " advertises " + tab.entryCount() + " entries and lists "
+                            + model.rows(tab.key()).size());
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void bookNavigationWalksCategoriesAndEntriesAndRefusesStrangers(final GameTestHelper helper) {
+        final JsonObject categories = loadJsonResource(helper,
+                "/data/" + ThaumcraftClassic.MOD_ID + "/research_graph/categories.json");
+        final List<String> expectedKeys = new ArrayList<>();
+        for (final com.google.gson.JsonElement element : categories.getAsJsonArray("categories")) {
+            expectedKeys.add(element.getAsJsonObject().get("key").getAsString());
+        }
+
+        final ResearchBrowserModel model = ResearchBrowserModel.forShippedGraph();
+
+        for (final String category : expectedKeys) {
+            helper.assertTrue(model.selectCategory(category),
+                    "the tab for " + category + " must switch the listing (:757-761 sets selectedCategory)");
+            helper.assertTrue(category.equals(model.selectedCategory()),
+                    "the book must remember the tab it switched to (:63)");
+            final List<ResearchBrowserModel.Row> rows = model.rows(category);
+            helper.assertTrue(!rows.isEmpty(), "the " + category + " tab renders no entries at all");
+
+            // Paging covers the tab's rows exactly once, in order.
+            final int pages = model.pageCount(category);
+            final List<String> paged = new ArrayList<>();
+            for (int page = 0; page < pages; page++) {
+                for (final ResearchBrowserModel.Row row : model.page(category, page)) {
+                    paged.add(row.key());
+                }
+            }
+            final List<String> listed = new ArrayList<>();
+            for (final ResearchBrowserModel.Row row : rows) {
+                listed.add(row.key());
+            }
+            helper.assertTrue(listed.equals(paged),
+                    "paging " + category + " over " + pages + " pages must cover every row exactly once");
+
+            // Rows open: first, last and the middle of the tab.
+            for (final ResearchBrowserModel.Row row
+                    : List.of(rows.get(0), rows.get(rows.size() / 2), rows.get(rows.size() - 1))) {
+                helper.assertTrue(model.selectEntry(row.key()),
+                        "the row " + row.key() + " must open the entry (the original opens its page, :711)");
+                helper.assertTrue(row.key().equals(model.selectedEntry()),
+                        "the book must remember the opened entry");
+                helper.assertTrue(model.selectedRow() != null && row.key().equals(model.selectedRow().key()),
+                        "selectedRow must be the opened entry " + row.key());
+            }
+        }
+
+        // Page turning stays inside the tab's own page count.
+        model.selectCategory(expectedKeys.get(0));
+        int turns = 0;
+        while (model.nextPage()) {
+            turns++;
+            helper.assertTrue(turns < 100, "nextPage must stop at the last page of a category");
+        }
+        helper.assertTrue(turns == model.pageCount(model.selectedCategory()) - 1,
+                "nextPage overwran the last page of " + model.selectedCategory() + " (" + turns + " turns)");
+        while (model.prevPage()) {
+            // Back to the front; prevPage returns false on the first page.
+        }
+        helper.assertTrue(model.page() == 0, "prevPage must stop on the first page");
+
+        // The negative half of the gate: a stranger renders no row and moves nothing.
+        final String category = model.selectedCategory();
+        final String opened = model.selectedEntry();
+        helper.assertTrue(!model.selectEntry(BOOK2_PROBE_KEY),
+                "selecting an entry the graph does not have must be refused, so no row can render for it");
+        helper.assertTrue(java.util.Objects.equals(opened, model.selectedEntry()),
+                "the refused entry selection must not move the book");
+        helper.assertTrue(!model.selectCategory(BOOK2_PROBE_KEY),
+                "the tab strip may not switch to a category the graph does not have");
+        helper.assertTrue(category.equals(model.selectedCategory()),
+                "the refused tab switch must not move the book");
+        helper.succeed();
+    }
+
+    /** A key the shipped graph cannot contain (its keys are upper-case research keys). */
+    private static final String BOOK2_PROBE_KEY = "t10805b95_not_in_the_graph";
+
+    /** A shipped data resource, read raw: the expected set comes from the JSON. */
+    private static JsonObject loadJsonResource(final GameTestHelper helper, final String path) {
+        try (java.io.InputStream in = ThaumonomiconBookGameTest.class.getResourceAsStream(path)) {
+            helper.assertTrue(in != null, path + " must be on the mod classpath (the shipped graph)");
+            return com.google.gson.JsonParser
+                    .parseString(new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8))
+                    .getAsJsonObject();
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
     }
 
     /** The shipped lang file, read the way {@code LocalizationGameTest} reads it. */

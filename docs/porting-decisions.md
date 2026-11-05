@@ -563,3 +563,60 @@ renderers" as not implemented, so the fix must say which half it closes.
 exit 0 (379 unit / 0 failures / 1 skipped). The asset gates
 `check_asset_paths.py` (2929 assets) and `check_content_mapping.py`
 (1001 entries / 910 done) run inside `build` and stayed green.
+
+## D-019 — GUI port posture: assert against the port's classes, and derive the listing from data (BOOK-2, `t_10805b95`)
+
+**Status: Accepted.** This is the section the `a084fc8` commit message announced
+as "D-018 GUI port posture". D-018 is already the item-model decision, so the
+GUI posture lands here as D-019 and the `BD-13` cross-reference is repointed.
+The section is written by the GUI card that needs it, for the same reason
+`a084fc8` says the posture exists: a GUI card read `done` with no screen and no
+menu in the tree.
+
+**Context.** Every 1.7.10 GUI in the original is immediate-mode GL:
+`GuiResearchBrowser.java` measures 890 lines of `GL11` state calls,
+`Tessellator` quads and `UtilsFX.bindTexture`, and `GuiResearchRecipe` is 1613
+lines more. There is no 1.21.1 class with that shape, so there is nothing to
+`javap` against and no decompiled port target to translate line by line: the
+platform replaced the whole idiom with `GuiGraphics` and `Screen`. Two failure
+modes follow from that and this rule closes both. (a) A card invents a 1.21.1
+counterpart and asserts against it — the `t_547e7ad8` record is the concrete
+case: `done`, with no book screen and no book menu in the tree, and
+`ModClientScreens` registering only `TrunkScreen`. (b) A card asserts a GUI
+feature in the only harness the build gates on, `runGameTestServer`, which is a
+**dedicated server**: `Minecraft.getInstance()` is null, no `Screen` is ever
+constructed, no key or mouse event is ever delivered, and
+`RegisterMenuScreensEvent` never fires. An "the player sees the tabs" assertion
+is therefore unfalsifiable there, and a card that believes it shipped has
+shipped a green test over an empty window.
+
+**Rule.**
+
+1. **Assertions target the port's classes.** A GUI card names the class it
+   ships and asserts against it (structure, wiring, data flow), never against a
+   class the port does not have and never against a pixel.
+2. **The measurable half goes outside the `Screen`.** The listing, selection
+   and navigation state live in a class that imports no Minecraft type
+   (`ResearchBrowserModel` for the book), so the game probes can build it on the
+   server against the live registries and the unit tests can build it in a plain
+   JVM. The `Screen` draws what that object computes and holds no list of its
+   own. A GUI feature with no non-GUI seam is a design problem: state it, do
+   not fake its test.
+3. **The expected set comes from data, never from a list.** A research listing
+   is gated against the shipped JSON parsed raw at test time, the way D-018 §5
+   gates item models against the live registry. A hardcoded id list can never
+   go red — the trap that has bitten this repo repeatedly.
+4. **The honest limit is written down.** Pixels need the ATM10 client; the
+   matrix row says the harness cannot see the window, in the same cell as the
+   tests that pass. "TESTED" on a GUI row means the structure is measured, not
+   that the render was observed.
+
+**Verification.** `ResearchBrowserGraphContentTest` (7 unit tests, expected set
+read out of `entries.json` / `categories.json` at test time) and
+`ThaumonomiconBookGameTest` (3 BOOK-2 probes, 8 in the suite). RED with the
+hardcoded-category mutation: `runGameTestServer` **exit 1** —
+`booktabstripisthegraphscategoriesinregistrationorder`,
+`bookrowscovereverygraphentryandnothingoutsideit`,
+`booknavigationwalkscategoriesandentriesandrefusesstrangers`; unit
+`theBrowserSourcesCarryNoHardcodedGraphKeys` **exit 1** on the same mutation.
+GREEN on the shipped tree: exit 0, all required tests passed, `build` exit 0.
