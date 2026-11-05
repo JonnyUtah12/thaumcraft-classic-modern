@@ -7,6 +7,7 @@ import com.jonnyutah12.thaumcraftclassic.network.payload.NotePayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.PlayerCompleteToServerPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.ScannedToServerPayload;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchManager;
+import com.jonnyutah12.thaumcraftclassic.research.ScanManager;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import org.slf4j.Logger;
@@ -26,8 +27,26 @@ public final class ServerNetworkHooks {
     private ServerNetworkHooks() {
     }
 
-    /** TODO(M4 research): ScanManager.completeScan equivalent, per original PacketScannedToServer. */
+    /**
+     * The scan request (original {@code PacketScannedToServer} →
+     * {@code ScanManager.completeScan}). The phenomena/NODE branch (scanType 3,
+     * THAUM-1 remainder) is completed by {@link ScanManager}: the port's vis
+     * node state is {@code ServerLevel}-only (no node block, no client mirror),
+     * so that branch is server-authoritative end to end. Scan types 1 and 2
+     * keep their TODO: the client builds them
+     * ({@code items/ItemThaumometer#doScan}) and their completion needs the
+     * original's item/entity scan-hash registry
+     * ({@code ScanManager.generateItemHash}/{@code generateEntityHash}), which
+     * is the registry-hash milestone.
+     */
     static void completeScan(final ScannedToServerPayload payload, final Player player) {
+        if (player instanceof ServerPlayer serverPlayer
+                && payload.scanType() == ScanManager.SCAN_TYPE_PHENOMENA
+                && ScanManager.completeScan(payload, serverPlayer)) {
+            LOGGER.debug("phenomenon {} scanned by {}", payload.phenomena(),
+                    player.getGameProfile().getName());
+            return;
+        }
         LOGGER.debug("scan request from {}: type={} id={} data={}", player.getGameProfile().getName(),
                 payload.scanType(), payload.scannedId(), payload.data());
     }

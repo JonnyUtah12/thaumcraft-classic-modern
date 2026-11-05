@@ -37,16 +37,40 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * {@code PacketScannedToServer} with prefix "@" is sent. Camera-tick sounds
  * play every other tick while a valid scan is pending.</p>
  *
- * <p>1.21.1 realization: the crosshair raycast is vanilla
- * {@link Player#pick}; the scan payload is {@link ScannedToServerPayload}
- * (same scanType numbering as the original ScanResult: 1 = block/item,
- * 2 = entity, 3 = phenomena), validated client-side through
- * {@link AspectKnowledge#validScan} and re-validated server-side by
- * {@code ServerNetworkHooks.completeScan}. The original's NODE tile branch and
- * the {@code scanEventhandlers} phenomena loop have no port-side systems yet
- * (node milestone), so those branches return no scan, matching the server's
- * existing TODOs. The original's blockRunes particle effect is client FX
- * deferred to the model/particle milestone.</p>
+ * <p>1.21.1 realization: the crosshair raycast is vanilla {@link Player#pick};
+ * the scan payload is {@link ScannedToServerPayload} (same scanType numbering as
+ * the original ScanResult: 1 = block/item, 2 = entity, 3 = phenomena),
+ * validated client-side through {@link AspectKnowledge#validScan} and
+ * re-validated server-side by {@code ServerNetworkHooks.completeScan}.</p>
+ *
+ * <p>Where the three original branches live now:</p>
+ * <ul>
+ *   <li><b>type 1 / type 2</b> — built here; their server-side completion needs
+ *     the original's item/entity scan-hash registry
+ *     ({@code ScanManager.generateItemHash}/{@code generateEntityHash}) and is
+ *     that milestone's, so {@code ServerNetworkHooks} still logs them.</li>
+ *   <li><b>type 3 (phenomena / NODE, ItemThaumometer L88-107)</b> — <b>not
+ *     built here</b>. The original detects the node from a client-side
+ *     {@code world.getTileEntity(pos) instanceof INode}; this port has no node
+ *     block, and its node state is a {@code WorldMagicData} record set that is
+ *     {@code ServerLevel}-only, so the client cannot see a node to point at.
+ *     That branch is therefore server-authoritative:
+ *     {@code research/ScanManager#scanNode} is the detection half and
+ *     {@code ScanManager#completeScan} the completion half. The client's
+ *     type-3 send (point at a node, hold 25 ticks) needs a client-visible node
+ *     signal — the node visual/highlight lane — and is not claimed here.</li>
+ *   <li><b>the {@code ThaumcraftApi.scanEventhandlers} loop (L151-156)</b> —
+ *     ported as an empty registry: nothing in the original registers a handler
+ *     other than {@code ScanManager} itself, whose
+ *     {@code scanPhenomena} returns null (ScanManager L43-46), so the loop can
+ *     only ever yield null. The port has no phenomena producer to loop over, so
+ *     no registry is added for it; the NODE phenomenon is the one phenomenon
+ *     the original ever produces.</li>
+ *   <li><b>{@code Thaumcraft.proxy.blockRunes} (L68-79, L91-102, L132-143)</b> —
+ *     the rune particle burst over the scanned target. Client FX, deferred to
+ *     the model/particle milestone; nothing in this item emits particles, and
+ *     the scan completes without it.</li>
+ * </ul>
  */
 public class ItemThaumometer extends Item {
 
