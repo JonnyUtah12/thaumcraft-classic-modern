@@ -5,6 +5,33 @@ Format: Keep a Changelog; versioning: Semantic Versioning (see
 `docs/release-process.md`). Project versions are independent of the pinned
 Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
+## [Unreleased]
+
+**D-016 option 2, generation half (BOOK-3a): the original research display strings are
+generated at build time instead of committed.**
+
+The shipped research graph references **711** `tc.*` lang keys — 201 `tc.research_name.*` +
+201 `tc.research_text.*` + 309 `tc.research_page.<ENTRY>.<n>` — derived from
+`data/thaumcraft/research_graph/entries.json` at build time, never a hardcoded list. A new
+build step (`generateOriginalResearchLang`, on the Gradle-free class
+`com.jonnyutah12.thaumcraftclassic.tools.ResearchOriginalLang`) converts the **707** of them
+that exist in the player's own extracted `../reference/assets/thaumcraft/lang/en_US.lang`
+into `assets/thaumcraft/lang/research_original.json` (sorted keys, 2-space indent, UTF-8,
+values verbatim). The **4** the original 4.2.3.5 lang never defined —
+`tc.research_name/text.CAP_iron` and `tc.research_name/text.ROD_wood`, the same two entries
+whose graph rows carry no `nameEnUs`/`textEnUs` — are authored in **BOOK-3b**.
+
+A **code-only** build generates nothing and carries **0 of the 711**, so it renders raw
+`tc.research_*` keys: that is the policy-aligned D-016 outcome, and the committed
+`en_us.json` (344 keys) is unchanged, with **0** overlap against the 711 pinned by a unit
+probe. Also in this commit: the new `checkGeneratedResearchLang` gate (reads the generated
+file out of the overlay jar and prints the measured counts; wired into `check` and CI), a
+deterministic 25-key `thaumcraft/lang/en_US.lang` in the CI fixture
+(`scripts/make_asset_overlay_fixture.py`, fixture 911 → 912 files), 9 unit probes, and
+**BD-22** recording that the 1.7.10 page markup rides through verbatim (`<BR>` ×541 over 256
+page keys, `§`-colour codes ×370 over 86 page keys, `&` ×1; `#l`/`$#` measured 0 — they do
+not exist in the file).
+
 ## [0.1.0-alpha.5] - 2026-11-03
 
 

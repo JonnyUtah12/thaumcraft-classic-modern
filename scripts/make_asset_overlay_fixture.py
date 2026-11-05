@@ -15,6 +15,12 @@ The result reproduces the defect's input: `textures/blocks/` + `textures/items/`
 measured per directory in build.gradle). Point the overlay at it with
 `./gradlew -Ptc.referenceAssets=build/ci-fixture-assets` and the checker proves
 the jar publishes the singular layout the CSV declares.
+
+D-016 option 2 (BOOK-3a) adds one more file: `thaumcraft/lang/en_US.lang`, a
+deterministic 25-key subset of the research keys the shipped research graph
+references, with placeholder values (never original strings). It exists so CI can
+exercise `generateOriginalResearchLang` + `checkGeneratedResearchLang` on the same
+fixture tree the asset path contract uses. The file count goes 911 -> 912.
 """
 
 from __future__ import annotations
@@ -65,11 +71,61 @@ SOUNDS_JSON = {
     "runicShieldCharge": {"category": "master", "sounds": ["runicShieldCharge"]},
 }
 
+# D-016 option 2 (BOOK-3a): the research lang fixture.
+RESEARCH_ENTRIES = "src/main/resources/data/thaumcraft/research_graph/entries.json"
+RESEARCH_LANG = "thaumcraft/lang/en_US.lang"
+RESEARCH_KEY_COUNT = 25
+
+
+def research_keys(entries_path, limit=RESEARCH_KEY_COUNT):
+    """A deterministic mixture of research keys the shipped graph references.
+
+    Derived from the graph, never a hardcoded list, and restricted to the `tc.*`
+    prefix the build's selector uses. Round-robins name/text/page per entry so
+    the fixture covers all three key shapes without becoming 711 keys long.
+    """
+    with open(entries_path, encoding="utf-8") as handle:
+        graph = json.load(handle)
+    keys = []
+    for entry in graph["entries"]:
+        candidates = [entry.get("nameKey"), entry.get("textKey")]
+        pages = entry.get("pages") or []
+        if pages:
+            candidates.append(pages[0].get("textKey"))
+        for key in candidates:
+            if key and key.startswith("tc.") and key not in keys:
+                keys.append(key)
+                if len(keys) >= limit:
+                    return keys
+    return keys
+
+
+def research_lang_body(keys):
+    """Placeholder values, CRLF, one `#` comment — and every parser edge case.
+
+    The values are port-authored placeholders (no original string is involved).
+    They deliberately carry what the parser and the writer must survive: a value
+    containing `=`, a `\\n` escape, the measured 1.7.10 page markup (`<BR>`, a
+    §-colour pair, an `&`-code), a leading space and a trailing space.
+    """
+    special = {
+        0: "Fixture name with a trailing space ",
+        1: "Fixture value containing = inside it, and a \\n escape\\nsecond line",
+        2: "<BR>§5Fixture page markup§0<BR>a second line with the & code",
+        3: " leading space is part of the value",
+    }
+    lines = ["# ci fixture: 25 research keys, placeholder values (D-004, no original strings)"]
+    for index, key in enumerate(keys):
+        lines.append(f"{key}={special.get(index, f'Fixture placeholder value {index}')}")
+    return "\r\n".join(lines) + "\r\n"
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("out", help="fixture root to write (becomes referenceAssetsDir)")
     parser.add_argument("--asset-mapping", default="docs/asset-mapping.csv")
+    parser.add_argument("--research-entries", default=RESEARCH_ENTRIES,
+                        help="shipped research graph the fixture lang keys come from")
     args = parser.parse_args()
 
     root = os.path.join(args.out, "thaumcraft")
@@ -103,11 +159,21 @@ def main():
         with open(path, "wb") as out:
             out.write(b"Oggs")
 
+    keys = research_keys(args.research_entries)
+    lang_path = os.path.join(args.out, RESEARCH_LANG.replace("/", os.sep))
+    os.makedirs(os.path.dirname(lang_path), exist_ok=True)
+    with open(lang_path, "wb") as out:
+        out.write(research_lang_body(keys).encode("utf-8"))
+
     dirs = {}
     for source in written:
         dirs[source.split("/")[1]] = dirs.get(source.split("/")[1], 0) + 1
     print(f"fixture: {args.out} — {len(written)} placeholder texture files over "
           f"{len(dirs)} directories: " + ", ".join(f"{k}={v}" for k, v in sorted(dirs.items())))
+    files = sum(len(names) for _, _, names in os.walk(args.out))
+    print(f"fixture: {files} files total ({len(written)} textures + sounds.json + "
+          f"2 placeholder oggs + {RESEARCH_LANG}), research lang: {len(keys)} of the "
+          f"graph-referenced keys")
 
 
 if __name__ == "__main__":

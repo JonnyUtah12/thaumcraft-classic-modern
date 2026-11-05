@@ -35,7 +35,7 @@ jobs:
       # PNG inside the jar. That jar is classifier `overlay-check` and is never
       # published: the release artifact stays code-only (D-004).
       - name: Asset path contract (overlay jar)
-        run: ./gradlew -Ptc.referenceAssets=build/ci-fixture-assets checkAssetPathsOverlayJar
+        run: ./gradlew -Ptc.referenceAssets=build/ci-fixture-assets checkAssetPathsOverlayJar checkGeneratedResearchLang
 
       # In-game tests on the NeoForge game test server (docs/testing.md).
       # Separate from `build` so the unit layer stays fast; a red run here
