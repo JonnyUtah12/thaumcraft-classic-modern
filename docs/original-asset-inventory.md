@@ -201,6 +201,51 @@ The sheet's other 246 cells stay untouched: the FX families that index them
 (`FXBoreParticles`, `FXVisSparkle`, the wisp and beam art) are on their own
 cards, and slicing a cell no particle names would put dead art in every jar.
 
+## OVERLAY SOURCES — what the reference tree proves, and what the CI fixture can
+
+The overlay has two sources with the **same layout** and very different content
+(build.gradle:131-142):
+
+| Overlay source | How it is selected | Content | What the unit suite proves over it |
+| --- | --- | --- | --- |
+| reference tree `../reference/assets` | default (no property) | the original bytes: 1079 files, 940 textures, 111 oggs over 66 events | the counts and the paths — every probe in `OriginalSoundOverlayTest`, `OriginalTextureOverlayTest`, `SoundRegistryParityTest` |
+| CI fixture `build/ci-fixture-assets` | `-Ptc.referenceAssets=build/ci-fixture-assets` | 908 placeholder files (1x1 PNGs, 2 oggs, a 256x256 particle sheet) generated from `docs/asset-mapping.csv` — no original bytes (D-004) | the **path shape** only: `blocks`→`block` / `items`→`item` remap, model sprites resolving, structured research locations resolving, the CSV ↔ registry event set |
+
+Presence of the overlay output cannot tell those two trees apart — each ships
+`thaumcraft/sounds.json` and `textures/` — so a presence assumption separates
+"no overlay" from "overlay" and nothing else. Pointing the fixture at the full
+unit suite therefore ran the reference-tree counts against placeholder bytes and
+failed 4 probes (kanban t_70da8abe: 66 events vs 2; 262 files under
+`textures/block/` vs 256), while a plain `./gradlew build` stayed green because
+CI's `build` job has no overlay at all.
+
+The trees now carry their own identity, and the probes gate on the tree they
+measure:
+
+* `scripts/make_asset_overlay_fixture.py` writes `.ci-fixture.json` at the
+  fixture **root** (a sibling of `thaumcraft/`, so `overlayOriginalAssets`,
+  which copies `thaumcraft/**`, never ships it in a jar). It declares
+  `placeholder: true` and the inventory the fixture really ships, measured as it
+  writes.
+* build.gradle wires the resolved source dir to the suite as
+  `tc.originalAssetsSourceDir`.
+* `OverlaySourceGate` reads the marker from that dir. The four
+  content-inventory probes —
+  `OriginalSoundOverlayTest.generatedOverlaySoundsJsonIsPlatformValid`,
+  `SoundRegistryParityTest.generatedOverlaySoundDefinitionsAreComplete`,
+  `SoundRegistryParityTest.csvNewAssetPathsExistInOverlay`,
+  `OriginalTextureOverlayTest.overlaidTexturesLandOnTheModernPaths` — skip when
+  the source declares itself a placeholder, with a reason that names the tree,
+  the marker, the fixture's own declared counts, and the command that runs them.
+  The path-shape probes gate on presence and keep running over the fixture.
+* The gate's fail-safe direction is **run the assertions**: an unset property, a
+  missing marker, a marker saying `placeholder: false` and a marker that does
+  not parse all leave the reference-tree assertions in play. Only a tree that
+  declares itself a placeholder can silence them, so no reference assertion is
+  reachable by a configuration accident. `OverlaySourceGateTest` pins the
+  decision table, the generator's self-declaration (its counts are re-measured
+  off the tree it wrote) and the wiring.
+
 ## Unused assets (38) — explicit, with reason
 
 SPINE-3 (`t_15e43d12`) moved `textures/items/nugget{beef,chicken,fish,pork}.png`

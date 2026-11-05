@@ -528,6 +528,11 @@ tasks.named('test', Test).configure {
             layout.buildDirectory.dir('generated/resources/original-assets/assets').get().asFile.absolutePath
     systemProperty 'tc.originalSoundsJson',
             layout.buildDirectory.file('generated/resources/original-sounds/assets/thaumcraft/sounds.json').get().asFile.absolutePath
+    // Which tree the overlay was built FROM — the reference tree, the CI fixture,
+    // or nothing. Presence of the overlay output cannot tell the first two apart
+    // (both ship thaumcraft/sounds.json + textures/), so the content-inventory
+    // tests read this tree's identity marker instead: OverlaySourceGate.
+    systemProperty 'tc.originalAssetsSourceDir', originalAssetsDir.absolutePath
     systemProperty 'tc.originalParticleSheet',
             file("${originalAssetsDir}/thaumcraft/textures/misc/particles.png").absolutePath
     // OriginalTextureOverlayTest resolves the sprites of the committed models

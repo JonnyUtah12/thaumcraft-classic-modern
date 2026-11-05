@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.jonnyutah12.thaumcraftclassic.assets.OverlaySourceGate;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -31,7 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>The CSV half always runs (CI-safe). The overlay half is skipped when the
  * reference tree is absent, matching the pipeline design in build.gradle —
- * there the registry/CSV halves still pin the event-id set.</p>
+ * there the registry/CSV halves still pin the event-id set. It is also skipped
+ * when the overlay source declares itself the CI placeholder fixture — the same
+ * layout over 2 events and 2 oggs, so the 66/111 counts below are not its
+ * contract ({@link OverlaySourceGate}).</p>
  *
  * <p>The overlay file-existence walk is the static equivalent of
  * SoundManager's runtime check ("File ... does not exist, cannot add it to
@@ -62,7 +66,10 @@ class SoundRegistryParityTest {
     void generatedOverlaySoundDefinitionsAreComplete() throws IOException {
         Path overlayDir = overlayDir();
         String wiredJson = System.getProperty("tc.originalSoundsJson", "");
-        org.junit.jupiter.api.Assumptions.assumeTrue(
+        // The 66 events / 111 oggs asserted below are the REFERENCE tree's
+        // inventory. The CI fixture carries the same layout over 2 events, so
+        // presence cannot gate this — gate on the source tree's identity.
+        OverlaySourceGate.requireReferenceTreeForContentInventory(
                 !wiredJson.isEmpty() && Files.isRegularFile(Path.of(wiredJson)),
                 "converted sounds.json not generated (no ../reference tree) — CI asserts the CSV half only");
         Path soundsJson = Path.of(wiredJson);
@@ -114,7 +121,10 @@ class SoundRegistryParityTest {
     @Test
     void csvNewAssetPathsExistInOverlay() throws IOException {
         Path overlayDir = overlayDir();
-        org.junit.jupiter.api.Assumptions.assumeTrue(Files.isDirectory(overlayDir.resolve("thaumcraft/sounds")),
+        // "every CSV ogg row with a new_asset is overlaid" (110 of 111) is a
+        // reference-tree inventory; the fixture ships 2 oggs (OverlaySourceGate).
+        OverlaySourceGate.requireReferenceTreeForContentInventory(
+                Files.isDirectory(overlayDir.resolve("thaumcraft/sounds")),
                 "original-asset overlay not generated — CI asserts the CSV half only");
 
         int checked = 0;

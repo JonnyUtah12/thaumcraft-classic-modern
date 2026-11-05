@@ -15,6 +15,19 @@ The result reproduces the defect's input: `textures/blocks/` + `textures/items/`
 measured per directory in build.gradle). Point the overlay at it with
 `./gradlew -Ptc.referenceAssets=build/ci-fixture-assets` and the checker proves
 the jar publishes the singular layout the CSV declares.
+
+The tree declares what it is. `<out>/.ci-fixture.json` records
+`placeholder: true` plus the inventory this tree really carries, so anything
+pointed at the fixture can tell it apart from the reference tree by reading the
+tree itself — no caller-side path convention. That is what
+`OverlaySourceGate` reads: the overlay *content-inventory* tests
+(`OriginalSoundOverlayTest`, `SoundRegistryParityTest`,
+`OriginalTextureOverlayTest`) assert the reference tree's counts (66 sound
+events over 111 oggs, 262 files under `textures/block/`), so with the fixture
+they skip and say why; the *path-shape* tests keep running here, which is the
+half the placeholder tree can prove. The marker sits at the fixture ROOT,
+outside `thaumcraft/`, so `overlayOriginalAssets` (which copies
+`thaumcraft/**` only) never ships it in a jar.
 """
 
 from __future__ import annotations
@@ -65,6 +78,11 @@ SOUNDS_JSON = {
     "runicShieldCharge": {"category": "master", "sounds": ["runicShieldCharge"]},
 }
 
+# The tree's own identity card (see the module docstring). At the fixture ROOT,
+# a sibling of `thaumcraft/`: build.gradle's overlayOriginalAssets copies
+# `thaumcraft/**` only, so this file is never overlaid and never ships in a jar.
+MARKER_NAME = ".ci-fixture.json"
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -106,8 +124,38 @@ def main():
     dirs = {}
     for source in written:
         dirs[source.split("/")[1]] = dirs.get(source.split("/")[1], 0) + 1
+
+    # Declare the tree's identity and the inventory it REALLY carries, so a
+    # consumer can tell "placeholder fixture" from "reference tree" by reading
+    # the tree itself instead of guessing from a path convention. These counts
+    # are this tree's own; they do not imply the reference tree's 940 textures /
+    # 111 oggs / 66 events (docs/original-asset-inventory.md).
+    marker = {
+        "placeholder": True,
+        "generatedBy": "scripts/make_asset_overlay_fixture.py",
+        "builtFrom": args.asset_mapping,
+        "why": (
+            "CI has no reference/assets tree: the original Thaumcraft assets are "
+            "All Rights Reserved and are never committed (D-004). This tree "
+            "carries placeholder bytes, so it gates asset PATHS only; "
+            "content-inventory assertions over the reference tree skip when they "
+            "see this marker."
+        ),
+        "declares": {
+            "textureFilesByLegacyDir": dict(sorted(dirs.items())),
+            "textureFiles": len(written),
+            "soundEvents": sorted(SOUNDS_JSON),
+            "soundFiles": sorted(f"sounds/{event}.ogg" for event in SOUNDS_JSON),
+        },
+    }
+    with open(os.path.join(args.out, MARKER_NAME), "w", encoding="utf-8") as out:
+        json.dump(marker, out, indent=2)
+        out.write("\n")
+
     print(f"fixture: {args.out} — {len(written)} placeholder texture files over "
-          f"{len(dirs)} directories: " + ", ".join(f"{k}={v}" for k, v in sorted(dirs.items())))
+          f"{len(dirs)} directories: "
+          + ", ".join(f"{k}={v}" for k, v in sorted(dirs.items()))
+          + f"; identity declared in {MARKER_NAME}")
 
 
 if __name__ == "__main__":

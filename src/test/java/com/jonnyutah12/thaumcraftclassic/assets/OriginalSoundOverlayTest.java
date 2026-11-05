@@ -4,7 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -36,6 +35,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * mapping (always) and the generated overlay output (local builds that have
  * the reference tree; skipped on CI, matching the pipeline design in
  * build.gradle).</p>
+ *
+ * <p>The overlay-output half is gated by {@link OverlaySourceGate} on the tree
+ * the overlay was built <em>from</em>: the reference tree runs it, the CI
+ * placeholder fixture — same layout, 2 events over 2 oggs — skips it and names
+ * the tree it skipped, and no overlay at all skips it as before.</p>
  */
 class OriginalSoundOverlayTest {
 
@@ -107,7 +111,10 @@ class OriginalSoundOverlayTest {
     void generatedOverlaySoundsJsonIsPlatformValid() throws IOException {
         Path soundsJson = Path.of(System.getProperty("tc.originalSoundsJson", ""));
         Path overlayDir = Path.of(System.getProperty("tc.originalAssetsOverlayDir", ""));
-        Assumptions.assumeTrue(Files.isRegularFile(soundsJson),
+        // The 66-event inventory below is the REFERENCE tree's contract. The CI
+        // fixture (scripts/make_asset_overlay_fixture.py) has the same layout and
+        // 2 events, so presence alone cannot gate this — gate on the source tree.
+        OverlaySourceGate.requireReferenceTreeForContentInventory(Files.isRegularFile(soundsJson),
                 "original-asset overlay not generated (no ../reference tree) — "
                         + "CI asserts the CSV mapping only");
 

@@ -51,6 +51,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * assumption-guarded exactly like {@link OriginalSoundOverlayTest}: CI has no
  * reference tree, so CI asserts the contract; a local build asserts the bytes
  * that land in the jar.</p>
+ *
+ * <p>The two guards are not the same, and that was the bug (kanban t_70da8abe):
+ * {@link #overlaidTexturesLandOnTheModernPaths()} counts files per directory,
+ * which is the <b>reference tree's</b> inventory, so it gates on the source
+ * tree through {@link OverlaySourceGate} and skips when the overlay was built
+ * from the CI placeholder fixture. The sprite-resolution probes need only a
+ * published path, so they gate on presence and keep running over the fixture.</p>
  */
 class OriginalTextureOverlayTest {
 
@@ -186,6 +193,14 @@ class OriginalTextureOverlayTest {
      */
     @Test
     void overlaidTexturesLandOnTheModernPaths() throws IOException {
+        // The per-directory counts (262 block / 291 item / 216 models / ...) and
+        // the named sprites below are the REFERENCE tree's inventory. The CI
+        // fixture has the same layout over placeholder bytes and ships 256 files
+        // under textures/block/, so presence cannot gate this (OverlaySourceGate).
+        OverlaySourceGate.requireReferenceTreeForContentInventory(
+                Files.isDirectory(overlayTexturesDir()),
+                "original-asset overlay not generated (no ../reference tree) — "
+                        + "CI asserts the CSV mapping only");
         Path textures = overlayTexturesDir();
 
         Map<String, Integer> filesPerDir = new TreeMap<>();
@@ -243,6 +258,9 @@ class OriginalTextureOverlayTest {
      */
     @Test
     void everyModelSpriteResolvesToAnOverlayTexture() throws IOException {
+        // Path shape, not inventory: this probe is meaningful over the CI fixture
+        // too (placeholder bytes at the published paths), so it gates on presence.
+        requireOverlayGenerated();
         Path textures = overlayTexturesDir();
         Path assets = Path.of(System.getProperty("tc.modAssetsDir", ""));
         assertTrue(Files.isDirectory(assets),
@@ -319,6 +337,7 @@ class OriginalTextureOverlayTest {
         Path research = Path.of(System.getProperty("tc.researchDataDir", ""));
         assertTrue(Files.isDirectory(research),
                 "tc.researchDataDir not wired — run tests through ./gradlew test");
+        requireOverlayGenerated();
         Path textures = overlayTexturesDir();
 
         Pattern location = Pattern.compile(
@@ -350,13 +369,17 @@ class OriginalTextureOverlayTest {
                 checked + " structured research texture locations, problems: " + problems);
     }
 
+    /** The overlay output's texture tree as a path; presence is gated by the caller. */
     private static Path overlayTexturesDir() {
-        Path overlayDir = Path.of(System.getProperty("tc.originalAssetsOverlayDir", ""));
-        Path textures = overlayDir.resolve("thaumcraft/textures");
-        Assumptions.assumeTrue(Files.isDirectory(textures),
+        return Path.of(System.getProperty("tc.originalAssetsOverlayDir", ""))
+                .resolve("thaumcraft/textures");
+    }
+
+    /** Presence gate for the path-shape probes: any overlaid tree, reference or fixture. */
+    private static void requireOverlayGenerated() {
+        Assumptions.assumeTrue(Files.isDirectory(overlayTexturesDir()),
                 "original-asset overlay not generated (no ../reference tree) — "
                         + "CI asserts the CSV mapping only");
-        return textures;
     }
 
     private static String newAssetFor(String csvContent, String originalAsset) {

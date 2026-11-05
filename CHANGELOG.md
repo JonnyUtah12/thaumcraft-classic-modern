@@ -35,6 +35,25 @@ section reaches players only in the next release cut.
   0 failures, 138/138 game tests with and without Curios; BD-28 records the scale-attribute resize and
   BD-29 the brain drop gated on the unregistered zombie-brain item.
 
+- **The asset-overlay gate reads identity, not presence** (`t_70da8abe`): the overlay
+  content-inventory probes (`OriginalSoundOverlayTest`, `SoundRegistryParityTest`,
+  `OriginalTextureOverlayTest`) gated on the overlay output's *presence*, which separates
+  "no overlay" from "overlay" and nothing else — so
+  `./gradlew -Ptc.referenceAssets=build/ci-fixture-assets build` (the CI placeholder tree
+  through the FULL unit suite) ran the reference-tree counts against placeholder bytes and
+  failed 4: 66 sound events vs the fixture's 2, 262 files under `textures/block/` vs 256.
+  `scripts/make_asset_overlay_fixture.py` now writes `.ci-fixture.json` at the fixture root
+  declaring `placeholder: true` plus the inventory it really ships, build.gradle wires
+  `tc.originalAssetsSourceDir`, and the new `OverlaySourceGate` skips those four probes when
+  the source tree declares itself a placeholder — naming the tree, the marker and the
+  fixture's own counts in the skip reason — while the path-shape probes keep running over it.
+  Nothing was weakened: the gate's fail-safe direction is to run the reference assertions
+  (unset property, missing marker, unparseable marker, `placeholder: false` all keep them
+  live). Gate: fixture `build` exit 0 with those 4 skipped and the reason logged;
+  reference-tree `build` runs them; 7 new `OverlaySourceGateTest` probes go RED when the
+  fixture stops declaring itself (measured: the 4 original failures come back with the
+  marker name changed).
+
 
 ## [0.1.0-alpha.5] - 2026-11-03
 
