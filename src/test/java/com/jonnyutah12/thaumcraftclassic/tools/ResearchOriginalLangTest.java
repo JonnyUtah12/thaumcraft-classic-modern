@@ -118,10 +118,11 @@ class ResearchOriginalLangTest {
         Set<String> keys = ResearchOriginalLang.collectGraphKeys(readResource(GRAPH_RESOURCE));
 
         // 201 name + 201 text + 310 page = 712, the set the runtime graph exposes.
+        // Of the 310 page keys, 309 are tc.research_page.* and 1 is not.
         assertEquals(712, keys.size(), "display keys the graph rows reference");
         assertEquals(201, count(keys, "tc.research_name."));
         assertEquals(201, count(keys, "tc.research_text."));
-        assertEquals(310, count(keys, "tc.research_page."));
+        assertEquals(309, count(keys, "tc.research_page."));
         assertEquals(1, count(keys, "focus.upgrade."),
                 "the graph's one display key outside the tc. namespace");
         assertTrue(keys.contains(VAMPBAT_PAGE_KEY),

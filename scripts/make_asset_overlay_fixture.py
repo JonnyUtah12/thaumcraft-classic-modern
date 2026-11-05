@@ -80,9 +80,18 @@ RESEARCH_KEY_COUNT = 25
 def research_keys(entries_path, limit=RESEARCH_KEY_COUNT):
     """A deterministic mixture of research keys the shipped graph references.
 
-    Derived from the graph, never a hardcoded list, and restricted to the `tc.*`
-    prefix the build's selector uses. Round-robins name/text/page per entry so
-    the fixture covers all three key shapes without becoming 711 keys long.
+    Derived from the graph, never a hardcoded list, with the generator's own
+    structural rule: each row's `nameKey`/`textKey` plus a page `textKey`, no
+    namespace filter (t_6799fd3f removed the `tc.` filter from the generator, and
+    this fixture mirrored it). Round-robins name/text/page per entry so the
+    fixture covers all three key shapes without becoming 712 keys long.
+
+    Measured on the shipped graph: the first `limit` keys this yields are all
+    `tc.`-prefixed, because the graph's single display key outside that namespace
+    (`focus.upgrade.vampirebats.text`, on VAMPBAT — row 41) is out of reach at
+    this limit. The fixture's lang is only an *input subset*, so what the gate
+    asserts is graph-keys ∩ fixture-lang keys (25 today), measured — never a
+    hardcoded expectation.
     """
     with open(entries_path, encoding="utf-8") as handle:
         graph = json.load(handle)
@@ -93,7 +102,7 @@ def research_keys(entries_path, limit=RESEARCH_KEY_COUNT):
         if pages:
             candidates.append(pages[0].get("textKey"))
         for key in candidates:
-            if key and key.startswith("tc.") and key not in keys:
+            if key and key not in keys:
                 keys.append(key)
                 if len(keys) >= limit:
                     return keys

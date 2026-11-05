@@ -20,8 +20,9 @@ import java.util.Set;
  * The research display strings the shipped graph references, read from the
  * file BOOK-3a generates (D-016 option 2).
  *
- * <p>BOOK-3a (<code>t_5a784296</code>) converts 707 of the graph's 711
- * {@code tc.*} keys out of the player's own extracted 1.7.10
+ * <p>BOOK-3a (<code>t_5a784296</code>) converts 708 of the graph's 712
+ * display keys — every row's {@code nameKey}/{@code textKey} plus every page's
+ * {@code textKey} — out of the player's own extracted 1.7.10
  * {@code en_US.lang} into {@code assets/thaumcraft/lang/research_original.json}.
  * That file is a language <em>resource</em>, not a language file: 1.21.1's
  * {@code ClientLanguage.loadFrom} formats {@code lang/<locale>.json} for the
@@ -198,7 +199,7 @@ public final class ResearchLexicon {
      *
      * <p>No key of {@code base} is dropped, and the generated file wins on a
      * collision. That collision set is measured empty on every build — the
-     * committed lang defines 0 of the graph's 711 keys, which
+     * committed lang defines 0 of the graph's 712 keys, which
      * {@code ResearchLexiconTest.committedLangKeepsZeroOfTheGraphKeys} pins —
      * so the ordering only decides the 4 keys BOOK-3b authors (those go in
      * {@code base}, and the generated file has no opinion about them).</p>
@@ -213,7 +214,7 @@ public final class ResearchLexicon {
      * Resolution rule, in the order the client must apply it:
      * <ol>
      *   <li>the generated original string, when the file defines the key
-     *       (an overlay build: 707 of the 711);</li>
+     *       (an overlay build: 708 of the 712);</li>
      *   <li>otherwise the live language's own answer — the port-authored
      *       {@code en_us.json} entry, which is how BOOK-3b's 4 keys land —
      *       when the language <em>has</em> the key, i.e. when {@code liveValue}
@@ -244,7 +245,7 @@ public final class ResearchLexicon {
         return "ResearchLexicon[" + values.size() + " keys]";
     }
 
-    /** Every {@code tc.*} key the graph references, for a caller that has the JSON text. */
+    /** Every display key the graph rows reference, for a caller that has the JSON text. */
     public static Set<String> graphKeys(String entriesJson) {
         return ResearchOriginalLang.collectGraphKeys(entriesJson);
     }

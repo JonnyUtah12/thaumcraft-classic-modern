@@ -180,7 +180,7 @@ class ResearchLexiconTest {
         // If the generated file sat in src/main/resources, this reader would be
         // satisfied by a committed copy of the original strings — the exact
         // thing D-016 option 2 forbids, and the code-only artifact would carry
-        // 707 of them.
+        // 708 of them.
         String assetsDir = System.getProperty("tc.modAssetsDir");
         assertNotNull(assetsDir, "system property 'tc.modAssetsDir' is not set — run tests through ./gradlew test");
         assertFalse(Files.exists(Path.of(assetsDir, "thaumcraft/lang/research_original.json")),

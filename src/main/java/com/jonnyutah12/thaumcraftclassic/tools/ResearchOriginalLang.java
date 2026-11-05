@@ -29,17 +29,28 @@ import java.util.zip.ZipFile;
  *   CRLF, {@code #} comments, {@code key=value} with the value running to end of
  *   line, Properties-style escapes ({@code \n}, {@code \r}, {@code \t}, {@code \\}, {@code \}{@code uXXXX});</li>
  *   <li>input: the shipped research graph
- *   ({@code data/thaumcraft/research_graph/entries.json}), whose every
- *   {@code tc.*} string names a display key;</li>
+ *   ({@code data/thaumcraft/research_graph/entries.json}), whose rows reference
+ *   the display keys: each row's {@code nameKey} and {@code textKey}, plus each
+ *   page's {@code textKey};</li>
  *   <li>output: a flat {@code key -> value} JSON object carrying only the keys
  *   the graph references, sorted, 2-space indented, UTF-8, no BOM.</li>
  * </ul>
  *
- * <p>The graph side is derived, never hardcoded: walking every {@code tc.*}
- * string in the shipped graph yields the key set at build time, exactly as the
- * book probes derive it. With the 4.2.3.5 graph that is 711 keys
- * (201 name + 201 text + 309 page); 707 of them exist in the original lang and
- * the 4 the original never defined are authored by BOOK-3b.</p>
+ * <p>The graph side is derived, never hardcoded, and derived <b>structurally</b>:
+ * the walk reads the same graph <em>fields</em> the runtime records expose
+ * ({@code ResearchEntryData.nameKey/textKey/pages}, {@code
+ * ResearchPageData.textKey}), so the build-time key set is the set the running
+ * game references. With the 4.2.3.5 graph that is 712 keys (201 name + 201 text
+ * + 310 page); 708 of them exist in the original lang and the 4 the original
+ * never defined are authored by BOOK-3b.</p>
+ *
+ * <p>The derivation used to be a prefix walk — "every {@code tc.} string in the
+ * document" — which measured 711. It missed {@code VAMPBAT} page 0's
+ * {@code textKey = "focus.upgrade.vampirebats.text"}: a key the original lang
+ * defines, outside the {@code tc.} namespace, so that page reached an overlay
+ * build as a raw key (t_6799fd3f). A prefix filter is also over-inclusive in
+ * principle — any {@code tc.}-prefixed string anywhere in the graph would be
+ * collected as if it were a display key.</p>
  *
  * <p>The 1.7.10 page markup is carried through <b>verbatim</b> — {@code <BR>},
  * the {@code §}-colour codes and the one {@code &}-code — because this step is a
@@ -53,8 +64,19 @@ import java.util.zip.ZipFile;
  */
 public final class ResearchOriginalLang {
 
-    /** Every {@code tc.*} string the shipped graph references is a display key. */
-    public static final String GRAPH_KEY_PREFIX = "tc.";
+    /**
+     * The graph document's array of research rows. Mirrors the field
+     * {@code ResearchGraphLoader.EntryFile.entries} binds with Gson; a rename on
+     * one side has to show up on the other, which the unit probes' cross-check
+     * against Gson catches.
+     */
+    static final String FIELD_ENTRIES = "entries";
+    /** {@code ResearchEntryData.nameKey} — the entry's title key. */
+    static final String FIELD_NAME_KEY = "nameKey";
+    /** {@code ResearchEntryData.textKey} / {@code ResearchPageData.textKey}. */
+    static final String FIELD_TEXT_KEY = "textKey";
+    /** {@code ResearchEntryData.pages} — the entry's page list. */
+    static final String FIELD_PAGES = "pages";
 
     /** Where the generated file lives inside the mod jar (and under a fixture root). */
     public static final String GENERATED_RESOURCE_PATH =
@@ -210,28 +232,39 @@ public final class ResearchOriginalLang {
     }
 
     /**
-     * Every {@code tc.*} string in the shipped research graph, i.e. every lang
-     * key the shipped graph references. Derived, never hardcoded.
+     * Every display key the shipped research graph references: each row's
+     * {@code nameKey} and {@code textKey}, plus each page's {@code textKey}.
+     *
+     * <p>Structural, with no namespace filter — the walk reads the graph fields
+     * the runtime records expose, so a page keyed {@code
+     * focus.upgrade.vampirebats.text} is collected exactly like a {@code tc.}
+     * one, and a {@code tc.}-prefixed string that is <em>not</em> a display key
+     * (an icon path, a prerequisite id) is not. Derived, never hardcoded.</p>
      */
     public static Set<String> collectGraphKeys(String entriesJson) {
         Set<String> keys = new TreeSet<>();
-        collectGraphKeys(parseJson(entriesJson), keys);
+        Object document = parseJson(entriesJson);
+        for (Object row : asList(document instanceof Map<?, ?> doc ? doc.get(FIELD_ENTRIES) : document)) {
+            if (row instanceof Map<?, ?> entry) {
+                addDisplayKey(keys, entry, FIELD_NAME_KEY);
+                addDisplayKey(keys, entry, FIELD_TEXT_KEY);
+                for (Object page : asList(entry.get(FIELD_PAGES))) {
+                    if (page instanceof Map<?, ?> pageMap) {
+                        addDisplayKey(keys, pageMap, FIELD_TEXT_KEY);
+                    }
+                }
+            }
+        }
         return keys;
     }
 
-    private static void collectGraphKeys(Object node, Set<String> keys) {
-        if (node instanceof String s) {
-            if (s.startsWith(GRAPH_KEY_PREFIX)) {
-                keys.add(s);
-            }
-        } else if (node instanceof Map<?, ?> map) {
-            for (Object value : map.values()) {
-                collectGraphKeys(value, keys);
-            }
-        } else if (node instanceof List<?> list) {
-            for (Object value : list) {
-                collectGraphKeys(value, keys);
-            }
+    private static List<?> asList(Object value) {
+        return value instanceof List<?> list ? list : List.of();
+    }
+
+    private static void addDisplayKey(Set<String> keys, Map<?, ?> object, String field) {
+        if (object.get(field) instanceof String s && !s.isBlank()) {
+            keys.add(s);
         }
     }
 
