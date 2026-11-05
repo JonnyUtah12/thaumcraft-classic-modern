@@ -64,7 +64,7 @@ class LocalizationFileTest {
             // original en_US.lang wording.
             "tc.research.getprim", "tc.research.hasnote", "tc.research.popup",
             "tc.research.purchase", "tc.research.short", "tc.research.shortprim",
-            "tc.researchmissing");
+            "tc.researchmissing",
             // TC-M3-04-s-iii: the research-note screen's ink tooltip lines and
             // its copy-cost header (GuiResearchTable:172-183, :327), each string
             // verbatim from the original en_US.lang.

@@ -73,6 +73,8 @@ public final class M3ResearchContent {
                     new Item.Properties()
                             .stacksTo(1)
                             .durability(100)));
+
+    /**
      * thaumcraft:gui_research_table — the research-note hex-grid menu
      * (docs/content-mapping.csv row 972, original gui_id 10 /
      * {@code GuiResearchTable} + {@code ContainerResearchTable}, TC-M3-04-s-iii).

@@ -139,7 +139,7 @@ public final class LocalizationGameTest {
             Map.entry("tc.research.purchase", "book-screen node hint (BookNoteRequest.KEY_PURCHASE)"),
             Map.entry("tc.research.short", "book-screen node hint (BookNoteRequest.KEY_SHORT)"),
             Map.entry("tc.researchmissing", "book-screen prerequisite hint (BookNoteRequest.KEY_MISSING)"),
-            Map.entry("tc.research.popup", "book-screen note popup (BookNoteRequest.popupMessage)"));
+            Map.entry("tc.research.popup", "book-screen note popup (BookNoteRequest.popupMessage)"),
             // TC-M3-04-s-iii-b research-note menu: the two out-of-ink tooltip
             // lines (the original's TileResearchTable ink gate, keys verbatim
             // from en_US.lang) and the copy-cost header the RESEARCHDUPE plate

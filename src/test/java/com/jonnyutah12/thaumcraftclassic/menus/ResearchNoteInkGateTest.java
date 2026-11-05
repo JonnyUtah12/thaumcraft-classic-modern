@@ -1,9 +1,6 @@
 package com.jonnyutah12.thaumcraftclassic.menus;
 
 import com.jonnyutah12.thaumcraftclassic.api.IScribeTools;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.junit.jupiter.api.Test;
@@ -34,8 +31,6 @@ class ResearchNoteInkGateTest {
     private static final class ProbeScribe extends Item implements IScribeTools {
         ProbeScribe(final int maxDamage) {
             super(new Item.Properties()
-                    .setId(ResourceKey.create(Registries.ITEM,
-                            ResourceLocation.fromNamespaceAndPath("thaumcraft", "probe_scribe_" + maxDamage)))
                     .stacksTo(1)
                     .durability(maxDamage));
         }
@@ -45,8 +40,6 @@ class ResearchNoteInkGateTest {
     private static final class ProbePlain extends Item {
         ProbePlain() {
             super(new Item.Properties()
-                    .setId(ResourceKey.create(Registries.ITEM,
-                            ResourceLocation.fromNamespaceAndPath("thaumcraft", "probe_plain")))
                     .stacksTo(1)
                     .durability(16));
         }
