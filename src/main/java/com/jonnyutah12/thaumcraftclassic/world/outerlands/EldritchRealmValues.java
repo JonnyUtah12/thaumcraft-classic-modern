@@ -245,19 +245,19 @@ public final class EldritchRealmValues {
     }
 
     /**
-     * Original {@code BlockFluidDeath.onEntityCollidedWithBlock}:
-     * {@code DamageSourceThaumcraft.dissolve} for {@code meta + 1} damage —
-     * the depth of the fluid column, 1 at the source down to 1..4 with the
-     * original's four quanta.
+     * Original {@code BlockFluidDeath.func_149670_a} (BlockFluidDeath.java:42):
+     * {@code DamageSourceThaumcraft.dissolve} for
+     * {@code world.getBlockMetadata(x, y, z) + 1} damage — the depth of the
+     * fluid column, so 1.0F at a source block (metadata 0) and 8.0F at the
+     * shallowest flowing step (metadata 7). {@code BlockFluidDeath.entityInside}
+     * reads the 1.21.1 fluid level of the cell it is called on and passes it
+     * here (BD-20); the constant that hid the formula is gone.
      */
     public static float dissolveDamage(final int depth) {
         return depth + 1.0F;
     }
 
     /** Original {@code BlockFluidDeath.setQuantaPerBlock(4)}. */
-    /** BlockFluidDeath: 2.0 dissolve damage per entity contact. */
-    public static final float DEATH_FLUID_DAMAGE = 2.0F;
-
     public static final int DEATH_QUANTA = 4;
 
     // ------------------------------------------------- ItemEldritchObject

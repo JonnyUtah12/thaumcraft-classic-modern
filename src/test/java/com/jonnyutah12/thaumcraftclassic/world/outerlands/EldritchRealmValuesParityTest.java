@@ -77,8 +77,12 @@ class EldritchRealmValuesParityTest {
         assertEquals(6_000_000.0F, EldritchRealmValues.NOTHING_RESISTANCE, 0.0F);
         assertEquals(2, EldritchRealmValues.NOTHING_VARIANT_COUNT);
 
-        // BlockFluidDeath: 2.0 dissolve damage per contact (BlockFluidDeath:24).
-        assertEquals(2.0F, EldritchRealmValues.DEATH_FLUID_DAMAGE, 0.0F);
+        // BlockFluidDeath.func_149670_a (BlockFluidDeath.java:42): dissolve for
+        // world.getBlockMetadata(x, y, z) + 1 — 1.0F at a source block
+        // (metadata 0) and 8.0F at the shallowest flowing step (metadata 7).
+        assertEquals(1.0F, EldritchRealmValues.dissolveDamage(0), 0.0F);
+        assertEquals(2.0F, EldritchRealmValues.dissolveDamage(1), 0.0F);
+        assertEquals(8.0F, EldritchRealmValues.dissolveDamage(7), 0.0F);
 
         // ItemEldritchObject: setMaxDamage(0) — no durability bar
         // (ItemEldritchObject:34 func_77656_e(0)); the placer builds a
