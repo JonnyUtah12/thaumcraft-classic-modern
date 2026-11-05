@@ -74,6 +74,30 @@ even in an overlay build.
   skips), `runGameTestServer` and `-Ptc.noCurios runGameTestServer` both **All 170 required tests
   passed** (168 before this card + the 2 new probes), fixture checks (`checkAssetPathsOverlayJar`,
   `checkGeneratedResearchLang`) exit 0, no conflict markers.
+- **CI corrected two of those readings; both are repaired on this branch.**
+  1. The CI game-test legs run with no reference tree, so they take the **code-only** branch of
+     `generatedResearchLangResolvesTheShippedGraph` that no local leg ever reached. Its
+     precondition hardcoded the research key `BASICS`, which **no row of `entries.json` carries**
+     (the shipped keys are `BASICTHAUMATURGY`, `FOCUSFIRE`, …), so CI run 42099194219 failed with
+     "the graph itself is shipped" on a probe that, on the same line, measured 712 referenced keys.
+     The precondition is now **derived from the shipped JSON** — declared `entryCount` = array
+     length = runtime `graph.entries().size()`, and the first shipped row's `key` must resolve in
+     the runtime graph — so it is non-vacuous on exactly the build where it is the only branch run.
+  2. `checkGeneratedResearchLang` was **red in a clean workspace** (CI runs 42094050934 on
+     `wt/book3a` @ `caa7293` and 42099194219 here, byte-identical output). Measured cause:
+     `overlayAssetJar` decided its "no overlay lang ⇒ exclude `research_original.json`" rule from a
+     `def` evaluated at **configuration time**, and in fixture mode the fixture tree — with the
+     `en_US.lang` the generator reads — is created by `makeAssetOverlayFixture` *inside the same
+     invocation*, so the flag read false for the whole build and the jar stripped a file it was
+     about to package: **25 keys on disk, 0 in the checked jar**. That is the same trap the
+     `srcDir` wiring above documents, on the exclusion side. The rule is now evaluated in
+     `doFirst`, at task-execution time. Pair measured on this tree from a clean `build/`: without
+     the change exit 1 with `jar assets/thaumcraft/lang/research_original.json: 0 keys` and
+     `FAIL: 25 graph-referenced keys … are neither committed nor generated`; with it exit 0 with
+     `jar …: 25 keys`. The gate's job (validate the artifact that carries the file) is unchanged,
+     and the generator's own prefix gap — the 712th key, `focus.upgrade.vampirebats.text` — stays
+     filed as **t_6799fd3f**. The `firebatFlagBitsMatchTheOriginalByte` red on that same CI leg is
+     the documented flake (t_291f87aa) whose fix sits on the unmerged `wt/flakery` @ `e43937d`.
 
 **D-016 option 2, generation half (BOOK-3a): the original research display strings are
 generated at build time instead of committed.**
