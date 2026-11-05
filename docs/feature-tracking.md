@@ -261,3 +261,60 @@ round-trip — all built on that card, not rebuilt here).
   all four are NOTE-SCREEN-1's files (hotspot).
 - Not proved, and not provable in CI: the window's pixels. `runClient` was not
   run; see BD-20 and the FEATURE_MATRIX row.
+
+## BOOK-5 — the book's puzzle/note integration (t_569e7f6e, this commit)
+
+The card's gate was a dead dependency (attempt 1, blocked 2026-11-04): its note-screen
+contract lived in an archived card's empty workspace and 1.6k lines of uncommitted
+`wip-salvage`. The three prerequisite cards filed from that block shipped, and this
+commit is the integration they were aimed at:
+
+- base `3ca8131` (INTEGRATE-BOOK-LANES `t_ee886c7e`) — one Thaumonomicon, the research
+  lane (puzzle `f689e43`, note item `312c162`, note request `a3d98bc`) on the BOOK lane.
+- merge `b77cf88` (NOTE-SCREEN-1 `t_0ebc198b`) — `thaumcraft:gui_research_note`: scribe +
+  note slots + 36 player slots, six `ContainerData` ints, the server-validated arms, and
+  the note item's right-click opening it (BD-26).
+- cherry-pick `26bf1a9` (NOTE-SCREEN-2 `t_32a29c93`) — `research/NoteScreenModel` +
+  `client/ResearchNoteScreen`: 19 hexes at HEX_SIZE 9 centred (169, 83), the veil, the
+  5x5 paginated pool, the press/click/drop machine in the original's gate order, the
+  combine button's 200 ms cooldown, the clear/page/copy arms, the copy plate, the
+  out-of-ink block (BD-27).
+- BOOK-5's own delta — `ThaumonomiconNoteIntegrationGameTest` (3 game probes) walking
+  the chain the card names, and the merge repairs the three bases could not see:
+  `ResearchNoteScreenRegistrationTest` rebinding to the constants' D-019 owners, and the
+  BD renumber (menu BD-20 -> BD-26, window BD-20 -> BD-27, research-lane BD-18 -> BD-24,
+  BD-17 -> BD-23; the integrated tree at `3ca8131` already uses BD-20 for the eldritch
+  damage types and BD-17 for item models).
+
+Gates on this commit: `./gradlew --offline build --rerun-tasks` exit 0
+(BUILD SUCCESSFUL; 594 unit tests, 0 failures, 0 errors, 2 pre-existing `@Disabled`
+skips; `checkAssetPathsCodeOnlyJar` + `checkAssetPathsOverlayJar` ran) and
+`./gradlew --offline runGameTestServer` exit 0 — "All 218 required tests passed :)"
+(215 on the base + the 3 probes this commit adds).
+
+RED evidence, both exit codes quoted:
+- suite as first written, before the template annotation: exit 1,
+  `IllegalStateException: Missing test structure:
+  thaumcraft:thaumonomiconnoteintegrationgametest.empty` (the siblings carry
+  `@PrefixGameTestTemplate(false)`; without it `template = "empty"` asks for a
+  per-class structure).
+- with the structure fixed and the probes' data assumptions still guessed: exit 1,
+  `2 required tests failed :(` — `thebookmintsapuzzlenotethatopensthehexgridwindow`
+  ("a full scribing tool syncs 99 ink of 100") and
+  `thesolvednoterewritesthebookpanelforentryandchild` ("the note entry is not
+  locked behind its prerequisite in the book's panel: AVAILABLE"). Both were the
+  probe being wrong, not the product: the mint spends one durability point
+  (BD-26 arithmetic), and the note entry is by construction `AVAILABLE`, so the
+  gated child is now picked out of the shipped graph (`gatedPair`).
+- falsifiability of the joint: mutate `ItemResearchNotes.completeWithSiblings` to
+  drop its `ResearchManager.completeResearch` call → exit 1, `3 required tests
+  failed :(`, naming `agridclosedthroughthewindowwritearmfeedsresearchknowledge`
+  ("a solved, consumed note left GOLEMSTRAW unknown"),
+  `thesolvednoterewritesthebookpanelforentryandchild` ("the book's panel does not
+  report the note's entry as known: AVAILABLE") and the item lane's own
+  `completednotefinishesresearchsiblingsandisconsumed`. Mutation reverted → exit 0,
+  "All 218 required tests passed :)".
+
+Not done here, and on other cards: the research-table BLOCK open path and its
+`bonusAspects` pool (TC-M4-01), the `tc.aspect.*` names behind the tooltips (the
+localization card), the window's pixels (no client in CI, D-019).
