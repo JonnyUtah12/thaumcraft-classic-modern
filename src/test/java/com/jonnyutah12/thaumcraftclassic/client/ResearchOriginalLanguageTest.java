@@ -186,6 +186,7 @@ class ResearchOriginalLanguageTest {
     // ------------------------------------------------------------------
 
     @Test
+    @SuppressWarnings("removal") // EventBusSubscriber.bus()/Bus are marked for removal; the tree registers on them
     void bothSubscribersAreClientOnly() {
         EventBusSubscriber outer = ResearchOriginalLanguage.class.getAnnotation(EventBusSubscriber.class);
         assertNotNull(outer, "the merge class must be an EventBusSubscriber");
