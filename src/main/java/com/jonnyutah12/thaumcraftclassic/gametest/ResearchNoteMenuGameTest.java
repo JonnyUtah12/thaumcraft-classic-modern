@@ -17,6 +17,7 @@ import com.jonnyutah12.thaumcraftclassic.research.ResearchGraphLoader;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchManager;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchNoteData;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchNoteData.HexEntry;
+import com.jonnyutah12.thaumcraftclassic.research.HexUtils.Hex;
 import com.mojang.authlib.GameProfile;
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -54,7 +55,7 @@ import net.neoforged.neoforge.network.registration.ChannelAttributes;
 
 /**
  * TC-M3-04-s-iii-b: the research-note screen's server half — the
- * {@code thaumcraft:gui_research_table} menu type, its slot contract, its
+ * {@code thaumcraft:gui_research_note} menu type, its slot contract, its
  * synced note state and the note's persistence round trip.
  *
  * <p>The hex-grid rendering is the sibling card: a screen class is client-only
@@ -99,14 +100,22 @@ import net.neoforged.neoforge.network.registration.ChannelAttributes;
  *       id 5 the copy, everything else refused — and an unsolved note stays
  *       unsolved with 0 copies.</li>
  *   <li>{@link #theCopyArmIsTheOriginalsArms}: {@code TileResearchTable.java
- *       :425-462} — meta exactly 64, one book, one coal, and every tag's pool
+ *       :425-462} — meta 64 (the completed flag in the port, BD-20), one book,
+ *       one coal, and every tag's pool
  *       at {@code amount + copies} or better; no ink. On success the copy count
  *       goes up, the note in the slot grows by one (the original's
  *       {@code contents[1].stackSize++}) and exactly one book and one coal are
  *       spent. On a short pool nothing at all changes.</li>
- *   <li>{@link #completionStampsTheOriginalsMeta64}: the completion arm stamps
- *       the note's metadata to 64 ({@code TileResearchTable.java:178}), which
- *       is what opens the copy arm and closes the write arm.</li>
+ *   <li>{@link #completionStampsTheCompletedFlag}: the completion arm stamps
+ *       the completed state — the original sets metadata 64
+ *       ({@code TileResearchTable.java:178}); in the port the completed flag
+ *       carries that state (the {@code thaumcraft:item_meta} codec is bounded at
+ *       63, BD-18; the seam is BD-20) — which is what opens the copy arm and
+ *       closes the write arm.</li>
+ *   <li>{@link #aFundedWriteSpendsPoolInkAndCompletesTheNote}: the write arm end
+ *       to end with the shipped scribing tool — the grid write lands, the pool
+ *       pays one, one ink point is spent, and the server stamps completion; the
+ *       client never asks for it.</li>
  *   <li>{@link #theNoteStateSurvivesTheServerRoundTrip}: the state rides the
  *       {@code thaumcraft:research_note} component, so it survives (a) the
  *       container's own NBT and a reopened menu, (b) the saved-stack codec the
@@ -120,8 +129,8 @@ import net.neoforged.neoforge.network.registration.ChannelAttributes;
 public final class ResearchNoteMenuGameTest {
 
     private static final ResourceLocation MENU_ID =
-            ResourceLocation.parse(ThaumcraftClassic.MOD_ID + ":gui_research_table");
-    private static final String MENU_TITLE_KEY = "container.thaumcraft.gui_research_table";
+            ResourceLocation.parse(ThaumcraftClassic.MOD_ID + ":gui_research_note");
+    private static final String MENU_TITLE_KEY = "container.thaumcraft.gui_research_note";
     private static final String NOTE_KEY = "item." + ThaumcraftClassic.MOD_ID + ".itemresearchnotes";
     /** The original's completed-note metadata (TileResearchTable.java:178). */
     private static final int META_COMPLETED = 64;
@@ -132,10 +141,10 @@ public final class ResearchNoteMenuGameTest {
     @GameTest(template = "empty")
     public static void theMenuCarriesTheContainersSlotContract(final GameTestHelper helper) {
         helper.assertTrue(BuiltInRegistries.MENU.containsKey(MENU_ID),
-                "thaumcraft:gui_research_table is missing from the menu registry");
-        helper.assertTrue(BuiltInRegistries.MENU.get(MENU_ID) == M3ResearchContent.GUI_RESEARCH_TABLE.get(),
+                "thaumcraft:gui_research_note is missing from the menu registry");
+        helper.assertTrue(BuiltInRegistries.MENU.get(MENU_ID) == M3ResearchContent.GUI_RESEARCH_NOTE.get(),
                 "the registered menu type is not the M3ResearchContent holder");
-        final ResearchNoteMenu builtByTheType = M3ResearchContent.GUI_RESEARCH_TABLE.get()
+        final ResearchNoteMenu builtByTheType = M3ResearchContent.GUI_RESEARCH_NOTE.get()
                 .create(0, freshPlayer(helper).getInventory(), null);
         helper.assertTrue(ResearchNoteMenu.class == builtByTheType.getClass(),
                 "the MenuType factory does not build ResearchNoteMenu: " + builtByTheType.getClass());
@@ -144,9 +153,12 @@ public final class ResearchNoteMenuGameTest {
         final Inventory inventory = player.getInventory();
         final ResearchNoteMenu menu = newMenu(player);
 
-        // Derived from the container the menu was handed, not a fixed number:
-        // the original's two table slots plus one menu slot per Inventory slot.
-        final int expectedSlots = ResearchNoteMenu.FIRST_PLAYER_SLOT + inventory.getContainerSize();
+        // The original's player loop is 3 rows x 9 + the hotbar's 9 = 36 slots
+        // (ContainerResearchTable.java:29-36) — NOT the width of the 1.21.1
+        // inventory object, which NeoForge mirrors as EnderInventory (36 main
+        // plus 5 armor, containerSize 41). The menu lays out the original's 36.
+        final int playerSlots = 36;
+        final int expectedSlots = ResearchNoteMenu.FIRST_PLAYER_SLOT + playerSlots;
         helper.assertTrue(menu.slots.size() == expectedSlots,
                 "the menu laid out " + menu.slots.size() + " slots, the container has "
                         + inventory.getContainerSize() + " inventory slots plus the original's "
@@ -172,14 +184,20 @@ public final class ResearchNoteMenuGameTest {
         // this player's Inventory, at the original's arithmetic: rows at
         // 48 + col*18 / 175 + row*18 and the hotbar at 48 + i*18 / 233
         // (ContainerResearchTable.java:29-36).
-        for (int index = 0; index < inventory.getContainerSize(); index++) {
+        for (int index = 0; index < playerSlots; index++) {
             final Slot slot = menu.getSlot(ResearchNoteMenu.FIRST_PLAYER_SLOT + index);
             helper.assertTrue(slot.container == inventory,
                     "menu slot " + (ResearchNoteMenu.FIRST_PLAYER_SLOT + index)
                             + " is not bound to the player's inventory");
-            helper.assertTrue(slot.getSlotIndex() == index,
+            // The raw inventory indices are the original's arithmetic: the main
+            // rows read slots 9..35 and the hotbar row 0..8
+            // (ContainerResearchTable.java:31,35 — j + i * 9 + 9, then i). That
+            // is also 1.21.1's Inventory indexing, so slot 0 of the layout is
+            // inventory slot 9, not 0.
+            final int expectedIndex = index < 27 ? index + 9 : index - 27;
+            helper.assertTrue(slot.getSlotIndex() == expectedIndex,
                     "menu slot " + (ResearchNoteMenu.FIRST_PLAYER_SLOT + index) + " reads inventory slot "
-                            + slot.getSlotIndex() + ", expected " + index);
+                            + slot.getSlotIndex() + ", the original's slot " + expectedIndex);
             final int expectedX;
             final int expectedY;
             if (index < 27) {
@@ -208,7 +226,7 @@ public final class ResearchNoteMenuGameTest {
                         && emptyData.get(ResearchNoteMenu.DATA_GRID_COUNT) == 0,
                 "an empty note table does not publish the screen's no-note state");
         helper.assertTrue(MENU_TITLE_KEY.equals("container.thaumcraft."
-                        + M3ResearchContent.GUI_RESEARCH_TABLE.getKey().location().getPath()),
+                        + M3ResearchContent.GUI_RESEARCH_NOTE.getKey().location().getPath()),
                 "the menu's title key is not the registered id's key: " + MENU_TITLE_KEY);
         helper.succeed();
     }
@@ -219,7 +237,11 @@ public final class ResearchNoteMenuGameTest {
         final ResearchNoteMenu menu = newMenu(player);
 
         // Original: SlotLimitedByClass(IScribeTools.class, ...) — a class check.
-        // The port ships no scribing tool, so nothing passes it today.
+        // items/ItemInkwell (TC-M3-04-s-v) is the shipped marker implementor, so
+        // it must pass; stone and notes must not.
+        helper.assertTrue(menu.getSlot(ResearchNoteMenu.SLOT_SCRIBE).mayPlace(
+                        new ItemStack(M3ResearchContent.ITEM_INKWELL.get())),
+                "the scribe slot refused the shipped scribing tool: items/ItemInkwell implements IScribeTools");
         helper.assertTrue(!menu.getSlot(ResearchNoteMenu.SLOT_SCRIBE).mayPlace(new ItemStack(Items.STONE)),
                 "the scribe slot accepted a non-scribing tool");
         helper.assertTrue(!menu.getSlot(ResearchNoteMenu.SLOT_SCRIBE).mayPlace(noteStack(puzzleNote(3), 0)),
@@ -250,6 +272,7 @@ public final class ResearchNoteMenuGameTest {
         final ResearchNoteMenu menu = new ResearchNoteMenu(1, player.getInventory(), data);
         final ResearchNoteData note = puzzleNote(4);
         menu.getSlot(ResearchNoteMenu.SLOT_NOTE).set(noteStack(note, 0));
+        menu.broadcastChanges(); // the arms refuse below, so this is the only sync point
 
         helper.assertTrue(!menu.hasInk(), "the menu reported ink with no scribing tool in the slot");
 
@@ -449,7 +472,101 @@ public final class ResearchNoteMenuGameTest {
     }
 
     @GameTest(template = "empty")
-    public static void completionStampsTheOriginalsMeta64(final GameTestHelper helper) {
+    public static void aFundedWriteSpendsPoolInkAndCompletesTheNote(final GameTestHelper helper) {
+        // The write arm end to end, with the shipped scribing tool in the scribe
+        // slot: the grid write, the one-point ink spend (TileResearchTable.java
+        // :176), the one-unit aspect-pool pay (:148-152) and the server-side
+        // completion (:177). The note is a chain the player has to close: two
+        // required ignis cells two steps apart, so the only write that connects
+        // them is the parent aspect on the cell between them (lux = aer + ignis,
+        // AspectDefinitions; NotePuzzle.componentsMatch is the direct-component
+        // rule). That write is the one that both lands and completes: completion
+        // prunes the cells outside the connected chain (:204-210), and this cell
+        // is IN the chain, so it is still on the note afterwards — the completed
+        // flag is the port's meta-64 carrier (BD-20).
+        final ServerPlayer player = freshPlayer(helper);
+        final SimpleContainerData data = new SimpleContainerData(ResearchNoteMenu.DATA_COUNT);
+        final ResearchNoteMenu menu = new ResearchNoteMenu(1, player.getInventory(), data);
+
+        final ItemStack inkwell = new ItemStack(M3ResearchContent.ITEM_INKWELL.get());
+        menu.getSlot(ResearchNoteMenu.SLOT_SCRIBE).set(inkwell);
+        setKnowledge(player, PlayerKnowledgeData.empty()
+                .withAspectDiscovered("ignis", 5).withAspectDiscovered("lux", 5));
+        menu.getSlot(ResearchNoteMenu.SLOT_NOTE).set(noteStack(chainNote(), 0));
+
+        helper.assertTrue(menu.hasInk(), "the shipped scribing tool reported no ink at full durability");
+        helper.assertTrue(ResearchNoteMenu.inkRemaining(inkwell) == inkwell.getMaxDamage(),
+                "a full inkwell reports " + ResearchNoteMenu.inkRemaining(inkwell)
+                        + " ink, the durability window is " + inkwell.getMaxDamage());
+
+        menu.placeAspect(1, 0, "lux", player);
+
+        final ResearchNoteData written =
+                ResearchNoteMenu.noteOf(menu.getSlot(ResearchNoteMenu.SLOT_NOTE).getItem());
+        helper.assertTrue(written != null, "the funded write lost the note");
+        final HexEntry cell = written.entryAt(new Hex(1, 0));
+        helper.assertTrue(cell != null && "lux".equals(cell.aspectTag()) && cell.type() == 2,
+                "the write did not land on the blank cell: " + cell + " grid=" + written.hexEntries());
+        helper.assertTrue(inkwell.getDamageValue() == 1,
+                "the write spent " + inkwell.getDamageValue() + " ink points, the original spends 1 (:176)");
+        helper.assertTrue(player.getData(ModAttachments.PLAYER_KNOWLEDGE).aspectAmount("lux") == 4,
+                "the write paid " + (5 - player.getData(ModAttachments.PLAYER_KNOWLEDGE).aspectAmount("lux"))
+                        + " from the aspect pool, the original pays 1 (:148-152)");
+        helper.assertTrue(player.getData(ModAttachments.PLAYER_KNOWLEDGE).aspectAmount("ignis") == 5,
+                "the write paid from the ignis pool, which the written aspect does not draw on");
+        helper.assertTrue(written.complete(),
+                "the closed chain kept its completed flag off (the port's meta-64 carrier, BD-20)");
+        helper.assertTrue(data.get(ResearchNoteMenu.DATA_INK) == inkwell.getMaxDamage() - 1,
+                "the synced ink value is " + data.get(ResearchNoteMenu.DATA_INK) + " after one write");
+        helper.assertTrue(data.get(ResearchNoteMenu.DATA_COMPLETE) == 1,
+                "the completed flag did not sync");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void aWriteOnAnOpenChainLandsWithoutCompleting(final GameTestHelper helper) {
+        // The write arm's own landing, with the completion stamp held off: the
+        // chain here cannot close (ignis and aer are both primals, so
+        // NotePuzzle.componentsMatch never connects them), so the ONLY thing
+        // that can put the cell on the note is the write's updateData
+        // (TileResearchTable.java:174-175 — the write, then the ink spend :176,
+        // then the completion check :177). Without this probe a missing write
+        // hides behind the completion stamp, which rewrites the whole state.
+        final ServerPlayer player = freshPlayer(helper);
+        final SimpleContainerData data = new SimpleContainerData(ResearchNoteMenu.DATA_COUNT);
+        final ResearchNoteMenu menu = new ResearchNoteMenu(1, player.getInventory(), data);
+
+        final ItemStack inkwell = new ItemStack(M3ResearchContent.ITEM_INKWELL.get());
+        menu.getSlot(ResearchNoteMenu.SLOT_SCRIBE).set(inkwell);
+        setKnowledge(player, PlayerKnowledgeData.empty()
+                .withAspectDiscovered("ignis", 5).withAspectPoolAdded("aer", 5));
+        menu.getSlot(ResearchNoteMenu.SLOT_NOTE).set(noteStack(chainNote(), 0));
+
+        menu.placeAspect(1, 0, "aer", player);
+
+        final ResearchNoteData written =
+                ResearchNoteMenu.noteOf(menu.getSlot(ResearchNoteMenu.SLOT_NOTE).getItem());
+        helper.assertTrue(written != null, "the write lost the note");
+        final HexEntry cell = written.entryAt(new Hex(1, 0));
+        helper.assertTrue(cell != null && "aer".equals(cell.aspectTag()) && cell.type() == 2,
+                "the write did not land on the note: " + cell + " grid=" + written.hexEntries());
+        helper.assertTrue(!written.complete(),
+                "an uncloseable chain stamped the completed flag");
+        helper.assertTrue(inkwell.getDamageValue() == 1,
+                "the write spent " + inkwell.getDamageValue() + " ink points, the original spends 1 (:176)");
+        helper.assertTrue(player.getData(ModAttachments.PLAYER_KNOWLEDGE).aspectAmount("aer") == 4,
+                "the write paid " + (5 - player.getData(ModAttachments.PLAYER_KNOWLEDGE).aspectAmount("aer"))
+                        + " from the aspect pool, the original pays 1 (:148-152)");
+        helper.assertTrue(data.get(ResearchNoteMenu.DATA_COMPLETE) == 0,
+                "the completed data slot lit for an uncloseable chain");
+        helper.assertTrue(data.get(ResearchNoteMenu.DATA_GRID_COUNT) == written.hexEntries().size(),
+                "the synced grid count is " + data.get(ResearchNoteMenu.DATA_GRID_COUNT) + ", the note holds "
+                        + written.hexEntries().size());
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void completionStampsTheCompletedFlag(final GameTestHelper helper) {
         final ItemStack stack = noteStack(puzzleNote(3), 0);
         helper.assertTrue(ItemResearchNotes.storedMeta(stack) != META_COMPLETED,
                 "a fresh puzzle note must not start at the completed meta");
@@ -458,9 +575,10 @@ public final class ResearchNoteMenuGameTest {
         // TileResearchTable.java:177-178: checkResearchCompletion, then
         // contents[1].setItemDamage(64).
         ResearchNoteMenu.applyCompletion(stack, completed);
-        helper.assertTrue(ItemResearchNotes.storedMeta(stack) == META_COMPLETED,
-                "the completion arm did not stamp meta 64 (TileResearchTable.java:178): meta is "
-                        + ItemResearchNotes.storedMeta(stack));
+        helper.assertTrue(ResearchNoteMenu.noteOf(stack).complete(),
+                "the completion arm did not stamp the completed flag — the port's carrier for the "
+                        + "original's meta 64 (TileResearchTable.java:178; thaumcraft:item_meta is "
+                        + "bounded at 63, BD-18, seam BD-20): " + ResearchNoteMenu.noteOf(stack));
         helper.assertTrue(ItemResearchNotes.META_DISCOVERY_FAMILY == META_COMPLETED,
                 "the port's completed-note meta is not the original's 64: "
                         + ItemResearchNotes.META_DISCOVERY_FAMILY);
@@ -509,12 +627,22 @@ public final class ResearchNoteMenuGameTest {
         // — round-trips into a fresh menu with the grid state intact: the state
         // rides the stack, so no side table is needed for it to survive.
         final SimpleContainer table = menu.tableContainer();
-        final ListTag saved = table.createTag(helper.getLevel().registryAccess());
+        // The slot-preserving container shape (the one the port's tile
+        // containers persist): ContainerHelper writes each stack's tag with a
+        // Slot byte. Vanilla SimpleContainer.createTag carries NO slot key at
+        // all and SimpleContainer.fromTag reindexes by order, which is lossy
+        // for a sparse container — the note sits at slot 1 of the table pair,
+        // so an order-based restore would move it to slot 0. The shape under
+        // test is the slot-preserving one: the grid state rides the ItemStack.
+        final net.minecraft.nbt.CompoundTag tableTag = new net.minecraft.nbt.CompoundTag();
+        net.minecraft.world.ContainerHelper.saveAllItems(tableTag, table.getItems(),
+                helper.getLevel().registryAccess());
         final SimpleContainer restored = new SimpleContainer(table.getContainerSize());
-        restored.fromTag(saved, helper.getLevel().registryAccess());
+        net.minecraft.world.ContainerHelper.loadAllItems(tableTag, restored.getItems(),
+                helper.getLevel().registryAccess());
         final ItemStack throughContainer = restored.getItem(ResearchNoteMenu.SLOT_NOTE);
         helper.assertTrue(!throughContainer.isEmpty(),
-                "the note vanished through the container NBT round trip (" + saved.size() + " entries saved)");
+                "the note vanished through the container NBT round trip (" + tableTag.size() + " keys saved)");
         helper.assertTrue(grid.equals(ResearchNoteMenu.noteOf(throughContainer)),
                 "the grid state did not survive the container NBT round trip: "
                         + ResearchNoteMenu.noteOf(throughContainer) + " vs " + grid);
@@ -575,7 +703,7 @@ public final class ResearchNoteMenuGameTest {
     private static PlayerKnowledgeData fundedPool(final ResearchEntryData entry, final int offset) {
         PlayerKnowledgeData knowledge = PlayerKnowledgeData.empty();
         for (final var tag : entry.tags()) {
-            knowledge = knowledge.withAspectPoolAdded(tag.aspect(), tag.amount() + 5 + offset);
+            knowledge = knowledge.withAspectPoolAdded(tag.aspect(), tag.amount() + offset);
         }
         return knowledge;
     }
@@ -608,6 +736,22 @@ public final class ResearchNoteMenuGameTest {
             q++;
         }
         cells.put(count + ":0", new HexEntry(null, 0)); // a blank cell to fill
+        return new ResearchNoteData(NOTE_KEY, 1, false, 0, cells);
+    }
+
+    /**
+     * A chain the player has to close: required ignis cells at {@code 0:0} and
+     * {@code 2:0} — two steps apart, so they never touch (HexUtils.NEIGHBOURS)
+     * — with the blank cell {@code 1:0} between them, which touches both. The
+     * only write that connects the chain is a parent aspect on that middle cell
+     * (NotePuzzle.componentsMatch is the direct-component rule: ignis is a
+     * component of lux, aer + ignis, AspectDefinitions).
+     */
+    private static ResearchNoteData chainNote() {
+        final Map<String, HexEntry> cells = new LinkedHashMap<>();
+        cells.put("0:0", new HexEntry("ignis", 1));
+        cells.put("2:0", new HexEntry("ignis", 1));
+        cells.put("1:0", new HexEntry(null, 0));
         return new ResearchNoteData(NOTE_KEY, 1, false, 0, cells);
     }
 

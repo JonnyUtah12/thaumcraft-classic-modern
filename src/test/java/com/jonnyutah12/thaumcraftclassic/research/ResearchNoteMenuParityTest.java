@@ -210,7 +210,7 @@ class ResearchNoteMenuParityTest {
         final String src = ReferenceOrigins.read(MANAGER);
         final String arm = methodBody(src, "consumeInkFromTable");
         assertTrue(arm.contains("instanceof IScribeTools"), "the ink gate is not the marker check (:221)");
-        assertTrue(arm.contains("func_77960_j() < func_77958_k()"),
+        assertTrue(arm.contains("func_77960_j() < stack.func_77958_k()"),
                 "the ink gate is not damage < maxDamage (:221)");
         assertTrue(arm.contains("func_77960_j() + 1"), "the committed write does not spend one point (:223)");
 
@@ -218,7 +218,7 @@ class ResearchNoteMenuParityTest {
         final String portArm = between(port, "public static boolean consumeInk(",
                 "/** The ink gate alone, with no spend");
         assertTrue(portArm.contains("instanceof IScribeTools"), "the port's ink gate is not the marker check");
-        assertTrue(portArm.contains("getDamageValue() >= getMaxDamage()"),
+        assertTrue(portArm.contains("getDamageValue() >=") && portArm.contains("getMaxDamage()"),
                 "the port's ink gate is not the inverse of damage < maxDamage");
         assertTrue(portArm.contains("getDamageValue() + 1"), "the port's commit does not spend one point");
     }

@@ -75,12 +75,16 @@ public final class M3ResearchContent {
                             .durability(100)));
 
     /**
-     * thaumcraft:gui_research_table — the research-note hex-grid menu
+     * thaumcraft:gui_research_note — the research-note menu
      * (docs/content-mapping.csv row 972, original gui_id 10 /
      * {@code GuiResearchTable} + {@code ContainerResearchTable}, TC-M3-04-s-iii).
+     * The id is {@code gui_research_note}, not the row's literal
+     * {@code gui_research_table}: the note item's right-click is the port's open
+     * seam and the GUI's subject is the note, not the table block (BD-20, and the
+     * row's new_id is flipped to this id in the same commit).
      */
-    public static final DeferredHolder<MenuType<?>, MenuType<ResearchNoteMenu>> GUI_RESEARCH_TABLE =
-            MENUS.register("gui_research_table",
+    public static final DeferredHolder<MenuType<?>, MenuType<ResearchNoteMenu>> GUI_RESEARCH_NOTE =
+            MENUS.register("gui_research_note",
                     () -> new MenuType<>(ResearchNoteMenu::new,
                             net.minecraft.world.flag.FeatureFlags.VANILLA_SET));
 

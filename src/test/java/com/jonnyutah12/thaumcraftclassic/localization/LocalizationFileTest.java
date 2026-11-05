@@ -80,7 +80,7 @@ class LocalizationFileTest {
             "container.thaumcraft.magicbox", "container.thaumcraft.spa",
             // TC-M3-04-s-iii: the research-note screen's MenuType title
             // ("Research Table", the original tile's inventory name).
-            "container.thaumcraft.gui_research_table",
+            "container.thaumcraft.gui_research_note",
             "item.thaumcraft.itemlootbag.tooltip", "item.thaumcraft.trunkspawner.tooltip",
             "item.thaumcraft.itemgolemupgrade.0", "item.thaumcraft.itemgolemupgrade.1",
             "item.thaumcraft.itemgolemupgrade.2", "item.thaumcraft.itemgolemupgrade.3",

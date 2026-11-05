@@ -35,7 +35,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * The research-note container (TC-M3-04-s-iii-b, content-mapping row
- * {@code Thaumcraft:GUI_RESEARCH_TABLE} → {@code thaumcraft:gui_research_table},
+ * {@code Thaumcraft:GUI_RESEARCH_NOTE} → {@code thaumcraft:gui_research_note},
  * original {@code gui_id = 10}).
  *
  * <p>The original split this screen across three classes:
@@ -70,21 +70,34 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * <p><b>Authority</b> — the server decides everything that matters. A client
  * hex write is a request; the write spends the aspect pool and the ink, and
  * completion runs through {@link NotePuzzle#checkCompletion} (the single
- * completion authority from TC-M3-04-s) and stamps the original's meta 64
- * ({@code TileResearchTable.java:178}). The place payload carries no completion
+ * completion authority from TC-M3-04-s); the completion stamp is the original's
+ * meta 64 ({@code TileResearchTable.java:178}) carried by the completed flag —
+ * the {@code thaumcraft:item_meta} codec is bounded at 63 (BD-18), so 64 has no
+ * stack carrier and the flag is the port's seam (BD-20). The place payload carries no completion
  * claim and no button id can ask for one: the original's {@code buttonClick}
  * has exactly two arms — {@code button == 1} accepted as a no-op and
  * {@code button == 5} → {@code TileResearchTable.duplicate}
  * ({@code ContainerResearchTable.java:39-47}).</p>
+ *
+ * <p><b>Open path and screen</b> — the original opened this GUI at the
+ * research-table block ({@code BlockTable.useBlockOn}, gui_id 10); the port has
+ * no research-table tile (TC-M4-01's card), so right-clicking a research note
+ * opens it ({@code ItemResearchNotes#use}, BD-20) and the note rides into slot 1
+ * by the original's own shift-click arm. The screen shipped with this card is a
+ * minimal placeholder — panel, title, ink warning and copy-cost header — so the
+ * MenuType is screen-complete for {@code MenuTypeScreenCoverageTest}; the hex
+ * grid, the copy plate and the buttons are the note-screen presentation card
+ * (BD-20, TEMPORARY, the BD-22 precedent wording).
  *
  * <p><b>Ink</b> — the scribing tool is the original's {@link IScribeTools}
  * marker, empty in the API and checked with {@code instanceof}; ink is the
  * vanilla durability counter the original read as the damage value
  * ({@code ResearchManager.consumeInkFromTable}, {@code ResearchManager.java
  * :220-230}: {@code damage < maxDamage} means ink, one point spent per
- * committed write). No shipped item carries the marker yet — the scribing tool
- * is its own catalog row — so the gate is inert in game today and the screen
- * shows the original's out-of-ink tooltip ({@code GuiResearchTable.java:209}).
+ * committed write). The shipped {@code items/ItemInkwell}
+ * (TC-M3-04-s-v) carries the marker with the original's properties (stack size 1,
+ * durability 100), so the gate is live in game, and the screen shows the
+ * original's out-of-ink tooltip lines ({@code GuiResearchTable.java:209-215}).
  * The ink arms are exposed as statics so the unit suite can drive them with a
  * synthetic scribe; the game harness has no scribe item to hand the slots.</p>
  */
@@ -109,7 +122,7 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
     /** Original {@code ContainerResearchTable.java:20} — note slot y. */
     public static final int NOTE_SLOT_Y = 10;
     /** Original {@code ContainerResearchTable.java:31,35} — player rows start at x 48. */
-    public static final int PLAYER_SLOT_X = 8;
+    public static final int PLAYER_SLOT_X = 48;
     /** Original {@code ContainerResearchTable.java:31} — the first main row's y. */
     public static final int PLAYER_ROW_Y = 175;
     /** Original {@code ContainerResearchTable.java:31,35} — the slot pitch. */
@@ -173,7 +186,7 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
      * values to every tracking client, so the client mirror is read-only.
      */
     public ResearchNoteMenu(final int id, final Inventory playerInventory, final ContainerData dataSource) {
-        super(M3ResearchContent.GUI_RESEARCH_TABLE.get(), id);
+        super(M3ResearchContent.GUI_RESEARCH_NOTE.get(), id);
         this.player = playerInventory.player;
         this.data = dataSource;
 
@@ -189,9 +202,12 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
         this.addSlot(new Slot(this.container, SLOT_NOTE, NOTE_SLOT_X, NOTE_SLOT_Y) {
             @Override
             public boolean mayPlace(final ItemStack stack) {
-                final ResearchNoteData candidate = noteOf(stack);
-                return !stack.isEmpty() && stack.getItem() instanceof ItemResearchNotes
-                        && candidate != null && ItemResearchNotes.storedMeta(stack) < 64 && !candidate.complete();
+                // SlotLimitedByClass(ItemResearchNotes.class, ...) — the class and
+                // NOTHING else (SlotLimitedByClass.java:22-24). The meta-64 and
+                // completion gates live in the write arm (TileResearchTable.java
+                // :129-133), not in the slot, so a completed note fits the slot for
+                // the original's duplicate display.
+                return !stack.isEmpty() && stack.getItem() instanceof ItemResearchNotes;
             }
         });
         for (int row = 0; row < 3; row++) {
@@ -250,7 +266,7 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
      */
     public static boolean consumeInk(final ItemStack tool, final boolean commit) {
         if (tool.isEmpty() || !(tool.getItem() instanceof IScribeTools)
-                || tool.getDamageValue() > tool.getMaxDamage()) {
+                || tool.getDamageValue() >= tool.getMaxDamage()) {
             return false;
         }
         if (commit) {
@@ -303,8 +319,10 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
         final ItemStack noteStack = this.container.getItem(SLOT_NOTE);
         if (noteStack.isEmpty() || !(noteStack.getItem() instanceof ItemResearchNotes)
                 || dataState == null
-                || ItemResearchNotes.storedMeta(noteStack) >= ItemResearchNotes.META_DISCOVERY_FAMILY) {
-            return; // original TileResearchTable.java:129-133
+                || ItemResearchNotes.storedMeta(noteStack) >= ItemResearchNotes.META_DISCOVERY_FAMILY
+                || dataState.complete()) {
+            return; // original TileResearchTable.java:129-133 (meta >= 64 refuses); in the port the
+                    // completed flag carries the meta-64 state (BD-20), and it closes this arm too.
         }
         final PlayerKnowledgeData initial = knowledge();
         final boolean r1 = ResearchManager.isResearchComplete(initial, "RESEARCHER1");
@@ -368,12 +386,18 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
     /**
      * The completion stamp, ported from {@code TileResearchTable.java:177-178}:
      * {@code ResearchManager.checkResearchCompletion} plus
-     * {@code contents[1].setItemDamage(64)}. The note state goes back onto the
-     * stack and the metadata becomes the original's 64, which is what takes the
-     * note out of the writeable family (the write arm refuses meta 64+ and
-     * {@code ItemResearchNotes#use} finishes the research).
+     * {@code contents[1].setItemDamage(64)}. The original's meta 64 is the
+     * discovery family's floor — {@code META_DISCOVERY_FAMILY} — and the
+     * {@code thaumcraft:item_meta} codec is bounded at 63 (BD-18), so 64 has no
+     * stack carrier here: the completed flag inside the record below IS the port's
+     * carrier (BD-20). It is what takes the note out of the writeable family (the
+     * write arm refuses it) and opens the copy arm, and
+     * {@code ItemResearchNotes#use} finishes the research.
      */
     public static void applyCompletion(final ItemStack noteStack, final ResearchNoteData completed) {
+        // The original's stamp is setItemDamage(META_DISCOVERY_FAMILY's 64); the
+        // port stamps the completed flag inside the completed record — the carrier
+        // the meta-64 state rides (codec bound 63, BD-18; seam BD-20).
         noteStack.set(ModDataComponents.RESEARCH_NOTE.get(), completed);
     }
 
@@ -426,7 +450,8 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
     /**
      * Original {@code TileResearchTable.duplicate} ({@code TileResearchTable.java
      * :425-462}) with its gates in its order: a note in slot 1, its data
-     * resolved, <b>its metadata exactly 64</b>, one book and one coal carried,
+     * resolved, <b>meta 64 — the completed flag in the port, BD-20</b>, one book
+     * and one coal carried,
      * and every tag's pool at {@code amount + copies} or better — otherwise
      * nothing happens. The payment is the pool, one book, one coal; then the
      * block event, {@code data.copies++} written back, and
@@ -444,14 +469,13 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
         if (this.player.level().isClientSide) {
             return;
         }
-        if (!hasInk()) {
-            return;
-        }
         final ItemStack noteStack = this.container.getItem(SLOT_NOTE);
         final ResearchNoteData dataState = noteOf(noteStack);
         if (noteStack.isEmpty() || !(noteStack.getItem() instanceof ItemResearchNotes) || dataState == null
-                || ItemResearchNotes.storedMeta(noteStack) != ItemResearchNotes.META_DISCOVERY_FAMILY) {
-            return; // original :431-434 (itemDamage == 64)
+                || !(ItemResearchNotes.storedMeta(noteStack) == ItemResearchNotes.META_DISCOVERY_FAMILY
+                        || dataState.complete())) {
+            return; // original :431-434 (itemDamage == 64); the completed flag is the
+                    // port's meta-64 carrier (BD-20), so it opens this arm too.
         }
         final Inventory inventory = this.player.getInventory();
         // Original InventoryUtils.isPlayerCarrying(book) / (coal, 0) >= 0.
@@ -502,6 +526,11 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
      */
     @Override
     public boolean clickMenuButton(final Player clicker, final int id) {
+        if (id == BUTTON_KEEP_OPEN) {
+            // Original ContainerResearchTable.java:40-42: the id is accepted and
+            // the container does nothing (the keep-open toggle is GUI-side).
+            return !this.player.level().isClientSide;
+        }
         if (id == BUTTON_DUPLICATE && !this.player.level().isClientSide) {
             duplicate();
             return true;
@@ -517,7 +546,7 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
         // broadcastChanges reads each ContainerData and sends the deltas at the
         // end of its own body, so a write after super would publish one tick
         // late.
-        if (false) {
+        if (!this.player.level().isClientSide) {
             final ResearchNoteData dataState = note();
             this.data.set(DATA_NOTE_PRESENT, dataState == null ? 0 : 1);
             this.data.set(DATA_COMPLETE, dataState != null && dataState.complete() ? 1 : 0);
@@ -536,18 +565,24 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
      * {@code ContainerData} values arrive (the seam the trunk menu uses for its
      * synced state).
      */
-    private final int[] dataMirror = new int[DATA_COUNT];
-
     @Override
     public void setData(final int id, final int value) {
-        super.setData(id, value);
-        if (id >= 0 && id < this.dataMirror.length) {
-            this.dataMirror[id] = value;
+        // Out-of-range indices move nothing: vanilla Menu.setData reaches
+        // dataSlots.get(id) unguarded, and the screen's contract is exactly
+        // DATA_COUNT values. The write lands in this menu's ContainerData
+        // (the IntDataSlot set arm), which is the single source both sides
+        // read below.
+        if (id < 0 || id >= DATA_COUNT) {
+            return;
         }
+        super.setData(id, value);
     }
 
     private int dataValue(final int index) {
-        return index >= 0 && index < this.dataMirror.length ? this.dataMirror[index] : 0;
+        // The server fills this menu's ContainerData in broadcastChanges; the
+        // tracking client's setData arm lands in the same object through the
+        // IntDataSlot set path — one source, both sides.
+        return index >= 0 && index < DATA_COUNT ? this.data.get(index) : 0;
     }
 
     public boolean notePresent() {
@@ -654,6 +689,6 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
      */
     public static Component title() {
         return Component.translatable("container.thaumcraft."
-                + M3ResearchContent.GUI_RESEARCH_TABLE.getKey().location().getPath());
+                + M3ResearchContent.GUI_RESEARCH_NOTE.getKey().location().getPath());
     }
 }
