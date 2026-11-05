@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p>No Minecraft type appears in the class under test, so all of it is
  * decidable in a plain JVM: the parse, the merge math, the resolution order,
  * the path contract with the generator, and the D-016 pin that the committed
- * {@code en_us.json} still defines <b>0</b> of the graph's 711 keys — the
+ * {@code en_us.json} still defines <b>0</b> of the graph's 712 keys — the
  * consumer must not become a reason to commit the strings.</p>
  */
 class ResearchLexiconTest {
@@ -163,7 +163,7 @@ class ResearchLexiconTest {
     @Test
     void committedLangKeepsZeroOfTheGraphKeys() throws IOException {
         Set<String> graphKeys = ResearchLexicon.graphKeys(readResource(GRAPH_RESOURCE));
-        assertEquals(711, graphKeys.size(),
+        assertEquals(712, graphKeys.size(),
                 "the pin is measured against the graph's real key set");
         Map<String, String> committed =
                 ResearchOriginalLang.parseFlatJson(readResource(COMMITTED_LANG_RESOURCE));
@@ -171,7 +171,7 @@ class ResearchLexiconTest {
         Set<String> overlap = new TreeSet<>(graphKeys);
         overlap.retainAll(committed.keySet());
         assertEquals(Set.of(), overlap,
-                "D-016 option 2: the committed lang must keep 0 of the 711 research keys "
+                "D-016 option 2: the committed lang must keep 0 of the 712 research keys "
                         + "so the generated file stays the only carrier of the original strings");
     }
 

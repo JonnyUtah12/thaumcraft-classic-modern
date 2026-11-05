@@ -53,9 +53,7 @@ import java.util.TreeSet;
  * come from {@link ResearchManager#graph()} and from the graph JSON through
  * {@link ResearchLexicon#graphKeys(String)}; the set of keys the generated
  * file cannot serve is derived from the graph rows that carry no original
- * string plus the keys the generator's own
- * {@link ResearchOriginalLang#GRAPH_KEY_PREFIX} filter cannot see. No display
- * string and no key list is hardcoded here.</p>
+ * string. No display string and no key list is hardcoded here.</p>
  */
 @GameTestHolder(ThaumcraftClassic.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -90,10 +88,11 @@ public final class ResearchOriginalLanguageGameTest {
         helper.assertTrue(graphJson != null, GRAPH_JSON_ON_CLASSPATH + " is on the runtime classpath");
         final Set<String> buildKeys = ResearchLexicon.graphKeys(graphJson);
 
-        // The build-time derivation is the 711 every doc cites; the runtime
-        // graph must cover it, key for key.
-        helper.assertTrue(buildKeys.size() == 711,
-                "the build-time derivation over the shipped graph JSON must measure 711 keys, measured "
+        // The build-time derivation must measure what the runtime graph
+        // references, key for key: 712 display keys (201 name + 201 text + 310
+        // page), the page count including the one key outside the tc. namespace.
+        helper.assertTrue(buildKeys.size() == 712,
+                "the build-time derivation over the shipped graph JSON must measure 712 keys, measured "
                         + buildKeys.size());
         final Set<String> notAtRuntime = new TreeSet<>(buildKeys);
         notAtRuntime.removeAll(runtimeKeys);
@@ -179,20 +178,20 @@ public final class ResearchOriginalLanguageGameTest {
         int byteExact = 0;
         int whitespaceOnly = 0;
         int markup = 0;
-        final Set<String> explicable = explicableGaps(graph, runtimeKeys);
+        final Set<String> explicable = explicableGaps(graph);
         final Set<String> missing = new TreeSet<>(runtimeKeys);
         missing.removeAll(lexicon.keys());
 
         if (ciFixtureOverlay) {
-            // Placeholder values, and a lang that defines 25 of the 711 keys.
+            // Placeholder values, and a lang that defines 25 of the 712 keys.
             // So neither "generated value == graph row" nor "the unresolved set
-            // is exactly the explicable rows" is a property of this shape —
-            // 686 keys are absent because the fixture lang is small, which no
-            // graph row describes. What holds in EVERY shape is asserted here:
-            // the file never carries a key the generator cannot produce (the
-            // rows with no original string, BOOK-3b's, plus the key the
-            // prefix filter cannot see). The fidelity + exact-gap-set pins run
-            // below, on the shape that has an original string to be faithful to.
+            // is exactly the rows with no original string" is a property of this
+            // shape — 687 keys are absent because the fixture lang is small,
+            // which no graph row describes. What holds in EVERY shape is
+            // asserted here: the file never carries a key the generator cannot
+            // produce (the rows with no original string, BOOK-3b's). The
+            // fidelity + exact-gap-set pins run below, on the shape that has an
+            // original string to be faithful to.
             final Set<String> ungeneratable = new TreeSet<>(lexicon.keys());
             ungeneratable.retainAll(explicable);
             helper.assertTrue(ungeneratable.isEmpty(),
@@ -239,20 +238,48 @@ public final class ResearchOriginalLanguageGameTest {
                             + checked);
 
             // The closed gap set, derived. Everything the graph references that
-            // the generated file cannot serve must be explicable from the
-            // shipped data: a graph row with no original string (BOOK-3b authors
-            // those), or a key the generator's GRAPH_KEY_PREFIX filter cannot
-            // see (measured here). This equality is the pin t_6799fd3f inherits;
-            // it runs on the shape where the lang is the player's own file.
+            // the generated file cannot serve must be a graph row with no
+            // original string (BOOK-3b authors those) — nothing else. t_28ce4d49
+            // measured a fifth key in this set, focus.upgrade.vampirebats.text,
+            // and blamed the generator's prefix filter; t_6799fd3f removed that
+            // filter, so the equality below is the pin that the gap is closed
+            // and that no new gap opened. It runs on the shape where the lang is
+            // the player's own file.
             helper.assertTrue(explicable.equals(missing),
                     "the graph keys the generated file cannot serve must be exactly the rows with "
-                            + "no original string plus the keys the generator's prefix filter "
-                            + "cannot see; unexpected " + diff(missing, applicable(missing, explicable))
+                            + "no original string; unexpected " + diff(missing, applicable(missing, explicable))
                             + ", over-explained " + diff(explicable, missing));
+
+            // The key that gap was, named: every display key the graph rows
+            // reference outside the tc. namespace (VAMPBAT page 0 is the one) is
+            // served by the generated file, and served with the row's own text.
+            // Derived from the graph rows, so the pin cannot drift from the data.
+            final Map<String, String> outsideNamespace = outsideNamespaceKeys(graph);
+            helper.assertTrue(!outsideNamespace.isEmpty(),
+                    "the shipped graph is expected to reference at least one display key outside "
+                            + "the tc. namespace (VAMPBAT page 0) for this pin to be non-vacuous");
+            for (final Map.Entry<String, String> row : outsideNamespace.entrySet()) {
+                final String key = row.getKey();
+                helper.assertTrue(!missing.contains(key),
+                        key + " is referenced by a graph row and defined by the original lang, so "
+                                + "the generated file must serve it (this is the raw-key defect "
+                                + "t_6799fd3f exists to close)");
+                final String value = lexicon.value(key);
+                helper.assertTrue(value != null && !value.isBlank(),
+                        key + " resolves to blank text in the generated file");
+                helper.assertTrue(!key.equals(value), key + " resolves to its own key");
+                final String original = row.getValue();
+                if (original != null && value != null) {
+                    helper.assertTrue(value.strip().equals(original.strip()),
+                            key + " resolved to \"" + value + "\", the graph row says \""
+                                    + original + "\" (differs beyond whitespace)");
+                }
+            }
         }
 
-        // A reference-tree build leaves 5 keys unresolved; a fixture build leaves
-        // 687. Print the set when it is small enough to read, not when it is not.
+        // A reference-tree build leaves 4 keys unresolved (the rows with no
+        // original string); a fixture build leaves 687. Print the set when it is
+        // small enough to read, not when it is not.
         final String missingReport = missing.size() <= 16
                 ? missing.toString()
                 : missing.size() + " keys, first " + missing.iterator().next();
@@ -267,7 +294,7 @@ public final class ResearchOriginalLanguageGameTest {
                 ciFixtureOverlay
                         ? "the fixture lang defines 25 of the graph's keys, and no key the generator "
                                 + "cannot produce leaked into the file"
-                        : "every key is a no-original-string row or a prefix-invisible key");
+                        : "every unresolved key is a graph row with no original string");
         helper.succeed();
     }
 
@@ -298,6 +325,14 @@ public final class ResearchOriginalLanguageGameTest {
                         + "references, found " + overlap);
         helper.succeed();
     }
+
+    /**
+     * The namespace every 1.7.10 research display key lives in, as measured over
+     * the shipped graph (711 of its 712 keys). The generator does <b>not</b>
+     * filter on it — this probe uses it only to name the one key that lives
+     * outside it, so the pin below cannot go vacuous.
+     */
+    private static final String TC_NAMESPACE_PREFIX = "tc.";
 
     /**
      * Mapped block textures used as the overlay-provenance probe. Measured
@@ -397,10 +432,14 @@ public final class ResearchOriginalLanguageGameTest {
     /**
      * The keys the generated file is allowed not to carry, derived from the
      * shipped data: every key of a graph row that names no original string
-     * ({@code nameEnUs}/{@code textEnUs} absent — BOOK-3b authors those), plus
-     * every key the generator's {@code GRAPH_KEY_PREFIX} filter cannot see.
+     * ({@code nameEnUs}/{@code textEnUs} absent — BOOK-3b authors those).
+     *
+     * <p>This set used to have a second arm, "keys the generator's
+     * {@code tc.} prefix filter cannot see", which measured exactly one key
+     * (VAMPBAT page 0). t_6799fd3f made the derivation structural, so that arm
+     * is gone and the set above is the whole explanation.</p>
      */
-    private static Set<String> explicableGaps(final ResearchGraph graph, final Set<String> runtimeKeys) {
+    private static Set<String> explicableGaps(final ResearchGraph graph) {
         final Set<String> explicable = new TreeSet<>();
         for (final ResearchEntryData entry : graph.entries()) {
             if (entry.nameEnUs() == null) {
@@ -410,12 +449,28 @@ public final class ResearchOriginalLanguageGameTest {
                 explicable.add(entry.textKey());
             }
         }
-        for (final String key : runtimeKeys) {
-            if (!key.startsWith(ResearchOriginalLang.GRAPH_KEY_PREFIX)) {
-                explicable.add(key);
+        return explicable;
+    }
+
+    /**
+     * The display keys the graph rows reference <b>outside</b> the {@code tc.}
+     * namespace, mapped to the original string their own row carries. Measured on
+     * the shipped graph: one key, {@code focus.upgrade.vampirebats.text} from
+     * {@code VAMPBAT} page 0. A derivation filtered to the {@code tc.} prefix
+     * cannot see it, which is what made an overlay build render that page as a
+     * raw key (t_6799fd3f) — this probe is the pin that it now resolves.
+     */
+    private static Map<String, String> outsideNamespaceKeys(final ResearchGraph graph) {
+        final Map<String, String> keys = new LinkedHashMap<>();
+        for (final ResearchEntryData entry : graph.entries()) {
+            for (final ResearchPageData page : entry.pages()) {
+                final String key = page.textKey();
+                if (key != null && !key.startsWith(TC_NAMESPACE_PREFIX)) {
+                    keys.put(key, page.textEnUs());
+                }
             }
         }
-        return explicable;
+        return keys;
     }
 
     private static Set<String> applicable(final Set<String> missing, final Set<String> explicable) {
