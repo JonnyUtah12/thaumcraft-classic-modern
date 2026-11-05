@@ -103,10 +103,37 @@ public final class ResearchOriginalLanguageGameTest {
 
         if (lexicon.isEmpty()) {
             // A code-only artifact carries 0 of them by design (D-016 option
-            // 2) and the merge injects nothing on such a build.
+            // 2) and the merge injects nothing on such a build. This is the
+            // only branch the CI game-test legs reach (CI has no reference
+            // tree), so it is the branch that was never exercised locally: the
+            // first version of this probe asserted a hardcoded entry id here
+            // and CI's -Ptc.noCurios leg of 2026-11-05 (run 42099194219) failed
+            // with "the graph itself is shipped" because no row of
+            // entries.json is named BASICS — the shipped keys are
+            // BASICTHAUMATURGY, FOCUSFIRE, … Nothing about the graph was
+            // missing: the same line measured 712 referenced keys. The
+            // precondition is therefore read from the shipped JSON below, not
+            // remembered.
+            final com.google.gson.JsonObject graphDocument =
+                    com.google.gson.JsonParser.parseString(graphJson).getAsJsonObject();
+            final com.google.gson.JsonArray shippedRowsJson = graphDocument.getAsJsonArray("entries");
+            final int shippedRows = shippedRowsJson.size();
+            final int declaredRows = graphDocument.get("entryCount").getAsInt();
+            helper.assertTrue(shippedRows > 0, GRAPH_JSON_ON_CLASSPATH + " ships research rows");
+            helper.assertTrue(shippedRows == declaredRows,
+                    GRAPH_JSON_ON_CLASSPATH + " must ship the row count it declares, measured "
+                            + shippedRows + " rows against a declared entryCount of " + declaredRows);
+            helper.assertTrue(graph.entries().size() == shippedRows,
+                    "the runtime graph must carry every shipped row, measured " + graph.entries().size()
+                            + " against " + shippedRows + " in " + GRAPH_JSON_ON_CLASSPATH);
+            final String firstKey = shippedRowsJson.get(0).getAsJsonObject().get("key").getAsString();
+            helper.assertTrue(graph.entry(firstKey) != null,
+                    "the shipped graph row " + firstKey + " must resolve in the runtime graph");
+            helper.assertTrue(!runtimeKeys.isEmpty(),
+                    "the runtime graph must reference display keys even on a code-only build");
             LOGGER.info("TC-RESEARCH-LANG probe: {} reaches the runtime with 0 keys — code-only "
-                    + "posture, 0 of {} graph keys resolve", GENERATED, runtimeKeys.size());
-            helper.assertTrue(graph.entry("BASICS") != null, "the graph itself is shipped");
+                    + "posture, 0 of {} graph keys resolve; graph shipped with {} rows, first key {}",
+                    GENERATED, runtimeKeys.size(), shippedRows, firstKey);
             helper.succeed();
             return;
         }
