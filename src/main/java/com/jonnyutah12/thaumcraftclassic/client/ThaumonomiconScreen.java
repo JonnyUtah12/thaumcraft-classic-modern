@@ -1,15 +1,21 @@
 package com.jonnyutah12.thaumcraftclassic.client;
 
+import com.jonnyutah12.thaumcraftclassic.player.ModAttachments;
+import com.jonnyutah12.thaumcraftclassic.player.PlayerKnowledgeData;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchBrowserModel;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchCategoryData;
+import com.jonnyutah12.thaumcraftclassic.research.ResearchDetailModel;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -67,6 +73,25 @@ import java.util.List;
  * per-locale translation of research names is follow-up work, stated in the
  * docs (BD-13) and not silently skipped.</p>
  *
+ * <p><b>What BOOK-4 adds.</b> The per-entry detail panel: the selected entry's
+ * essentia requirements, its unlock state, and its related-research links
+ * ({@code parents}, {@code parentsHidden}, {@code siblings}), resolved by
+ * {@link ResearchDetailModel} out of the shipped graph and out of the player's
+ * own {@link PlayerKnowledgeData} attachment — the same synced store the
+ * server gates completions on, so the panel cannot show a state the server
+ * disagrees with (TC-M3-01/02; no new store). The original composes the same
+ * information in its hover card ({@code GuiResearchBrowser.java:540-660}: the
+ * {@code tc.researchmissing} card when {@code canUnlockResearch} is false, the
+ * warp line, the tag list with the pool check) and reads the same three edge
+ * arrays for the node's lines ({@code :288-333}); the port has no GL canvas
+ * and no hover popup, so the panel is a text column and a link is a row that
+ * opens that entry, which is what the original's node click does ({@code :711}).
+ * Every line the panel draws is a line {@link ResearchDetailModel.Detail#lines()}
+ * computed — the window adds no copy of its own, and the entry the graph names
+ * nothing is labelled by its key (the BOOK-3 posture: render the key, do not
+ * fail). The recipe pages ({@code GuiResearchRecipe}, 1613 lines: the page
+ * renderer, its aspect art and its minigames) and the node art stay BD-13.</p>
+ *
  * <p><b>Close path.</b> The original overrides no key handler and no
  * {@code doesGuiPauseGame}, so vanilla governs it: ESC closes the screen and
  * the screen is a pause screen in singleplayer. This class keeps both vanilla
@@ -104,6 +129,21 @@ public class ThaumonomiconScreen extends Screen {
     /** The y of the first listing row, inside the pane, under the header. */
     static final int ROWS_TOP = 40;
 
+    /**
+     * The listing column's width. BOOK-4 hands the rest of the pane's width to
+     * the detail panel: the original has no such column (its detail is a hover
+     * card at the cursor, {@code GuiResearchBrowser.java:540-660}, and the
+     * entry's own page opens in {@code GuiResearchRecipe}), so the split is
+     * port-authored and the row labels are trimmed to it.
+     */
+    static final int LIST_WIDTH = 140;
+    /** The detail panel's left edge, inside the pane (right of the listing). */
+    static final int DETAIL_LEFT = 148;
+    /** The detail panel's text width. */
+    static final int DETAIL_WIDTH = PANE_WIDTH - DETAIL_LEFT - 8;
+    /** The detail panel's row pitch (9 px font + leading). */
+    static final int DETAIL_PITCH = 9;
+
     /** The book pane's fill (the original's plate is an ARR texture, D-004). */
     static final int PANE_FILL = 0xFF1D1D2D;
     /** The listing plate, one step lighter than the pane. */
@@ -116,6 +156,14 @@ public class ThaumonomiconScreen extends Screen {
     static final int DIM_TEXT = 0xFFA0A0B4;
     /** The flat plate behind the tab hover label. */
     static final int TOOLTIP_BG = 0xF0101020;
+    /** The locked state: the original draws a locked node at 0.3 brightness and names it {@code tc.researchmissing}. */
+    static final int STATE_LOCKED = 0xFFC06060;
+    /** The available state: the original pulses an unlockable node ({@code :370-373}). */
+    static final int STATE_AVAILABLE = 0xFF7EC87E;
+    /** A related-research link row (the original's node, clickable at {@code :711}). */
+    static final int LINK_TEXT = 0xFF9AB4D8;
+    /** The band behind a link row under the cursor. */
+    static final int LINK_HOVER = 0xFF33405C;
 
     /**
      * The original's static category memory ({@code GuiResearchBrowser.java:63}
@@ -131,15 +179,66 @@ public class ThaumonomiconScreen extends Screen {
      */
     private final ResearchBrowserModel browser;
 
+    /**
+     * The detail resolver this window draws: aspect requirements, unlock state
+     * and related-research links for the selected entry, computed out of the
+     * graph and the player's knowledge. The window keeps no list of its own
+     * here either (D-019 rule 2).
+     */
+    private final ResearchDetailModel details;
+
+    /**
+     * The link rows drawn by the last frame, in pane coordinates: the click
+     * targets of the detail panel. Rebuilt every render, because the panel's
+     * content and the window's size are what decide them.
+     */
+    private final List<DetailHit> detailHits = new ArrayList<>();
+
+    /** One clickable link row of the detail panel. */
+    private record DetailHit(String key, int left, int top, int right, int bottom) {
+    }
+
     public ThaumonomiconScreen(final String category) {
         super(Component.translatable(TITLE_KEY));
         this.browser = new ResearchBrowserModel(ResearchManager.graph());
+        this.details = new ResearchDetailModel(this.browser.graph());
         this.browser.selectCategory(resolveCategory(category));
     }
 
     /** The graph-derived listing this window draws (tabs, rows, page, selection). */
     public ResearchBrowserModel browser() {
         return this.browser;
+    }
+
+    /** The detail resolver this window draws (aspects, unlock state, links). */
+    public ResearchDetailModel details() {
+        return this.details;
+    }
+
+    /**
+     * The player's knowledge, read from the synced attachment — the server's
+     * research store, not a client copy: {@code ModAttachments.PLAYER_KNOWLEDGE}
+     * is {@code .sync(...)()} so the client holds the server's value, and the
+     * server gates every completion against that same record
+     * ({@code ResearchManager}, TC-M3-01/02). No player (a dedicated server,
+     * which is where no screen exists anyway) reads as the empty store.
+     */
+    public static PlayerKnowledgeData playerKnowledge() {
+        final Player player = Minecraft.getInstance().player;
+        if (player == null) {
+            return PlayerKnowledgeData.empty();
+        }
+        final PlayerKnowledgeData knowledge = player.getData(ModAttachments.PLAYER_KNOWLEDGE);
+        return knowledge == null ? PlayerKnowledgeData.empty() : knowledge;
+    }
+
+    /**
+     * The detail this window shows: the selected entry resolved against the
+     * player's knowledge, or null with nothing selected.
+     */
+    public ResearchDetailModel.Detail selectedDetail() {
+        final ResearchBrowserModel.Row selected = this.browser.selectedRow();
+        return selected == null ? null : this.details.detail(selected.key(), playerKnowledge());
     }
 
     /**
@@ -227,12 +326,22 @@ public class ThaumonomiconScreen extends Screen {
             }
         }
 
+        // Detail-panel link rows: the port's stand-in for the original's node
+        // click, which opens that entry (:711). Checked first because the panel
+        // owns the pane's right column.
+        for (final DetailHit hit : this.detailHits) {
+            if (mouseX >= hit.left() && mouseX < hit.right()
+                    && mouseY >= hit.top() && mouseY < hit.bottom()) {
+                return this.browser.selectEntry(hit.key()) || super.mouseClicked(mouseX, mouseY, button);
+            }
+        }
+
         // Rows of the page on screen, top to bottom, from the model's window.
         final List<ResearchBrowserModel.Row> rows =
                 this.browser.page(this.browser.selectedCategory(), this.browser.page());
         for (int i = 0; i < rows.size(); i++) {
             final int rowTop = top + ROWS_TOP + i * ROW_PITCH;
-            if (mouseX >= left + 8 && mouseX < left + PANE_WIDTH - 8
+            if (mouseX >= left + 8 && mouseX < left + LIST_WIDTH
                     && mouseY >= rowTop - 1 && mouseY < rowTop + ROW_PITCH - 1) {
                 this.browser.selectEntry(rows.get(i).key());
                 return true;
@@ -274,26 +383,27 @@ public class ThaumonomiconScreen extends Screen {
         guiGraphics.drawCenteredString(this.font, Component.literal(categoryLabel(category)),
                 left + PANE_WIDTH / 2, top + 22, TEXT);
 
-        // The listing: the entries of this category, ROWS_PER_PAGE to a page.
+        // The listing: the entries of this category, ROWS_PER_PAGE to a page,
+        // in the pane's left column.
         final int page = this.browser.page();
         final List<ResearchBrowserModel.Row> rows = this.browser.page(category, page);
         final ResearchBrowserModel.Row selected = this.browser.selectedRow();
-        guiGraphics.fill(left + 8, top + ROWS_TOP - 2, left + PANE_WIDTH - 8,
+        guiGraphics.fill(left + 8, top + ROWS_TOP - 2, left + LIST_WIDTH - 2,
                 top + ROWS_TOP + ResearchBrowserModel.ROWS_PER_PAGE * ROW_PITCH - 1, PLATE_FILL);
         for (int i = 0; i < rows.size(); i++) {
             final ResearchBrowserModel.Row row = rows.get(i);
             final int rowTop = top + ROWS_TOP + i * ROW_PITCH;
             final boolean isSelected = selected != null && selected.key().equals(row.key());
             if (isSelected) {
-                guiGraphics.fill(left + 9, rowTop - 1, left + PANE_WIDTH - 9, rowTop + ROW_PITCH - 1, HIGHLIGHT);
+                guiGraphics.fill(left + 9, rowTop - 1, left + LIST_WIDTH - 3, rowTop + ROW_PITCH - 1, HIGHLIGHT);
             }
             final int number = page * ResearchBrowserModel.ROWS_PER_PAGE + i + 1;
-            guiGraphics.drawString(this.font, Component.literal(number + ". " + trim(row.label(), 40)),
+            guiGraphics.drawString(this.font, Component.literal(number + ". " + trim(row.label(), 24)),
                     left + 12, rowTop, isSelected ? 0xFFFFFFFF : TEXT);
         }
 
         renderPageFooter(guiGraphics, left, top, category, page);
-        renderEntry(guiGraphics, left, top, selected);
+        renderDetailPanel(guiGraphics, left, top, selected, mouseX, mouseY);
     }
 
     /** The category strip: one 24x24 tab per category of the graph (:480-530). */
@@ -340,28 +450,94 @@ public class ThaumonomiconScreen extends Screen {
                 left + PANE_WIDTH - 46, footerTop, DIM_TEXT);
     }
 
-    /** The selected entry: its own name, and the graph's own text for it. */
-    private void renderEntry(final GuiGraphics guiGraphics, final int left, final int top,
-                             final ResearchBrowserModel.Row selected) {
-        final int entryTop = footerTop() + ROW_PITCH + 4;
-        if (selected == null) {
-            guiGraphics.drawCenteredString(this.font, Component.literal("Pick an entry"),
-                    left + PANE_WIDTH / 2, entryTop, DIM_TEXT);
+    /**
+     * The per-entry detail panel (BOOK-4). Every line is one
+     * {@link ResearchDetailModel.Detail.Line} computed out of the graph and the
+     * player's knowledge — state, missing prerequisites, warp, essentia
+     * requirements, and one clickable row per related entry — followed by the
+     * graph's own text for the entry. The window adds no copy of its own, wraps
+     * the lines to the column's width, and counts the lines it cannot fit
+     * instead of inventing them. A link row opens that entry, which is the
+     * original's node click ({@code GuiResearchBrowser.java:711}).
+     */
+    private void renderDetailPanel(final GuiGraphics guiGraphics, final int left, final int top,
+                                   final ResearchBrowserModel.Row selected, final int mouseX, final int mouseY) {
+        this.detailHits.clear();
+        final int panelLeft = left + DETAIL_LEFT;
+        final int panelTop = top + ROWS_TOP - 2;
+        final int panelBottom = top + PANE_HEIGHT - 4;
+        guiGraphics.fill(panelLeft - 4, panelTop, left + PANE_WIDTH - 4, panelBottom, PLATE_FILL);
+
+        final ResearchDetailModel.Detail detail = selected == null
+                ? null : this.details.detail(selected.key(), playerKnowledge());
+        if (detail == null) {
+            guiGraphics.drawString(this.font, Component.literal("Pick an entry"),
+                    panelLeft, panelTop + 6, DIM_TEXT);
             return;
         }
-        guiGraphics.drawString(this.font, Component.literal(trim(selected.label(), 46)),
-                left + 12, entryTop, 0xFFFFFFFF);
-        final String text = this.browser.selectedText();
-        if (text.isEmpty()) {
-            return;
+
+        // The panel's text, wrapped to the column: the entry's own label, the
+        // model's lines, then the graph's own text for the entry.
+        final List<FlatLine> flat = new ArrayList<>();
+        wrap(flat, detail.label(), 0xFFFFFFFF, null);
+        final List<ResearchDetailModel.Detail.Line> lines = detail.displayLines();
+        for (int i = 0; i < lines.size(); i++) {
+            final ResearchDetailModel.Detail.Line line = lines.get(i);
+            final int color = i == 0 ? stateColor(detail.state())
+                    : line.linkKey() != null ? LINK_TEXT : TEXT;
+            wrap(flat, line.text(), color, line.linkKey());
         }
-        final int textTop = entryTop + ROW_PITCH;
-        final int linesAvailable = Math.max(1, (top + PANE_HEIGHT - 3 - textTop) / 9);
-        final List<net.minecraft.util.FormattedCharSequence> lines =
-                this.font.split(Component.literal(text.replace("<BR>", "  ")), PANE_WIDTH - 24);
-        for (int i = 0; i < Math.min(lines.size(), linesAvailable); i++) {
-            guiGraphics.drawString(this.font, lines.get(i), left + 12, textTop + i * 9, TEXT);
+        final String body = this.browser.selectedText();
+        if (!body.isEmpty()) {
+            wrap(flat, body, TEXT, null);
         }
+
+        int y = panelTop + 3;
+        int shown = 0;
+        for (final FlatLine line : flat) {
+            if (y + DETAIL_PITCH > panelBottom) {
+                break;
+            }
+            final int lineTop = y;
+            if (line.key() != null) {
+                final boolean over = mouseX >= panelLeft - 3 && mouseX < panelLeft + DETAIL_WIDTH
+                        && mouseY >= lineTop - 1 && mouseY < lineTop + DETAIL_PITCH - 1;
+                if (over) {
+                    guiGraphics.fill(panelLeft - 3, lineTop - 1, panelLeft + DETAIL_WIDTH,
+                            lineTop + DETAIL_PITCH - 1, LINK_HOVER);
+                }
+                this.detailHits.add(new DetailHit(line.key(), panelLeft - 3, lineTop - 1,
+                        panelLeft + DETAIL_WIDTH, lineTop + DETAIL_PITCH - 1));
+            }
+            guiGraphics.drawString(this.font, line.text(), panelLeft, lineTop, line.color());
+            y += DETAIL_PITCH;
+            shown++;
+        }
+        if (shown < flat.size()) {
+            guiGraphics.drawString(this.font, Component.literal("+" + (flat.size() - shown) + " more"),
+                    panelLeft, y, DIM_TEXT);
+        }
+    }
+
+    /** One wrapped row of the detail panel, with its colour and click target. */
+    private record FlatLine(FormattedCharSequence text, int color, String key) {
+    }
+
+    /** Append one panel line, wrapped to the column's width, as FlatLine rows. */
+    private void wrap(final List<FlatLine> out, final String text, final int color, final String key) {
+        for (final FormattedCharSequence line
+                : this.font.split(Component.literal(text.replace("<BR>", "  ")), DETAIL_WIDTH)) {
+            out.add(new FlatLine(line, color, key));
+        }
+    }
+
+    /** The state's colour: the original dims a locked node and pulses an open one (:370-376). */
+    private static int stateColor(final ResearchDetailModel.State state) {
+        return switch (state) {
+            case COMPLETED -> DIM_TEXT;
+            case AVAILABLE -> STATE_AVAILABLE;
+            case LOCKED -> STATE_LOCKED;
+        };
     }
 
     private String categoryLabel(final String categoryKey) {

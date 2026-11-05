@@ -7,6 +7,7 @@ import com.jonnyutah12.thaumcraftclassic.network.payload.OpenThaumonomiconPayloa
 import com.jonnyutah12.thaumcraftclassic.player.ModAttachments;
 import com.jonnyutah12.thaumcraftclassic.player.PlayerKnowledgeData;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchBrowserModel;
+import com.jonnyutah12.thaumcraftclassic.research.ResearchDetailModel;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchEntryData;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchManager;
 import com.google.gson.JsonObject;
@@ -386,6 +387,247 @@ public final class ThaumonomiconBookGameTest {
         helper.assertTrue(category.equals(model.selectedCategory()),
                 "the refused tab switch must not move the book");
         helper.succeed();
+    }
+
+    // ---------------------------------------------------------------- BOOK-4
+    // The per-entry detail: aspect requirements, unlock state and the
+    // parents / parentsHidden / siblings links, measured on the live graph and
+    // on a real ServerPlayer's knowledge attachment. The expected sets are read
+    // out of entries.json with a raw parser and the expected state is computed
+    // through ResearchManager, so the probes assert the panel against the DATA
+    // and against the SERVER'S OWN research semantics — not against a list in
+    // this file and not against a second store (D-019 rule 3).
+
+    @GameTest(template = "empty")
+    public static void bookDetailResolvesEveryGraphEdgeAndEveryLinkOpensARow(final GameTestHelper helper) {
+        final JsonObject entries = loadJsonResource(helper,
+                "/data/" + ThaumcraftClassic.MOD_ID + "/research_graph/entries.json");
+        final ResearchDetailModel details = ResearchDetailModel.forShippedGraph();
+        final ResearchBrowserModel browser = ResearchBrowserModel.forShippedGraph();
+        final PlayerKnowledgeData empty = PlayerKnowledgeData.empty();
+
+        int edges = 0;
+        int hiddenEdges = 0;
+        int siblingEdges = 0;
+        int aspectRequirements = 0;
+        for (final com.google.gson.JsonElement element : entries.getAsJsonArray("entries")) {
+            final JsonObject entry = element.getAsJsonObject();
+            final String key = entry.get("key").getAsString();
+            final ResearchDetailModel.Detail detail = details.detail(key, empty);
+            helper.assertTrue(detail != null,
+                    "the shipped graph's own entry " + key + " resolves no detail — the panel would be blank");
+            helper.assertTrue(key.equals(detail.key()) && entry.get("category").getAsString().equals(detail.category()),
+                    key + ": the detail is the graph's entry, in the graph's category");
+
+            final List<String> expected = new ArrayList<>();
+            for (final String kind : ResearchDetailModel.linkKinds()) {
+                for (final com.google.gson.JsonElement ref : entry.getAsJsonArray(kind)) {
+                    expected.add(kind + " " + ref.getAsString());
+                }
+            }
+            final List<String> actual = new ArrayList<>();
+            for (final ResearchDetailModel.Link link : detail.links()) {
+                actual.add(link.kind() + " " + link.key());
+                if (ResearchDetailModel.KIND_PARENTS_HIDDEN.equals(link.kind())) {
+                    hiddenEdges++;
+                }
+                if (ResearchDetailModel.KIND_SIBLINGS.equals(link.kind())) {
+                    siblingEdges++;
+                }
+            }
+            helper.assertTrue(expected.equals(actual),
+                    key + ": the panel's related research must be exactly the entry's parents, parentsHidden and"
+                            + " siblings in entries.json (GuiResearchBrowser.java:288-333 reads the same arrays),"
+                            + " got " + actual);
+            edges += detail.links().size();
+
+            for (final ResearchDetailModel.Link link : detail.links()) {
+                final ResearchEntryData target = ResearchManager.graph().entry(link.key());
+                helper.assertTrue(link.inGraph(),
+                        key + " -> " + link.key() + ": the graph carries the target, so the link must resolve");
+                final String named = target == null ? null : target.nameEnUs();
+                final String label = named == null || named.isBlank() ? link.key() : named;
+                helper.assertTrue(label.equals(link.label()),
+                        key + " -> " + link.key() + ": a link is labelled from the graph, and an entry the graph"
+                                + " names nothing is labelled with its KEY (the BOOK-3 posture), got \""
+                                + link.label() + "\"");
+            }
+
+            helper.assertTrue(entry.getAsJsonArray("tags").size() == detail.aspects().size(),
+                    key + ": the panel's aspect requirements are the entry's tags in the data ("
+                            + entry.getAsJsonArray("tags").size() + " declared, " + detail.aspects().size()
+                            + " resolved)");
+            aspectRequirements += detail.aspects().size();
+
+            // Every link the panel offers as openable is a row the browser can
+            // open: the click target of a related-research row exists.
+            for (final ResearchDetailModel.Link link : detail.links()) {
+                final ResearchDetailModel.Detail.Line line = lineFor(detail, link);
+                helper.assertTrue(line != null && link.key().equals(line.linkKey()),
+                        key + " -> " + link.key() + ": a resolvable link is a line the panel can open");
+                helper.assertTrue(browser.row(link.key()) != null,
+                        key + " -> " + link.key() + ": the link's target has no row in the book, so the panel"
+                                + " would point at nothing");
+                helper.assertTrue(browser.selectEntry(link.key()),
+                        key + " -> " + link.key() + ": the panel's link must open that entry"
+                                + " (the original's node click, :711)");
+            }
+        }
+        helper.assertTrue(edges > 0 && hiddenEdges > 0 && siblingEdges > 0,
+                "the sweep saw " + edges + " edges, " + hiddenEdges + " hidden parents, " + siblingEdges
+                        + " siblings — the graph's edges are the contract, all three kinds must be surfaced");
+        helper.assertTrue(aspectRequirements > 0,
+                "the sweep resolved no essentia requirement at all, while entries.json carries them");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void bookDetailUnlockStateIsTheServersResearchStore(final GameTestHelper helper) {
+        // The entry is picked out of the graph, never named here: the first
+        // entry with prerequisites whose targets the graph all carries.
+        String key = null;
+        for (final ResearchEntryData entry : ResearchManager.graph().entries()) {
+            if (entry.parents() == null || entry.parents().isEmpty()) {
+                continue;
+            }
+            boolean allResolvable = true;
+            for (final String parent : ResearchDetailModel.references(entry, ResearchDetailModel.KIND_PARENT)) {
+                allResolvable &= ResearchManager.graph().entry(parent) != null;
+            }
+            for (final String parent : ResearchDetailModel.references(entry, ResearchDetailModel.KIND_PARENTS_HIDDEN)) {
+                allResolvable &= ResearchManager.graph().entry(parent) != null;
+            }
+            if (allResolvable) {
+                key = entry.key();
+                break;
+            }
+        }
+        helper.assertTrue(key != null,
+                "the shipped graph has no entry with resolvable prerequisites — the graph (201 entries / 6"
+                        + " categories) must be present for this probe to mean anything");
+
+        final ServerPlayer player = freshPlayer(helper);
+        setKnowledge(player, PlayerKnowledgeData.empty());
+        final ResearchDetailModel details = ResearchDetailModel.forShippedGraph();
+
+        // An empty store: locked, with the prerequisites named — and the panel's
+        // answer is the same one ResearchManager gives for the same store.
+        ResearchDetailModel.Detail detail =
+                details.detail(key, player.getData(ModAttachments.PLAYER_KNOWLEDGE));
+        helper.assertTrue(ResearchDetailModel.State.LOCKED == detail.state(),
+                key + " has prerequisites and the player has completed nothing: " + detail.state());
+        helper.assertTrue(!detail.missingPrerequisites().isEmpty(),
+                key + ": the locked panel names the prerequisites it is missing");
+        helper.assertTrue(detail.lines().contains(ResearchDetailModel.STATE_LOCKED_TEXT),
+                key + ": the locked panel shows the original's own card text (tc.researchmissing)");
+
+        // The server's arm completes the prerequisites. The panel reads them
+        // back out of the player's attachment: no second store is consulted.
+        final ResearchEntryData entry = ResearchManager.graph().entry(key);
+        for (final String parent : ResearchDetailModel.references(entry, ResearchDetailModel.KIND_PARENT)) {
+            helper.assertTrue(ResearchManager.completeResearch(player, parent),
+                    "the server must complete the prerequisite " + parent + " through its own research arm");
+        }
+        for (final String parent
+                : ResearchDetailModel.references(entry, ResearchDetailModel.KIND_PARENTS_HIDDEN)) {
+            helper.assertTrue(ResearchManager.completeResearch(player, parent),
+                    "the server must complete the hidden prerequisite " + parent + " through its own arm");
+        }
+        detail = details.detail(key, player.getData(ModAttachments.PLAYER_KNOWLEDGE));
+        helper.assertTrue(ResearchDetailModel.State.AVAILABLE == detail.state(),
+                key + " must read available once its prerequisites sit in the player's store, got "
+                        + detail.state());
+        helper.assertTrue(detail.missingPrerequisites().isEmpty(),
+                key + ": the missing list must be empty once the prerequisites are complete");
+        for (final ResearchDetailModel.Link link : detail.links(ResearchDetailModel.KIND_PARENT)) {
+            helper.assertTrue(link.completed(), link.key() + " is completed, and its link row must say so");
+        }
+
+        // Completing the entry itself, through the same server arm, flips it to known.
+        helper.assertTrue(ResearchManager.completeResearch(player, key),
+                "the server must complete " + key + " itself");
+        final ResearchDetailModel.Detail done =
+                details.detail(key, player.getData(ModAttachments.PLAYER_KNOWLEDGE));
+        helper.assertTrue(ResearchDetailModel.State.COMPLETED == done.state(),
+                key + ": a completed entry reads known to the panel, got " + done.state());
+        helper.assertTrue(done.lines().contains(ResearchDetailModel.STATE_KNOWN_TEXT),
+                key + ": the panel's first line names the state it resolved");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void bookDetailAspectsAreTheGraphTagsAndThePlayersPool(final GameTestHelper helper) {
+        final ResearchEntryData entry = firstEntryWithTags();
+        helper.assertTrue(entry != null,
+                "the shipped graph has no entry with essentia tags — entries.json carries them on 172 entries");
+        final ServerPlayer player = freshPlayer(helper);
+        setKnowledge(player, PlayerKnowledgeData.empty());
+        final ResearchDetailModel details = ResearchDetailModel.forShippedGraph();
+
+        final ResearchDetailModel.Detail broke =
+                details.detail(entry.key(), player.getData(ModAttachments.PLAYER_KNOWLEDGE));
+        helper.assertTrue(!broke.aspects().isEmpty(), entry.key() + ": the panel resolves the entry's tags");
+        helper.assertTrue(!broke.aspectsAffordable(),
+                entry.key() + ": an empty aspect pool makes nothing affordable");
+        for (final ResearchDetailModel.AspectRequirement requirement : broke.aspects()) {
+            helper.assertTrue(!requirement.discovered(),
+                    entry.key() + " -> " + requirement.aspect() + ": an empty store has discovered no aspect");
+        }
+        helper.assertTrue(broke.lines().stream().anyMatch(line -> line.startsWith(ResearchDetailModel.ASPECTS_LABEL)),
+                entry.key() + ": the panel carries the essentia line: " + broke.lines());
+        helper.assertTrue(broke.lines().contains(ResearchDetailModel.ASPECTS_SHORT_TEXT),
+                entry.key() + ": the panel shows tc.research.short when the pool is below the cost (:655)");
+
+        // Fill the pool through the store, one point below the first tag's cost.
+        PlayerKnowledgeData armed = PlayerKnowledgeData.empty();
+        final List<ResearchEntryData.AspectTag> tags = entry.tags();
+        for (int i = 0; i < tags.size(); i++) {
+            final ResearchEntryData.AspectTag tag = tags.get(i);
+            armed = armed.withAspectDiscovered(tag.aspect(), i == 0 && tag.amount() > 0 ? tag.amount() - 1 : tag.amount());
+        }
+        setKnowledge(player, armed);
+        final ResearchDetailModel.Detail short_ =
+                details.detail(entry.key(), player.getData(ModAttachments.PLAYER_KNOWLEDGE));
+        helper.assertTrue(!short_.aspectsAffordable(),
+                entry.key() + ": a pool one below the cost is not affordable (the original pulses that tag, :625-630)");
+        helper.assertTrue(short_.aspects().get(0).discovered(),
+                entry.key() + ": the tag is discovered once it sits in the store");
+        helper.assertTrue(short_.lines().contains(ResearchDetailModel.ASPECTS_SHORT_TEXT),
+                entry.key() + ": the short line stays while the pool is short");
+
+        PlayerKnowledgeData paid = armed;
+        for (final ResearchEntryData.AspectTag tag : tags) {
+            paid = paid.withAspectDiscovered(tag.aspect(), tag.amount() - paid.aspectAmount(tag.aspect()));
+        }
+        setKnowledge(player, paid);
+        final ResearchDetailModel.Detail full =
+                details.detail(entry.key(), player.getData(ModAttachments.PLAYER_KNOWLEDGE));
+        helper.assertTrue(full.aspectsAffordable(),
+                entry.key() + ": a pool that covers every tag is affordable (tc.research.purchase, :653)");
+        helper.assertTrue(!full.lines().contains(ResearchDetailModel.ASPECTS_SHORT_TEXT),
+                entry.key() + ": the short line is gone once the pool covers the cost");
+        helper.succeed();
+    }
+
+    /** The panel line a link renders (matched on the link's own text). */
+    private static ResearchDetailModel.Detail.Line lineFor(final ResearchDetailModel.Detail detail,
+                                                          final ResearchDetailModel.Link link) {
+        for (final ResearchDetailModel.Detail.Line line : detail.displayLines()) {
+            if (link.key().equals(line.linkKey()) && line.text().equals(link.text())) {
+                return line;
+            }
+        }
+        return null;
+    }
+
+    /** The first entry of the graph that carries essentia tags. */
+    private static ResearchEntryData firstEntryWithTags() {
+        for (final ResearchEntryData entry : ResearchManager.graph().entries()) {
+            if (entry.tags() != null && !entry.tags().isEmpty()) {
+                return entry;
+            }
+        }
+        return null;
     }
 
     /** A key the shipped graph cannot contain (its keys are upper-case research keys). */

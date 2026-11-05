@@ -268,6 +268,8 @@ class ResearchBrowserGraphContentTest {
         final Map<String, String> sources = new LinkedHashMap<>();
         sources.put("research/ResearchBrowserModel.java",
                 stripComments(readSource("research/ResearchBrowserModel.java")));
+        sources.put("research/ResearchDetailModel.java",
+                stripComments(readSource("research/ResearchDetailModel.java")));
         sources.put("client/ThaumonomiconScreen.java",
                 stripComments(readSource("client/ThaumonomiconScreen.java")));
 
