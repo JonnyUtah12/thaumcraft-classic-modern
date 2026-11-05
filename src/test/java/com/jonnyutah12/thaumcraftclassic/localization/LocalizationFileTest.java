@@ -73,6 +73,11 @@ class LocalizationFileTest {
     private static final List<String> CODE_AUTHORED_KEYS = List.of(
             "container.thaumcraft.chesthungry", "container.thaumcraft.deconstructiontable",
             "container.thaumcraft.magicbox", "container.thaumcraft.spa",
+            // BOOK-1 (t_1e6b18cc): the Thaumonomicon browser is containerless
+            // (GuiResearchBrowser extends GuiScreen), so no registered menu
+            // type derives a container.* key for it. ThaumonomiconScreen.TITLE_KEY
+            // is the title the screen translates itself (BD-22).
+            "container.thaumcraft.thaumonomicon",
             "item.thaumcraft.itemlootbag.tooltip", "item.thaumcraft.trunkspawner.tooltip",
             "item.thaumcraft.itemgolemupgrade.0", "item.thaumcraft.itemgolemupgrade.1",
             "item.thaumcraft.itemgolemupgrade.2", "item.thaumcraft.itemgolemupgrade.3",

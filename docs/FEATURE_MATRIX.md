@@ -48,7 +48,7 @@ Translation to the other status sets used in this repo:
 | Aspects + combinations + essentia | 48 aspects; 287 item / 56 oredict / 116 entity essentia rows | VERIFIED | t_0cc0a0ca → 5ce3dee | 4 unit + 5 game (1:1 vs Aspect.java, TC4 combo/reduce/cull + discovery) | none | — |
 | Research graph (data) | 6 categories, 201 entries | VERIFIED | t_eef90e8c → 6a96dee/721e5b9/6201ef5 | 87 unit + 18 game (graph 1:1 vs ConfigResearch) | BD-05 | — |
 | Research progression/triggers/points | 201 entries, triggers, warp | VERIFIED | t_25f6eeb2 → de193f3/79c49ba | server-authoritative; hidden-parent quirk reproduced | BD-10 | — |
-| Thaumonomicon GUI | 17 GUI ids (pages, nav) | BLOCKED | t_38e57cb0 (gave up 150/150) | none | BD-13 | re-dispatched at reduced scope: TC-M3-03-s `t_547e7ad8` (chain position 7, worktree) |
+| Thaumonomicon GUI | 17 GUI ids (pages, nav) | TESTED (open path only) | t_1e6b18cc → this commit: `thaumcraft:itemthaumonomicon` right-click opens the containerless `ThaumonomiconScreen` (no MenuType), ESC closes it, the open's state survives save/reload; the page area is a placeholder plate | 7 unit (`ThaumonomiconOpenPathContractTest`) + 5 game (`ThaumonomiconBookGameTest`: ledger id, payload registration + codec, sibling-completion arm, save/reload, no-MenuType) | BD-13 (pages, tabs, node grid, popups, page renderer), BD-22 (containerless open: no MenuType for `thaumcraft:gui_thaumonomicon`) | pages/nav = the 1613-line `GuiResearchRecipe` + `GuiResearchPopup` (BD-13); note screen = TC-M3-04-s `t_c50195f9`; pixels need the ATM10 client (the game-test harness is a dedicated server) |
 | Research minigames | note puzzle set | IN PROGRESS | t_4ebb83af (WIP on `wip-salvage`: research/NotePuzzle, HexUtils, ResearchNoteData) | none (uncommitted) | BD-13 | re-dispatched at reduced scope: TC-M3-04-s `t_cce3e45d` (chain position 8) |
 | Vis core (pool, costs, visnet) | visnet model, cost chain | VERIFIED | t_d7272167 → 3314f7f | 44 unit + game (centi-vis all-or-nothing, selection quirks) | BD-08 | — |
 | Aura + nodes | 6 node types, 3 modifiers, 31-row biome aura | VERIFIED | t_71def828 → aaca66c | seeded wild-node gen, biome behavior (unit + game) | — | — |
@@ -120,7 +120,7 @@ uncommitted WIP as VERIFIED.
 - **INVESTIGATED, not ported**: **13** — essentia transport, wands, foci,
   focus behaviors, entities+AI, armor/equipment, models, particles,
   renderers, GUI parity, fluids, biomes/dimension, ATM10 gameplay.
-- **BLOCKED (worker gave up, needs re-dispatch)**: **1** — Thaumonomicon GUI.
+- **BLOCKED (worker gave up, needs re-dispatch)**: **0** — the Thaumonomicon GUI lane was re-scoped and BOOK-1 (`t_1e6b18cc`) shipped its open path (`thaumcraft:itemthaumonomicon` → containerless `ThaumonomiconScreen`, open/close + save-reload state); the page area is a placeholder and pages/navigation remain BD-13.
 - **DOCUMENTED DEVIATIONS**: 14 rows in `BEHAVIORAL_DEVIATIONS.md`.
 
 **Honest summary:** the data/infrastructure layer (aspects, research

@@ -95,6 +95,11 @@ public final class LocalizationGameTest {
             Map.entry("container.thaumcraft.deconstructiontable", "TileDeconstructionTable.getDisplayName"),
             Map.entry("container.thaumcraft.magicbox", "TileMagicBox.getDisplayName"),
             Map.entry("container.thaumcraft.spa", "TileSpa.getDisplayName"),
+            // BOOK-1 (t_1e6b18cc): the containerless book screen's own title —
+            // ThaumonomiconScreen.TITLE_KEY. The browser has no Container
+            // (GuiResearchBrowser.java:41) and no menu type, so no registry
+            // derivation produces this key (BD-22).
+            Map.entry("container.thaumcraft.thaumonomicon", "ThaumonomiconScreen.TITLE_KEY"),
             // tooltip / action lines
             Map.entry("item.thaumcraft.itemlootbag.tooltip", "ItemLootBag.appendHoverText"),
             Map.entry("item.thaumcraft.trunkspawner.tooltip", "ItemTrunkSpawner.appendHoverText"),

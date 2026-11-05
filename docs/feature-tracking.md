@@ -32,7 +32,7 @@ Statuses (DONE only with test evidence):
 | Configuration | config class | TC-M2-04 (t_c87a23bc) | DONE (0674bcb) |
 | Research graph | ConfigResearch.java (201 entries) | TC-M3-01 (t_eef90e8c) | DONE (6a96dee, 721e5b9, 6201ef5) |
 | Research progression | ResearchManager | TC-M3-02 (t_25f6eeb2) | DONE (de193f3, 79c49ba) |
-| Thaumonomicon GUI | client/gui | TC-M3-03 (t_38e57cb0) → reduced-scope TC-M3-03-s (t_547e7ad8) | BLOCKED (t_38e57cb0 gave up 150/150; no committed code) → **re-dispatched 2026-10-26 as t_547e7ad8**, serial chain position 7, worktree isolation |
+| Thaumonomicon GUI | client/gui | TC-M3-03 (t_38e57cb0) → reduced-scope TC-M3-03-s (t_547e7ad8, recorded done with no artifact) → **BOOK-1 t_1e6b18cc** | PARTIAL-DONE (BOOK-1 t_1e6b18cc, this commit): the book is OPENABLE and CLOSABLE — `thaumcraft:itemthaumonomicon` registered, right-click runs the original's sibling-completion arm and sends `thaumcraft:open_thaumonomicon`, the client shows `ThaumonomiconScreen` (containerless, like `GuiResearchBrowser extends GuiScreen`; no MenuType, BD-22), ESC closes, state survives save/reload; 5 game + 7 unit probes. Pages, category tabs, the node grid, popups and the page renderer are NOT implemented (BD-13); the drawn plate is a placeholder |
 | Research minigames | note puzzle classes | TC-M3-04 (t_4ebb83af) → TC-M3-04-s (t_cce3e45d) | BLOCKED → **re-dispatched as t_cce3e45d** (chain position 8, directly after TC-M3-03-s); PARTIAL WIP is on branch `wip-salvage` (`research/NotePuzzle.java`, `HexUtils.java`, `ResearchNoteData.java`), not on the shared tree |
 | Aspects | api/aspects | TC-M4-01 (t_0cc0a0ca) | DONE (5ce3dee; docs/aspects.md) |
 | Vis core | api/visnet, wands | TC-M4-02 (t_d7272167) | DONE (3314f7f; docs/architecture/vis.md) |

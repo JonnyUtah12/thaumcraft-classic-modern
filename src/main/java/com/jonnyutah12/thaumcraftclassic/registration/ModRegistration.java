@@ -11,6 +11,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchRea
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResearchBook;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTaint;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
@@ -183,6 +184,12 @@ public final class ModRegistration {
         // dimension/portal and structure placement are TC-M6-04f-m; the maze
         // generation shipped in f252c58.
         CatalogEldritchRealm.init(modEventBus);
+        // BOOK-1 (t_1e6b18cc): the Thaumonomicon book item — the book's open
+        // path. Right-click runs the original's research sync (the siblings of
+        // everything completed) and sends the S2C open payload; the browser
+        // itself is containerless like the original's GuiScreen, so this card
+        // registers NO menu type (BD-22). Pages/navigation stay on BD-13.
+        CatalogResearchBook.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

@@ -11,6 +11,7 @@ import com.jonnyutah12.thaumcraftclassic.network.payload.FocusChangeToServerPayl
 import com.jonnyutah12.thaumcraftclassic.network.payload.ItemKeyToServerPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.MiscEventPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.NotePayload;
+import com.jonnyutah12.thaumcraftclassic.network.payload.OpenThaumonomiconPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.PlayerCompleteToServerPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.ResearchCompletePayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.RunicChargePayload;
@@ -99,6 +100,14 @@ public final class ModNetwork {
         toClient(registrar, AspectDiscoveryPayload.TYPE, AspectDiscoveryPayload.STREAM_CODEC, ClientPayloadHandlers::handleAspectDiscovery);
         toClient(registrar, ResearchCompletePayload.TYPE, ResearchCompletePayload.STREAM_CODEC, ClientPayloadHandlers::handleResearchComplete);
         toClient(registrar, RunicChargePayload.TYPE, RunicChargePayload.STREAM_CODEC, ClientPayloadHandlers::handleRunicCharge);
+
+        // --- GUI open (S2C) — BOOK-1 / t_1e6b18cc --------------------------------
+        // The port's replacement for FML 1.7.10's GuiOpen packet for a
+        // GuiScreen-only GUI: the Thaumonomicon browser has no container
+        // (GuiResearchBrowser extends GuiScreen), so it cannot ride
+        // 1.21.1's openMenu. See BD-22.
+        toClient(registrar, OpenThaumonomiconPayload.TYPE, OpenThaumonomiconPayload.STREAM_CODEC,
+                ClientPayloadHandlers::handleOpenThaumonomicon);
 
         // --- client-initiated actions (C2S) — original ...ToServer classes ---
         toServer(registrar, ScannedToServerPayload.TYPE, ScannedToServerPayload.STREAM_CODEC, ServerPayloadHandlers::handleScanned);
