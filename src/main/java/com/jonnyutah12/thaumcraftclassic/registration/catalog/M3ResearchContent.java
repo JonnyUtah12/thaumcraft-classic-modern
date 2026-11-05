@@ -80,7 +80,7 @@ public final class M3ResearchContent {
      * {@code GuiResearchTable} + {@code ContainerResearchTable}, TC-M3-04-s-iii).
      * The id is {@code gui_research_note}, not the row's literal
      * {@code gui_research_table}: the note item's right-click is the port's open
-     * seam and the GUI's subject is the note, not the table block (BD-20, and the
+     * seam and the GUI's subject is the note, not the table block (BD-26, and the
      * row's new_id is flipped to this id in the same commit).
      */
     public static final DeferredHolder<MenuType<?>, MenuType<ResearchNoteMenu>> GUI_RESEARCH_NOTE =

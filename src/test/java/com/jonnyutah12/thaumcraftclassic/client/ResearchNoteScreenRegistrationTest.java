@@ -2,6 +2,7 @@ package com.jonnyutah12.thaumcraftclassic.client;
 
 import com.jonnyutah12.thaumcraftclassic.menus.ResearchNoteMenu;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.M3ResearchContent;
+import com.jonnyutah12.thaumcraftclassic.research.NoteScreenModel;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -60,12 +61,20 @@ class ResearchNoteScreenRegistrationTest {
                 ResearchNoteMenu.class, Inventory.class, Component.class);
         assertNotNull(constructor,
                 "1.21.1 builds a container screen as (menu, inventory, title-from-the-open-screen-packet)");
-        assertTrue(ResearchNoteScreen.TITLE_KEY.equals("container.thaumcraft." + GUI_NOTE_ID.getPath()),
+        // BOOK-5 (t_569e7f6e): NOTE-SCREEN-2's hex-grid screen replaced this
+        // card's placeholder, and the placeholder's constants moved to their
+        // D-019 owners — the title key is the menu's (ResearchNoteMenu.title,
+        // the component the open packet carries) and the drawn panel strings
+        // live in the Minecraft-free NoteScreenModel. The contract asserted
+        // here is unchanged: every string the panel draws must ship.
+        final String titleKey = ((net.minecraft.network.chat.contents.TranslatableContents)
+                ResearchNoteMenu.title().getContents()).getKey();
+        assertTrue(titleKey.equals("container.thaumcraft." + GUI_NOTE_ID.getPath()),
                 "the title key must be the registered menu id's key");
-        assertTrue(menuLangKeyIsShipped(ResearchNoteScreen.TITLE_KEY),
-                ResearchNoteScreen.TITLE_KEY + " must ship in en_us.json (the screen title fallback)");
-        for (final String key : new String[] {ResearchNoteScreen.NO_INK_LINE_0,
-                ResearchNoteScreen.NO_INK_LINE_1, ResearchNoteScreen.COPY_HEADER}) {
+        assertTrue(menuLangKeyIsShipped(titleKey),
+                titleKey + " must ship in en_us.json (the screen title fallback)");
+        for (final String key : new String[] {NoteScreenModel.NO_INK_LINE_ONE,
+                NoteScreenModel.NO_INK_LINE_TWO, NoteScreenModel.COPY_HEADER_KEY}) {
             assertTrue(menuLangKeyIsShipped(key), key + " must ship (the panel draws it)");
         }
     }
@@ -74,7 +83,7 @@ class ResearchNoteScreenRegistrationTest {
     void noteMenuIdIsTheContractIdTheScreenBindsTo() {
         assertEquals(GUI_NOTE_ID, M3ResearchContent.GUI_RESEARCH_NOTE.getKey().location(),
                 "docs/content-mapping.csv row Thaumcraft:GUI_RESEARCH_TABLE realizes as "
-                        + "thaumcraft:gui_research_note (the flipped new_id, BD-20)");
+                        + "thaumcraft:gui_research_note (the flipped new_id, BD-26)");
     }
 
     @Test

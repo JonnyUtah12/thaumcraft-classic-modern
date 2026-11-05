@@ -290,7 +290,7 @@ public class ItemResearchNotes extends Item {
         // the research-table block (BlockTable.useBlockOn, gui_id 10) with an
         // empty note slot — the player places the note into it themselves, and
         // right-clicking a filled note in the original does nothing. The
-        // note-item right-click is the port's seam to that screen (BD-20): the
+        // note-item right-click is the port's seam to that screen (BD-26): the
         // menu opens with the same two slots, and the note rides into slot 1
         // by the original's own shift-click arm. A completed note opens too:
         // that is the original's duplicate display (RESEARCHDUPE-gated).
@@ -349,7 +349,7 @@ public class ItemResearchNotes extends Item {
      *
      * <p>The research name/text keys ({@code tc.research_name.*} /
      * {@code tc.research_text.*}) are the localization card's, exactly as in
-     * the Thaumonomicon screen (BD-17), so a label renders as its key until
+     * the Thaumonomicon screen (BD-23, was BD-17 on the research lane), so a label renders as its key until
      * that card ships them.</p>
      */
     @Override

@@ -224,3 +224,40 @@ interaction layer (workbench, infusion, crucible, essentia, taint,
 enchantments, armor, entities, Thaumonomicon UI, foci, M7 visual
 parity) is NOT DONE. The GitHub release notes say so; do not treat the
 tag as gameplay parity.
+
+## TC-M3-04-s-iii NOTE-SCREEN-2 — research note hex-grid screen (t_32a29c93, branch `wt/t_32a29c93`, base `8ab9b3e`)
+
+The note screen's rendering half landed on top of NOTE-SCREEN-1's menu
+contract (`thaumcraft:gui_research_table`: slots, ContainerData, the
+`NotePuzzle.checkCompletion` server arm and the `thaumcraft:research_note`
+round-trip — all built on that card, not rebuilt here).
+
+- `research/NoteScreenModel` (Minecraft-free) owns every number the window
+  draws: the 19-cell grid at HEX_SIZE 9 centred (169, 83) with the plate offset
+  -8, the 0.25 blank-hex alpha, the hover gate (a required hex of an open note
+  never highlights, :522-531), the veil over undiscovered aspects, the 5x5 pool
+  pagination with faded 0-amount entries, the press/click/drop gate order, the
+  200 ms combine cooldown, the copy cost, the ink gate, the sweep colour and its
+  `0.3 + sin(count + x) * 0.3 + 0.3` alpha, the required hex's animated orb, and
+  each arm's whole sound list (the pairs the naive port drops:
+  cameraclack-then-key on combine :631-633, key-then-erase on erase :730-732,
+  key-then-write on a grid write :156-158, nothing at all on the pool pick-up
+  :193-202).
+- `client/ResearchNoteScreen` draws exactly that, sends the write/erase/combine
+  arms as requests, and never claims completion (the server validates).
+- Evidence: 21 probes in `NoteScreenModelProbeTest` — the arm-sound expectations
+  are PARSED out of the decompiled `GuiResearchTable`'s own `playButton*` call
+  sites at test time (they assumption-skip where the reference tree is absent,
+  the CI path), and the geometry/cost expectations come from the shipped
+  201-entry graph and the shipped aspect table, never a hardcoded list.
+- Suite: 487 unit tests, 0 failures in this card's classes, 2 skips. The 10 red
+  tests on this base (`ResearchNoteMenuParityTest` 6, `ResearchNoteInkGateTest`
+  4) are NOTE-SCREEN-1's own contract on the `8ab9b3e` preview snapshot; this
+  card's tree does not "fix" them and the branch is meant to be taken with that
+  card's tip. Three pre-existing syntax/API breaks in the snapshot
+  (`LocalizationGameTest.java`, `LocalizationFileTest.java`,
+  `M3ResearchContent.java`) and 1.21.1 `Item.Properties#setId` in
+  `ResearchNoteInkGateTest` had to be repaired for the tree to compile at all —
+  all four are NOTE-SCREEN-1's files (hotspot).
+- Not proved, and not provable in CI: the window's pixels. `runClient` was not
+  run; see BD-20 and the FEATURE_MATRIX row.

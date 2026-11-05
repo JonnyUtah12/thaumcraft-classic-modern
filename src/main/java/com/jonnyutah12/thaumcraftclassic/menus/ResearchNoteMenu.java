@@ -64,7 +64,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * data-slot mechanism at all, so the original's GUI read the tile in-process
  * ({@code GuiResearchTable} dereferences {@code this.tileEntity} directly, e.g.
  * its ink tooltip gate at {@code :209-211}). A 1.21.1 screen gets only its
- * menu, so the note state the screen draws is published here (BD-20). The
+ * menu, so the note state the screen draws is published here (BD-26). The
  * indices are stable: the sibling screen card draws against them.</p>
  *
  * <p><b>Authority</b> — the server decides everything that matters. A client
@@ -72,8 +72,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * completion runs through {@link NotePuzzle#checkCompletion} (the single
  * completion authority from TC-M3-04-s); the completion stamp is the original's
  * meta 64 ({@code TileResearchTable.java:178}) carried by the completed flag —
- * the {@code thaumcraft:item_meta} codec is bounded at 63 (BD-18), so 64 has no
- * stack carrier and the flag is the port's seam (BD-20). The place payload carries no completion
+ * the {@code thaumcraft:item_meta} codec is bounded at 63 (BD-24), so 64 has no
+ * stack carrier and the flag is the port's seam (BD-26). The place payload carries no completion
  * claim and no button id can ask for one: the original's {@code buttonClick}
  * has exactly two arms — {@code button == 1} accepted as a no-op and
  * {@code button == 5} → {@code TileResearchTable.duplicate}
@@ -82,12 +82,12 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * <p><b>Open path and screen</b> — the original opened this GUI at the
  * research-table block ({@code BlockTable.useBlockOn}, gui_id 10); the port has
  * no research-table tile (TC-M4-01's card), so right-clicking a research note
- * opens it ({@code ItemResearchNotes#use}, BD-20) and the note rides into slot 1
+ * opens it ({@code ItemResearchNotes#use}, BD-26) and the note rides into slot 1
  * by the original's own shift-click arm. The screen shipped with this card is a
  * minimal placeholder — panel, title, ink warning and copy-cost header — so the
  * MenuType is screen-complete for {@code MenuTypeScreenCoverageTest}; the hex
  * grid, the copy plate and the buttons are the note-screen presentation card
- * (BD-20, TEMPORARY, the BD-22 precedent wording).
+ * (BD-26, TEMPORARY, the BD-22 precedent wording).
  *
  * <p><b>Ink</b> — the scribing tool is the original's {@link IScribeTools}
  * marker, empty in the API and checked with {@code instanceof}; ink is the
@@ -145,7 +145,7 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
      */
     public static final int BUTTON_DUPLICATE = 5;
 
-    // ------------------------------------------------- data slots (BD-20 seam)
+    // ------------------------------------------------- data slots (BD-26 seam)
     // 1.7.10 publishes no container data; these six are the port's screen seam.
     public static final int DATA_NOTE_PRESENT = 0;
     public static final int DATA_COMPLETE = 1;
@@ -245,7 +245,7 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
      * ({@code ResearchManager.java:205-218}) — write the note state back onto
      * the stack. The original mutates its ItemStack NBT in place;
      * {@code ResearchNoteData} is an immutable record, so the write is a full
-     * replace (BD-04/BD-18's component note).
+     * replace (BD-04/BD-24's component note).
      */
     private void writeNote(final ResearchNoteData dataToWrite) {
         final ItemStack stack = this.container.getItem(SLOT_NOTE);
@@ -322,7 +322,7 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
                 || ItemResearchNotes.storedMeta(noteStack) >= ItemResearchNotes.META_DISCOVERY_FAMILY
                 || dataState.complete()) {
             return; // original TileResearchTable.java:129-133 (meta >= 64 refuses); in the port the
-                    // completed flag carries the meta-64 state (BD-20), and it closes this arm too.
+                    // completed flag carries the meta-64 state (BD-26), and it closes this arm too.
         }
         final PlayerKnowledgeData initial = knowledge();
         final boolean r1 = ResearchManager.isResearchComplete(initial, "RESEARCHER1");
@@ -340,7 +340,7 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
                 // ({@code bonusAspects}, rebuilt by {@code recalculateBonus}) and
                 // ends by re-gathering the grid (:142-146). The port has no
                 // research-table tile and no bonus pool, so the write goes
-                // unpaid and the grid is re-read — BD-20.
+                // unpaid and the grid is re-read — BD-26.
                 dataState = note();
             } else {
                 final PlayerKnowledgeData paid = initial.withAspectPoolAdded(aspectTag, -1);
@@ -388,16 +388,16 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
      * {@code ResearchManager.checkResearchCompletion} plus
      * {@code contents[1].setItemDamage(64)}. The original's meta 64 is the
      * discovery family's floor — {@code META_DISCOVERY_FAMILY} — and the
-     * {@code thaumcraft:item_meta} codec is bounded at 63 (BD-18), so 64 has no
+     * {@code thaumcraft:item_meta} codec is bounded at 63 (BD-24), so 64 has no
      * stack carrier here: the completed flag inside the record below IS the port's
-     * carrier (BD-20). It is what takes the note out of the writeable family (the
+     * carrier (BD-26). It is what takes the note out of the writeable family (the
      * write arm refuses it) and opens the copy arm, and
      * {@code ItemResearchNotes#use} finishes the research.
      */
     public static void applyCompletion(final ItemStack noteStack, final ResearchNoteData completed) {
         // The original's stamp is setItemDamage(META_DISCOVERY_FAMILY's 64); the
         // port stamps the completed flag inside the completed record — the carrier
-        // the meta-64 state rides (codec bound 63, BD-18; seam BD-20).
+        // the meta-64 state rides (codec bound 63, BD-24; seam BD-26).
         noteStack.set(ModDataComponents.RESEARCH_NOTE.get(), completed);
     }
 
@@ -450,7 +450,7 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
     /**
      * Original {@code TileResearchTable.duplicate} ({@code TileResearchTable.java
      * :425-462}) with its gates in its order: a note in slot 1, its data
-     * resolved, <b>meta 64 — the completed flag in the port, BD-20</b>, one book
+     * resolved, <b>meta 64 — the completed flag in the port, BD-26</b>, one book
      * and one coal carried,
      * and every tag's pool at {@code amount + copies} or better — otherwise
      * nothing happens. The payment is the pool, one book, one coal; then the
@@ -463,7 +463,7 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
      * ({@code stacksTo(1)}), so the original's {@code stackSize++} leaves a
      * count-2 stack in the container slot; {@link #removed} hands it back
      * through {@code placeItemBackInInventory}, which splits it into the
-     * extra note the player is owed (BD-20).</p>
+     * extra note the player is owed (BD-26).</p>
      */
     public void duplicate() {
         if (this.player.level().isClientSide) {
@@ -475,7 +475,7 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
                 || !(ItemResearchNotes.storedMeta(noteStack) == ItemResearchNotes.META_DISCOVERY_FAMILY
                         || dataState.complete())) {
             return; // original :431-434 (itemDamage == 64); the completed flag is the
-                    // port's meta-64 carrier (BD-20), so it opens this arm too.
+                    // port's meta-64 carrier (BD-26), so it opens this arm too.
         }
         final Inventory inventory = this.player.getInventory();
         // Original InventoryUtils.isPlayerCarrying(book) / (coal, 0) >= 0.
@@ -667,7 +667,7 @@ public class ResearchNoteMenu extends AbstractContainerMenu {
      * original left both in the tile, which survives the screen; the port's
      * table container is a throwaway {@code SimpleContainer}, so without this
      * arm a solved grid is deleted with the container the moment the screen
-     * closes (BD-20).
+     * closes (BD-26).
      */
     @Override
     public void removed(final Player leaving) {

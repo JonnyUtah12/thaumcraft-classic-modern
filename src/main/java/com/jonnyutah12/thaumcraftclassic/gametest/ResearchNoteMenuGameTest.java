@@ -100,7 +100,7 @@ import net.neoforged.neoforge.network.registration.ChannelAttributes;
  *       id 5 the copy, everything else refused — and an unsolved note stays
  *       unsolved with 0 copies.</li>
  *   <li>{@link #theCopyArmIsTheOriginalsArms}: {@code TileResearchTable.java
- *       :425-462} — meta 64 (the completed flag in the port, BD-20), one book,
+ *       :425-462} — meta 64 (the completed flag in the port, BD-26), one book,
  *       one coal, and every tag's pool
  *       at {@code amount + copies} or better; no ink. On success the copy count
  *       goes up, the note in the slot grows by one (the original's
@@ -110,7 +110,7 @@ import net.neoforged.neoforge.network.registration.ChannelAttributes;
  *       the completed state — the original sets metadata 64
  *       ({@code TileResearchTable.java:178}); in the port the completed flag
  *       carries that state (the {@code thaumcraft:item_meta} codec is bounded at
- *       63, BD-18; the seam is BD-20) — which is what opens the copy arm and
+ *       63, BD-24; the seam is BD-26) — which is what opens the copy arm and
  *       closes the write arm.</li>
  *   <li>{@link #aFundedWriteSpendsPoolInkAndCompletesTheNote}: the write arm end
  *       to end with the shipped scribing tool — the grid write lands, the pool
@@ -483,7 +483,7 @@ public final class ResearchNoteMenuGameTest {
         // rule). That write is the one that both lands and completes: completion
         // prunes the cells outside the connected chain (:204-210), and this cell
         // is IN the chain, so it is still on the note afterwards — the completed
-        // flag is the port's meta-64 carrier (BD-20).
+        // flag is the port's meta-64 carrier (BD-26).
         final ServerPlayer player = freshPlayer(helper);
         final SimpleContainerData data = new SimpleContainerData(ResearchNoteMenu.DATA_COUNT);
         final ResearchNoteMenu menu = new ResearchNoteMenu(1, player.getInventory(), data);
@@ -515,7 +515,7 @@ public final class ResearchNoteMenuGameTest {
         helper.assertTrue(player.getData(ModAttachments.PLAYER_KNOWLEDGE).aspectAmount("ignis") == 5,
                 "the write paid from the ignis pool, which the written aspect does not draw on");
         helper.assertTrue(written.complete(),
-                "the closed chain kept its completed flag off (the port's meta-64 carrier, BD-20)");
+                "the closed chain kept its completed flag off (the port's meta-64 carrier, BD-26)");
         helper.assertTrue(data.get(ResearchNoteMenu.DATA_INK) == inkwell.getMaxDamage() - 1,
                 "the synced ink value is " + data.get(ResearchNoteMenu.DATA_INK) + " after one write");
         helper.assertTrue(data.get(ResearchNoteMenu.DATA_COMPLETE) == 1,
@@ -578,7 +578,7 @@ public final class ResearchNoteMenuGameTest {
         helper.assertTrue(ResearchNoteMenu.noteOf(stack).complete(),
                 "the completion arm did not stamp the completed flag — the port's carrier for the "
                         + "original's meta 64 (TileResearchTable.java:178; thaumcraft:item_meta is "
-                        + "bounded at 63, BD-18, seam BD-20): " + ResearchNoteMenu.noteOf(stack));
+                        + "bounded at 63, BD-24, seam BD-26): " + ResearchNoteMenu.noteOf(stack));
         helper.assertTrue(ItemResearchNotes.META_DISCOVERY_FAMILY == META_COMPLETED,
                 "the port's completed-note meta is not the original's 64: "
                         + ItemResearchNotes.META_DISCOVERY_FAMILY);

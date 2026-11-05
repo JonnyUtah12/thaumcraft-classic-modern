@@ -28,10 +28,11 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
  * ({@code runServer}, {@code runGameTestServer}) would be a classloading
  * hazard. Two screens are registered today: {@link TrunkScreen} for
  * {@code CatalogTrinketsLoot.GUI_TRUNK}, and {@link ResearchNoteScreen} — the
- * minimal placeholder, BD-20 — for {@code M3ResearchContent.GUI_RESEARCH_NOTE}
- * (TC-M3-04-s-iii); the hand-mirror and decon-table screens, the hex-grid note
- * screen and every other GUI id are follow-up cards. The crucible has no menu
- * type at all, so its screen cannot be wired here.</p>
+ * hex-grid research-note window over {@code thaumcraft:gui_research_note}
+ * (TC-M3-04-s-iii: menu contract BD-26, hex-grid presentation BD-27) — for
+ * {@code M3ResearchContent.GUI_RESEARCH_NOTE}; the hand-mirror and
+ * decon-table screens and every other GUI id are follow-up cards. The crucible
+ * has no menu type at all, so its screen cannot be wired here.</p>
  */
 @EventBusSubscriber(modid = ThaumcraftClassic.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ModClientScreens {
@@ -46,9 +47,10 @@ public final class ModClientScreens {
     @SubscribeEvent
     public static void onRegisterScreens(final RegisterMenuScreensEvent event) {
         event.register(CatalogTrinketsLoot.GUI_TRUNK.get(), TrunkScreen::new);
-        // TC-M3-04-s-iii: the research-note menu's MINIMAL placeholder screen —
-        // the MenuType must be screen-complete (BD-20); the hex-grid drawing is
-        // the note-screen presentation card.
+        // TC-M3-04-s-iii: the research-note window over thaumcraft:gui_research_note
+        // — the hex grid, aspect pool, drag machine and copy plate (BD-27) over
+        // the menu contract (BD-26). The MenuType must be screen-complete, so the
+        // pairing lives here (the hex grid landed in NOTE-SCREEN-2 t_32a29c93).
         event.register(M3ResearchContent.GUI_RESEARCH_NOTE.get(), ResearchNoteScreen::new);
     }
 
