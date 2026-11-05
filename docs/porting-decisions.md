@@ -411,8 +411,8 @@ RecipeManager's parse errors for our mod go from 31 to 0.
 
 ## D-016 — Original display strings are committed, and ship in the public jar
 
-**Status: OPEN — needs an explicit call.** Found 2026-10-28 while cutting
-v0.1.0-alpha.4.
+**Status: DECIDED (owner, 2026-11-05) — option 2 adopted: build-time generation.**
+Found 2026-10-28 while cutting v0.1.0-alpha.4.
 
 **Fact.** `src/main/resources/assets/thaumcraft/lang/en_us.json` is committed to
 the public repository (landed `fca4fb8`, merged `3810797`). Of its **242 shipped
@@ -453,6 +453,27 @@ same class as the alpha.1 release still carrying a ~10.38 MB asset-included jar.
 **Recommendation:** option 2 deferred by one release, with option 1's wording
 correction done now (the notes should not claim the jar is free of original
 content while it carries 231 original strings).
+
+**Decision (owner, 2026-11-05).** Option 2, undelayed: original display strings are
+**generated at build time** from the user's own extracted assets (`reference/assets`,
+the `.lang` conversion the `asset-mapping.csv` rule specified and never implemented),
+and only port-authored ids stay committed. Measured scope on `497e855`: the shipped
+graph references **993** `tc.research_*` keys — 201 `research_name`, 201
+`research_text`, **591** `research_page` (BOOK-3's 711 count predates the graph's page
+growth) — and `en_us.json` defines **0** of them, so the Thaumonomicon's page layer
+resolves to raw translation keys today, while its detail pane renders real English from
+the graph's own `nameEnUs`/`textEnUs` (199 of 201 entries; `CAP_iron` and `ROD_wood`
+carry neither). The 27 `tc.*` keys the book's chrome draws (purchase, short, missing,
+popup, error, resonator, forbidden levels) are port-authored and stay.
+The 232 already-committed original values move out of `src/` on their own card, because
+that migration moves `LocalizationFileTest` and `LocalizationGameTest` expectations.
+Stated plainly, the consequence this option warns about: **a code-only artifact ships
+with raw keys** for every original-derived name, description and book page, until the
+player overlays their own extracted assets. Git history is not rewritten.
+
+**Effect on the board.** BOOK-3 (`t_552332a0`) is unblocked by this call and re-scoped
+to the generation mechanism plus the 993 research keys; it is no longer a licensing
+question.
 
 ## D-017 — A golem card proposal was rejected for naming non-existent classes
 

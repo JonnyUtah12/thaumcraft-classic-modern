@@ -5,6 +5,24 @@ Format: Keep a Changelog; versioning: Semantic Versioning (see
 `docs/release-process.md`). Project versions are independent of the pinned
 Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
+## [Unreleased]
+
+The Thaumonomicon is in the shipped code path. The BOOK chain (BOOK-1 open path,
+BOOK-2 tab strip and entry listing generated from the shipped research graph, BOOK-4
+per-entry detail panel, the note item with its hex-grid puzzle, and the note-request
+arm on node click) landed on `main` at `497e855`; 28 book game probes and 12 book unit
+suites measure it, and the merged tree runs unit **594 / 0 failures / 2 skipped** with
+**All 218 required tests passed** in both the Curios and `-Ptc.noCurios` modes.
+The book's chrome strings are authored; its page layer resolves `tc.research_*`
+translation keys that no committed lang file defines, so a code-only build shows raw
+keys there. **D-016 is decided** (option 2: generate original display strings at build
+time from the player's own extracted assets), which unblocks the text work - see the
+decision section. Also landed: the `blockEldritch` meta list is corrected to the shipped
+property range (meta 6 is unnamed, there is no meta 11).
+
+**The published alpha.5 jar is unchanged** (built from `7c4ebaf`); everything in this
+section reaches players only in the next release cut.
+
 ## [0.1.0-alpha.5] - 2026-11-03
 
 
