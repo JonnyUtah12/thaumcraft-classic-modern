@@ -1,7 +1,9 @@
 package com.jonnyutah12.thaumcraftclassic.registration.catalog;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityBrainyZombie;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityFireBat;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityGiantBrainyZombie;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityWisp;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
@@ -57,6 +59,29 @@ public final class CatalogEntities {
             ENTITY_TYPES.register("firebat",
                     () -> EntityFireBat.buildType(MobCategory.MONSTER));
 
+    /** {@code thaumcraft:brainyzombie} — original {@code EntityBrainyZombie}
+     *  (content-mapping {@code Thaumcraft:BrainyZombie}, mod_index 19): the
+     *  vanilla zombie box (the 54-line class never resizes itself), health 25.0
+     *  and attack 5.0 from {@code func_110147_ax:16-17}, the reinforcement
+     *  attribute pinned at 0.0 ({@code :18}), and the armour value 2 + 3 from
+     *  {@code func_70658_aO:34-41}. Registration args {@code (64, 3, true)} —
+     *  {@code ConfigEntities.java:95}. */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityBrainyZombie>> BRAINY_ZOMBIE =
+            ENTITY_TYPES.register("brainyzombie",
+                    () -> EntityBrainyZombie.buildType(MobCategory.MONSTER));
+
+    /** {@code thaumcraft:giantbrainyzombie} — original
+     *  {@code EntityGiantBrainyZombie} (content-mapping
+     *  {@code Thaumcraft:GiantBrainyZombie}, mod_index 20): the angry zombie's
+     *  subclass, so it inherits its attributes and goal shape and overrides
+     *  health to 60.0 / attack to 7.0 ({@code :52-53}), carries experience 15
+     *  ({@code :14}) and a 0.6 x 1.8 base box that scales by 1.2 + anger
+     *  ({@code :15-16}, {@code :24}). Registration args {@code (64, 3, true)} —
+     *  {@code ConfigEntities.java:97}. */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityGiantBrainyZombie>> GIANT_BRAINY_ZOMBIE =
+            ENTITY_TYPES.register("giantbrainyzombie",
+                    () -> EntityGiantBrainyZombie.buildFuriousType(MobCategory.MONSTER));
+
     private CatalogEntities() {
     }
 
@@ -68,5 +93,7 @@ public final class CatalogEntities {
     private static void onAttributeCreation(final EntityAttributeCreationEvent event) {
         event.put(WISP.get(), EntityWisp.createAttributes().build());
         event.put(FIREBAT.get(), EntityFireBat.createAttributes().build());
+        event.put(BRAINY_ZOMBIE.get(), EntityBrainyZombie.createAttributes().build());
+        event.put(GIANT_BRAINY_ZOMBIE.get(), EntityGiantBrainyZombie.createAttributes().build());
     }
 }

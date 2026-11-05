@@ -23,6 +23,19 @@ property range (meta 6 is unnamed, there is no meta 11).
 **The published alpha.5 jar is unchanged** (built from `7c4ebaf`); everything in this
 section reaches players only in the next release cut.
 
+- **Angry / Furious zombie pair** (`TC-M6-06-s-c2`): `thaumcraft:brainyzombie` and
+  `thaumcraft:giantbrainyzombie` land as 1.21.1 `Zombie`s with the originals' figures cited line by
+  line — 25.0 health / 5.0 attack with the reinforcement attribute pinned at 0.0 and armour +3 capped at
+  20 for the angry zombie, and for the fury the anger ledger (start 1.0, +0.1 per hit to the 2.0 cap
+  applied before `super`, 0.002 per tick above 1.0, attack rewritten to `7.0 + (anger - 1) * 5.0` every
+  tick, hitbox `(1.2 + anger)` on its own 0.6 x 1.8 base), xp 15, 60.0 / 7.0, the leap goal at slot 2,
+  the doubled death drops (2 loops of 6 flips of 2) and the 4-way thaumium / carrot / potato / amber
+  `dropAllLoot` replacement. The pair installs the 1.7.10 parent's goal shape and strips the
+  post-1.7.10 goals (village patrol, turtle egg, turtle target, door breaking). Gate: 431 unit tests /
+  0 failures, 138/138 game tests with and without Curios; BD-28 records the scale-attribute resize and
+  BD-29 the brain drop gated on the unregistered zombie-brain item.
+
+
 ## [0.1.0-alpha.5] - 2026-11-03
 
 

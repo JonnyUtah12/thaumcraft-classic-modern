@@ -340,5 +340,7 @@
   "tc.resonator3": "Untyped",
   "tc.visdiscount": "Vis discount",
   "entity.thaumcraft.wisp": "Wisp",
-  "entity.thaumcraft.firebat": "Firebat"
+  "entity.thaumcraft.firebat": "Firebat",
+  "entity.thaumcraft.brainyzombie": "Angry Zombie",
+  "entity.thaumcraft.giantbrainyzombie": "Furious Zombie"
 }
