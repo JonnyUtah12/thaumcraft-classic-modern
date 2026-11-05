@@ -1,6 +1,7 @@
 package com.jonnyutah12.thaumcraftclassic.network;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.menus.ResearchNoteMenu;
 import com.jonnyutah12.thaumcraftclassic.network.payload.AspectCombinationToServerPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.AspectPlaceToServerPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.NotePayload;
@@ -38,10 +39,24 @@ public final class ServerNetworkHooks {
                 payload.tablePos(), payload.aspect1(), payload.aspect2());
     }
 
-    /** TODO(M4 research table): place aspect on the research table grid, per original PacketAspectPlaceToServer. */
+    /**
+     * TC-M3-04-s-iii-b: the hex-grid write. The original's
+     * {@code PacketAspectPlaceToServer} routed to the {@code TileResearchTable}
+     * at the packet's position and the tile owned the grid; the port has no
+     * research-table tile (that is TC-M4-01's card), so the open
+     * {@link ResearchNoteMenu} owns the grid state that rides the note stack
+     * and receives the write. A payload with no note menu open is ignored —
+     * the original drops the packet when its tile is gone.
+     */
     static void placeAspect(final AspectPlaceToServerPayload payload, final Player player) {
-        LOGGER.debug("aspect place from {} at {} ({},{}): {}", player.getGameProfile().getName(),
-                payload.tablePos(), payload.q(), payload.r(), payload.aspectTag().orElse("(none)"));
+        if (player instanceof ServerPlayer serverPlayer
+                && serverPlayer.containerMenu instanceof ResearchNoteMenu menu) {
+            menu.placeAspect(payload.q(), payload.r(), payload.aspectTag().orElse(null), serverPlayer);
+            return;
+        }
+        LOGGER.debug("aspect place from {} at {} ({},{}): {} (no research-note menu open)",
+                player.getGameProfile().getName(), payload.tablePos(), payload.q(), payload.r(),
+                payload.aspectTag().orElse("(none)"));
     }
 
     /**
