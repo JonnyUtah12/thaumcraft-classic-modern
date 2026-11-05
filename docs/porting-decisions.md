@@ -457,13 +457,21 @@ content while it carries 231 original strings).
 **Decision (owner, 2026-11-05).** Option 2, undelayed: original display strings are
 **generated at build time** from the user's own extracted assets (`reference/assets`,
 the `.lang` conversion the `asset-mapping.csv` rule specified and never implemented),
-and only port-authored ids stay committed. Measured scope on `497e855`: the shipped
-graph references **993** `tc.research_*` keys — 201 `research_name`, 201
-`research_text`, **591** `research_page` (BOOK-3's 711 count predates the graph's page
-growth) — and `en_us.json` defines **0** of them, so the Thaumonomicon's page layer
+and only port-authored ids stay committed. Measured scope (re-measured 2026-11-05 on
+`9345066`; an earlier note here said **993** keys with **591** pages — that counted
+reference *sites*, the same key listed by several entries, not distinct keys): the
+shipped graph references **711 distinct** `tc.research_*` keys — **201**
+`research_name`, **201** `research_text`, **309** `research_page` — and
+`en_us.json` defines **0** of them, so the Thaumonomicon's page layer
 resolves to raw translation keys today, while its detail pane renders real English from
 the graph's own `nameEnUs`/`textEnUs` (199 of 201 entries; `CAP_iron` and `ROD_wood`
-carry neither). The 27 `tc.*` keys the book's chrome draws (purchase, short, missing,
+carry neither). Coverage against the player's own extracted
+`reference/assets/thaumcraft/lang/en_US.lang` (1793 lines, 722 `tc.research*` keys) is
+**707 of 711 by exact string**: 199 name, 199 text, and the page set matches the graph
+1:1 (309/309). The **4** keys with no original string anywhere are
+`tc.research_name.CAP_iron`, `tc.research_text.CAP_iron`, `tc.research_name.ROD_wood`,
+`tc.research_text.ROD_wood` — the same two entries that carry no `nameEnUs`/`textEnUs`.
+So option 2 closes 707 keys by conversion and leaves 4 to be port-authored. The 27 `tc.*` keys the book's chrome draws (purchase, short, missing,
 popup, error, resonator, forbidden levels) are port-authored and stay.
 The 232 already-committed original values move out of `src/` on their own card, because
 that migration moves `LocalizationFileTest` and `LocalizationGameTest` expectations.
@@ -472,8 +480,9 @@ with raw keys** for every original-derived name, description and book page, unti
 player overlays their own extracted assets. Git history is not rewritten.
 
 **Effect on the board.** BOOK-3 (`t_552332a0`) is unblocked by this call and re-scoped
-to the generation mechanism plus the 993 research keys; it is no longer a licensing
-question.
+to the generation mechanism plus the **711** research keys — **707 by conversion** from
+the player's own `en_US.lang`, **4** (`CAP_iron` / `ROD_wood` name + text) needing
+port-authored strings; it is no longer a licensing question.
 
 ## D-017 — A golem card proposal was rejected for naming non-existent classes
 
