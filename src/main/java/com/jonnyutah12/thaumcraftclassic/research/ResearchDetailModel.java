@@ -1,6 +1,7 @@
 package com.jonnyutah12.thaumcraftclassic.research;
 
 import com.jonnyutah12.thaumcraftclassic.player.PlayerKnowledgeData;
+import com.jonnyutah12.thaumcraftclassic.research.book.BookNoteRequest;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -261,6 +262,62 @@ public final class ResearchDetailModel {
     }
 
     private final ResearchGraph graph;
+
+    /**
+     * What the clicking side knows about itself, as the original's click site
+     * read it in-process ({@code GuiResearchBrowser.java:683-727}).
+     *
+     * @param researchDifficulty  the {@code research_difficulty} config value,
+     *                            which decides the purchase family (easy -1 =
+     *                            every tagged entry, 0 = only secondaries)
+     * @param scribingInk         the browser's {@code hasScribestuff}
+     *                            ({@code :104-108}): a scribe tool with ink left
+     *                            AND paper carried
+     * @param carriesNoteForEntry the inventory already holds a note for this
+     *                            entry ({@code ResearchManager.getResearchSlot},
+     *                            {@code :712} gate)
+     * @param aspectPool          the player's pool total per aspect tag
+     *                            ({@code :692-711} affordability)
+     */
+    public record AffordanceContext(int researchDifficulty, boolean scribingInk,
+                                    boolean carriesNoteForEntry,
+                                    java.util.function.ToIntFunction<String> aspectPool) {
+    }
+
+    /**
+     * The book's click affordance for one entry: the arm a click sends and the
+     * hint line the original drew beside the node (TC-M3-04-s-v, merged onto
+     * this screen by INTEGRATE-BOOK-LANES / t_ee886c7e).
+     *
+     * <p>The rule is {@link BookNoteRequest}'s — this method only feeds it the
+     * graph, the player's own completed-key set and the client's own
+     * inventory/config/aspect-pool readings, so the answer is measurable on a
+     * dedicated server (D-019 rule 2: this class imports no Minecraft type
+     * beyond the record's own {@code ItemStack}-free shape).</p>
+     *
+     * <p><b>Two gates, both already shipped.</b> The panel's state line is
+     * {@link ResearchManager}'s authority (the pair the server enforces with);
+     * the hint line is the original's own click gate
+     * ({@code canUnlockResearch} + the purchase/note tests). This merge adds no
+     * third gate and no second completion path: an {@link BookNoteRequest.Arm}
+     * is only ever a request, and
+     * {@code ResearchManager.handlePlayerCompleteRequest} stays the sole path
+     * that completes research (BD-13).</p>
+     */
+    public BookNoteRequest.Request affordance(final String entryKey,
+                                              final PlayerKnowledgeData knowledge,
+                                              final AffordanceContext context) {
+        final ResearchEntryData entry = entryKey == null ? null : this.graph.entry(entryKey);
+        if (entry == null || context == null) {
+            return new BookNoteRequest.Request(BookNoteRequest.Arm.NONE, null, null);
+        }
+        final PlayerKnowledgeData known = knowledge == null ? PlayerKnowledgeData.empty() : knowledge;
+        return BookNoteRequest.decide(this.graph, entry,
+                com.jonnyutah12.thaumcraftclassic.research.book.ThaumonomiconKnowledge
+                        .of(known.researchKeys()),
+                context.researchDifficulty(), context.scribingInk(),
+                context.carriesNoteForEntry(), context.aspectPool());
+    }
 
     public ResearchDetailModel(final ResearchGraph graph) {
         this.graph = graph;

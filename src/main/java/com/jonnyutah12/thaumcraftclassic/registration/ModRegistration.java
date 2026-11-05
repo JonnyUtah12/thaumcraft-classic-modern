@@ -15,6 +15,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResearchBoo
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTaint;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.M3ResearchContent;
 import net.neoforged.bus.api.IEventBus;
 
 /**
@@ -190,6 +191,14 @@ public final class ModRegistration {
         // itself is containerless like the original's GuiScreen, so this card
         // registers NO menu type (BD-22). Pages/navigation stay on BD-13.
         CatalogResearchBook.init(modEventBus);
+        // TC-M3-04-s-ii: the research note item (thaumcraft:itemresearchnotes)
+        // — the meta-carrying note/discovery family whose right-click finishes a
+        // completed note (plus requisition-satisfying siblings) and whose blank
+        // discovery note (meta 24/42) rolls findHiddenResearch into a fresh
+        // NotePuzzle note or 7-9 knowledge fragments. Its note state is the
+        // thaumcraft:research_note component; the hex-grid note screen and the
+        // per-meta icons/glint stay on their cards.
+        M3ResearchContent.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

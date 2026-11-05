@@ -583,6 +583,15 @@ public final class InfusionAltarGameTest {
                 pedestalWith(helper, new BlockPos(5, 2, 1), new ItemStack(net.minecraft.world.item.Items.GLASS_PANE));
         final TestProbeContent.ProbeAspectSource source =
                 seedAspectSource(helper, new BlockPos(3, 2, 1), "potentia", 5);
+        // INTEGRATE-BOOK-LANES (t_ee886c7e): `drainedTotal` is a STATIC counter
+        // that CrucibleGameTest's essentia leg shares, and the harness runs the
+        // probes in registration order — which the merged tree shifted, so this
+        // probe started with a neighbour's drain already in the counter and an
+        // absolute read of it went red (`got 3` = the crucible's 1 + this
+        // craft's 2). Measure THIS craft's drain as a delta over the ambient
+        // baseline, and pin the probe's own pool as the owned-subset proof.
+        final int ambientDrains =
+                TestProbeContent.ProbeAspectSource.drainedTotal();
 
         // The original's onWandRightClick: first use arms the matrix, second
         // use starts a craft against whatever the pedestals hold.
@@ -608,9 +617,19 @@ public final class InfusionAltarGameTest {
 
         // Both essentia units were taken from the seeded source, the component
         // pedestal is empty, and the central pedestal now holds the result.
-        helper.assertTrue(TestProbeContent.ProbeAspectSource.drainedTotal() == 2,
-                "the recipe's two potentia must have been drained, got "
-                        + TestProbeContent.ProbeAspectSource.drainedTotal());
+        final int thisCraftDrained =
+                TestProbeContent.ProbeAspectSource.drainedTotal() - ambientDrains;
+        helper.assertTrue(thisCraftDrained == 2,
+                "the recipe's two potentia must have been drained by THIS craft, got "
+                        + thisCraftDrained + " (global counter "
+                        + TestProbeContent.ProbeAspectSource.drainedTotal()
+                        + ", ambient before this probe " + ambientDrains
+                        + " — CrucibleGameTest shares this static counter, so an"
+                        + " absolute read measures a neighbour's drain)");
+        helper.assertTrue(source.amount(aspect("potentia")) == 3,
+                "the seeded source held 5 potentia and the recipe costs 2, so THIS probe's"
+                        + " source must hold 3 after the craft, got "
+                        + source.amount(aspect("potentia")));
         helper.assertTrue(componentPedestal.getItem(0).isEmpty(),
                 "the component item must have been consumed");
         final ItemStack result = centreOf(helper, ALTAR.below(2)).getItem(0);

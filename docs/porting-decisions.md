@@ -620,3 +620,59 @@ hardcoded-category mutation: `runGameTestServer` **exit 1** —
 `booknavigationwalkscategoriesandentriesandrefusesstrangers`; unit
 `theBrowserSourcesCarryNoHardcodedGraphKeys` **exit 1** on the same mutation.
 GREEN on the shipped tree: exit 0, all required tests passed, `build` exit 0.
+
+## D-020 — The two Thaumonomicon lanes merge into ONE screen (INTEGRATE-BOOK-LANES, `t_ee886c7e`)
+
+**Status: Accepted.** Two unmerged lanes both shipped a class called
+`client/ThaumonomiconScreen`: the BOOK lane's (`7a1108a`, tabs + entry listing +
+per-entry detail panel, stacked on main `a084fc8`) and the research lane's
+(`a3d98bc`, a node-browser over the presentation model). One tree cannot carry
+both, and the note↔book wiring needs both lanes.
+
+**The decision, and why this direction.** The BOOK lane's screen is THE book
+screen. The research lane's node-browser and its `ThaumonomiconClientHooks`
+open seam are deleted, and its note/purchase affordance moves onto the BOOK
+screen's entry rows. The direction is not a preference between two screens: it
+is the open path. BOOK-1 chose the containerless payload route (BD-22) over a
+`thaumcraft:gui_thaumonomicon` `MenuType`, so the research lane's
+`ThaumonomiconClientHooks` open seam has nothing to hook into on this tree, and
+its `ThaumonomiconScreen.open` was a second open path for the same book. The
+research lane's presentation model — `research/book/{ThaumonomiconBook,BookFrame,
+BookPageView,BookTab,BookNode,BookEdge,BookNoteRequest,ThaumonomiconKnowledge,
+ThaumonomiconHost}` — survives as data, and its probes keep measuring it.
+
+**The wiring that replaced the deleted screen.** Right-click on an entry row
+sends that row's arm on its own; left-click opens the row and then runs the arm,
+which is a no-op for an entry the player already knows, so the BOOK-2/BOOK-4
+row behaviour is unchanged. The arm is decided by the shipped pure rule
+`BookNoteRequest.decide` (reached through `ResearchDetailModel.affordance`, the
+same seam BOOK-4 put under the panel) and rides the shipped
+`PlayerCompleteToServerPayload` — type 1 for the note, type 0 for the aspect
+purchase — into `ResearchManager.handlePlayerCompleteRequest`. That stays the
+port's only completion path (with `ResearchManager.completeResearch` and
+`ResearchCompletePayload`): the merge adds no second one. The five-state hint
+line draws beside the cursor inside the 256x230 pane and repeats in the detail
+panel; the 3000 ms `tc.research.popup` centring expression from
+`GuiResearchBrowser.java:722-725`, `(width - paneWidth)/2 + 128`, lands on that
+pane (`ThaumonomiconScreen.BOOK_PAGE_WIDTH` × 2).
+
+**Ids.** The research lane re-used BD-17/BD-18/BD-19, which main `a084fc8`
+already owns (item models, taint, wisp FX). Those rows renumber to
+**BD-23/BD-24/BD-25** and the research lane's duplicate `BD-13` reference is
+folded into main's BD-13 row; every cross-reference (the BD-13 pointer, the
+`FEATURE_MATRIX` cells, `feature-tracking`, `content-mapping`) follows, so
+`BEHAVIORAL_DEVIATIONS.md` is BD-01…BD-25 with no reused number.
+
+**Gate evidence on the merged tree.** `build --rerun-tasks` exit 0 with **562
+unit tests / 0 failures / 0 errors / 2 pre-existing skips**; `runGameTestServer`
+exit 0 **"All 199 required tests passed :)"**; `-Ptc.noCurios runGameTestServer`
+exit 0 with the same 199. The merge also had to teach the tree two things the
+BOOK lane never registered: `models/item/itemresearchnotes.json` and
+`models/item/iteminkwell.json`, because main's `everyshippeditemhasamodeljson` +
+`everyitemmodelchainresolves` gates demand a model chain for every registered
+item and the research lane shipped none (the sprites are ARR, D-004, so they
+render with the overlay); and `InfusionAltarGameTest`'s essentia-drain assertion
+now measures a **delta** over a baseline, because `TestProbeContent`'s probe
+drain counter is static and the merged registration order put
+`CrucibleGameTest`'s essentia leg in front of it — the absolute read was a
+cross-test read, not a regression.

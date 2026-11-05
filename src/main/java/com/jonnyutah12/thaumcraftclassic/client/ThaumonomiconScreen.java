@@ -1,19 +1,26 @@
 package com.jonnyutah12.thaumcraftclassic.client;
 
+import com.jonnyutah12.thaumcraftclassic.config.TcConfig;
+import com.jonnyutah12.thaumcraftclassic.config.TcConfigCatalog;
+import com.jonnyutah12.thaumcraftclassic.network.ClientNetworkData;
+import com.jonnyutah12.thaumcraftclassic.network.payload.PlayerCompleteToServerPayload;
 import com.jonnyutah12.thaumcraftclassic.player.ModAttachments;
 import com.jonnyutah12.thaumcraftclassic.player.PlayerKnowledgeData;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchBrowserModel;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchCategoryData;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchDetailModel;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchManager;
+import com.jonnyutah12.thaumcraftclassic.research.book.BookNoteRequest;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -91,6 +98,22 @@ import java.util.List;
  * nothing is labelled by its key (the BOOK-3 posture: render the key, do not
  * fail). The recipe pages ({@code GuiResearchRecipe}, 1613 lines: the page
  * renderer, its aspect art and its minigames) and the node art stay BD-13.</p>
+ *
+ * <p><b>What the merge adds (INTEGRATE-BOOK-LANES / t_ee886c7e).</b> The
+ * research lane's note/purchase affordance, moved off its node-browser screen
+ * and onto this screen's entry rows: the right button sends
+ * {@link BookNoteRequest}'s arm for the row under the cursor (the original's
+ * whole node click), the left button opens the row and then runs the same arm
+ * (a no-op for an entry already known, so BOOK-2/BOOK-4 rows behave as before),
+ * the five-state hint line is the original's own hover line drawn beside the
+ * cursor and repeated in the detail panel, and the 3000 ms
+ * {@code tc.research.popup} is the original's popup centred on this 256x230
+ * pane. The decision itself is not here: it is {@code BookNoteRequest}, and the
+ * only thing that completes research stays
+ * {@code ResearchManager.completeResearch} behind
+ * {@code ResearchManager.handlePlayerCompleteRequest} (BD-13). This is the
+ * merged screen: the port has ONE Thaumonomicon, opened by the containerless
+ * payload of BOOK-1 and no other path.</p>
  *
  * <p><b>Close path.</b> The original overrides no key handler and no
  * {@code doesGuiPauseGame}, so vanilla governs it: ESC closes the screen and
@@ -186,6 +209,26 @@ public class ThaumonomiconScreen extends Screen {
      * here either (D-019 rule 2).
      */
     private final ResearchDetailModel details;
+
+    /**
+     * The affordance of the row under the cursor (TC-M3-04-s-v, merged onto
+     * this screen): the arm a click there sends, plus the original's five-state
+     * hint line for it. Recomputed every frame, because the original recomputed
+     * it in its tooltip pass ({@code GuiResearchBrowser.java:554-660}) and the
+     * inputs are live inventory, pool and config values.
+     */
+    private BookNoteRequest.Request hint =
+            new BookNoteRequest.Request(BookNoteRequest.Arm.NONE, null, null);
+
+    /** Wall-clock ms until which the "got a research note!" popup draws (:722). */
+    private long popupUntil;
+
+    /** The popup line — the original's {@code tc.research.popup} text (:723-726). */
+    private Component popupText;
+
+    /** Where the cursor was when {@link #hint} was computed. */
+    private int hoverX;
+    private int hoverY;
 
     /**
      * The link rows drawn by the last frame, in pane coordinates: the click
@@ -343,7 +386,23 @@ public class ThaumonomiconScreen extends Screen {
             final int rowTop = top + ROWS_TOP + i * ROW_PITCH;
             if (mouseX >= left + 8 && mouseX < left + LIST_WIDTH
                     && mouseY >= rowTop - 1 && mouseY < rowTop + ROW_PITCH - 1) {
-                this.browser.selectEntry(rows.get(i).key());
+                final String key = rows.get(i).key();
+                if (button == 1) {
+                    // Right button: the note/purchase arm on its own — the
+                    // original's whole node-click behaviour (it never opened a
+                    // page for an entry the player did not already know).
+                    requestEntry(key);
+                    return true;
+                }
+                final boolean opened = this.browser.selectEntry(key);
+                if (opened) {
+                    // The original cleared the popup when it opened an entry
+                    // view (popuptime = now - 1, :683).
+                    this.popupUntil = System.currentTimeMillis() - 1L;
+                }
+                // The arm is a no-op for a known entry, so a known row behaves
+                // exactly as BOOK-2/BOOK-4 left it.
+                requestEntry(key);
                 return true;
             }
         }
@@ -372,6 +431,7 @@ public class ThaumonomiconScreen extends Screen {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         final int left = paneLeft();
         final int top = paneTop();
+        updateHover(mouseX, mouseY);
 
         // The pane: the original's 256x230 plate (:46-47).
         guiGraphics.fill(left, top, left + PANE_WIDTH, top + PANE_HEIGHT, PANE_FILL);
@@ -404,6 +464,8 @@ public class ThaumonomiconScreen extends Screen {
 
         renderPageFooter(guiGraphics, left, top, category, page);
         renderDetailPanel(guiGraphics, left, top, selected, mouseX, mouseY);
+        renderHoverHint(guiGraphics, left, top);
+        renderPopup(guiGraphics, left, top);
     }
 
     /** The category strip: one 24x24 tab per category of the graph (:480-530). */
@@ -487,6 +549,15 @@ public class ThaumonomiconScreen extends Screen {
                     : line.linkKey() != null ? LINK_TEXT : TEXT;
             wrap(flat, line.text(), color, line.linkKey());
         }
+        // The affordance line: the original's per-state hint for the hovered
+        // row (its tooltip pass, GuiResearchBrowser.java:608-618 / :651-659),
+        // merged onto this panel. The five states and their colours are
+        // BookNoteRequest's; this window only draws them.
+        if (selected != null && selected.key().equals(this.hint.key())
+                && this.hint.hintKey() != null) {
+            wrap(flat, Component.translatable(this.hint.hintKey()).getString(),
+                    0xFF000000 | BookNoteRequest.colorFor(this.hint.hintKey()), null);
+        }
         final String body = this.browser.selectedText();
         if (!body.isEmpty()) {
             wrap(flat, body, TEXT, null);
@@ -538,6 +609,147 @@ public class ThaumonomiconScreen extends Screen {
             case AVAILABLE -> STATE_AVAILABLE;
             case LOCKED -> STATE_LOCKED;
         };
+    }
+
+    // ---------------------------------- the note / purchase arm (TC-M3-04-s-v)
+
+    /**
+     * The client's own readings for a click, as the original read them
+     * in-process at {@code GuiResearchBrowser.java:683-727}: the
+     * {@code research_difficulty} config value, the scribing kit
+     * ({@code hasScribestuff}, {@code :104-108}), whether a note for this entry
+     * is already carried, and the synced aspect pools. The server re-runs every
+     * one of those gates on its own copy
+     * ({@code ResearchManager.handlePlayerCompleteRequest} +
+     * {@code ResearchManager.createResearchNoteForPlayer}), so a client that
+     * lies about them gets nothing.
+     */
+    private ResearchDetailModel.AffordanceContext affordanceContext(final String key) {
+        final List<ItemStack> rows =
+                this.minecraft == null || this.minecraft.player == null
+                        ? List.of() : this.minecraft.player.getInventory().items;
+        final var pools = ClientNetworkData.aspectPools();
+        return new ResearchDetailModel.AffordanceContext(
+                TcConfig.getInt(TcConfigCatalog.RESEARCH_DIFFICULTY),
+                ResearchManager.hasScribingInk(rows),
+                ResearchManager.noteSlot(rows, key) >= 0,
+                tag -> pools.getOrDefault(tag, 0));
+    }
+
+    /** What a click on {@code key} would ask the server for. */
+    public BookNoteRequest.Request requestFor(final String key) {
+        return this.details.affordance(key, playerKnowledge(), affordanceContext(key));
+    }
+
+    /**
+     * Send the row's request on the single server path: the same
+     * {@code PlayerCompleteToServerPayload} the note item's chain drives
+     * research through — type 0 for an aspect purchase, type 1 for a note. The
+     * book never completes research itself; {@code Arm.NOTE} asks the server
+     * for a puzzle note and the note item is what completes the entry.
+     *
+     * <p>The popup is set on the click, as the original's was
+     * ({@code :717-727}): the original had no reply packet to wait for and the
+     * gates are identical on both sides, so the note is normally there.</p>
+     */
+    private void requestEntry(final String key) {
+        final BookNoteRequest.Request request = requestFor(key);
+        this.hint = request;
+        switch (request.arm()) {
+            case NONE -> {
+                return;
+            }
+            case PURCHASE -> PacketDistributor.sendToServer(new PlayerCompleteToServerPayload(
+                    key, PlayerCompleteToServerPayload.REQUEST_COMPLETE));
+            case NOTE -> {
+                PacketDistributor.sendToServer(new PlayerCompleteToServerPayload(
+                        key, PlayerCompleteToServerPayload.REQUEST_NOTE));
+                this.popupText = BookNoteRequest.popupMessage(ResearchManager.graph().entry(key));
+                this.popupUntil = System.currentTimeMillis() + BookNoteRequest.POPUP_MILLIS;
+            }
+        }
+    }
+
+    /** The row under the cursor of the current page, or null (the original's node hit test). */
+    private String rowAt(final int mouseX, final int mouseY) {
+        final int left = paneLeft();
+        final int top = paneTop();
+        final List<ResearchBrowserModel.Row> rows =
+                this.browser.page(this.browser.selectedCategory(), this.browser.page());
+        for (int i = 0; i < rows.size(); i++) {
+            final int rowTop = top + ROWS_TOP + i * ROW_PITCH;
+            if (mouseX >= left + 8 && mouseX < left + LIST_WIDTH
+                    && mouseY >= rowTop - 1 && mouseY < rowTop + ROW_PITCH - 1) {
+                return rows.get(i).key();
+            }
+        }
+        return null;
+    }
+
+    /** Recompute the hovered row's affordance (the original's render-time tooltip pass). */
+    private void updateHover(final int mouseX, final int mouseY) {
+        this.hoverX = mouseX;
+        this.hoverY = mouseY;
+        final String row = rowAt(mouseX, mouseY);
+        this.hint = row == null
+                ? new BookNoteRequest.Request(BookNoteRequest.Arm.NONE, null, null)
+                : requestFor(row);
+    }
+
+    /**
+     * The hint line, drawn beside the cursor inside the book pane (the original
+     * drew it beside the hovered node, {@code :554-660}); the colour is the
+     * original's per-state colour and the box behind it is the original's
+     * translucent black ({@code :558}).
+     */
+    private void renderHoverHint(final GuiGraphics guiGraphics, final int left, final int top) {
+        if (this.hint.hintKey() == null) {
+            return;
+        }
+        final String text = Component.translatable(this.hint.hintKey()).getString();
+        final int width = this.font.width(text);
+        final int x = Math.max(left + 2, Math.min(this.hoverX - width / 2, left + PANE_WIDTH - width - 3));
+        final int y = top + PANE_HEIGHT - this.font.lineHeight - 4;
+        guiGraphics.fill(x - 3, y - 3, x + width + 3, y + this.font.lineHeight + 2, 0x80000000);
+        guiGraphics.drawString(this.font, text, x, y - 1,
+                0xFF000000 | BookNoteRequest.colorFor(this.hint.hintKey()), false);
+    }
+
+    /**
+     * The "got a research note!" popup: the original wrapped the message at
+     * 150 px ({@code font.split(popupmessage, 150)}) and drew it centred on the
+     * graph pane — {@code xq = (width - paneWidth)/2 + 128},
+     * {@code yq = (height - paneHeight)/2 + 128} ({@code :187-191}) — in its
+     * khaki colour, while {@code popuptime} was ahead of the clock. The book's
+     * 256x230 pane is the same pane the original's centre sat in, so the
+     * centre is this pane's centre.
+     */
+    private void renderPopup(final GuiGraphics guiGraphics, final int left, final int top) {
+        if (this.popupText == null || System.currentTimeMillis() > this.popupUntil) {
+            return;
+        }
+        final List<FormattedCharSequence> lines =
+                this.font.split(this.popupText, BookNoteRequest.POPUP_WRAP);
+        final int blockHeight = lines.size() * this.font.lineHeight;
+        final int centreX = left + PANE_WIDTH / 2;
+        final int centreY = top + PANE_HEIGHT / 2;
+        int y = centreY - blockHeight / 2;
+        for (final FormattedCharSequence line : lines) {
+            final int x = centreX - this.font.width(line) / 2;
+            guiGraphics.drawString(this.font, line, x, y,
+                    0xFF000000 | BookNoteRequest.COLOR_POPUP, false);
+            y += this.font.lineHeight;
+        }
+    }
+
+    /** The last popup text set by a note request (test seam; null before the first). */
+    public Component popupText() {
+        return this.popupText;
+    }
+
+    /** The affordance of the row under the cursor, as of the last frame. */
+    public BookNoteRequest.Request hint() {
+        return this.hint;
     }
 
     private String categoryLabel(final String categoryKey) {

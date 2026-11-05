@@ -134,7 +134,35 @@ public final class LocalizationGameTest {
             Map.entry("tc.boss.crimson", "EldritchBossRoomHost announce (original TileEldritchLock:300)"),
             Map.entry("tc.boss.golem", "EldritchBossRoomHost announce (original TileEldritchLock:220)"),
             Map.entry("tc.boss.taint", "EldritchBossRoomHost announce (original TileEldritchLock:340)"),
-            Map.entry("tc.boss.warden", "EldritchBossRoomHost announce (original TileEldritchLock:136)"));
+            Map.entry("tc.boss.warden", "EldritchBossRoomHost announce (original TileEldritchLock:136)"),
+            // TC-M3-04-s-ii research notes (ItemResearchNotes): the discovery
+            // family label (the original's item.discovery.name, metas 64+), the
+            // two blank-note tooltip lines and the warp block — the last three
+            // keep the original 1.7.10 key shape verbatim.
+            Map.entry("item.thaumcraft.itemresearchnotes.discovery",
+                    "ItemResearchNotes.getName discovery family"),
+            Map.entry("item.researchnotes.unknown.1",
+                    "ItemResearchNotes blank-note tooltip (original key shape kept)"),
+            Map.entry("item.researchnotes.unknown.2",
+                    "ItemResearchNotes blank-note tooltip (original key shape kept)"),
+            Map.entry("tc.forbidden", "ItemResearchNotes warp tooltip"),
+            Map.entry("tc.forbidden.level.1", "ItemResearchNotes warp tooltip level 1"),
+            Map.entry("tc.forbidden.level.2", "ItemResearchNotes warp tooltip level 2"),
+            Map.entry("tc.forbidden.level.3", "ItemResearchNotes warp tooltip level 3"),
+            Map.entry("tc.forbidden.level.4", "ItemResearchNotes warp tooltip level 4"),
+            Map.entry("tc.forbidden.level.5", "ItemResearchNotes warp tooltip level 5"),
+            // TC-M3-04-s-v Thaumonomicon node interaction: the per-state hint
+            // line the book draws under the hovered node, the 3 s note popup and
+            // the prerequisite line. The keys are the original's verbatim
+            // (GuiResearchBrowser.java:560, :614-618, :656-658, :717-726);
+            // BookNoteRequest names them; the book screen (client) draws them.
+            Map.entry("tc.research.getprim", "book-screen node hint (BookNoteRequest.KEY_GET_PRIM)"),
+            Map.entry("tc.research.hasnote", "book-screen node hint (BookNoteRequest.KEY_HAS_NOTE)"),
+            Map.entry("tc.research.shortprim", "book-screen node hint (BookNoteRequest.KEY_SHORT_PRIM)"),
+            Map.entry("tc.research.purchase", "book-screen node hint (BookNoteRequest.KEY_PURCHASE)"),
+            Map.entry("tc.research.short", "book-screen node hint (BookNoteRequest.KEY_SHORT)"),
+            Map.entry("tc.researchmissing", "book-screen prerequisite hint (BookNoteRequest.KEY_MISSING)"),
+            Map.entry("tc.research.popup", "book-screen note popup (BookNoteRequest.popupMessage)"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always
