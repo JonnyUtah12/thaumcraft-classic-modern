@@ -159,9 +159,40 @@ public final class FirebatMobGameTest {
                 new com.jonnyutah12.thaumcraftclassic.entities.monster.EntityFireBat(
                         com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEntities.FIREBAT.get(),
                         level);
-        final BlockPos at = helper.absolutePos(new BlockPos(1, 3, 1));
+        final BlockPos at = helper.absolutePos(new BlockPos(0, 3, 0));
         bat.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0.0F, 0.0F);
         level.addFreshEntity(bat);
+
+        // The bat must sit in the one chunk this probe can prove the harness ticks.
+        // StructureUtils.prepareTestStructure force-loads exactly the chunks the test
+        // structure's bounding box intersects (StructureUtils.forceLoadChunks :167-169,
+        // called at :126) and GameTestInfo will not start the probe until every one of
+        // those chunks is entity-ticking (GameTestInfo.tick :95-107). The structure
+        // block sits on the box's north-west corner minus one in y (createStructureBlock),
+        // so its x/z IS the box's x/z: its column is inside the vouched set for every
+        // template size, while the old (1,3,1) cell is one block past the box on both
+        // axes. "empty" is 1x1x1 (data/thaumcraft/structure/empty.nbt), so the vouched
+        // set is a single chunk and the old cell left it whenever the structure block
+        // landed on that chunk's last row or column — which is a per-RUN lottery:
+        // GameTestServer picks the whole test grid's origin with serverLevel.random
+        // (GameTestServer.TEST_POSITION_RANGE = 14999992, startTests :240-243), so
+        // every run draws fresh absolute coordinates for every probe. The failing run
+        // of 2026-11-05 was such a draw: the probe's structure block was stamped at
+        // 8717956, -60, -469905 (z & 15 == 15), so its (1,3,1) cell sat in chunk
+        // -29369 while the structure itself sat in -29370.
+        //
+        // The level ticks only entities whose chunk is entity-ticking: the section an
+        // added entity lands in inherits that chunk's Visibility and only then does
+        // PersistentEntitySectionManager put it in the entity tick list
+        // (addEntityWithoutEvent :83-105 -> startTicking :126-128, visibility from
+        // chunkVisibility, ctor :47-49). An entity in an unvouched chunk can therefore
+        // go unticked past any tick bound a probe cares to pick — which is what the
+        // old form asserted on. This assert names that precondition instead of leaving
+        // it implicit, so a future harness change reports THIS, not a misread health.
+        helper.assertTrue(level.isPositionEntityTicking(bat.blockPosition()),
+                "the probe's bat must sit in the test structure's own force-loaded chunk; "
+                        + "bat at " + bat.blockPosition().toShortString()
+                        + " is not entity-ticking (harness gate: GameTestInfo.tick)");
 
         // The ctor calls setIsBatHanging(true) (:31): bit 0 set, other four clear.
         helper.assertTrue(bat.getIsBatHanging(), "the original's ctor hangs the bat (:31)");
@@ -186,10 +217,27 @@ public final class FirebatMobGameTest {
                         + bat.getAttributeBaseValue(Attributes.MAX_HEALTH));
 
         // func_110147_ax:75 — a devil bat sits at 15.0 health. 1.21.1 applies
-        // attributes once at spawn, so the port re-applies that figure at the top
-        // of customServerAiStep: it lands on the bat's next AI tick, which is what
-        // the deferred block below waits for.
-        helper.runAtTickTime(helper.getTick() + 4L, () -> {
+        // attributes once at spawn, so the port re-applies that figure at the top of
+        // customServerAiStep (applyDevilHealth). That write is a STATE DELTA, so this
+        // is a delta contract and nothing else: the probe polls until the delta lands
+        // and never asserts on a tick budget.
+        //
+        // The old form asserted it at a fixed tick — runAtTickTime(getTick() + 4L) —
+        // which made the harness's scheduler part of the port's contract. It failed
+        // non-deterministically on the same tree (2026-11-05: one green "All 218
+        // required tests passed :)" run, three red ones over the same command, and a
+        // red draw reported as "a devil firebat is not at the original 15.0 health but
+        // 5.0 (:75)"). The cause was never the mod: the delta only appears once the
+        // LEVEL ticks the entity, and the level ticks only entities whose chunk is
+        // entity-ticking at the moment they are added (see the precondition assert
+        // above). Whether the probe's cell sits in such a chunk is drawn fresh every
+        // run, because GameTestServer draws its test-grid origin from serverLevel.random.
+        //
+        // Watchdog, not contract: the probe keeps timeoutTicks = 400 (below), which is
+        // the only surviving bound. Observed landing on every instrumented run: the
+        // entity's FIRST server tick, i.e. test tick 1 — so the watchdog carries ~400x
+        // margin over a healthy run and a slow-but-healthy run cannot trip it.
+        helper.succeedWhen(() -> {
             helper.assertTrue(bat.getAttributeBaseValue(Attributes.MAX_HEALTH) == 15.0,
                     "a devil firebat is not at the original 15.0 health but "
                             + bat.getAttributeBaseValue(Attributes.MAX_HEALTH) + " (:75)");
@@ -215,9 +263,8 @@ public final class FirebatMobGameTest {
             loaded.readAdditionalSaveData(saved);
             helper.assertTrue(loaded.getIsDevil() && !loaded.getIsSummoned(),
                     "the flag bits did not survive the BatFlags round trip (:376-386)");
-            bat.discard();
             loaded.discard();
-            helper.succeed();
+            bat.discard();
         });
     }
 }
