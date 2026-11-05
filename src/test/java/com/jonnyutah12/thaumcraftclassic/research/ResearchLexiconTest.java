@@ -194,23 +194,26 @@ class ResearchLexiconTest {
         // is what stops a generated file from inventing keys; a code-only
         // build ships no such entry at all (the D-016 posture), so that build
         // skips this probe — the same shape as the pre-existing
-        // reference-absence probes.
+        // reference-absence probes. The classloader route is the one the
+        // dedicated server has, and the client merge falls back to it.
         try (InputStream in = ResearchLexiconTest.class
                 .getResourceAsStream("/" + ResearchLexicon.GENERATED_ASSET_PATH)) {
             org.junit.jupiter.api.Assumptions.assumeTrue(in != null,
-                    "no generated research lang on this classpath — a code-only build ships 0 of the 711");
-            ResearchLexicon lexicon = ResearchLexicon.fromStream(in);
-            Set<String> graphKeys = ResearchLexicon.graphKeys(readResource(GRAPH_RESOURCE));
-            assertTrue(lexicon.size() > 0, "a generated file on the classpath carries keys");
-            Set<String> invented = new HashSet<>(lexicon.keys());
-            invented.removeAll(graphKeys);
-            assertEquals(Set.of(), invented, "the generated file may only carry graph-referenced keys");
-            for (String key : lexicon.keys()) {
-                String value = lexicon.value(key);
-                assertTrue(value != null && !value.isBlank(), key + " resolves to blank text");
-                assertFalse(key.equals(value), key + " resolves to its own key");
-            }
+                    "no generated research lang on this classpath — a code-only build ships 0 of the graph keys");
         }
+        final ResearchLexicon lexicon = ResearchLexicon.fromClasspath(ResearchLexicon.GENERATED_ASSET_PATH);
+        final Set<String> graphKeys = ResearchLexicon.graphKeys(readResource(GRAPH_RESOURCE));
+        assertTrue(lexicon.size() > 0, "the classpath route reads the bytes that are there");
+        Set<String> invented = new HashSet<>(lexicon.keys());
+        invented.removeAll(graphKeys);
+        assertEquals(Set.of(), invented, "the generated file may only carry graph-referenced keys");
+        for (String key : lexicon.keys()) {
+            String value = lexicon.value(key);
+            assertTrue(value != null && !value.isBlank(), key + " resolves to blank text");
+            assertFalse(key.equals(value), key + " resolves to its own key");
+        }
+        // The route is tolerant: an unreadable path is an empty lexicon, not a throw.
+        assertEquals(0, ResearchLexicon.fromClasspath("assets/thaumcraft/lang/no_such_file.json").size());
     }
 
     // ------------------------------------------------------------------

@@ -107,10 +107,17 @@ public final class ResearchOriginalLanguage {
 
     /**
      * Reads the generated resource into {@link #lexicon} and applies the
-     * merge. Every pack in the stack is read, in 1.21.1's pack order, so a
-     * user pack that ships the same path overlays the mod's file exactly as it
-     * overlays a locale file. A missing file (the code-only artifact) leaves
-     * the lexicon empty; a broken one is logged and skipped, never fatal.
+     * merge. The {@code ResourceManager} stack is read first, in 1.21.1's pack
+     * order, so a user pack that ships the same path overlays the mod's file
+     * exactly as it overlays a locale file; when that route yields nothing the
+     * classloader route is read (the route NeoForge's {@code I18nManager}
+     * uses, and the only lang route a dedicated server has — measured on this
+     * tree, the game-test server's {@code ResourceManager} returns an empty
+     * stack for {@code thaumcraft:lang/en_us.json}).
+     *
+     * <p>A missing file on both routes (the code-only artifact) leaves the
+     * lexicon empty and the merge a no-op; a broken one is logged and skipped,
+     * never fatal.</p>
      */
     public static void readLexicon(final ResourceManager resources) {
         Map<String, String> read = new LinkedHashMap<>();
@@ -122,9 +129,18 @@ public final class ResearchOriginalLanguage {
                         GENERATED, resource.sourcePackId(), broken);
             }
         }
+        String route = "resource-stack";
+        if (read.isEmpty()) {
+            final ResearchLexicon shipped =
+                    ResearchLexicon.fromClasspath(ResearchLexicon.GENERATED_ASSET_PATH);
+            if (!shipped.isEmpty()) {
+                read = shipped.values();
+                route = "classpath";
+            }
+        }
         installLexicon(ResearchLexicon.of(read));
         applyMerge();
-        LOGGER.info("research lang merge: {} keys from {}", lexicon.size(), GENERATED);
+        LOGGER.info("research lang merge: {} keys from {} via {}", lexicon.size(), GENERATED, route);
     }
 
     /**

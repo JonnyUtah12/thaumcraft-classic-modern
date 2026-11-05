@@ -21,34 +21,41 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
 /**
  * The runtime half of the D-016 option 2 consumer (BOOK-3a follow-up,
- * t_28ce4d49): the generated research lang must be reachable through the
- * shipped resource pipeline, and it must resolve the graph the server ships.
+ * t_28ce4d49): the generated research lang must be reachable from a running
+ * game through the route the client merge reads, and it must resolve the graph
+ * the server ships.
  *
  * <p>The merge itself is client-only ({@code client/ResearchOriginalLanguage},
- * {@code Dist.CLIENT}) and the game-test harness is a dedicated server that
- * never constructs a {@code Screen}, so these probes deliberately name no
- * client class — the dist-safety scan in
+ * {@code Dist.CLIENT}) and this harness is a dedicated server that never
+ * constructs a {@code Screen}, so these probes name no client class — the
+ * bytecode scan in
  * {@code ResearchOriginalLanguageTest.noServerSideClassNamesTheClientMerge}
- * enforces that on bytecode. What is decidable headlessly is the input side,
- * through the same {@code ResourceManager} route the client listener uses:
- * the resource is there, it parses, every key it carries is graph-referenced,
- * every value is real text, and each value equals the graph's own
- * {@code nameEnUs} where the graph names the entry. The committed
- * {@code en_us.json} is pinned at 0 overlap with the graph keys
- <i>at runtime</i> (the unit twin pins it at build time).</p>
-
- * <p>A code-only build ships no generated file (that is the point of D-016),
- * so probe one takes the absence branch there and asserts the D-016 posture
- * instead. Both branches log the measured counts into
- * {@code run/logs/latest.log} so the leg states which one it proved.</p>
+ * enforces that. What is decidable headlessly is the input side: the shipped
+ * file, the shipped graph, the keys each one covers, and the committed lang.</p>
+ *
+ * <p><b>Two routes, measured.</b> The probes read the lang resources through
+ * the classloader route (the route NeoForge's own
+ * {@code I18nManager.loadTranslations} uses). The {@code ResourceManager}
+ * route is tried first, exactly as the client merge does it, and the fact that
+ * it returns an empty stack for {@code thaumcraft:lang/en_us.json} on this
+ * harness is itself a measured result — it is why the merge has a classloader
+ * fallback, and probe two prints which route supplied the file.</p>
+ *
+ * <p>Every expectation is <b>derived</b> from the shipped data: the key sets
+ * come from {@link ResearchManager#graph()} and from the graph JSON through
+ * {@link ResearchLexicon#graphKeys(String)}; the set of keys the generated
+ * file cannot serve is derived from the graph rows that carry no original
+ * string plus the keys the generator's own
+ * {@link ResearchOriginalLang#GRAPH_KEY_PREFIX} filter cannot see. No display
+ * string and no key list is hardcoded here.</p>
  */
 @GameTestHolder(ThaumcraftClassic.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -56,56 +63,76 @@ public final class ResearchOriginalLanguageGameTest {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /** {@code thaumcraft:lang/research_original.json} — what BOOK-3a generates. */
     private static final ResourceLocation GENERATED =
             ResourceLocation.fromNamespaceAndPath(ResearchLexicon.NAMESPACE,
                     ResearchLexicon.GENERATED_RESOURCE_PATH);
-    private static final ResourceLocation COMMITTED =
+    private static final String GENERATED_ON_CLASSPATH = "/" + ResearchLexicon.GENERATED_ASSET_PATH;
+    private static final String COMMITTED_LANG_ON_CLASSPATH =
+            "/" + ResearchLexicon.ASSETS_PREFIX + "lang/en_us.json";
+    private static final String GRAPH_JSON_ON_CLASSPATH =
+            "/data/" + ThaumcraftClassic.MOD_ID + "/research_graph/entries.json";
+    /** {@code thaumcraft:lang/en_us.json} as a resource location. */
+    private static final ResourceLocation COMMITTED_LANG_LOCATION =
             ResourceLocation.fromNamespaceAndPath(ResearchLexicon.NAMESPACE, "lang/en_us.json");
 
     /**
-     * The generated resource reaches the game's own {@code ResourceManager}
-     * (the pipeline the client merge reads), and every string in it resolves
-     * the shipped graph.
+     * The generated file reaches a running game, and every string in it
+     * resolves the shipped graph.
      */
     @GameTest(template = "empty")
     public static void generatedResearchLangResolvesTheShippedGraph(final GameTestHelper helper) {
         final ResourceManager resources = helper.getLevel().getServer().getResourceManager();
-        final ResearchLexicon lexicon = readLexicon(resources, GENERATED);
+        final ResearchLexicon lexicon = readGenerated(resources);
         final ResearchGraph graph = ResearchManager.graph();
-        final Set<String> graphKeys = graphKeys(graph);
+        final Set<String> runtimeKeys = graphKeys(graph);
+        final String graphJson = readClasspathText(GRAPH_JSON_ON_CLASSPATH);
+        helper.assertTrue(graphJson != null, GRAPH_JSON_ON_CLASSPATH + " is on the runtime classpath");
+        final Set<String> buildKeys = ResearchLexicon.graphKeys(graphJson);
 
-        helper.assertTrue(graphKeys.size() == 711,
-                "the shipped graph must reference 711 display keys, measured " + graphKeys.size());
+        // The build-time derivation is the 711 every doc cites; the runtime
+        // graph must cover it, key for key.
+        helper.assertTrue(buildKeys.size() == 711,
+                "the build-time derivation over the shipped graph JSON must measure 711 keys, measured "
+                        + buildKeys.size());
+        final Set<String> notAtRuntime = new TreeSet<>(buildKeys);
+        notAtRuntime.removeAll(runtimeKeys);
+        helper.assertTrue(notAtRuntime.isEmpty(),
+                "the runtime graph must reference every key the generator built the file for, "
+                        + "missing " + notAtRuntime);
 
         if (lexicon.isEmpty()) {
-            // A code-only artifact carries 0 of the 711 by design (D-016
-            // option 2), and the merge injects nothing on such a build.
-            LOGGER.info("tc research lang probe: {} absent from the runtime resources — code-only "
-                    + "posture, 0 of {} graph keys resolve", GENERATED, graphKeys.size());
+            // A code-only artifact carries 0 of them by design (D-016 option
+            // 2) and the merge injects nothing on such a build.
+            LOGGER.info("TC-RESEARCH-LANG probe: {} reaches the runtime with 0 keys — code-only "
+                    + "posture, 0 of {} graph keys resolve", GENERATED, runtimeKeys.size());
             helper.assertTrue(graph.entry("BASICS") != null, "the graph itself is shipped");
             helper.succeed();
             return;
         }
 
-        // Every key the file carries must be graph-referenced: a generated
-        // lang that invents keys is a leak, not a consumer.
+        // A generated lang that invents keys is a leak, not a consumer.
         final Set<String> invented = new TreeSet<>(lexicon.keys());
-        invented.removeAll(graphKeys);
+        invented.removeAll(runtimeKeys);
         helper.assertTrue(invented.isEmpty(),
-                "the generated research lang carries non-graph keys: " + invented);
+                "the generated research lang carries keys the shipped graph does not reference: "
+                        + invented);
 
-        // Every key resolves to real text — this is the raw-key defect the
-        // card exists to close, measured per key, over the shipped file.
+        // The raw-key defect this card exists to close, measured per key.
         for (final String key : lexicon.keys()) {
             final String value = lexicon.value(key);
             helper.assertTrue(value != null && !value.isBlank(), key + " resolves to blank text");
             helper.assertTrue(!key.equals(value), key + " resolves to its own key");
         }
 
-        // Fidelity: the graph row and the generated file come from the same
-        // original lang, so they must agree. Derived from the shipped data —
-        // no display string is hardcoded in this probe.
+        // Fidelity against the graph's own rows — same source, so they agree.
+        // Measured rule: the graph row is the same original string with
+        // surrounding whitespace trimmed (the original lang carries 14 name
+        // values with a trailing space), so byte-equality is reported, not
+        // required; a difference beyond whitespace is a real defect.
         int checked = 0;
+        int byteExact = 0;
+        int whitespaceOnly = 0;
         int markup = 0;
         for (final ResearchEntryData entry : graph.entries()) {
             final String original = entry.nameEnUs();
@@ -116,20 +143,42 @@ public final class ResearchOriginalLanguageGameTest {
             if (resolved == null) {
                 continue;
             }
-            helper.assertTrue(resolved.equals(original),
-                    entry.nameKey() + " resolved to \"" + resolved + "\", the graph row says \""
-                            + original + "\"");
+            if (resolved.equals(original)) {
+                byteExact++;
+            } else if (resolved.strip().equals(original.strip())) {
+                whitespaceOnly++;
+            } else {
+                helper.assertTrue(false, entry.nameKey() + " resolved to \"" + resolved
+                        + "\", the graph row says \"" + original + "\" (differs beyond whitespace)");
+            }
             checked++;
             if (original.indexOf('\u00a7') >= 0 || original.indexOf('<') >= 0) {
                 markup++;
             }
         }
         helper.assertTrue(checked >= 150,
-                "name-fidelity cross-check must cover the named entries, measured " + checked);
+                "the name-fidelity cross-check must cover the graph's named entries, measured " + checked);
 
-        LOGGER.info("tc research lang probe: {} keys merged from {}, {} name values match the "
-                        + "shipped graph rows ({} of them carry markup), {} graph keys in the graph",
-                lexicon.size(), GENERATED, checked, markup, graphKeys.size());
+        // The closed gap set, derived. Everything the graph references that the
+        // generated file cannot serve must be explicable from the shipped data:
+        // a graph row with no original string (BOOK-3b authors those), or a key
+        // the generator's GRAPH_KEY_PREFIX filter cannot see (measured here).
+        final Set<String> explicable = explicableGaps(graph, runtimeKeys);
+        final Set<String> missing = new TreeSet<>(runtimeKeys);
+        missing.removeAll(lexicon.keys());
+        helper.assertTrue(explicable.equals(missing),
+                "the graph keys the generated file cannot serve must be exactly the rows with no "
+                        + "original string plus the keys the generator's prefix filter cannot see; "
+                        + "unexpected " + diff(missing, applicable(missing, explicable))
+                        + ", over-explained " + diff(explicable, missing));
+
+        LOGGER.info("TC-RESEARCH-LANG probe: {} reaches the runtime with {} keys; runtime graph "
+                        + "references {} keys, the build-time derivation {} (delta {}); {} name values "
+                        + "cross-checked against the shipped rows ({} byte-exact, {} differing only in "
+                        + "surrounding whitespace, {} carrying original markup); unresolved set {} = "
+                        + "no-original-string + prefix-invisible keys",
+                GENERATED, lexicon.size(), runtimeKeys.size(), buildKeys.size(),
+                diff(runtimeKeys, buildKeys), checked, byteExact, whitespaceOnly, markup, missing);
         helper.succeed();
     }
 
@@ -141,46 +190,55 @@ public final class ResearchOriginalLanguageGameTest {
     @GameTest(template = "empty")
     public static void committedLangCarriesNoneOfTheGraphKeys(final GameTestHelper helper) {
         final ResourceManager resources = helper.getLevel().getServer().getResourceManager();
-        final List<Resource> stack = resources.getResourceStack(COMMITTED);
-        helper.assertTrue(!stack.isEmpty(), "the committed lang is shipped: " + COMMITTED);
+        final int stackSize = resources.getResourceStack(COMMITTED_LANG_LOCATION).size();
 
-        Map<String, String> committed = Map.of();
-        for (final Resource resource : stack) {
-            try (InputStream in = resource.open()) {
-                committed = ResearchLexicon.merged(committed, ResearchOriginalLang
-                        .parseFlatJson(new String(in.readAllBytes(), StandardCharsets.UTF_8)));
-            } catch (IOException broken) {
-                throw new UncheckedIOException(broken);
-            }
-        }
-        final Set<String> graphKeys = graphKeys(ResearchManager.graph());
+        final String text = readClasspathText(COMMITTED_LANG_ON_CLASSPATH);
+        helper.assertTrue(text != null, "the committed lang is shipped: " + COMMITTED_LANG_ON_CLASSPATH);
+        final Map<String, String> committed = ResearchOriginalLang.parseFlatJson(text);
+        final Set<String> runtimeKeys = graphKeys(ResearchManager.graph());
+
         final Set<String> overlap = new TreeSet<>(committed.keySet());
-        overlap.retainAll(graphKeys);
+        overlap.retainAll(runtimeKeys);
 
-        LOGGER.info("tc research lang probe: committed {} carries {} keys, {} of them graph keys",
-                COMMITTED, committed.size(), overlap.size());
+        LOGGER.info("TC-RESEARCH-LANG probe: committed lang reaches the runtime through the "
+                        + "classloader with {} keys (ResourceManager stack size {}), {} of them graph keys "
+                        + "over the {} the runtime graph references",
+                committed.size(), stackSize, overlap.size(), runtimeKeys.size());
         helper.assertTrue(overlap.isEmpty(),
-                "D-016 option 2: the committed lang must define 0 of the 711 research keys, found "
-                        + overlap);
+                "D-016 option 2: the committed lang must define 0 of the research keys the graph "
+                        + "references, found " + overlap);
         helper.succeed();
     }
 
     // ------------------------------------------------------------------
 
-    /** The generated file merged over every pack that ships it, in pack order. */
-    private static ResearchLexicon readLexicon(final ResourceManager resources, final ResourceLocation path) {
-        Map<String, String> read = new java.util.LinkedHashMap<>();
-        for (final Resource resource : resources.getResourceStack(path)) {
+    /**
+     * The merge's own read order: the {@code ResourceManager} stack first (the
+     * client route, where pack overlays apply), then the classloader route (the
+     * route {@code I18nManager} uses, and the only one a dedicated server has
+     * for lang files). Which one supplied is logged.
+     */
+    private static ResearchLexicon readGenerated(final ResourceManager resources) {
+        Map<String, String> read = new LinkedHashMap<>();
+        for (final Resource resource : resources.getResourceStack(GENERATED)) {
             try (InputStream in = resource.open()) {
                 read = ResearchLexicon.merged(read, ResearchLexicon.fromStream(in).values());
             } catch (IOException broken) {
-                LOGGER.warn("Skipped {} from pack {} ({})", path, resource.sourcePackId(), broken.toString());
+                LOGGER.warn("Skipped {} from pack {} ({})", GENERATED, resource.sourcePackId(),
+                        broken.toString());
             }
         }
-        return ResearchLexicon.of(read);
+        if (!read.isEmpty()) {
+            LOGGER.info("TC-RESEARCH-LANG: {} keys from the ResourceManager stack", read.size());
+            return ResearchLexicon.of(read);
+        }
+        final ResearchLexicon shipped = ResearchLexicon.fromClasspath(ResearchLexicon.GENERATED_ASSET_PATH);
+        LOGGER.info("TC-RESEARCH-LANG: ResourceManager stack empty for {}, classloader route carries "
+                + "{} keys", GENERATED, shipped.size());
+        return shipped;
     }
 
-    /** Every display key the shipped graph references — derived, never listed. */
+    /** Every display key the shipped graph references, as the records expose them. */
     private static Set<String> graphKeys(final ResearchGraph graph) {
         final Set<String> keys = new LinkedHashSet<>();
         for (final ResearchEntryData entry : graph.entries()) {
@@ -197,5 +255,50 @@ public final class ResearchOriginalLanguageGameTest {
             }
         }
         return keys;
+    }
+
+    /**
+     * The keys the generated file is allowed not to carry, derived from the
+     * shipped data: every key of a graph row that names no original string
+     * ({@code nameEnUs}/{@code textEnUs} absent — BOOK-3b authors those), plus
+     * every key the generator's {@code GRAPH_KEY_PREFIX} filter cannot see.
+     */
+    private static Set<String> explicableGaps(final ResearchGraph graph, final Set<String> runtimeKeys) {
+        final Set<String> explicable = new TreeSet<>();
+        for (final ResearchEntryData entry : graph.entries()) {
+            if (entry.nameEnUs() == null) {
+                explicable.add(entry.nameKey());
+            }
+            if (entry.textEnUs() == null) {
+                explicable.add(entry.textKey());
+            }
+        }
+        for (final String key : runtimeKeys) {
+            if (!key.startsWith(ResearchOriginalLang.GRAPH_KEY_PREFIX)) {
+                explicable.add(key);
+            }
+        }
+        return explicable;
+    }
+
+    private static Set<String> applicable(final Set<String> missing, final Set<String> explicable) {
+        final Set<String> both = new TreeSet<>(missing);
+        both.retainAll(explicable);
+        return both;
+    }
+
+    private static Set<String> diff(final Set<String> from, final Set<String> other) {
+        final Set<String> out = new TreeSet<>(from);
+        out.removeAll(other);
+        return out;
+    }
+
+    /** The classpath text at {@code path}, or {@code null} when it is not shipped. */
+    private static String readClasspathText(final String path) {
+        try (InputStream in = ResearchOriginalLanguageGameTest.class.getResourceAsStream(path)) {
+            return in == null ? null : new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException broken) {
+            throw new UncheckedIOException(broken);
+        }
     }
 }

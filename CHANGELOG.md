@@ -7,6 +7,74 @@ Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
 ## [Unreleased]
 
+**The generated research lang is consumed at runtime (BOOK-3a follow-up, t_28ce4d49).**
+
+BOOK-3a's `assets/thaumcraft/lang/research_original.json` was read by nothing: 1.21.1's
+`ClientLanguage.loadFrom` formats `lang/%s.json` for the requested locale codes, and NeoForge's
+`net.neoforged.fml.i18n.I18nManager.loadTranslations` reads `lang/<locale>.json` off the FML
+classpath, so a file named `research_original.json` never entered the language and a research
+screen calling `Component.translatable(entry.nameKey())` rendered the raw `tc.research_*` key
+even in an overlay build.
+
+- `research/ResearchLexicon` reads the file (path taken from
+  `ResearchOriginalLang.GENERATED_RESOURCE_PATH`, so the reader cannot drift from the writer)
+  and owns the resolution rules: the generated original, else the live language's own answer
+  (how BOOK-3b's 4 authored keys land), else the key unchanged. Minecraft-free by design, so the
+  game-test server and a plain JVM probe can build it.
+- `client/ResearchOriginalLanguage` (mod-bus `RegisterClientReloadListenersEvent`,
+  `Dist.CLIENT`) reads the resource through the `ResourceManager` **first** — the same
+  pack-stack route a locale file takes, so a user pack overlays it the same way — and falls
+  back to the **classloader** route (`getResourceAsStream`, the route NeoForge's own
+  `I18nManager.loadTranslations` uses). The fallback is a measured result, not a hypothesis: on
+  this tree the game-test server's `ResourceManager` returns an **empty stack** for
+  `thaumcraft:lang/en_us.json` and for `thaumcraft:lang/research_original.json` (the committed
+  lang reaches that runtime with 318 keys through the classloader, stack size 0), so a lang
+  resource reaches a dedicated server only through the classloader. Then the merge injects the
+  merged `Language` with `Language.inject`, the injection vanilla's own `LanguageManager`
+  performs, so `TranslatableContents` re-decomposes and **every** translatable route resolves the
+  merged map. The wrapper overlays the map and delegates `isDefaultRightToLeft`,
+  `getVisualOrder` and `getComponent` to the base language; a game-bus client-tick guard
+  re-applies the merge whenever the live language is not the instance it injected (a language
+  switch, F3+T, a pack toggle — the reload-stack order between the mod and vanilla listeners is
+  not a contract), idempotently and at the cost of one volatile reference read per tick in
+  steady state.
+- **D-016 is unchanged and stays strict:** the merge injects nothing when the lexicon is empty,
+  so a code-only build leaves the client language exactly vanilla's and keeps rendering raw keys;
+  the committed `en_us.json` keeps **0** of the research keys, pinned at build time
+  (`ResearchLexiconTest.committedLangKeepsZeroOfTheGraphKeys`, 0 of 711 over the 318 committed
+  keys) and at runtime (`ResearchOriginalLanguageGameTest.committedLangCarriesNoneOfTheGraphKeys`,
+  0 of the 712 the live graph references). Nothing is committed; the generated file stays out of
+  `src/main/resources` (pinned).
+- Probes: `ResearchLexiconTest` (9: writer→reader round trip, markup verbatim, tolerant parse,
+  path contract, merge math, resolution order, both D-016 pins, the classloader route),
+  `ResearchOriginalLanguageTest` (6: merge over a synthetic base, real `Language.inject` +
+  `Component.translatable` round trip, seeded-lexicon idempotence, empty-lexicon no-op, both
+  subscribers `Dist.CLIENT`, and a bytecode scan that keeps the merge out of every server-loaded
+  class), `ResearchOriginalLanguageGameTest` (2 headless probes over the live
+  `ResourceManager` + classloader + `ResearchManager.graph()`, naming no client class). RED
+  baseline `8993885` (both legs exit 1), GREEN `8799ac9`.
+- **Measured by the new probes, reported not papered over:** the live graph references **712**
+  display keys, the build-time derivation (**every `tc.*` string in `entries.json`**) **711**; the
+  generated file carries **707**. The 5-key gap is asserted to be exactly the explicable set,
+  derived from shipped data: the 4 keys of the two rows with no original string
+  (`CAP_iron`/`ROD_wood`, BOOK-3b's) **plus one key the generator's `GRAPH_KEY_PREFIX` filter
+  cannot see** — `VAMPBAT` page 0 carries `textKey = "focus.upgrade.vampirebats.text"`, a
+  non-`tc.` key the original lang *does* define (`en_US.lang:617`), so that one hover string
+  reaches an overlay build as a raw key. That is a gap in the **generator**, not the consumer;
+  filed as a follow-up card. Fidelity: the **199** name keys cross-check against the graph's own
+  `nameEnUs` rows — 185 byte-exact, 14 differing only in surrounding whitespace (the original
+  lang carries them with a trailing space), 0 differing beyond whitespace.
+- BD-30 records the seam: the merge lands on the `Language` instance, so a direct
+  `net.minecraft.client.resources.language.I18n.get` (which caches its own language) does not
+  see it; the tree has 0 `I18n.` call sites today. BD-22's follow-up column closes the merge
+  half; the `<BR>`/`§` page markup stays **BOOK-3b**, and the Thaumonomicon GUI itself
+  (pages, nav, minigames) stays unimplemented.
+- Gates (JAVA_HOME=`$HOME/opt/jdk21`): `build` exit 0 — unit **485 / 0 failures** (15 of them this
+  card's), code-only `build -Ptc.referenceAssets=build/does-not-exist` exit 0 (11 reference-absence
+  skips), `runGameTestServer` and `-Ptc.noCurios runGameTestServer` both **All 170 required tests
+  passed** (168 before this card + the 2 new probes), fixture checks (`checkAssetPathsOverlayJar`,
+  `checkGeneratedResearchLang`) exit 0, no conflict markers.
+
 **D-016 option 2, generation half (BOOK-3a): the original research display strings are
 generated at build time instead of committed.**
 

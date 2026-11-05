@@ -120,7 +120,9 @@ public final class ResearchLexicon {
         return new ResearchLexicon(read);
     }
 
-    /** Reads the same shape from a stream, UTF-8, closing it. */
+    /**
+     * Reads the same shape from a stream, UTF-8, closing it.
+     */
     public static ResearchLexicon fromStream(InputStream stream) throws IOException {
         try (InputStream in = stream;
              BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
@@ -131,6 +133,30 @@ public final class ResearchLexicon {
                 body.append(buffer, 0, read);
             }
             return fromJson(body.toString());
+        }
+    }
+
+    /**
+     * Reads the file off the classpath at {@code assetPath} (the
+     * {@code assets/<ns>/…} form, i.e. the classloader root plus the path),
+     * returning {@link #empty()} when no such entry is shipped.
+     *
+     * <p>This is the route NeoForge's own
+     * {@code net.neoforged.fml.i18n.I18nManager.loadTranslations} uses
+     * ({@code getResourceAsStream("lang/" + locale + ".json")}), and it is the
+     * route that works on a <b>dedicated server</b>: measured on this tree,
+     * the game-test server's {@code ResourceManager} returns an empty stack
+     * for {@code thaumcraft:lang/en_us.json}, so lang files reach the server
+     * through the classloader and not through the pack pipeline. The client
+     * merge therefore reads the {@code ResourceManager} first (pack overlays
+     * apply, exactly as for a locale file) and falls back here.</p>
+     */
+    public static ResearchLexicon fromClasspath(String assetPath) {
+        final String resource = assetPath.startsWith("/") ? assetPath : "/" + assetPath;
+        try (InputStream in = ResearchLexicon.class.getResourceAsStream(resource)) {
+            return in == null ? EMPTY : fromStream(in);
+        } catch (IOException | RuntimeException broken) {
+            return EMPTY;
         }
     }
 
