@@ -152,60 +152,122 @@ public final class ResearchOriginalLanguageGameTest {
             helper.assertTrue(!key.equals(value), key + " resolves to its own key");
         }
 
-        // Fidelity against the graph's own rows — same source, so they agree.
-        // Measured rule: the graph row is the same original string with
-        // surrounding whitespace trimmed (the original lang carries 14 name
-        // values with a trailing space), so byte-equality is reported, not
-        // required; a difference beyond whitespace is a real defect.
+        // Which lang did this build generate from? Two overlay shapes reach a
+        // running game and they are not interchangeable:
+        //   - the player's own extracted reference tree (a developer machine),
+        //     whose values are the original 1.7.10 strings;
+        //   - scripts/make_asset_overlay_fixture.py's fixture (the CI `build`
+        //     job), whose 25 values are placeholders that exist to exercise the
+        //     lang parser — an '=' inside a value, a \n escape, leading and
+        //     trailing spaces, the <BR>/§ markup — and deliberately carry no
+        //     original string (D-004).
+        // CI run 42102260672 is where the difference showed: this probe's
+        // fidelity leg compared "Fixture name with a trailing space " against
+        // the graph row "Basic Wand Craft" and failed — correctly, on a build
+        // that contains no original string to be faithful to. The shapes are
+        // told apart by measurement, not by a counter: every mapped block
+        // texture is 1x1 under the fixture and 16x16 under the reference tree
+        // (measured over all 242 of them), and the overlay's textures ship into
+        // the mod jar, so a running game can read them.
+        final int[] overlayTexture = firstMappedOverlayTextureDims();
+        helper.assertTrue(overlayTexture != null,
+                "a mapped overlay texture must reach the runtime, so this probe can tell the CI "
+                        + "fixture from the player's own reference tree; no candidate resolved");
+        final boolean ciFixtureOverlay = overlayTexture[0] == 1 && overlayTexture[1] == 1;
+
         int checked = 0;
         int byteExact = 0;
         int whitespaceOnly = 0;
         int markup = 0;
-        for (final ResearchEntryData entry : graph.entries()) {
-            final String original = entry.nameEnUs();
-            if (original == null) {
-                continue;
-            }
-            final String resolved = lexicon.value(entry.nameKey());
-            if (resolved == null) {
-                continue;
-            }
-            if (resolved.equals(original)) {
-                byteExact++;
-            } else if (resolved.strip().equals(original.strip())) {
-                whitespaceOnly++;
-            } else {
-                helper.assertTrue(false, entry.nameKey() + " resolved to \"" + resolved
-                        + "\", the graph row says \"" + original + "\" (differs beyond whitespace)");
-            }
-            checked++;
-            if (original.indexOf('\u00a7') >= 0 || original.indexOf('<') >= 0) {
-                markup++;
-            }
-        }
-        helper.assertTrue(checked >= 150,
-                "the name-fidelity cross-check must cover the graph's named entries, measured " + checked);
-
-        // The closed gap set, derived. Everything the graph references that the
-        // generated file cannot serve must be explicable from the shipped data:
-        // a graph row with no original string (BOOK-3b authors those), or a key
-        // the generator's GRAPH_KEY_PREFIX filter cannot see (measured here).
         final Set<String> explicable = explicableGaps(graph, runtimeKeys);
         final Set<String> missing = new TreeSet<>(runtimeKeys);
         missing.removeAll(lexicon.keys());
-        helper.assertTrue(explicable.equals(missing),
-                "the graph keys the generated file cannot serve must be exactly the rows with no "
-                        + "original string plus the keys the generator's prefix filter cannot see; "
-                        + "unexpected " + diff(missing, applicable(missing, explicable))
-                        + ", over-explained " + diff(explicable, missing));
 
-        LOGGER.info("TC-RESEARCH-LANG probe: {} reaches the runtime with {} keys; runtime graph "
-                        + "references {} keys, the build-time derivation {} (delta {}); {} name values "
-                        + "cross-checked against the shipped rows ({} byte-exact, {} differing only in "
-                        + "surrounding whitespace, {} carrying original markup); unresolved set {} = "
-                        + "no-original-string + prefix-invisible keys",
-                GENERATED, lexicon.size(), runtimeKeys.size(), buildKeys.size(),
-                diff(runtimeKeys, buildKeys), checked, byteExact, whitespaceOnly, markup, missing);
+        if (ciFixtureOverlay) {
+            // Placeholder values, and a lang that defines 25 of the 711 keys.
+            // So neither "generated value == graph row" nor "the unresolved set
+            // is exactly the explicable rows" is a property of this shape —
+            // 686 keys are absent because the fixture lang is small, which no
+            // graph row describes. What holds in EVERY shape is asserted here:
+            // the file never carries a key the generator cannot produce (the
+            // rows with no original string, BOOK-3b's, plus the key the
+            // prefix filter cannot see). The fidelity + exact-gap-set pins run
+            // below, on the shape that has an original string to be faithful to.
+            final Set<String> ungeneratable = new TreeSet<>(lexicon.keys());
+            ungeneratable.retainAll(explicable);
+            helper.assertTrue(ungeneratable.isEmpty(),
+                    "the generated file carries keys the generator cannot produce from the graph "
+                            + "plus the overlay lang, so they came from somewhere else: "
+                            + ungeneratable);
+            LOGGER.info("TC-RESEARCH-LANG probe: overlay source is the CI fixture (mapped texture "
+                            + "{}x{}); {} generated keys over {} graph keys, {} unresolved (the "
+                            + "fixture lang defines 25 of the graph's keys); fidelity against the "
+                            + "graph rows not asserted for placeholder values; ungeneratable-key "
+                            + "set empty",
+                    overlayTexture[0], overlayTexture[1], lexicon.size(), runtimeKeys.size(),
+                    missing.size());
+        } else {
+            // Fidelity against the graph's own rows — same source, so they agree.
+            // Measured rule: the graph row is the same original string with
+            // surrounding whitespace trimmed (the original lang carries 14 name
+            // values with a trailing space), so byte-equality is reported, not
+            // required; a difference beyond whitespace is a real defect.
+            for (final ResearchEntryData entry : graph.entries()) {
+                final String original = entry.nameEnUs();
+                if (original == null) {
+                    continue;
+                }
+                final String resolved = lexicon.value(entry.nameKey());
+                if (resolved == null) {
+                    continue;
+                }
+                if (resolved.equals(original)) {
+                    byteExact++;
+                } else if (resolved.strip().equals(original.strip())) {
+                    whitespaceOnly++;
+                } else {
+                    helper.assertTrue(false, entry.nameKey() + " resolved to \"" + resolved
+                            + "\", the graph row says \"" + original + "\" (differs beyond whitespace)");
+                }
+                checked++;
+                if (original.indexOf('\u00a7') >= 0 || original.indexOf('<') >= 0) {
+                    markup++;
+                }
+            }
+            helper.assertTrue(checked >= 150,
+                    "the name-fidelity cross-check must cover the graph's named entries, measured "
+                            + checked);
+
+            // The closed gap set, derived. Everything the graph references that
+            // the generated file cannot serve must be explicable from the
+            // shipped data: a graph row with no original string (BOOK-3b authors
+            // those), or a key the generator's GRAPH_KEY_PREFIX filter cannot
+            // see (measured here). This equality is the pin t_6799fd3f inherits;
+            // it runs on the shape where the lang is the player's own file.
+            helper.assertTrue(explicable.equals(missing),
+                    "the graph keys the generated file cannot serve must be exactly the rows with "
+                            + "no original string plus the keys the generator's prefix filter "
+                            + "cannot see; unexpected " + diff(missing, applicable(missing, explicable))
+                            + ", over-explained " + diff(explicable, missing));
+        }
+
+        // A reference-tree build leaves 5 keys unresolved; a fixture build leaves
+        // 687. Print the set when it is small enough to read, not when it is not.
+        final String missingReport = missing.size() <= 16
+                ? missing.toString()
+                : missing.size() + " keys, first " + missing.iterator().next();
+        LOGGER.info("TC-RESEARCH-LANG probe: {} reaches the runtime with {} keys over a {} overlay; "
+                        + "runtime graph references {} keys, the build-time derivation {} (delta {}); "
+                        + "{} name values cross-checked against the shipped rows ({} byte-exact, {} "
+                        + "differing only in surrounding whitespace, {} carrying original markup); "
+                        + "{} unresolved — {}",
+                GENERATED, lexicon.size(), ciFixtureOverlay ? "CI-fixture" : "reference-tree",
+                runtimeKeys.size(), buildKeys.size(), diff(runtimeKeys, buildKeys),
+                checked, byteExact, whitespaceOnly, markup, missingReport,
+                ciFixtureOverlay
+                        ? "the fixture lang defines 25 of the graph's keys, and no key the generator "
+                                + "cannot produce leaked into the file"
+                        : "every key is a no-original-string row or a prefix-invisible key");
         helper.succeed();
     }
 
@@ -235,6 +297,54 @@ public final class ResearchOriginalLanguageGameTest {
                 "D-016 option 2: the committed lang must define 0 of the research keys the graph "
                         + "references, found " + overlap);
         helper.succeed();
+    }
+
+    /**
+     * Mapped block textures used as the overlay-provenance probe. Measured
+     * present in both overlay shapes — written by the fixture and by the
+     * reference tree — and both ship to
+     * {@code assets/thaumcraft/textures/block/}.
+     */
+    private static final String[] OVERLAY_PROBE_TEXTURES = {
+            "al_furnace_top.png", "al_furnace_front_off.png", "adoorbot.png", "adoortop.png",
+    };
+
+    // ------------------------------------------------------------------
+
+    /**
+     * The PNG header dimensions of the first mapped overlay texture that
+     * reaches the runtime. The fixture writes every mapped texture as a
+     * transparent 1x1 placeholder (its own CI output: "908 placeholder texture
+     * files"); the player's reference tree ships the original sprites — 16x16
+     * for every one of the 242 mapped block textures measured. The overlay's
+     * textures enter the build through the generated srcDir and ship in the mod
+     * jar, so a running game can read them, which makes this a provenance test
+     * for the build: it says which lang {@code generateOriginalResearchLang}
+     * read, and therefore whether fidelity to the graph's own rows is
+     * measurable at all.
+     */
+    private static int[] firstMappedOverlayTextureDims() {
+        for (final String name : OVERLAY_PROBE_TEXTURES) {
+            final String path = "/assets/" + ResearchLexicon.NAMESPACE + "/textures/block/" + name;
+            try (InputStream in = ResearchOriginalLanguageGameTest.class.getResourceAsStream(path)) {
+                if (in == null) {
+                    continue;
+                }
+                final byte[] header = in.readNBytes(24);
+                if (header.length >= 24 && header[0] == (byte) 0x89 && header[1] == 'P'
+                        && header[2] == 'N' && header[3] == 'G') {
+                    return new int[]{bigEndianInt(header, 16), bigEndianInt(header, 20)};
+                }
+            } catch (IOException unreadable) {
+                throw new UncheckedIOException("cannot read " + path, unreadable);
+            }
+        }
+        return null;
+    }
+
+    private static int bigEndianInt(final byte[] bytes, final int at) {
+        return ((bytes[at] & 0xFF) << 24) | ((bytes[at + 1] & 0xFF) << 16)
+                | ((bytes[at + 2] & 0xFF) << 8) | (bytes[at + 3] & 0xFF);
     }
 
     // ------------------------------------------------------------------

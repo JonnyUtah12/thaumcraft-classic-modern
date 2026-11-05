@@ -98,6 +98,22 @@ even in an overlay build.
      and the generator's own prefix gap — the 712th key, `focus.upgrade.vampirebats.text` — stays
      filed as **t_6799fd3f**. The `firebatFlagBitsMatchTheOriginalByte` red on that same CI leg is
      the documented flake (t_291f87aa) whose fix sits on the unmerged `wt/flakery` @ `e43937d`.
+  3. CI run 42102260672 then went green on the game-test legs and red on the `build` job, exposing
+     a **third shape no leg had reached**: the `build` job's game tests run against the **fixture
+     overlay**, whose `en_US.lang` values are placeholders that exist to exercise the lang parser
+     (an `=` inside a value, a `\n` escape, leading/trailing spaces, `<BR>`/`§` markup) and carry
+     **no original string** (D-004). The probe's fidelity leg therefore compared
+     `"Fixture name with a trailing space "` against the graph row `"Basic Wand Craft"` — and failed
+     correctly, on a build that has nothing to be faithful to; its exact-gap-set leg failed the same
+     way, because the fixture lang defines 25 of the 711 keys and no graph row describes the other
+     686. The probe now **measures which overlay it is running against** and asserts per shape:
+     every mapped block texture is **1x1** under the fixture and **16x16** under the reference tree
+     (all 242 of them, and the overlay's textures ship into the mod jar, so a running game can read
+     the bytes), which selects the branch. Fixture shape asserts the invariant that holds in every
+     build — the generated file never carries a key the generator cannot produce; reference-tree
+     shape keeps the fidelity cross-check **and** the exact-gap-set equality. This is a scope split,
+     not a weakened pin: the strict pins run on the only shape where they are true, and they are the
+     pins `t_6799fd3f` inherits.
 
 **D-016 option 2, generation half (BOOK-3a): the original research display strings are
 generated at build time instead of committed.**
