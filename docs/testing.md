@@ -44,6 +44,27 @@ without the evidence for its stages.
 
 - Never mark a feature tested because it compiles.
 - Seeded tests for random processes where practical.
+- **A probe must not argue coverage from a single seeded `RandomSource` stream.**
+  `RandomSource.create(long)` is not a fresh generator: `RandomSourceSupport.create`
+  → `LegacyRandomSource` → **`java.util.Random`** — `seed = (seed ^ 0x5DEECE66D) &
+  (2⁴⁸−1)`, stepped `seed * 0x5DEECE66D + 0xB (mod 2⁴⁸)`, with output taken from the
+  **top** bits. A fixed low-entropy seed therefore leaves the stream correlated for a
+  long run, so "N seeded rolls" is much weaker evidence than N rolls looks like.
+  Measured on this repo: a taint probe asserted 12 of 16 palette cells cleansed from
+  2500 seeded draws; the cells in the `−7…−5` band never fired, and the probe read as
+  a **product** defect through two cards before measurement root-caused it
+  (`8b30a0d`, documented `287e1cf`). The behaviour was correct throughout.
+  So: assert the **set of outcomes actually drawn** — never a count, range, frequency
+  or variety derived from one stream — and make the failure message name the outcomes
+  that were never reached, so the next reader sees which branch is untested
+  (`a9f90c3`). Exemplar: `TaintCleansingRollCoverageTest`. The pre-existing good
+  pattern is the opposite shape: sweep the seed domain and assert per-seed bounds —
+  `NodeGenerationRollTest` (seeds 0–499), `StructureParityTest` (seeds 0–19,999).
+  **The asymmetry is the whole point.** The taint case was a **false RED**:
+  self-announcing, CI goes red and someone looks. A seeded stream that never reaches
+  the branch it claims to cover is a **false GREEN** — it passes forever and nobody
+  looks. That is this file's own rule above, *"never mark a feature tested because it
+  compiles"*, reached by a mechanism nobody chose.
 - Regression: identifier stability tests over the content mapping; previously
   fixed bugs get a guarding test.
 - **Game test structures share a level and pack densely.** The game test server

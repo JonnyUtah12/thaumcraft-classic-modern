@@ -41,3 +41,16 @@ requirement (evidence in the completion summary) rather than a column.
 - `docs/feature-tracking.md` maps every original feature to its task id.
 - Parallel work only on non-overlapping files; the dependency graph enforces
   ordering on shared subsystems.
+- Test/probe construction rules live in `docs/testing.md` (`## Rules`) — read it
+  before writing a `@GameTest`. It carries the two failures that have cost this
+  repo the most: probes in a batch share one level and a packing grid that
+  **moves** when probes are added (a green run does not protect the next run),
+  and a probe must never argue coverage from a single seeded `RandomSource`
+  stream — assert the set of outcomes actually drawn.
+- **Prefer prescriptive cards for mechanical work.** When a task is the
+  registration of already-grounded identifiers, give the exact ids in the card
+  and state that reading `../reference` is forbidden. Measured on the
+  enchantment lane: three cards covered one slice — the two that were free to
+  re-derive were archived having burned their entire iteration budgets, while
+  the prescriptive one finished. It removes both this repo's most expensive
+  failure mode (fabricated class names, D-017) and the cost of re-discovery.
