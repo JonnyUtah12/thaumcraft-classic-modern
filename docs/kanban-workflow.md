@@ -47,3 +47,10 @@ requirement (evidence in the completion summary) rather than a column.
   **moves** when probes are added (a green run does not protect the next run),
   and a probe must never argue coverage from a single seeded `RandomSource`
   stream — assert the set of outcomes actually drawn.
+- **Prefer prescriptive cards for mechanical work.** When a task is the
+  registration of already-grounded identifiers, give the exact ids in the card
+  and state that reading `../reference` is forbidden. Measured on the
+  enchantment lane: three cards covered one slice — the two that were free to
+  re-derive were archived having burned their entire iteration budgets, while
+  the prescriptive one finished. It removes both this repo's most expensive
+  failure mode (fabricated class names, D-017) and the cost of re-discovery.
