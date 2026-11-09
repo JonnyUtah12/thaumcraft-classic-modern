@@ -68,10 +68,17 @@ without the evidence for its stages.
 - Regression: identifier stability tests over the content mapping; previously
   fixed bugs get a guarding test.
 - **Game test structures share a level and pack densely.** The game test server
-  lays every test in a batch out on a grid whose spacing comes from the test's
-  *template size*: the `empty` template (1×1×1) packs structures ~6 blocks apart
-  in x and ~25 in z, so probes run concurrently in the same 25-block
-  neighbourhood. Two failure modes follow, both seen on this repo: a neighbour
+  lays every test in a batch out on a walk, not a rectangular grid:
+  `StructureGridSpawner` advances the next slot by `template width + 5` in x AND
+  `template depth + 6` in z for each structure it places, and `TestGenerator`
+  restarts the walk at the batch corner every `maxPerBatch = 40` tests (the batch
+  also clears space for the previous batch's box). So a 1×1×1 `empty` neighbour sits
+  6 blocks away in BOTH axes, a 24³ `empty_24` neighbour advances 29 in each and its
+  cell edge reaches to 5 blocks from the next cell's origin, and probes run
+  concurrently in the same 25-block neighbourhood. Measured on this tree (283 tests,
+  grid origin 2011583, -60, -4860956): two probes packed next to each other in the
+  batch order landed at (+29, +68) and (0, +249) from one another. Two failure modes
+  follow, both seen on this repo: a neighbour
   can `setBlock` on top of the cell another probe just built (a crucible probe
   found its `blockMetalDevice` replaced by a neighbouring probe's arcane lamp),
   and a probe whose logic scans a wide box reads the neighbour's blocks
@@ -84,6 +91,35 @@ without the evidence for its stages.
   widens the packing footprint), and a probe whose assertions depend on a world
   scan measures DELTAS over an ambient baseline scan, never absolute totals.
   Prefer both over reordering tests: the layout is not stable across runs.
+- **A probe whose verdict is about item entities must attribute them, not just
+  filter them.** A scan over a box wider than the probe's cell reads the
+  neighbourhood — `mobBox` spans ±12 (25³) and a 1×1×1 `empty` neighbour sits 6
+  away, so a foreign stack in the box is the normal case, not the exception.
+  Filtering by item identity does NOT fix it where the contract IS the item set
+  (a drop-table probe): the stack a defect produces is the probe's own item, so an
+  identity filter is blind to exactly the bug it is guarding. Attribute by capture:
+  scan the box immediately before and immediately after each action that produces
+  entities and keep the UUID delta. The server thread is single-threaded and an
+  action is not re-entered, so the delta is that action's output — no clock, no
+  position, no draw enters the verdict. Foreign stacks stay in the failure message
+  (they are the diagnostic) and are never counted: `ZombieMobGameTest.DeathDrops`,
+  `assertOwnedDeathDropsAre`. Measured as CI run 42573819914 (sha 1430745):
+  `furiouszombiedeathdropsdoubletherollsandthestack` failed on
+  `minecraft:stone_button` at grid origin 12969321, -60, -6539840 while the same sha
+  was green in 42573817477 — `GameTestServer#startTests` draws the origin from
+  `Level#getRandom`, so an unfiltered pad scan is a draw bet. The item is not
+  producible by that probe's drop bodies: `stone_button` appears 0 times in
+  `src/main/java`, in no vanilla structure NBT and in no vanilla loot table, so it is
+  not terrain loot; the project's only `stone_button` is the ported essentia entry
+  `data/thaumcraft/essentia/tags.json` `itemTags[195]` (`machina 1`), which a
+  neighbouring machine probe can eject into the box.
+  Green is not proof: pair the arm with a standing foreign stack in the box on the
+  producing tick (`ZombieMobGameTest.breakForeignBlockInPad`) plus a self-check that
+  the fixture is still landing (`aForeignStackInAPadIsNamedAndNotCounted`), and sweep
+  the mutation surface (the drop tables) to show the probe goes RED. The
+  identity-filtered `ownedBy` pattern (`OreDropGameTest`) is the right tool only where
+  the contract names the item and the mutation surface is the count.
+
 - **A probe that lets the LEVEL tick its mob must place that mob in the chunk the harness vouches.**
   `StructureUtils#prepareTestStructure` calls `forceLoadChunks` on the **template's bounding box**,
   and `GameTestInfo#tick` refuses to start a probe until every one of those chunks answers
