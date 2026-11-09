@@ -19,6 +19,7 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.common.DeferredSpawnEggItem;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -44,6 +45,10 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  *   <li>{@code thaumcraft:golembell} — {@code ItemGolemBell}, stack size 1;</li>
  *   <li>{@code thaumcraft:itemgolemdecoration} — {@code ItemGolemDecoration},
  *       metas 0..7;</li>
+ *   <li>{@code thaumcraft:spawnegg.eldritchgolem} — the eldritch golem's
+ *       {@code DeferredSpawnEggItem} with the original's colour pair
+ *       (5592405 / 4210752, {@code ConfigEntities.java:120}); the dotted id is
+ *       the ledger's {@code new_id} verbatim (TC-M6-08-s-c3).</li>
  *   <li>{@code thaumcraft:golem} — {@code EntityGolemBase}, the original's
  *       registration
  *       ({@code ConfigEntities.init}: {@code registerModEntity(EntityGolemBase.class,
@@ -142,6 +147,48 @@ public final class CatalogGolems {
                     .clientTrackingRange(EntityEldritchGolem.TRACKING_RANGE)
                     .updateInterval(EntityEldritchGolem.UPDATE_INTERVAL)
                     .build("eldritchgolem"));
+
+    /**
+     * {@code thaumcraft:spawnegg.eldritchgolem} — the eldritch golem's spawn
+     * egg, TC-M6-08-s-c3. Declared here, in the entity section, because its
+     * supplier reads {@link #ELDRITCH_GOLEM} and Java forbids a forward
+     * reference from a static initialiser; {@code DeferredRegister} registration
+     * order is irrelevant (the ITEM registry is keyed by id).
+     *
+     * <p>The original registered ONE meta-indexed item ({@code ItemSpawnerEgg})
+     * whose per-mob entry is {@code addMapping("EldritchGolem", 5592405,
+     * 4210752)} ({@code ConfigEntities.java:120}). Layer 0 takes the first
+     * colour and layer 1 the second ({@code ItemSpawnerEgg.func_82790_a}:
+     * {@code layer == 0 ? color1 : color2}), the same layer order 1.21.1's
+     * {@code SpawnEggItem#getColor(int)} answers in, so
+     * {@link EntityEldritchGolem#EGG_PRIMARY} / {@link
+     * EntityEldritchGolem#EGG_SECONDARY} go in as background / highlight.
+     * {@code DeferredSpawnEggItem} is NeoForge's answer to the chicken-and-egg
+     * problem of an item that names an entity type: 1.21.1's {@code
+     * SpawnEggItem} needs the {@code EntityType} at construction, which does not
+     * exist while items register, and it returns null from {@code
+     * getType stack} until NeoForge's own hook resolves the supplier.</p>
+     *
+     * <p><b>The id keeps the ledger's dot.</b> The content-mapping row
+     * {@code Thaumcraft:spawnegg.EldritchGolem} inventories
+     * {@code thaumcraft:spawnegg.eldritchgolem} as its {@code new_id}, and
+     * {@code ContentMappingIdContractTest} requires {@code new_id} to be
+     * exactly {@code "thaumcraft:" + lower(original id path)} (D-001 addendum;
+     * the id path charset is {@code [a-z0-9/._-]+}). So the dot is part of the
+     * id, not a meta separator — and 1.21.1 registers one item per mob, which
+     * is the shape that row already has. The lang key {@code
+     * item.thaumcraft.spawnegg.eldritchgolem} is that id, and {@code
+     * LocalizationFileTest.everyRegistryKeyNamesInventoriedContent} resolves a
+     * key against the inventoried id that is its longest dot-boundary prefix
+     * (see the comment there). The item model is the one file whose name is
+     * that dotted path: {@code models/item/spawnegg.eldritchgolem.json}.</p>
+     */
+    public static final DeferredItem<DeferredSpawnEggItem> SPAWN_EGG_ELDRITCH_GOLEM =
+            ITEMS.register("spawnegg.eldritchgolem", () -> new DeferredSpawnEggItem(
+                    ELDRITCH_GOLEM::get,
+                    EntityEldritchGolem.EGG_PRIMARY,
+                    EntityEldritchGolem.EGG_SECONDARY,
+                    new Item.Properties()));
 
     /**
      * {@code thaumcraft:golembobber} — original {@code EntityGolemBobber}

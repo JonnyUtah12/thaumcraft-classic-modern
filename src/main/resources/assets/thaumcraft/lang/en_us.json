@@ -389,5 +389,6 @@
   "entity.thaumcraft.dart": "Golem Dart",
   "entity.thaumcraft.eldritchgolem": "%s Eldritch Construct",
   "entity.thaumcraft.golembobber": "Golem Fishing Bobber",
-  "entity.thaumcraft.golemorb": "Energy Orb"
+  "entity.thaumcraft.golemorb": "Energy Orb",
+  "item.thaumcraft.spawnegg.eldritchgolem": "Eldritch Golem Spawn Egg"
 }
