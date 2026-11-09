@@ -1,0 +1,84 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research_all": [
+    "CAP_thaumium",
+    "ROD_ice",
+    "SCEPTRE"
+  ],
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 54
+    },
+    {
+      "aspect": "terra",
+      "amount": 54
+    },
+    {
+      "aspect": "ignis",
+      "amount": 54
+    },
+    {
+      "aspect": "aqua",
+      "amount": 54
+    },
+    {
+      "aspect": "ordo",
+      "amount": 54
+    },
+    {
+      "aspect": "perditio",
+      "amount": 54
+    }
+  ],
+  "pattern": [
+    "  C",
+    "CR ",
+    "FC "
+  ],
+  "key": {
+    "C": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandcap",
+      "meta": 2
+    },
+    "R": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandrod",
+      "meta": 3
+    },
+    "F": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:itemresource",
+      "meta": 15
+    }
+  },
+  "result": {
+    "id": "thaumcraft:wandcasting",
+    "count": 1,
+    "components": {
+      "thaumcraft:wand_cap": "thaumium",
+      "thaumcraft:wand_rod": "ice",
+      "thaumcraft:wand_sceptre": true,
+      "thaumcraft:item_meta": 54
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcap"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandrod"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcasting"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

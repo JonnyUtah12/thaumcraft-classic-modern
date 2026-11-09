@@ -72,12 +72,65 @@ public final class ModDataComponents {
      * ADVANCEDGOLEM research icon's {@code ItemGolemPlacer} meta). The shipped
      * data files already carry those values, so the narrower codec rejected
      * rows that used to gate out on an unregistered item.</p>
+     * <p>The wand family (TC-M6-01-s, t_becee16b / t_4b191041) needed the same
+     * widening for its own reason: the wand rod item's original damage values
+     * reach 100 (the primal staff core, {@code ItemWandRod.func_150895_a}) and a
+     * wand's damage value is {@code capCraftCost × rodCraftCost} (up to 9 × 32,
+     * ×1.5 for a sceptre, {@code ArcaneWandRecipe}/{@code ArcaneSceptreRecipe}),
+     * i.e. {@code 0..1023} — a strict subset of the domain above, so the wand
+     * rows and the golem rows share one codec bound. Widening a persistent
+     * codec's accepted range is additive: every value the previous bound
+     * accepted still encodes and decodes identically.</p>
      */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> ITEM_META =
             DATA_COMPONENT_TYPES.register("item_meta",
                     () -> DataComponentType.<Integer>builder()
                             .persistent(Codec.intRange(0, 32767))
                             .networkSynchronized(ByteBufCodecs.VAR_INT)
+                            .build());
+
+    /**
+     * The rod a wand stack is built from (TC-M6-01): the original's
+     * {@code "rod"} ItemStack NBT key written by
+     * {@code ItemWandCasting.setRod} ({@code common/items/wands/
+     * ItemWandCasting.java:499-500}, a {@code NBTTagString} of the rod tag).
+     * An absent component resolves to the wood rod, exactly as the original's
+     * {@code getRod} did.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> WAND_ROD =
+            DATA_COMPONENT_TYPES.register("wand_rod",
+                    () -> DataComponentType.<String>builder()
+                            .persistent(Codec.STRING)
+                            .networkSynchronized(ByteBufCodecs.STRING_UTF8)
+                            .build());
+
+    /**
+     * The cap a wand stack is built from (TC-M6-01): the original's
+     * {@code "cap"} NBT key ({@code ItemWandCasting.setCap}, line 522-524).
+     * An absent component resolves to the iron cap, as in the original's
+     * {@code getCap}.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> WAND_CAP =
+            DATA_COMPONENT_TYPES.register("wand_cap",
+                    () -> DataComponentType.<String>builder()
+                            .persistent(Codec.STRING)
+                            .networkSynchronized(ByteBufCodecs.STRING_UTF8)
+                            .build());
+
+    /**
+     * The sceptre marker (TC-M6-01): the original wrote a
+     * {@code NBTTagByte} under the {@code "sceptre"} key on the wand stack
+     * ({@code ArcaneSceptreRecipe.getCraftingResult},
+     * {@code ItemWandCasting.java:101-102}) and {@code isSceptre} tested the
+     * key's <em>presence</em> ({@code func_74764_b("sceptre")}, line 490-491) —
+     * so a present-but-false value still reads as a sceptre, and the port
+     * preserves that by always writing {@code TRUE} and testing presence.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Boolean>> WAND_SCEPTRE =
+            DATA_COMPONENT_TYPES.register("wand_sceptre",
+                    () -> DataComponentType.<Boolean>builder()
+                            .persistent(Codec.BOOL)
+                            .networkSynchronized(ByteBufCodecs.BOOL)
                             .build());
 
     /**

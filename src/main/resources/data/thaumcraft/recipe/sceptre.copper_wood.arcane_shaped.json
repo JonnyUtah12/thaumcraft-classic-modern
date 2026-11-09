@@ -1,0 +1,84 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research_all": [
+    "CAP_copper",
+    "ROD_wood",
+    "SCEPTRE"
+  ],
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 3
+    },
+    {
+      "aspect": "terra",
+      "amount": 3
+    },
+    {
+      "aspect": "ignis",
+      "amount": 3
+    },
+    {
+      "aspect": "aqua",
+      "amount": 3
+    },
+    {
+      "aspect": "ordo",
+      "amount": 3
+    },
+    {
+      "aspect": "perditio",
+      "amount": 3
+    }
+  ],
+  "pattern": [
+    "  C",
+    "CR ",
+    "FC "
+  ],
+  "key": {
+    "C": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandcap",
+      "meta": 3
+    },
+    "R": {
+      "type": "thaumcraft:wand_component",
+      "item": "minecraft:stick",
+      "meta": 0
+    },
+    "F": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:itemresource",
+      "meta": 15
+    }
+  },
+  "result": {
+    "id": "thaumcraft:wandcasting",
+    "count": 1,
+    "components": {
+      "thaumcraft:wand_cap": "copper",
+      "thaumcraft:wand_rod": "wood",
+      "thaumcraft:wand_sceptre": true,
+      "thaumcraft:item_meta": 3
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcap"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:stick"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcasting"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

@@ -132,6 +132,36 @@ without the evidence for its stages.
   fleeDomainUnloaded=0`. Tick order decides mutations: `onGround` is recomputed in the physics step
   at the END of a tick, so a `setDeltaMovement` applied in the same tick as the probe's draws is
   invisible to those draws — an airborne mutation has to be established one tick early to be seen.
+- **A probe asserts an OUTCOME, never a tick budget.** `helper.runAtTickTime(getTick() + N, …)` puts the
+  harness's scheduler inside the port's contract: the assert fires on the **probe's** clock, while the
+  fact it reads is produced by the **LEVEL** — an entity's AI tick, a chunk's block-tick pass — and
+  `GameTestInfo#tickInternal` gives no contract about how much of that work lands inside N probe ticks
+  (it fires the `runAtTickTimeMap` on `tickCount`, and only then advances the sequences). Nothing in the
+  harness says "the mob has ticked by probe tick N"; that number is a guess about the batch, and
+  `63b5806` measured the same tree's probe stamps moving by millions of blocks between runs. Measured on
+  this repo: `firebatFlagBitsMatchTheOriginalByte` at `+4L` flaked in CI on the same code that passed
+  locally, `furiousZombieAngerDecaysAndTheBoxShrinksBack` at `+5L` went red **2/2** in the **with-Curios**
+  CI job as `tickCount 0` while the same sha was green locally, and `theFurnaceSmeltsAnItemAndEjectsTheResult`
+  asserted that a **140-tick** cook had begun by test tick 8. The shape that cannot lose to a schedule is
+  the outcome poll: `helper.succeedWhen(() -> { …asserts… })` — the probe runs the asserts **every tick**
+  until they pass, and `timeoutTicks` survives as a **watchdog with large margin**, not as the contract.
+  Four harness facts make the shape safe to write, all measured against the mapped sources:
+  `GameTestHelper#ensureSingleFinalCheck` throws `IllegalStateException("This test already has final
+  clause")` on a **second** `succeedWhen`/`succeedIf`/`succeedOnTickWhen`, so a probe gets exactly **one**
+  final clause — latch multi-fact evidence in `onEachTick` and assert the latches inside that one poll;
+  a latch must be **monotone and false on tick 0** (set once, never cleared), which is what stops a poll
+  from succeeding vacuously on the probe's first tick; `GameTestSequence#tickAndFailIfNotComplete` fails
+  the test with the **condition's own assertion message** at the watchdog, so the diagnosis survives the
+  conversion — name the precondition in the poll's **first** assert (the vouched-cell check above), so a
+  layout change reports the precondition and not a downstream rate; and `GameTestSequence#tickAndContinue`
+  swallows **only** `GameTestAssertException`, so a poll body that throws anything else escapes into the
+  level tick and takes the batch with it.
+  Two shapes are **not** this class and must not be swept: a leg that **feeds its subject its own
+  `tick()`** is self-contained and runs inline — no window, no poll (`ZombieMobGameTest.furiousZombieAngerGrowsOnDamageAndRewritesItsDamage`)
+  — and a `runAtTickTime` that only **schedules a spawn** with no assertion on a fixed tick carries no
+  window at all (the golem probes' `runAtTickTime(6, () -> spawn(…))`, which then gate on the golem's own
+  `tickCount`, never on a test-tick phase). Convert the assertion, not the bookkeeping.
+  Exemplars: `63b5806` (firebat devil-health delta), `wt/t_f19061fc` (the zombie trio and the furnace cook).
 - A `@GameTest` body that touches a block entity must not park the server
   thread. The game test server shuts down by unloading chunks
   (`LevelChunk.clearAllBlockEntities` → `BlockEntity.setRemoved`), and a

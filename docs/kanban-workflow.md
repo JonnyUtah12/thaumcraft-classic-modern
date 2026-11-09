@@ -68,18 +68,64 @@ card in its javadoc. The cost was four dead runs for work that was already on
   duplicate here had a different title and a different card id.
 - When a scope is re-filed, **retire the original in the same breath** — point it
   at the card that supersedes it. An un-retired original reads as live work.
-- A card that is `done` or `archived` **cannot be a parent**: the toolset has no
-  unlink, so any child gated on a terminal card is permanently unreachable and
-  still shows as ordinary blocked work. Check a parent's status before relying on
-  an edge to drain, and never gate new work on a terminal card.
-- **Retiring a card strands its live children.** The rule above says not to *gate*
-  new work on a terminal card, but nothing re-homes the children that already
-  exist — they stay `blocked` while the dispatcher keeps promising a retry.
-  Measured 2026-11-09: a split child of an archived card burned two `7200 s`
-  wall-clock runs, then sat unreachable while its own uncommitted work had already
-  been replayed onto `main` and was running there. When you archive or retire a
-  card, **re-file or retire its live children in the same breath**, and point each
-  at the commit that carries the work so the WIP is not lost from the board's view.
+- **A `done` or `archived` parent RELEASES its children; what gates them is a
+  parent that is *not* terminal.** Read off the source, not inferred:
+  `recompute_ready` promotes a `todo`/`blocked` child once every parent is in
+  `('done','archived')` (`kanban_db.py:2067`); `complete_task` and `archive_task`
+  both call it, so the release is immediate (`:2739`, `:3829`); `_parents_satisfied`
+  (`:2106`) is the same predicate. So **never fix a stuck child by completing or
+  archiving its parent** — that is the operation that frees it. A `blocked` parent
+  (retries exhausted) never reaches a terminal state, which is why such a child
+  sits in `todo` cycle after cycle. Measured 2026-11-09: an umbrella card that had
+  exhausted its retries gated its own two split children across three notifications.
+- **Two things strand a child — check both before blaming the edge.** (1) A parent
+  that is not `done`/`archived`. (2) The child's **own** breaker:
+  `recompute_ready` skips a `blocked` child whose `consecutive_failures` has
+  reached the effective limit (`:2079`), so a card that exhausted its retries does
+  not auto-recover even when its parents *are* terminal. Measured 2026-11-09: a
+  split child of an archived card sat `blocked` not because of the archive
+  (archiving releases children) but because its own counter was at the limit.
+- **When an edge is false, `unlink` it — do not re-file.** `unlink_tasks` (`:1611`)
+  deletes the link and re-gates the child immediately: fixed in place, no card
+  recreated, no lineage lost. This is the right repair when a child was gated on a
+  card whose scope *is* the children's own (an umbrella/split parent), because the
+  edge is false rather than stale. **Do not complete or archive the parent to
+  "free" the child**: both also call `_cleanup_workspace` (`:2740`, `:3832`) and
+  will reap the worktree.
+- **Do not `unblock` a card to unstick its child.** `unblock_task` resets
+  `consecutive_failures` to `0` (`:3582`), re-arming a fresh retry on a card whose
+  work may already be on `main`.
+- **An assignee that is not a profile is silently UNSPAWNABLE.** The dispatcher
+  buckets a card whose `assignee` fails `profile_exists` into
+  `skipped_nonspawnable` (`kanban_db_dispatch.py:2077`): no crash, no error, and
+  health telemetry suppresses the stuck signal (`:2074`), so the card reads `ready`
+  forever and the condition never expires on its own (`:2081`). Measured
+  2026-11-09: **15 live cards** on one board carried `assignee='@default'` — the
+  *display* form the notifications render — and had produced **zero** runs, against
+  **184** for `default`; no other board on the machine used the value. Every one
+  was created by copying the notification template. **Pass the profile name
+  (`default`), never `@default`.** Repair: `hermes kanban assign <task_id> default`.
+
+## A notification is not a summary of card state
+
+The board's notifications render a **trailing event line**, not a description of
+where the card stands. The same card emits different templates as different
+trailing events land, and the header can be flatly false about the card's state.
+
+- **`dispatcher will retry` on a `done` card is template text.** Every claim path
+  CASes from a non-terminal status — `claim_task` from `ready`, and
+  `recompute_ready` promotes only from `todo`/`blocked` — so a `done` card is never
+  dispatched again, however many times the template fires.
+- **A `timed_out` event with `run_id = NULL` is not a run.** Measured 2026-11-09:
+  run 335 `completed`, the worker was reaped, and a late run-less `timed_out` was
+  recorded ~11 minutes later — which then emitted a *second* notification
+  ("timed out; dispatcher will retry") for a card that had been `done` throughout.
+  It is an accounting artifact, and a **rare** one: board-wide, 1 of 103
+  `timed_out` events carried `run_id = NULL`. Do not generalize it into a class.
+- **Test the claim, never the header.** A retry is real only when
+  `status = 'running'` **and** `current_run_id IS NOT NULL` **and** a run row is
+  open (no `ended_at`, outcome not in `(completed, timed_out)`). `hermes kanban show`
+  plus the `task_runs` rows settle it; the notification cannot.
 
 ## `done` is not `landed`
 

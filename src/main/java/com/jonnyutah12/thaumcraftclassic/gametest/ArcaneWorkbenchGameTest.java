@@ -255,7 +255,7 @@ public final class ArcaneWorkbenchGameTest {
         // so this probe builds a shapeless recipe in code and drives the recipe
         // class's claim-every-grid-item rule directly (ShapelessArcaneRecipe.java:74).
         final AspectList empty = new AspectList();
-        final ArcaneWorkbenchRecipe shapeless = new ArcaneWorkbenchRecipe("", empty,
+        final ArcaneWorkbenchRecipe shapeless = new ArcaneWorkbenchRecipe("", List.of(), empty,
                 List.of(), Map.of(),
                 List.of(Ingredient.of(Items.GOLD_NUGGET), Ingredient.of(Items.GLASS_PANE)),
                 new ItemStack(Items.GOLD_INGOT));

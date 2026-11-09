@@ -19,6 +19,7 @@ import com.jonnyutah12.thaumcraftclassic.gametest.ResearchProgressionGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.NotePuzzleGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.SoundRegistryGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.VisCoreGameTest;
+import com.jonnyutah12.thaumcraftclassic.gametest.WandGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.WorldGenGameTest;
 import com.jonnyutah12.thaumcraftclassic.network.ModNetwork;
 import com.jonnyutah12.thaumcraftclassic.player.ModAttachments;
@@ -112,6 +113,7 @@ public final class ThaumcraftClassic {
         event.register(ResearchProgressionGameTest.class);
         event.register(NotePuzzleGameTest.class);
         event.register(VisCoreGameTest.class);
+        event.register(WandGameTest.class);
         event.register(AuraNodeGameTest.class);
         event.register(WorldGenGameTest.class);
         event.register(FluxGameTest.class);
