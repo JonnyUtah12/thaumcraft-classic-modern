@@ -80,3 +80,29 @@ When a card is blocked for `Iteration budget exhausted (150/150)` — `consecuti
 - **Pass `-C <worktree>` and an explicit SHA.** `git branch -r --contains HEAD` without `-C` silently evaluates the *main checkout's* HEAD and will "verify" pushes that were never checked.
 - A **detached-HEAD** worktree's branch is literally named `HEAD`, so it can never match a remote ref and will **always** read "unpushed" — test reachability by SHA instead.
 - **`add -A -- src docs` sweeps shared files** (`FEATURE_MATRIX.md`, `compatibility-matrix.md`, `en_us.json`) into a lane branch with no per-hunk check. Prefer explicit paths; if a shared file must go in, verify the diff is single-hunk and single-lane, and **name the caveat on the card** if it was not.
+
+## A notification can describe an INTERMEDIATE attempt, not the card's end state
+
+A receipt's template text is fixed when the notification is generated and is **not** re-evaluated
+against the card's later history. A receipt reading *"completed, gave up (retries exhausted),
+timed out; dispatcher will retry"* can therefore arrive for a card that **completed successfully
+hours or days earlier**.
+
+**Read the card's own run history before acting on the receipt's verdict** — `hermes kanban show <id>`,
+and look for the trailing `[run N] completed`. Exemplar: `t_94bff7e9` (c1 firebat) — four `timed_out`
+runs at `7220 / 7221 / 7225 / 7226s` (each within ~6s of the 7200s cap), then `[run 294] completed`
+in `1798s`, while the receipt still read "gave up … will retry".
+
+### Three shapes, three remedies — do not confuse them
+
+- **Wall-clock timeouts clustered at the cap** -> the gate is too slow for the budget. Time the first
+  gate; do **not** split the card for "scope". (The completing worker's own note: *gate cost is ~90s warm*.)
+- **`Iteration budget exhausted (150/150)` with `consecutive_failures=2`** -> D-012: split the card.
+- **A receipt whose verdict is contradicted by the run history** -> the receipt is stale: record and close.
+
+### A receipt's SHA is a snapshot, not the branch head
+
+`t_94bff7e9` cited `wt/m6-06sc-monsters @ 50cf600` while the head had since moved to `d795cb1`
+(a later salvage on the same branch). Deciding test: `git merge-base --is-ancestor <sha> origin/main`
+— landed means stale. Do not conflate the cited SHA with the current head, and do not read a branch's
+`ahead=N` as the receipt's work.
