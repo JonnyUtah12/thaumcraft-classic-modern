@@ -14,6 +14,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResearchBook;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTaint;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTaintacles;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.M3ResearchContent;
 import net.neoforged.bus.api.IEventBus;
@@ -199,6 +200,16 @@ public final class ModRegistration {
         // thaumcraft:research_note component; the hex-grid note screen and the
         // per-meta icons/glint stay on their cards.
         M3ResearchContent.init(modEventBus);
+        // TC-M6-06-s-e-ii: the taintacle family — thaumcraft:taintacle,
+        // thaumcraft:taintacletiny (the original's EntityTaintacleSmall, display
+        // name Taint Tendril) and thaumcraft:taintaclegiant, each with its
+        // attribute supplier. The originals install no goal selectors, so all
+        // three run the hand-rolled root AI (GoallessTaintMonster). The taint
+        // world state they read is the TC-M5-04-s engine on this branch
+        // (TaintManager/TaintBiomes/BlockTaint*/BlockTaintFibres); thaumslime and
+        // the rest of the taint roster are the sibling card's, the taint animals
+        // are TC-M6-06-s-b's, and the renderers are TC-M7-03-s.
+        CatalogTaintacles.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

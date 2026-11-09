@@ -342,5 +342,8 @@
   "entity.thaumcraft.wisp": "Wisp",
   "entity.thaumcraft.firebat": "Firebat",
   "entity.thaumcraft.brainyzombie": "Angry Zombie",
-  "entity.thaumcraft.giantbrainyzombie": "Furious Zombie"
+  "entity.thaumcraft.giantbrainyzombie": "Furious Zombie",
+  "entity.thaumcraft.taintacle": "Taintacle",
+  "entity.thaumcraft.taintacletiny": "Taint Tendril",
+  "entity.thaumcraft.taintaclegiant": "Giant Taintacle"
 }

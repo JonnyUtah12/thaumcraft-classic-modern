@@ -331,8 +331,8 @@ Thaumcraft:EldritchCrab,thaumcraft:eldritchcrab,entity,Eldritch Crab,not_started
 Thaumcraft:InhabitedZombie,thaumcraft:inhabitedzombie,entity,Shambling Husk,not_started,not_tested,,class=EntityInhabitedZombie mod_index=33
 Thaumcraft:ThaumSlime,thaumcraft:thaumslime,entity,Thaumic Slime,not_started,not_tested,,class=EntityThaumicSlime mod_index=34
 Thaumcraft:TaintSpider,thaumcraft:taintspider,entity,Tainted Crawler,not_started,not_tested,,class=EntityTaintSpider mod_index=35
-Thaumcraft:Taintacle,thaumcraft:taintacle,entity,Taintacle,not_started,not_tested,,class=EntityTaintacle mod_index=36
-Thaumcraft:TaintacleTiny,thaumcraft:taintacletiny,entity,Taint Tendril,not_started,not_tested,,class=EntityTaintacleSmall mod_index=37
+Thaumcraft:Taintacle,thaumcraft:taintacle,entity,Taintacle,done,tested,,class=EntityTaintacle mod_index=36; shipped by TC-M6-06-s-e-ii (t_6b701485) - EntityTaintacle + TaintacleAiLogic + GoallessTaintMonster, registered by CatalogTaintacles, 0.66x3.0 box / eye 0.25 / 50 health / 7 attack / xp 10, no goal selectors, rooted travel, the taint spawn gate, the far-hit taintlet burst and the 20-tick starve; probes in gametest/TaintacleGameTest
+Thaumcraft:TaintacleTiny,thaumcraft:taintacletiny,entity,Taint Tendril,done,tested,,class=EntityTaintacleSmall mod_index=37; shipped by TC-M6-06-s-e-ii (t_6b701485) - EntityTaintacleSmall, 0.22x1.0 / 8 health / 2 attack / xp 0 / 200-tick life burning 10 magic damage, never a natural spawn, drops nothing; spawned by the parent's burst through TaintManager.spawnGuarded
 Thaumcraft:TaintSpore,thaumcraft:taintspore,entity,Taint Spore,not_started,not_tested,,class=EntityTaintSpore mod_index=38
 Thaumcraft:TaintSwarmer,thaumcraft:taintswarmer,entity,Taint Spore Swarmer,not_started,not_tested,,class=EntityTaintSporeSwarmer mod_index=39
 Thaumcraft:TaintSwarm,thaumcraft:taintswarm,entity,Taint Swarm,not_started,not_tested,,class=EntityTaintSwarm mod_index=40
@@ -342,7 +342,7 @@ Thaumcraft:TaintedCreeper,thaumcraft:taintedcreeper,entity,Tainted Creeper,not_s
 Thaumcraft:TaintedPig,thaumcraft:taintedpig,entity,Tainted Pig,not_started,not_tested,,class=EntityTaintPig mod_index=44
 Thaumcraft:TaintedSheep,thaumcraft:taintedsheep,entity,Tainted Sheep,not_started,not_tested,,class=EntityTaintSheep mod_index=45
 Thaumcraft:TaintedVillager,thaumcraft:taintedvillager,entity,Tainted Villager,not_started,not_tested,,class=EntityTaintVillager mod_index=46
-Thaumcraft:TaintacleGiant,thaumcraft:taintaclegiant,entity,Giant Taintacle,not_started,not_tested,,class=EntityTaintacleGiant mod_index=47
+Thaumcraft:TaintacleGiant,thaumcraft:taintaclegiant,entity,Giant Taintacle,done,tested,,class=EntityTaintacleGiant mod_index=47; shipped by TC-M6-06-s-e-ii (t_6b701485) - boss/EntityTaintacleGiant + TaintacleGiantAiLogic, 1.1x6.0 / 125 health / 9 attack / xp 20, boss bar, anger as a Short data value, the 35-damage cap with one enrage (regen/strength/speed for 200 ticks, tc.boss.enrage), 1-heart regen every 30 ticks, champion roll, eldritch-object drop when alone
 Thaumcraft:SpecialItemGrate,thaumcraft:specialitemgrate,entity,,done,tested,,class=EntityItemGrate mod_index=48
 Thaumcraft:GolemBobber,thaumcraft:golembobber,entity,Golem Fishing Bobber,not_started,not_tested,,class=EntityGolemBobber mod_index=49
 Thaumcraft:spawnegg.BrainyZombie,thaumcraft:spawnegg.brainyzombie,spawner_egg,BrainyZombie,not_started,not_tested,,egg_colors=FFC0FF/008000
