@@ -80,11 +80,19 @@ class LocalizationFileTest {
             // TC-M3-04-s-iii: the research-note screen's ink tooltip lines and
             // its copy-cost header (GuiResearchTable:172-183, :327), each string
             // verbatim from the original en_US.lang.
-            "tile.researchtable.noink.0", "tile.researchtable.noink.1", "tc.research.copy");
+            "tile.researchtable.noink.0", "tile.researchtable.noink.1", "tc.research.copy",
+            // TC-M6-08-s: the original tc.adv label (ConfigItems' advanced-golem
+            // tooltip line), kept verbatim.
+            "tc.adv");
 
-    /** Registry-derived key shape: lower-case id plus an optional meta/tooltip suffix. */
+    /**
+     * Registry-derived key shape: lower-case id plus up to two optional
+     * suffixes — one meta/variant segment ({@code .0}, {@code .void}) and one
+     * tooltip segment ({@code .desc}, TC-M6-08-s's golem upgrade
+     * description lines, the ported {@code item.ItemGolemUpgrade.<meta>.desc}).
+     */
     private static final Pattern KEY_SHAPE =
-            Pattern.compile("(?:item|block|entity|itemGroup)\\.thaumcraft\\.[a-z0-9_]+(?:\\.[a-z0-9]+)?");
+            Pattern.compile("(?:item|block|entity|itemGroup)\\.thaumcraft\\.[a-z0-9_]+(?:\\.[a-z0-9]+){0,2}");
 
     /** Every translation key the shipped code passes to Component.translatable that is not registry-derived. */
     private static final List<String> CODE_AUTHORED_KEYS = List.of(
@@ -102,6 +110,10 @@ class LocalizationFileTest {
             "item.thaumcraft.itemgolemupgrade.0", "item.thaumcraft.itemgolemupgrade.1",
             "item.thaumcraft.itemgolemupgrade.2", "item.thaumcraft.itemgolemupgrade.3",
             "item.thaumcraft.itemgolemupgrade.4", "item.thaumcraft.itemgolemupgrade.5",
+            "item.thaumcraft.itemgolemupgrade.0.desc", "item.thaumcraft.itemgolemupgrade.1.desc",
+            "item.thaumcraft.itemgolemupgrade.2.desc", "item.thaumcraft.itemgolemupgrade.3.desc",
+            "item.thaumcraft.itemgolemupgrade.4.desc", "item.thaumcraft.itemgolemupgrade.5.desc",
+            "tc.adv",
             "item.capacity.text", "item.ItemAmuletVis.text",
             "item.thaumcraft.itemresearchnotes.discovery",
             "item.researchnotes.unknown.1", "item.researchnotes.unknown.2",
@@ -115,7 +127,8 @@ class LocalizationFileTest {
             "item.ItemEldritchObject.text.5", "item.ItemEldritchObject.text.6",
             "tc.boss.crimson", "tc.boss.golem", "tc.boss.taint", "tc.boss.warden",
             "tc.research.getprim", "tc.research.hasnote", "tc.research.popup", "tc.research.purchase",
-            "tc.research.short", "tc.research.shortprim", "tc.researchmissing");
+            "tc.research.short", "tc.research.shortprim", "tc.researchmissing",
+            "tc.adv");
 
     /**
      * The shipped multi-meta items and the original-metadata domain their
@@ -136,7 +149,13 @@ class LocalizationFileTest {
         metas.put("itemamuletrunic", range(0, 1));
         metas.put("itemringrunic", range(0, 3));
         metas.put("itemgirdlerunic", range(0, 1));
-        metas.put("itemeldritchobject", range(0, 4));
+        metas.put("itemeldritchobject", range(0, 4));        // TC-M6-08-s golem families: the placer's eight materials, the twelve
+        // cores plus the blank core at 100, the six upgrades, the eight
+        // accessories.
+        metas.put("itemgolemplacer", range(0, 7));
+        metas.put("itemgolemcore", concat(range(0, 11), new int[] {100}));
+        metas.put("itemgolemupgrade", range(0, 5));
+        metas.put("itemgolemdecoration", range(0, 7));
         return java.util.Collections.unmodifiableMap(metas);
     }
 
@@ -264,12 +283,25 @@ class LocalizationFileTest {
         }
 
         final JsonObject lang = lang();
-        final Map<String, String> originalClass = Map.of(
-                "itemresource", "ItemResource", "itemshard", "ItemShard", "itemnugget", "ItemNugget",
-                "itemlootbag", "ItemLootBag", "itembaubleblanks", "ItemBaubleBlanks",
-                "itemamuletvis", "ItemAmuletVis", "itemamuletrunic", "ItemAmuletRunic",
-                "itemringrunic", "ItemRingRunic", "itemgirdlerunic", "ItemGirdleRunic",
-                "itemeldritchobject", "ItemEldritchObject");
+        // TC-M6-08-s added the four golem families: their per-meta names are the
+        // original item.ItemGolem<X>.<meta>.name strings (ItemGolemDecoration's
+        // stack name is its own per-meta name; the original's "Accessory: "
+        // prefix rides the tooltip instead).
+        final Map<String, String> originalClass = Map.ofEntries(
+                Map.entry("itemresource", "ItemResource"),
+                Map.entry("itemshard", "ItemShard"),
+                Map.entry("itemnugget", "ItemNugget"),
+                Map.entry("itemlootbag", "ItemLootBag"),
+                Map.entry("itembaubleblanks", "ItemBaubleBlanks"),
+                Map.entry("itemamuletvis", "ItemAmuletVis"),
+                Map.entry("itemamuletrunic", "ItemAmuletRunic"),
+                Map.entry("itemringrunic", "ItemRingRunic"),
+                Map.entry("itemgirdlerunic", "ItemGirdleRunic"),
+                Map.entry("itemeldritchobject", "ItemEldritchObject"),
+                Map.entry("itemgolemplacer", "ItemGolemPlacer"),
+                Map.entry("itemgolemcore", "ItemGolemCore"),
+                Map.entry("itemgolemupgrade", "ItemGolemUpgrade"),
+                Map.entry("itemgolemdecoration", "ItemGolemDecoration"));
 
         int checked = 0;
         final List<String> mismatches = new java.util.ArrayList<>();

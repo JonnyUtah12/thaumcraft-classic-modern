@@ -10,6 +10,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchRealm;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogGolems;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResearchBook;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
@@ -199,6 +200,14 @@ public final class ModRegistration {
         // thaumcraft:research_note component; the hex-grid note screen and the
         // per-meta icons/glint stay on their cards.
         M3ResearchContent.init(modEventBus);
+        // TC-M6-08-s: golem content — the five golem items
+        // (itemgolemplacer / itemgolemcore / itemgolemupgrade / golembell /
+        // itemgolemdecoration) and the thaumcraft:golem entity type
+        // (EntityGolemBase substrate; behaviour is TC-M6-08-s-b, GUI and
+        // renderers TC-M6-08-s-c). Registering the items makes the shipped
+        // GOLEM*/CORE*/UPGRADE*/TINY* crucible, arcane and infusion recipe rows
+        // that gate on them live.
+        CatalogGolems.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-
