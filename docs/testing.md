@@ -84,6 +84,27 @@ without the evidence for its stages.
   widens the packing footprint), and a probe whose assertions depend on a world
   scan measures DELTAS over an ambient baseline scan, never absolute totals.
   Prefer both over reordering tests: the layout is not stable across runs.
+- **A probe that lets the LEVEL tick its mob must place that mob in the chunk the harness vouches.**
+  `StructureUtils#prepareTestStructure` calls `forceLoadChunks` on the **template's bounding box**,
+  and `GameTestInfo#tick` refuses to start a probe until every one of those chunks answers
+  `isPositionEntityTicking` — that box, and only that box, is a guaranteed entity-ticking area.
+  `empty` is 1×1×1, so its vouched set is ONE chunk: a mob placed one block off the structure
+  origin (the `(1,3,1)` cell) lands in a neighbour the harness never vouched whenever the structure
+  block falls on a chunk's last row or column. WHICH draw that is MOVES with the batch, because
+  `GameTestServer#startTests` draws the whole grid's origin from `Level#getRandom` inside
+  `TEST_POSITION_RANGE` — a uniform draw of 16 alignments per axis, so a `(1,3,1)` cell leaves the
+  vouched chunk on 1/16 per axis, ≈12% of draws, and adding probes (which shifts the grid) shifts
+  the odds.
+  Measured on this tree: the `furiouszombieangerdecaysandtheboxshrinksback` tick-list detector went
+  red 2/2 in the **with-Curios** CI job while the same sha was green locally, and a probe with the
+  mob pushed one chunk out (`+16`) reported `tickCount 0`, `cellEntityTicking=false`,
+  `originChunkInRange=true`, `align16=15,5`. The tick list is the ONLY thing at stake: an entity in
+  a hidden section stays in the level's entity lists, so block scans, `getEntitiesOfClass` and
+  `getEntities(type, pos, radius)` all still see it — which is why a probe that never ticks looks
+  fine on every other arm. Fix the CELL, not the assertion: put the mob on the structure block's own
+  (x, z) (`ZombieMobGameTest.MOB_CELL = (0,3,0)`), and assert the cell is entity-ticking BEFORE
+  reading a per-tick counter, so a harness/layout change reports the precondition by name instead of
+  arriving as a rate that cannot be measured.
 - A `@GameTest` body that touches a block entity must not park the server
   thread. The game test server shuts down by unloading chunks
   (`LevelChunk.clearAllBlockEntities` → `BlockEntity.setRemoved`), and a

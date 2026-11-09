@@ -1,7 +1,6 @@
 package com.jonnyutah12.thaumcraftclassic.gametest;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
-import com.jonnyutah12.thaumcraftclassic.entities.monster.BrainyZombieAiLogic;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityGiantBrainyZombie;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -73,20 +72,39 @@ public final class ZombieMobGameTest {
         return type;
     }
 
+    /** The column a placed mob stands in: the structure block's OWN (x, z), not
+     *  an offset cell. The harness vouches exactly the chunks the template's
+     *  bounding box intersects — {@code StructureUtils#prepareTestStructure}
+     *  calls {@code forceLoadChunks} on that box, and {@code GameTestInfo#tick}
+     *  will not start a probe until every one of those chunks answers
+     *  {@code isPositionEntityTicking}. {@code "empty"} is 1×1×1, so that set is
+     *  ONE chunk: a cell one block off the origin lands in a neighbour the
+     *  harness never vouched whenever the structure block falls on a chunk's
+     *  last row or column, and WHICH draw that is moves with the batch because
+     *  {@code GameTestServer#startTests} draws the whole grid's origin from the
+     *  level RNG ({@code TEST_POSITION_RANGE = 14999992}). Measured on this tree
+     *  (284-test run, {@code run/logs}): a mob in the vouched column ticks 1:1
+     *  with the probe ({@code tickCount == } probe tick from probe tick 1); a mob
+     *  one chunk outside it is never handed to {@code ServerLevel#tickNonPassenger}
+     *  and its counter stays 0 for the whole probe. A probe that reads anything
+     *  the LEVEL ticks therefore has to place its mob where the LEVEL runs. */
+    private static final BlockPos MOB_CELL = new BlockPos(0, 3, 0);
+
     private static Mob spawn(final GameTestHelper helper, final String path) {
         final ServerLevel level = helper.getLevel();
         final Entity spawned = registered(helper, path).create(level);
         helper.assertTrue(spawned instanceof Mob,
                 "thaumcraft:" + path + " did not create a Mob instance");
         final Mob mob = (Mob) spawned;
-        final BlockPos at = helper.absolutePos(new BlockPos(1, 3, 1));
+        final BlockPos at = helper.absolutePos(MOB_CELL);              // see MOB_CELL
         mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0.0F, 0.0F);
         // Harness fixture, not ported behaviour: an "empty" pad has no floor, so
         // a WALKING mob falls out of the structure's ticking area and the server
         // stops ticking it (measured on this pad: 12 mob ticks across 65 probe
         // ticks, all of them before the fall). The flying mobs of the sibling
         // cards never notice; a zombie does. Gravity off keeps it in the box so
-        // the goal selectors and the per-tick body run at the server's cadence.
+        // the goal selectors and the per-tick body run at the server's cadence —
+        // and keeps it in the chunk MOB_CELL vouches (see MOB_CELL).
         mob.setNoGravity(true);
         level.addFreshEntity(mob);
         return mob;
@@ -98,12 +116,33 @@ public final class ZombieMobGameTest {
             final CompoundTag saved) {
         final ServerLevel level = helper.getLevel();
         final Mob mob = (Mob) registered(helper, path).create(level);
-        final BlockPos at = helper.absolutePos(new BlockPos(1, 3, 1));
+        final BlockPos at = helper.absolutePos(MOB_CELL);              // see MOB_CELL
         mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0.0F, 0.0F);
         mob.readAdditionalSaveData(saved);
         mob.setNoGravity(true);                                  // see spawn()
         level.addFreshEntity(mob);
         return mob;
+    }
+
+    /** The tick-list precondition, stated where it can be read: the mob's chunk
+     *  is one of the chunks the harness force-loaded for this structure box, so
+     *  the LEVEL has to be running it before the probe body ran at all. A
+     *  harness/layout regression therefore reports HERE, by name, instead of
+     *  arriving as a misread rate downstream. */
+    private static void assertMobCellIsTicking(final GameTestHelper helper, final Mob mob,
+            final String who) {
+        final ServerLevel level = helper.getLevel();
+        final BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+        final net.minecraft.world.level.ChunkPos cell = mob.chunkPosition();
+        final int originChunkX = origin.getX() >> 4;
+        final int originChunkZ = origin.getZ() >> 4;
+        helper.assertTrue(level.isPositionEntityTicking(mob.blockPosition()),
+                who + " stands in chunk " + cell.x + "," + cell.z + " (structure origin "
+                        + origin.toShortString() + " is chunk " + originChunkX + "," + originChunkZ
+                        + ", align16 " + (origin.getX() & 15) + "," + (origin.getZ() & 15)
+                        + "), and that chunk is not entity-ticking: the harness force-loads and "
+                        + "vouches only the chunks the template box intersects, so the mob's cell "
+                        + "has left the vouched footprint (MOB_CELL / the template's size)");
     }
 
     // ------------------------------------------------------- registration
@@ -371,10 +410,14 @@ public final class ZombieMobGameTest {
                 giant.tick();
             }
             final float now = giant.saveWithoutId(new CompoundTag()).getFloat("Anger");
-            helper.assertTrue(Math.abs(now - (from - 3 * BrainyZombieAiLogic.ANGER_DECAY_PER_TICK))
+            // 0.002 is the ORIGINAL's literal (:23), not the port's constant —
+            // see the decay probe for why the expectation may not read the
+            // mutation surface.
+            helper.assertTrue(Math.abs(now - (from - 3 * 0.002F))
                             < 1.0E-4F,
                     "3 driven mob ticks did not decay the anger by exactly 3 x 0.002 (:22-23): " + from
                             + " -> " + now);
+
             final double wantDamage = 7.0 + (now - 1.0F) * 5.0;                       // :27
             helper.assertTrue(Math.abs(giant.getAttributeBaseValue(Attributes.ATTACK_DAMAGE)
                             - wantDamage) < 1.0E-6,
@@ -409,6 +452,13 @@ public final class ZombieMobGameTest {
         // and the mob's own tickCount is incremented by ServerLevel#tickNonPassenger
         // (:772), not by Entity#tick, so a rate over driven ticks must be
         // measured INSIDE one leg, where no server tick can interleave.
+        //
+        // For the server to hand the mob that increment at all, the mob has to
+        // stand in a chunk the harness vouches — see MOB_CELL. That is why the
+        // mob is placed on the structure block's own column and why the leg
+        // below asserts the cell is entity-ticking BEFORE it reads the counter:
+        // a layout/harness change then reports the precondition by name instead
+        // of arriving as a decay rate that cannot be measured.
         final CompoundTag saved = new CompoundTag();
         saved.putFloat("Anger", 2.0F);
         final EntityGiantBrainyZombie giant = (EntityGiantBrainyZombie)
@@ -418,15 +468,34 @@ public final class ZombieMobGameTest {
         // The ctor sized the box from the anger the entity was CONSTRUCTED with
         // (1.0) and 1.7.10 reads the save after construction, so the first
         // per-tick update is what resizes it to (1.2 + 2.0).
+        // The expectations below are the ORIGINAL's literals
+        // (reference/decompiled/.../EntityGiantBrainyZombie.java:22 floor, :23
+        // decay), NOT the port's constants. An arm that reads its expected value
+        // off BrainyZombieAiLogic.ANGER_DECAY_PER_TICK / ANGER_FLOOR stays GREEN
+        // when those constants are mutated, because the mutation surface becomes
+        // the expectation (the tautology trap). The port's constants are pinned
+        // to the same literals by BrainyZombieAiLogicTest, which is where a
+        // changed port value has to be caught.
+        final float decayPerTick = 0.002F;                  // :23
+        final float angerFloor = 1.0F;                      // :22
         final float[] base = new float[4];
         helper.runAtTickTime(helper.getTick() + 5L, () -> {
+            assertMobCellIsTicking(helper, giant, "the furious zombie");
             base[0] = giant.getAnger();
             base[1] = giant.tickCount;
             helper.assertTrue(base[1] > 0.0F,
                     "the furious zombie is not in the server's entity tick list (tickCount 0): "
                             + "ServerLevel#tickNonPassenger increments the mob's counter (:772) before "
                             + "calling tick() (:777), so a zero counter means the mob sits outside the "
-                            + "structure's ticking area and no per-tick rate can be read from it");
+                            + "structure's ticking area and no per-tick rate can be read from it "
+                            + "| mobChunk=" + giant.chunkPosition().x + "," + giant.chunkPosition().z
+                            + " originChunk=" + (helper.absolutePos(BlockPos.ZERO).getX() >> 4) + ","
+                            + (helper.absolutePos(BlockPos.ZERO).getZ() >> 4)
+                            + " originAlign16=" + (helper.absolutePos(BlockPos.ZERO).getX() & 15)
+                            + "," + (helper.absolutePos(BlockPos.ZERO).getZ() & 15)
+                            + " cellEntityTicking=" + helper.getLevel()
+                                    .isPositionEntityTicking(giant.blockPosition()));
+
             final var settled = giant.getDimensions(giant.getPose());
             base[2] = settled.width();
             base[3] = settled.height();
@@ -453,7 +522,7 @@ public final class ZombieMobGameTest {
                 giant.clearFire();
                 giant.tick();
                 final float after = giant.getAnger();
-                helper.assertTrue(Math.abs(after - (before - BrainyZombieAiLogic.ANGER_DECAY_PER_TICK))
+                helper.assertTrue(Math.abs(after - (before - decayPerTick))
                                 < 1.0E-4F,
                         "driven mob tick " + i + " did not decay the anger by exactly 0.002 (:22-23): "
                                 + before + " -> " + after + " (hp " + giant.getHealth() + " src "
@@ -463,14 +532,15 @@ public final class ZombieMobGameTest {
                     "the driven furious zombie left the level mid-probe (health "
                             + giant.getHealth() + ")");
             final float anger = giant.getAnger();
-            helper.assertTrue(anger < base[0] && anger > BrainyZombieAiLogic.ANGER_FLOOR,
+            helper.assertTrue(anger < base[0] && anger > angerFloor,
                     "the anger did not decay from " + base[0] + " over " + drive + " driven mob ticks "
                             + "(:22-23): " + anger + " | server tickCount " + giant.tickCount);
             // The driven count IS the tick count of this leg: the server cannot
             // interleave a mob tick inside a probe leg (single-threaded), and
             // tick() does not touch the mob's tickCount — the server owns it
             // (ServerLevel#tickNonPassenger:772).
-            final float want = base[0] - BrainyZombieAiLogic.ANGER_DECAY_PER_TICK * drive;  // :23
+            final float want = base[0] - decayPerTick * drive;                       // :23
+
             helper.assertTrue(Math.abs(anger - want) < 1.0E-3F,
                     "the anger decay is not 0.002 per tick (:23): " + anger + " after " + drive
                             + " driven mob ticks from " + base[0] + " wants " + want);
