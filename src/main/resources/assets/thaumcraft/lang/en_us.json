@@ -384,5 +384,10 @@
   "item.thaumcraft.itemgolemupgrade.3.desc": "Improves Senses, Range",
   "item.thaumcraft.itemgolemupgrade.4.desc": "Improves Organization, Intellect",
   "item.thaumcraft.itemgolemupgrade.5.desc": "Improves Defenses, Reasoning",
-  "tc.adv": "Advanced"
+  "tc.adv": "Advanced",
+  "container.thaumcraft.gui_golem": "Golem",
+  "entity.thaumcraft.dart": "Golem Dart",
+  "entity.thaumcraft.eldritchgolem": "%s Eldritch Construct",
+  "entity.thaumcraft.golembobber": "Golem Fishing Bobber",
+  "entity.thaumcraft.golemorb": "Energy Orb"
 }

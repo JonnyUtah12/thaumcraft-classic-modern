@@ -25,7 +25,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * pitch, wider than vanilla's 18 px), and the player inventory is the standard
  * 3x9 grid at {@code y = 118 + row*18} with the hotbar at {@code y = 176}.</p>
  *
- * <p><b>Background (docs/BEHAVIORAL_DEVIATIONS.md BD-15).</b> The original drew
+ * <p><b>Background (docs/BEHAVIORAL_DEVIATIONS.md BD-17).</b> The original drew
  * {@code guitrunkbase.png}, a texture that only ships in an asset-overlay build
  * (the original assets are All Rights Reserved and are never committed, D-004),
  * so it is not in the code-only jar this card is gated on. The panel is
@@ -50,8 +50,12 @@ import net.neoforged.api.distmarker.OnlyIn;
  * <p>Not implemented here, and on their own cards: the original's stay-toggle
  * button (the menu already answers it through
  * {@link TrunkMenu#BUTTON_TOGGLE_STAY} / {@code clickMenuButton}, the GUI
- * button is TC-M7-04 follow-up work), the hand-mirror and deconstruction-table
- * screens, and every other GUI id.</p>
+ * button is TC-M7-04 follow-up work) and the machine screens whose content has
+ * no menu type yet. The hand-mirror and deconstruction-table screens listed
+ * here as follow-ups in cr1 are done: they landed in TC-M7-04-s (t_7eb3e438)
+ * as {@link HandMirrorScreen} and {@link DeconstructionTableScreen}, together
+ * with {@link MagicBoxScreen} and {@link SpaScreen}, which is every
+ * {@code MenuType} the mod registers.</p>
  */
 @OnlyIn(Dist.CLIENT)
 public class TrunkScreen extends AbstractContainerScreen<TrunkMenu> {
