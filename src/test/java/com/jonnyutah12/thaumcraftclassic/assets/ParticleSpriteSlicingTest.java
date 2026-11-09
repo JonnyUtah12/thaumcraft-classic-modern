@@ -62,7 +62,12 @@ class ParticleSpriteSlicingTest {
             new CellParticle("sparkle_glow", "sparkle_glow", cells(112, 115)),
             // TC-M7-02-c-s-f1b: the EG wisp steps u = age%13/16 at v = 0.1875
             // (FXWispEG.java:59-62) — row 3, columns 0..12 of the sheet grid.
-            new CellParticle("wisp_eg", "wisp_eg", cells(48, 60)));
+            new CellParticle("wisp_eg", "wisp_eg", cells(48, 60)),
+            // TC-M7-02-c-s-f3: the rune decal draws u = runeIndex%16/16 at
+            // v = 0.375 (FXBlockRunes.java:50-51) — row 6, columns 0..15 of the
+            // sheet grid, i.e. cells 96..111. The ctor's runeIndex roll is
+            // 224..239 (line 34); only its %16 column reaches the texture.
+            new CellParticle("rune", "rune", cells(96, 111)));
 
     /**
      * TC-M7-02-c-s-f1b: the wisp and the arcing wisp draw regions of the
