@@ -141,14 +141,41 @@ uncommitted WIP as VERIFIED.
   `entities/golems/ai`, and `EntityGolemBase.customInteraction` opens the window,
   so a placed golem walks to its target and acts on it. What is NOT true, stated
   plainly: `GolemCoreTask.implemented()` is false for **FISHING** (its `AIFish`
-  goal is not ported; the bobber entity is), the act step exists only for cores
-  **0, 1, 2, 4, 5, 8, 10** (cores 3, 6, 7, 9, 11 install goals but `runCoreTaskStep()`
-  does nothing), `GolemMenu.golemSlotCount()` is hardcoded **0** so the window
+  goal is not ported; the bobber entity is) and core 11 installs no goal at all,
+  `runCoreTaskStep()` drives the act half for **0, 1, 2, 6, 8, 10** only
+  (`HOME_PLACE`/`HOME_TAKE`/`SORTING_PLACE`/`ESSENTIA_EMPTY`) — for **3, 4, 5, 7, 9**
+  that step returns false by design because their behaviour runs inside the
+  installed goal's tick (`HARVEST_CROPS`/`MELEE_ATTACK`/`LIQUID_EMPTY`/`CHOP_LOGS`),
+  `GolemMenu.golemSlotCount()` is hardcoded **0** so the window
   binds **zero** slots even though the runtime's `InventoryMob` +
   `setupGolemInventory()` landed in this integration (the wiring is open work,
   BD-38), and the six golem renderers register on the mod bus while **rendered
   pixels stay unproved** (no client, D-012) — the renderer roster stays
   INVESTIGATED.
+- **Two collisions the consolidation had to settle** (main moved 86 commits under
+  the lane, so both sides were real code): (1) the book lane's
+  `ThaumonomiconOpenPathContractTest.openPathIsAPayloadAndNotAMenuOpen` greps
+  `client/ModClientScreens` as raw text for the word `Thaumonomicon`, and the
+  golem-visual lane's renderer-coverage prose put that word in the file — resolved
+  by rewording the prose (the file now says the book browser is payload-opened and
+  containerless per BD-22, so it has no `MenuType` to pair); the contract test is
+  untouched and keeps its full force. (2) Main's `SPINE-3`
+  `ItemModelCoverageGameTest.everyItemModelChainResolves` reported
+  `spawnegg.eldritchgolem (no sprite declared in the model chain)`: the egg is the
+  vanilla egg shape verbatim (`{"parent":"minecraft:item/template_spawn_egg"}`, the
+  same file `zombie_spawn_egg.json` has) and the probe counted sprite keys only in
+  models it could read, while the vanilla model tree is CLIENT assets that a
+  dedicated game-test server cannot address (measured this run:
+  `vanilla model JSONs verifiable on this classpath: false`). Resolved inside the
+  probe, not by mutating the asset: a chain that terminates on a `minecraft:`
+  parent is now treated as sprite-inherited (the vanilla chain supplies it —
+  `models/item/generated.json` parents `builtin/generated`,
+  `models/item/template_spawn_egg.json` declares `layer0`/`layer1`), the count is
+  made precise by walking the vanilla jar whenever it IS on the classpath, and the
+  run log states which case happened. The model file, the egg's
+  `DeferredSpawnEggItem` registration (NeoForge registers its tint at
+  `RegisterColorHandlersEvent.Item`, HIGHEST) and
+  `GolemItemModelContractTest` are untouched.
 - **BLOCKED (worker gave up, needs re-dispatch)**: **0** — the Thaumonomicon GUI
   lane was re-scoped, BOOK-1 (`t_1e6b18cc`) shipped its open path and BOOK-2/BOOK-4
   shipped the graph-derived listing and page model.

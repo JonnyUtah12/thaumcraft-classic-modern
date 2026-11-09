@@ -42,8 +42,9 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
  * {@code docs/content-mapping.csv} have
  * no menu type yet (the crucible, arcane workbench, alchemy furnace, arcane
  * bore, thaumatorium, pech, focus pouch, hover harness, focal
- * manipulator, research table) or are the Thaumonomicon (t_547e7ad8), so they
- * cannot be wired here; they are separate cards. A new menu type added without
+ * manipulator, research table) or are the book browser (t_547e7ad8), which is
+ * payload-opened and containerless (BD-22) and so has no {@code MenuType} to
+ * pair; they are separate cards. A new menu type added without
  * a screen fails {@code MenuTypeScreenCoverageTest}.</p>
  */
 @EventBusSubscriber(modid = ThaumcraftClassic.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)

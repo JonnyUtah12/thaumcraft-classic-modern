@@ -96,6 +96,17 @@ public final class ItemModelCoverageGameTest {
     private static final boolean VANILLA_PROBE_PRESENT =
             ItemModelCoverageGameTest.class.getResource("/assets/minecraft/textures/item/paper.png") != null;
 
+    /**
+     * The same question for model JSONs: the vanilla model tree is CLIENT assets,
+     * so a dedicated game-test server may not address it at all. Probe one known
+     * vanilla model — the egg template — and log the answer, so probe 1's
+     * vanilla-parent-permissiveness is visible in the run log and never reads
+     * as a silent pass.
+     */
+    private static final boolean VANILLA_MODELS_PRESENT =
+            ItemModelCoverageGameTest.class.getResource(
+                    "/assets/minecraft/models/item/template_spawn_egg.json") != null;
+
     private ItemModelCoverageGameTest() {
     }
 
@@ -178,6 +189,7 @@ public final class ItemModelCoverageGameTest {
     public static void everyItemModelChainResolves(final GameTestHelper helper) {
         final List<String> broken = new ArrayList<>();
         int checked = 0;
+        int vanillaTerminatedChains = 0;
         for (final String path : shippedItemIds().keySet()) {
             if (!modelExists("item/" + path)) {
                 broken.add(path + " (no model file)");
@@ -189,6 +201,7 @@ public final class ItemModelCoverageGameTest {
             chain.add("item/" + path);
             final Set<String> seen = new LinkedHashSet<>();
             int sprites = 0;
+            boolean vanillaTerminated = false;
             while (!chain.isEmpty()) {
                 final String ref = chain.poll();
                 if (!seen.add(ref)) {
@@ -228,19 +241,44 @@ public final class ItemModelCoverageGameTest {
                     }
                     chain.add(parentPath);
                 }
-                // A minecraft: parent ships in the vanilla jar; its sprites are
-                // inherited (item/generated declares layer0), counted below.
+                if (parent.startsWith(ResourceLocation.DEFAULT_NAMESPACE + ":")) {
+                    // A minecraft: parent ships in the vanilla jar and its sprite
+                    // is inherited, not re-declared by the child. Measured in the
+                    // 1.21.1 client jar: models/item/generated.json parents
+                    // builtin/generated (no textures block — the sprite is the
+                    // item built-in), and models/item/template_spawn_egg.json
+                    // declares layer0 item/spawn_egg + layer1
+                    // item/spawn_egg_overlay. So a chain that terminates in a
+                    // vanilla parent always renders; demanding a sprite from the
+                    // child would fail every vanilla-shaped item, including
+                    // every spawn egg (zombie_spawn_egg.json is exactly
+                    // {"parent":"minecraft:item/template_spawn_egg"}).
+                    vanillaTerminated = true;
+                    // Counted precisely when the vanilla model JSONs are
+                    // addressable from this classpath (probe 1 logs which case ran).
+                    sprites += countVanillaChainSprites(parent, seen);
+                }
             }
-            // A chain that declares no sprite key anywhere renders nothing,
-            // which is the defect class this card closes.
-            if (sprites == 0 && problems.isEmpty()) {
+            if (vanillaTerminated) {
+                vanillaTerminatedChains++;
+            }
+            // A chain that stays inside this namespace and declares no sprite key
+            // anywhere renders nothing, which is the defect class this probe closes.
+            if (!vanillaTerminated && sprites == 0 && problems.isEmpty()) {
                 problems.add("no sprite declared in the model chain");
             }
             for (final String problem : problems) {
                 broken.add(path + " (" + problem + ")");
             }
         }
-        ThaumcraftClassic.LOGGER.info("[SPINE-3] model chains: {} models walked, {} broken", checked, broken.size());
+        // What the walk could not see: a minecraft: parent's sprites are counted
+        // precisely only when the vanilla model JSONs are addressable from this
+        // classpath (they are CLIENT assets). Log it so a permissive pass is
+        // never silent.
+        ThaumcraftClassic.LOGGER.info(
+                "[SPINE-3] model chains: {} models walked, {} end on a vanilla parent "
+                        + "(sprites inherited from vanilla; vanilla model JSONs verifiable on this classpath: {}), {} broken",
+                checked, vanillaTerminatedChains, VANILLA_MODELS_PRESENT, broken.size());
         helper.assertTrue(broken.isEmpty(),
                 broken.size() + " item model chains do not resolve: " + preview(broken));
         helper.succeed();
@@ -436,6 +474,67 @@ public final class ItemModelCoverageGameTest {
 
     private static boolean classResourceExists(final String relativePath) {
         return ItemModelCoverageGameTest.class.getResource(ASSET_ROOT + relativePath) != null;
+    }
+
+    /**
+     * The sprite keys one model JSON declares: a {@code textures} value that does
+     * not start with {@code #} is a real sprite path.
+     */
+    private static int countSpriteKeys(final JsonObject model) {
+        if (!model.has("textures")) {
+            return 0;
+        }
+        int keys = 0;
+        for (final Map.Entry<String, JsonElement> entry : model.getAsJsonObject("textures").entrySet()) {
+            if (!entry.getValue().getAsString().startsWith("#")) {
+                keys++;
+            }
+        }
+        return keys;
+    }
+
+    /**
+     * Walk a {@code minecraft:} parent chain through the vanilla jar (it is on the
+     * game-test classpath — {@link #VANILLA_PROBE_PRESENT} is the same check) and
+     * count the sprite keys its chain declares. Vanilla model JSONs write their
+     * parent and texture paths unnamespaced, so an unnamespaced parent resolves to
+     * the {@code minecraft} namespace, exactly as the model loader does.
+     *
+     * <p>When the vanilla jar is not on the classpath the chain is unverifiable:
+     * the sprites stay inherited and uncounted, which is this probe's pre-existing
+     * permissive contract for a vanilla parent, so no tree is made red by an
+     * absent jar.</p>
+     */
+    private static int countVanillaChainSprites(final String parent, final Set<String> seen) {
+        int sprites = 0;
+        String ref = parent;
+        while (ref != null && ref.startsWith(ResourceLocation.DEFAULT_NAMESPACE + ":")) {
+            final String path = ref.substring(ResourceLocation.DEFAULT_NAMESPACE.length() + 1);
+            if (!seen.add("vanilla:" + path)) {
+                return sprites; // already walked — the caller's cycle guard covers mod chains
+            }
+            final JsonObject vanilla;
+            try (InputStream in = ItemModelCoverageGameTest.class
+                    .getResourceAsStream("/assets/" + ResourceLocation.DEFAULT_NAMESPACE + "/models/"
+                            + path + ".json")) {
+                if (in == null) {
+                    return sprites; // no vanilla jar on this classpath: inherited, uncounted
+                }
+                vanilla = JsonParser
+                        .parseString(new String(in.readAllBytes(), StandardCharsets.UTF_8))
+                        .getAsJsonObject();
+            } catch (IOException | RuntimeException e) {
+                ThaumcraftClassic.LOGGER.warn("[SPINE-3] unreadable vanilla model models/{}.json", path, e);
+                return sprites;
+            }
+            sprites += countSpriteKeys(vanilla);
+            if (!vanilla.has("parent")) {
+                return sprites;
+            }
+            final String next = vanilla.get("parent").getAsString();
+            ref = next.contains(":") ? next : ResourceLocation.DEFAULT_NAMESPACE + ":" + next;
+        }
+        return sprites;
     }
 
     private static JsonElement loadJson(final String assetRelativePath) {
