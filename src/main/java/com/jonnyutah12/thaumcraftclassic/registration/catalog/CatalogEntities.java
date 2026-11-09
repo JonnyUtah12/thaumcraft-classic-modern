@@ -4,7 +4,10 @@ import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityBrainyZombie;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityFireBat;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityGiantBrainyZombie;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityMindSpider;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityPech;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityWisp;
+import com.jonnyutah12.thaumcraftclassic.entities.projectile.EntityPechBlast;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -82,6 +85,34 @@ public final class CatalogEntities {
             ENTITY_TYPES.register("giantbrainyzombie",
                     () -> EntityGiantBrainyZombie.buildFuriousType(MobCategory.MONSTER));
 
+    /** {@code thaumcraft:pechblast} — original {@code EntityPechBlast}
+     *  (content-mapping row 308, mod_index 10): the pech wand's projectile.
+     *  Not a living entity, so it needs no attribute supplier. Registration
+     *  args {@code (64, 20, true)} — {@code ConfigEntities.java:86}. */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityPechBlast>> PECH_BLAST =
+            ENTITY_TYPES.register("pechblast",
+                    () -> EntityPechBlast.buildType(MobCategory.MISC));
+
+    /** {@code thaumcraft:pech} — original {@code EntityPech}
+     *  (content-mapping row 321, mod_index 12): the 1.2 x 1.8 box
+     *  ({@code EntityPech.java:86}), the 0.66 eye-height factor
+     *  ({@code :211-213}), health 30.0 / attack 6.0 / speed 0.5
+     *  ({@code :254-259}) and the +2 armour over the mob base
+     *  ({@code :507-514}). Registration args {@code (64, 3, true)} —
+     *  {@code ConfigEntities.java:103-104}. */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityPech>> PECH =
+            ENTITY_TYPES.register("pech",
+                    () -> EntityPech.buildType(MobCategory.MONSTER));
+
+    /** {@code thaumcraft:mindspider} — original {@code EntityMindSpider}
+     *  (content-mapping row 322, mod_index 24): the 0.3 x 0.3 box
+     *  ({@code EntityMindSpider.java:18}) and experience 10 ({@code :19}).
+     *  Registration args {@code (64, 3, true)} —
+     *  {@code ConfigEntities.java:105-106}. */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityMindSpider>> MIND_SPIDER =
+            ENTITY_TYPES.register("mindspider",
+                    () -> EntityMindSpider.buildType(MobCategory.MONSTER));
+
     private CatalogEntities() {
     }
 
@@ -95,5 +126,7 @@ public final class CatalogEntities {
         event.put(FIREBAT.get(), EntityFireBat.createAttributes().build());
         event.put(BRAINY_ZOMBIE.get(), EntityBrainyZombie.createAttributes().build());
         event.put(GIANT_BRAINY_ZOMBIE.get(), EntityGiantBrainyZombie.createAttributes().build());
+        event.put(PECH.get(), EntityPech.createAttributes().build());
+        event.put(MIND_SPIDER.get(), EntityMindSpider.createAttributes().build());
     }
 }
