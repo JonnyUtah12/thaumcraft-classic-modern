@@ -4,6 +4,8 @@ import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.client.fx.FxParticleCounts;
 import com.jonnyutah12.thaumcraftclassic.client.fx.FxWispRules;
 import com.jonnyutah12.thaumcraftclassic.client.fx.ParticleSpawn;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcPlanarQuad;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcRuneOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcBubbleOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcEffects;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcFxPlans;
@@ -51,23 +53,26 @@ public final class FxParticleGameTest {
     /** The two ported particle types must be live in the registry. */
     @GameTest(template = "empty")
     public static void portedParticleTypesRegistered(GameTestHelper helper) {
-        for (String path : new String[] {"sparkle", "bubble", "wisp", "wisp_eg", "wisp_arcing"}) {
+        for (String path : new String[] {"sparkle", "bubble", "wisp", "wisp_eg", "wisp_arcing", "rune"}) {
             ResourceLocation id = ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, path);
             helper.assertTrue(BuiltInRegistries.PARTICLE_TYPE.containsKey(id),
                     "particle type " + id + " is not in the registry");
         }
         // The whole slice: the mod registers exactly the particle types the
         // M7-02 cards scope — 2 (TC-M7-02-s) + 6 beams/bolts (TC-M7-02-b-s)
-        // + 3 wisp family (TC-M7-02-c-s-f1).
+        // + 3 wisp family (TC-M7-02-c-s-f1) + 1 rune decal
+        // (TC-M7-02-c-s-f3).
         long registered = BuiltInRegistries.PARTICLE_TYPE.holders()
                 .filter(key -> ThaumcraftClassic.MOD_ID.equals(key.key().location().getNamespace()))
                 .count();
-        helper.assertTrue(registered == 11,
-                "thaumcraft-namespace particle types must be the 11 ported ones, found " + registered);
+        helper.assertTrue(registered == 12,
+                "thaumcraft-namespace particle types must be the 12 ported ones, found " + registered);
         helper.assertTrue(ModParticles.SPARCLE.get().codec() == TcSparkleOptions.MAP_CODEC,
                 "sparkle type must decode through TcSparkleOptions.MAP_CODEC");
         helper.assertTrue(ModParticles.BUBBLE.get().codec() == TcBubbleOptions.MAP_CODEC,
                 "bubble type must decode through TcBubbleOptions.MAP_CODEC");
+        helper.assertTrue(ModParticles.RUNE.get().codec() == TcRuneOptions.MAP_CODEC,
+                "rune type must decode through TcRuneOptions.MAP_CODEC");
         helper.succeed();
     }
 
@@ -429,6 +434,189 @@ public final class FxParticleGameTest {
                         FxParticleCounts.SETTING_ALL, RandomSource.create(9L)).toString()),
                 "a wisp burst must be reproducible from the same random seed");
         helper.succeed();
+    }
+
+    /**
+     * TC-M7-02-c-s-f3: the rune decal's spawn shape, line-for-line from
+     * {@code FXBlockRunes}'s constructor
+     * (reference/decompiled/thaumcraft/thaumcraft/client/fx/particles/FXBlockRunes.java:16-37)
+     * and the {@code ClientProxy.blockRunes} call site (ClientProxy.java:974-979).
+     */
+    @GameTest(template = "empty")
+    public static void runeDecalMatchesOriginalSenderGeometry(GameTestHelper helper) {
+        final double x = 10.0;
+        final double y = 60.0;
+        final double z = 10.0;
+        final ParticleSpawn spawn = TcFxPlans.blockRunes(x, y, z, 0.5F, 0.1F, 0.7F, 25, -0.03F,
+                RandomSource.create(20261108L));
+        final TcRuneOptions options = (TcRuneOptions) spawn.options();
+
+        helper.assertTrue(spawn.type() == ModParticles.RUNE.get(),
+                "the rune plan must use the registered rune particle type");
+        helper.assertTrue(spawn.x() == 10.5 && spawn.y() == 60.5 && spawn.z() == 10.5,
+                "ClientProxy.blockRunes:975 adds the block-centre 0.5 on every axis, got "
+                        + spawn.x() + "," + spawn.y() + "," + spawn.z());
+        helper.assertTrue(spawn.vx() == 0.0 && spawn.vy() == 0.0 && spawn.vz() == 0.0,
+                "FXBlockRunes.java:27 zeroes motionX/motionY/motionZ, got "
+                        + spawn.vx() + "," + spawn.vy() + "," + spawn.vz());
+        helper.assertTrue(options.lifetime() == 75,
+                "FXBlockRunes.java:28 sets maxSize = 3 * dur, so dur 25 is 75 ticks, got "
+                        + options.lifetime());
+        helper.assertTrue(options.gravity() == -0.03F,
+                "the matrix sender's gravity -0.03 must reach the particle through setGravity, got "
+                        + options.gravity());
+        helper.assertTrue(options.frame() >= 0 && options.frame() < TcFxPlans.RUNE_FRAMES,
+                "the runeIndex roll (int)(Math.random()*16 + 224) % 16 is a 0..15 sheet column, got "
+                        + options.frame());
+        helper.assertTrue(options.yaw() >= 0 && options.yaw() < 360 && options.yaw() % 90 == 0,
+                "FXBlockRunes.java:22 draws rotation as nextInt(4)*90, got " + options.yaw());
+        helper.assertTrue(within(options.scale(), 0.5, 1.5),
+                "FXBlockRunes.java:36 sets particleScale 1.0 + nextGaussian()*0.1, got " + options.scale());
+        helper.assertTrue(within(options.offsetU(), 0.0, TcFxPlans.RUNE_OFFSET_X_SPAN),
+                "FXBlockRunes.java:35 ofx is rand.nextFloat()*0.2, got " + options.offsetU());
+        helper.assertTrue(within(options.offsetV(), TcFxPlans.RUNE_OFFSET_Y_BASE, 0.3),
+                "FXBlockRunes.java:36 ofy is -0.3 + rand.nextFloat()*0.6, got " + options.offsetV());
+        helper.assertTrue(Math.abs(TcFxPlans.red(options.color()) - 0.5F) < 0.004F
+                        && Math.abs(TcFxPlans.green(options.color()) - 0.1F) < 0.004F
+                        && Math.abs(TcFxPlans.blue(options.color()) - 0.7F) < 0.004F,
+                "the ctor's particleRed/Green/Blue must survive the 1/255 quantisation of the packed "
+                        + "colour, got " + TcFxPlans.red(options.color()) + ","
+                        + TcFxPlans.green(options.color()) + "," + TcFxPlans.blue(options.color()));
+
+        // The ctor's red-channel quirk (FXBlockRunes.java:20-22): a zero RED is
+        // replaced by 1.0 BEFORE the colour is stored, so a black rune is red.
+        final TcRuneOptions zeroRed = (TcRuneOptions) TcFxPlans.blockRunes(x, y, z, 0.0F, 0.2F, 0.3F,
+                20, 0.0F, RandomSource.create(7L)).options();
+        helper.assertTrue(TcFxPlans.red(zeroRed.color()) == 1.0F,
+                "FXBlockRunes.java:20-22 replaces a zero red with 1.0, got "
+                        + TcFxPlans.red(zeroRed.color()));
+
+        // Draw order is part of the fidelity claim: the ctor's rolls run in
+        // statement order, so a seeded plan must reproduce exactly.
+        helper.assertTrue(spawn.equals(TcFxPlans.blockRunes(x, y, z, 0.5F, 0.1F, 0.7F, 25, -0.03F,
+                        RandomSource.create(20261108L))),
+                "a rune plan must be reproducible from the same random seed");
+
+        // The wire shape must survive the network the same way the payload does.
+        assertWireRoundTrip(helper, TcRuneOptions.STREAM_CODEC, options);
+        helper.succeed();
+    }
+
+    /**
+     * TC-M7-02-c-s-f3: the rune's render quad. The original's render chain is
+     * {@code glRotatef(rotation,0,1,0)} then {@code glRotatef(90,0,0,1)} then
+     * {@code glTranslated(ofx, ofy, -0.51)}
+     * (FXBlockRunes.java:44-46), which lands the quad on one of four
+     * AXIS-ALIGNED walls — no camera basis is involved, so the port keeps the
+     * geometry exact (the BD-16 camera-basis adaptation does not apply here).
+     */
+    @GameTest(template = "empty")
+    public static void runeQuadIsAnAxisAlignedWallDecal(GameTestHelper helper) {
+        final TcPlanarQuad front = TcPlanarQuad.runeQuad(0, 0.1F, 0.2F, 1.0F);
+        assertAxis(helper, front.u(), 0.0, 1.0, 0.0, "yaw 0: the sprite's up axis stays world +Y");
+        assertAxis(helper, front.v(), -1.0, 0.0, 0.0, "yaw 0: Rz(90) puts the sprite's right axis on -X");
+        assertAxis(helper, front.normal(), 0.0, 0.0, 1.0, "yaw 0: the decal faces +Z");
+        assertAxis(helper, front.offset(), -0.2, 0.1, -0.51,
+                "the ofx/ofy/-0.51 translate runs through the SAME rotation (FXBlockRunes.java:46)");
+
+        final TcPlanarQuad right = TcPlanarQuad.runeQuad(90, 0.0F, 0.0F, 1.0F);
+        assertAxis(helper, right.u(), 0.0, 1.0, 0.0, "yaw 90 keeps the sprite vertical");
+        assertAxis(helper, right.v(), 0.0, 0.0, 1.0, "yaw 90: Rz(90) then Ry(90) puts the sprite axis on +Z");
+        assertAxis(helper, right.normal(), 1.0, 0.0, 0.0, "yaw 90: the decal faces +X");
+
+        final TcPlanarQuad back = TcPlanarQuad.runeQuad(180, 0.0F, 0.0F, 1.0F);
+        assertAxis(helper, back.v(), 1.0, 0.0, 0.0, "yaw 180 mirrors the sprite axis");
+        assertAxis(helper, back.normal(), 0.0, 0.0, -1.0, "yaw 180: the decal faces -Z");
+
+        final TcPlanarQuad left = TcPlanarQuad.runeQuad(270, 0.0F, 0.0F, 1.0F);
+        assertAxis(helper, left.v(), 0.0, 0.0, -1.0, "yaw 270 mirrors the sprite axis");
+        assertAxis(helper, left.normal(), -1.0, 0.0, 0.0, "yaw 270: the decal faces -X");
+
+        // var12 = 0.3F * particleScale is the quad's FULL edge: the four
+        // vertices sit at +/-0.5*var12 (FXBlockRunes.java:52, 56-59).
+        helper.assertTrue(Math.abs(TcPlanarQuad.runeQuad(0, 0.0F, 0.0F, 1.0F).half() - 0.15) < 1e-9,
+                "half-extent must be 0.15 * particleScale, got " + front.half());
+        helper.assertTrue(Math.abs(TcPlanarQuad.runeQuad(0, 0.0F, 0.0F, 2.0F).half() - 0.3) < 1e-9,
+                "the half-extent scales with particleScale");
+        helper.succeed();
+    }
+
+    /**
+     * TC-M7-02-c-s-f3: the warding-stone sender. The original's
+     * {@code BlockCosmeticSolid.randomDisplayTick} meta-3 body
+     * (BlockCosmeticSolid.java:284-343) runs three branches with the counts
+     * {@code particleCount(2)} / {@code particleCount(3)} / one victim rune.
+     */
+    @GameTest(template = "empty")
+    public static void wardingStoneRuneBranchesMatchOriginalSender(GameTestHelper helper) {
+        final BlockPos pos = new BlockPos(12, 61, 12);
+
+        final List<ParticleSpawn> sky = TcFxPlans.wardingStoneRunes(pos, true, false, -1.0,
+                2, FxParticleCounts.SETTING_ALL, RandomSource.create(11L));
+        helper.assertTrue(sky.size() == 4,
+                "the sky branch runs particleCount(2), which is 2*2 = 4 runes on 'all', got " + sky.size());
+        for (ParticleSpawn spawn : sky) {
+            final TcRuneOptions o = (TcRuneOptions) spawn.options();
+            helper.assertTrue(spawn.x() == 12.5 && spawn.z() == 12.5,
+                    "the sender passes the block coords, so the rune centres on the block, got "
+                            + spawn.x() + "," + spawn.z());
+            helper.assertTrue(spawn.y() == 61.0 + 0.7 + 0.5,
+                    "BlockCosmeticSolid.java:296 raises the rune by y + 0.7, got " + spawn.y());
+            helper.assertTrue(o.lifetime() == 60, "the sky sender's dur 20 is 3*20 = 60 ticks, got "
+                    + o.lifetime());
+            helper.assertTrue(o.gravity() == -0.02F, "the sky sender's gravity is -0.02, got " + o.gravity());
+            helper.assertTrue(within(TcFxPlans.red(o.color()), 0.2, 0.6)
+                            && within(TcFxPlans.green(o.color()), 0.0, 0.3)
+                            && within(TcFxPlans.blue(o.color()), 0.8, 1.0),
+                    "the sky sender's colour is (0.2+rand*0.4, rand*0.3, 0.8+rand*0.2), got 0x"
+                            + Integer.toHexString(o.color()));
+        }
+
+        final List<ParticleSpawn> covered = TcFxPlans.wardingStoneRunes(pos, false, true, -1.0,
+                3, FxParticleCounts.SETTING_ALL, RandomSource.create(11L));
+        helper.assertTrue(covered.size() == 6,
+                "the covered branch runs particleCount(3) = 6 runes on 'all', got " + covered.size());
+        for (ParticleSpawn spawn : covered) {
+            final TcRuneOptions o = (TcRuneOptions) spawn.options();
+            helper.assertTrue(o.lifetime() == 72, "the covered sender's dur 24 is 72 ticks, got "
+                    + o.lifetime());
+            helper.assertTrue(within(TcFxPlans.red(o.color()), 0.9, 1.0)
+                            && within(TcFxPlans.green(o.color()), 0.0, 0.3)
+                            && within(TcFxPlans.blue(o.color()), 0.0, 0.3),
+                    "the covered sender's colour is (0.9+rand*0.1, rand*0.3, rand*0.3), got 0x"
+                            + Integer.toHexString(o.color()));
+        }
+
+        final List<ParticleSpawn> victim = TcFxPlans.wardingStoneRunes(pos, false, false, 1.8,
+                1, FxParticleCounts.SETTING_ALL, RandomSource.create(11L));
+        helper.assertTrue(victim.size() == 1,
+                "the entity branch breaks after the first living non-player, so exactly 1 rune, got "
+                        + victim.size());
+        final TcRuneOptions victimOptions = (TcRuneOptions) victim.get(0).options();
+        helper.assertTrue(victim.get(0).y() >= 61.0 + 0.6 + 0.5 && victim.get(0).y() <= 61.0 + 0.6 + 1.8 + 0.5,
+                "the victim rune rides the entity's eye height: y + 0.6 + rand*max(0.8, eyeHeight), got "
+                        + victim.get(0).y());
+        helper.assertTrue(victimOptions.gravity() == 0.0F,
+                "the victim sender's gravity is 0.0, got " + victimOptions.gravity());
+        helper.assertTrue(within(TcFxPlans.red(victimOptions.color()), 0.6, 1.0)
+                        && TcFxPlans.green(victimOptions.color()) == 0.0F,
+                "the victim sender's colour is (0.6+rand*0.4, 0.0, 0.3+rand*0.7), got 0x"
+                        + Integer.toHexString(victimOptions.color()));
+
+        // Minimal particles: the whole branch is gated away by particleCount.
+        helper.assertTrue(TcFxPlans.wardingStoneRunes(pos, true, false, -1.0, 2,
+                        FxParticleCounts.SETTING_MINIMAL, RandomSource.create(3L)).isEmpty(),
+                "the original's particleCount(2) is 0 on the minimal setting, so no rune may spawn");
+        helper.succeed();
+    }
+
+    /** Asserts a geometry axis vector against an expected unit vector. */
+    private static void assertAxis(final GameTestHelper helper, final double[] axis,
+            final double x, final double y, final double z, final String what) {
+        helper.assertTrue(Math.abs(axis[0] - x) < 1e-9 && Math.abs(axis[1] - y) < 1e-9
+                        && Math.abs(axis[2] - z) < 1e-9,
+                what + ": expected (" + x + "," + y + "," + z + "), got ("
+                        + axis[0] + "," + axis[1] + "," + axis[2] + ")");
     }
 
     private static <T> void assertWireRoundTrip(final GameTestHelper helper,
