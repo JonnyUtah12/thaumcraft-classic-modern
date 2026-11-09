@@ -6,6 +6,7 @@ import com.google.gson.JsonParser;
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.entities.golems.EntityGolemBase;
 import com.jonnyutah12.thaumcraftclassic.entities.golems.EnumGolemType;
+import com.jonnyutah12.thaumcraftclassic.entities.golems.GolemCoreTask;
 import com.jonnyutah12.thaumcraftclassic.entities.golems.GolemResearch;
 import com.jonnyutah12.thaumcraftclassic.items.golems.ItemGolemPlacer;
 import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
@@ -13,17 +14,21 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogGolems;
 import com.jonnyutah12.thaumcraftclassic.recipes.CrucibleRecipe;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
@@ -35,6 +40,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -187,6 +193,102 @@ public final class GolemContentGameTest {
         helper.assertTrue(stack.getCount() == 0,
                 "the placer stack is spent outside creative, got " + stack.getCount());
         helper.succeed();
+    }
+
+    /**
+     * TC-M6-08-s consolidation (t_17686882): the <b>placement</b> path installs the
+     * core's goals and sizes its inventory, not only {@code setup()}.
+     *
+     * <p>The original's {@code spawnCreature} calls {@code golem.setup(side)}
+     * immediately before {@code world.addEntity(golem)}
+     * ({@code reference/decompiled/thaumcraft/thaumcraft/common/entities/golems/ItemGolemPlacer.java}),
+     * and {@code setup(side)} is what runs {@code setupGolem()} (the per-core goal
+     * list) and {@code setupGolemInventory()} (the inventory/colour resize).</p>
+     *
+     * <p>This port's placer called only {@code applyMaterialTraits()} and deferred
+     * "goals and inventory" to TC-M6-08-s-b, whose probes drive {@code setup()}
+     * directly. Nothing drove the placer's half, so a golem placed in this session
+     * had NO goals and the constructor's single slot until its first save/load
+     * (BD-31 records only the load-path install). The assertion below is the wiring
+     * the lane owes; the fix is the original's own call.</p>
+     */
+    @GameTest(template = "empty")
+    public static void placerPlacementInstallsTheCoreGoals(final GameTestHelper helper) {
+        final var level = helper.getLevel();
+        final BlockPos clicked = helper.absolutePos(new BlockPos(1, 2, 1));
+        helper.setBlock(new BlockPos(1, 2, 1), Blocks.STONE);
+
+        final ItemStack stack = new ItemStack(CatalogGolems.ITEM_GOLEM_PLACER.get());
+        stack.set(ModDataComponents.ITEM_META.get(), EnumGolemType.IRON.ordinal());
+        final CompoundTag payload = new CompoundTag();
+        payload.putByte("core", (byte) 2); // GolemCoreTask id 2 = Gather
+        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(payload));
+
+        final Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        final UseOnContext context = new UseOnContext(level, player, InteractionHand.MAIN_HAND, stack,
+                new BlockHitResult(Vec3.atCenterOf(clicked), Direction.UP, clicked, false));
+        helper.assertTrue(stack.useOn(context).consumesAction(),
+                "placing a core-bearing golem consumes the interaction");
+
+        final List<EntityGolemBase> spawned = level.getEntitiesOfClass(EntityGolemBase.class,
+                new AABB(clicked).inflate(4.0));
+        helper.assertTrue(spawned.size() == 1, "exactly one golem is placed, got " + spawned.size());
+        final EntityGolemBase golem = spawned.get(0);
+        helper.assertTrue(golem.getCore() == 2,
+                "the placed golem carries the stack's core 2 (Gather), got " + golem.getCore());
+
+        final List<String> installed = installedGoalNames(golem);
+        helper.assertTrue(installed.contains("AIAvoidCreeperSwell"),
+                "the PLACEMENT path must install the goals: the original's spawnCreature calls "
+                        + "golem.setup(side) before world.addEntity(golem), and setup(side) runs "
+                        + "setupGolem(). A freshly placed core-2 golem carries " + installed.size()
+                        + " goals: " + installed);
+        final List<String> expected = expectedPlacementGoals(GolemCoreTask.byId(2));
+        helper.assertTrue(installed.equals(expected),
+                "a placed core-2 (Gather) golem's goals must be that core's table verbatim, "
+                        + "expected " + expected + ", got " + installed);
+        helper.assertTrue(golem.getInventory().inventory.length == 6,
+                "and setupGolemInventory() sized the inventory to the core's 6 slots (no Fire "
+                        + "upgrade), got " + golem.getInventory().inventory.length);
+        helper.succeed();
+    }
+
+    /** The simple class names of everything installed on both selectors, sorted. */
+    private static List<String> installedGoalNames(final EntityGolemBase golem) {
+        final List<String> names = new ArrayList<>();
+        for (final WrappedGoal goal : golem.goalSelector.getAvailableGoals()) {
+            names.add(goal.getGoal().getClass().getSimpleName());
+        }
+        for (final WrappedGoal goal : golem.targetSelector.getAvailableGoals()) {
+            names.add(goal.getGoal().getClass().getSimpleName());
+        }
+        Collections.sort(names);
+        return names;
+    }
+
+    /** The goals the port must install for one core: its own rows plus the common tail. */
+    private static List<String> expectedPlacementGoals(final GolemCoreTask task) {
+        final List<String> names = new ArrayList<>();
+        for (final String name : task.goalNames()) {
+            if (name.equals("AIFish")) {
+                continue; // gated on EntityGolemBobber (TC-M6-08-s-c)
+            }
+            names.add(modernGoalName(name));
+        }
+        for (final String name : GolemCoreTask.commonGoalNames()) {
+            names.add(modernGoalName(name));
+        }
+        Collections.sort(names);
+        return names;
+    }
+
+    /** The original's vanilla goal names mapped to the classes this port installs. */
+    private static String modernGoalName(final String originalName) {
+        return switch (originalName) {
+            case "EntityAIWatchClosest" -> "LookAtPlayerGoal";
+            case "EntityAILookIdle" -> "RandomLookAroundGoal";
+            default -> originalName;
+        };
     }
 
     /**

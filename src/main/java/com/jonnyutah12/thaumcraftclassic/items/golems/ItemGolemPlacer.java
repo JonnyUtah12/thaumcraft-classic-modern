@@ -51,10 +51,11 @@ import java.util.Arrays;
  *       {@code minecraft:custom_data} component;</li>
  *   <li>random yaw, {@code func_110171_b(x, y, z, 32)} home area
  *       ({@code Mob.restrictTo}), the stored core / upgrades / decoration
- *       transferred, {@code setup(side)} (the attribute half is
- *       {@link EntityGolemBase#applyMaterialTraits()}; goals and inventory are
- *       TC-M6-08-s-b), spawn, owner, custom name, and the stack consumed
- *       outside creative.</li>
+ *       transferred, {@code setup(side)} — setHomeFacing + {@link
+ *       EntityGolemBase#applyMaterialTraits()} + {@code setupGolem()} (the per-core
+ *       goals) + {@code setupGolemInventory()} (the inventory), before the entity is
+ *       added, exactly where the original calls it — then spawn, owner, custom name,
+ *       and the stack consumed outside creative.</li>
  * </ol>
  *
  * <p><b>Deferred, with their cards:</b> the marker list transfer
@@ -184,10 +185,16 @@ public class ItemGolemPlacer extends Item {
                 golem.setDecoration(data.copyTag().getString("deco"));
             }
         }
-        // Original golem.setup(side) -> setupGolem() + setupGolemInventory():
-        // the attribute half is this card's, the goal/inventory halves are
-        // TC-M6-08-s-b.
-        golem.applyMaterialTraits();
+        // Original spawnCreature: `golem.setup(side)` runs immediately BEFORE
+        // world.addEntity(golem) (reference/decompiled/thaumcraft/thaumcraft/common/
+        // entities/golems/ItemGolemPlacer.java). setup(side) is setHomeFacing +
+        // applyMaterialTraits + setupGolem() (the per-core goal list, TC-M6-08-s-b2)
+        // + setupGolemInventory() (the inventory/colour sizing, TC-M6-08-s-b). This
+        // file used to call applyMaterialTraits() alone and leave the goal/inventory
+        // halves to those cards, whose probes drove setup() directly — so a golem
+        // placed in this session had no goals and one inventory slot until its first
+        // save/load. The original installs at placement; so does this.
+        golem.setup(side);
         level.addFreshEntity(golem);
         golem.setOwnerName(player.getGameProfile().getName());
         if (stack.has(DataComponents.CUSTOM_NAME)) {
