@@ -105,6 +105,33 @@ without the evidence for its stages.
   (x, z) (`ZombieMobGameTest.MOB_CELL = (0,3,0)`), and assert the cell is entity-ticking BEFORE
   reading a per-tick counter, so a harness/layout change reports the precondition by name instead of
   arriving as a rate that cannot be measured.
+- **A goal left on a live selector is armed by the ENGINE, and a route gate closes off the ground.**
+  `Mob.serverAiStep` ticks the goal selector and `GoalSelector#tick` starts a goal on the
+  `(tickCount + id) % 2` parity tick (`GoalSelector.java:74-105`). A probe that hand-drives a goal's
+  `canUse` measures its registration priority and then takes the goal OFF the selector: left on it,
+  the engine arms it first — on a parity the entity id decides, so the loss is a rate and not a
+  constant — and the goal's own `start()` movement is the state the probe goes on to sample. The
+  paired wall is the ground: `GroundPathNavigation#canUpdatePath` is
+  `onGround || isInLiquid || isPassenger` (`GroundPathNavigation.java:40-43`) and
+  `PathNavigation#createPath` answers `null` while it is false (`:136`); that same method answers
+  `null` when the target's chunk is not loaded (`:44-49`). Both walls print as the same "no route"
+  line, so a gate that reads a route asserts BOTH preconditions where it can read them and names
+  them in its own message. Measured on this tree: `combat_golemFleesOnlyACreeperWhoseFuseIsLit` went
+  red on ~1 leg in 5 (`-Ptc.noCurios`) with `nodes=null, lastNode=-` across all 480 `canUse` draws,
+  and the standing hypothesis — the flee spot reaching a chunk the harness does not vouch — measured
+  FALSE: a sweep of the flee domain on the phase ticks of 8 legs found every chunk column loaded
+  (36 of 36) on every sample, while `onGround=false` closed 10 of 10 sampled flee routes on all 8
+  airborne samples and `onGround=true` left 10 of 10 open on all 18 grounded samples. The engine had
+  armed the goal on the tick after the fuse (about one entity id in two) and the goal's own
+  `motionY` 0.3 hop (`AIAvoidCreeperSwell.java:74-79`) put the golem airborne and outside its own
+  detection box. Fix the PRECONDITION — goal off the selector, preconditions asserted at the fuse
+  tick with the `align16` and chunk facts — and keep the detector loud: the mutation that puts the
+  golem airborne at the fuse tick turns the probe red naming `canUpdatePath`/`onGround`, and the
+  mutation that holds it airborne through the window reproduces the original `nodes=null` red
+  verbatim, now reported with `onGround=false, canUpdatePath=false, loaded=true,
+  fleeDomainUnloaded=0`. Tick order decides mutations: `onGround` is recomputed in the physics step
+  at the END of a tick, so a `setDeltaMovement` applied in the same tick as the probe's draws is
+  invisible to those draws — an airborne mutation has to be established one tick early to be seen.
 - A `@GameTest` body that touches a block entity must not park the server
   thread. The game test server shuts down by unloading chunks
   (`LevelChunk.clearAllBlockEntities` → `BlockEntity.setRemoved`), and a
