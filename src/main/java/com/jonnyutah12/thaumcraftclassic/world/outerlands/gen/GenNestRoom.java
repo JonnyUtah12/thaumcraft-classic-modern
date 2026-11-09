@@ -24,8 +24,10 @@ import static com.jonnyutah12.thaumcraftclassic.world.outerlands.gen.GenCommon.s
  * {@code thaumcraft:worldgen.outer_lands_procedural_maze}).
  *
  * <p>Original: {@code thaumcraft.common.lib.world.dim.GenNestRoom.generateRoom}
- * (reference {@code GenNestRoom.java:10-131}), the {@code GenMaze} case 7
- * (reference {@code MazeGenerator.java:245}). Loop bounds, the crust-code
+ * (reference {@code GenNestRoom.java:10-131}), the builder switch's case 7
+ * (reference {@code MazeHandler.java:155-156} — the feature→builder switch is
+ * {@code MazeHandler.generateEldritch} at {@code MazeHandler.java:142-169}).
+ * Loop bounds, the crust-code
  * placements, the two ceiling rolls, the two stacked platform blobs, the
  * connection depth and the 11x11 loot sweep are verbatim from that method.</p>
  *

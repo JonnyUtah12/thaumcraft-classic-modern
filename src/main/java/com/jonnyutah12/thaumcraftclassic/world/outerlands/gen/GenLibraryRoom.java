@@ -28,8 +28,10 @@ import static com.jonnyutah12.thaumcraftclassic.world.outerlands.gen.GenCommon.s
  * {@code thaumcraft:worldgen.outer_lands_procedural_maze}).
  *
  * <p>Original: {@code thaumcraft.common.lib.world.dim.GenLibraryRoom.generateRoom}
- * (reference {@code GenLibraryRoom.java:9-103}), the {@code GenMaze} case 8
- * (reference {@code MazeGenerator.java:248}). The 13-deep shell, the void
+ * (reference {@code GenLibraryRoom.java:9-103}), the builder switch's case 8
+ * (reference {@code MazeHandler.java:158-159} — the feature→builder switch is
+ * {@code MazeHandler.generateEldritch} at {@code MazeHandler.java:142-169}).
+ * The 13-deep shell, the void
  * lining with its door gaps, the ancient-stone lining, the four corner pads,
  * the twenty stair runs of code 10/11 around the walls, the eight stack
  * columns and the connection depth are verbatim from that method.</p>

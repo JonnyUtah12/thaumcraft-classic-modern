@@ -39,12 +39,15 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.dimension.LevelStem;
 import net.minecraft.world.level.levelgen.FlatLevelSource;
@@ -657,12 +660,44 @@ public final class OuterLandsGameTest {
     @GameTest(template = "empty")
     public static void mazeCellBuildsKeyRoom(final GameTestHelper helper) {
         final ServerLevel outer = build(helper);
-        final int cx = 70;
-        final int cz = 70;
+        // Measured harness constraint (it cost two runs, so it is spelled out):
+        // this probe asserts on the item entity the room drops, and 1.21.1
+        // answers an entity census from the *visible* store
+        // (Level.getEntitiesOfClass -> LevelEntityGetterAdapter ->
+        // visibleEntityStorage), not from PersistentEntitySectionManager's
+        // section map. A section only becomes visible when its chunk is in a
+        // ticking zone, and the harness buys that for a template's own chunks
+        // (the game-test framework tickets them at level 33, over the ticking
+        // level 31). A bare far-away maze cell — the shape every other probe in
+        // this file uses, and the right shape for block-only assertions — is
+        // NOT ticketed: the room builds, the blocks read back, the tablet is
+        // accepted by addFreshEntity and stored in an INACCESSIBLE section, and
+        // the census answers zero (measured: "the cell's entity section
+        // loaded: false" while the chunk reported minecraft:full/LevelChunk).
+        // So this probe builds its room in the cell that contains its own
+        // template: the cell is 16x16, exactly one chunk, and the template
+        // ("empty") sits at ROOM_Y-110, far below the room's floor, so nothing
+        // collides. Each template has its own position, so the cells stay
+        // distinct across the parallel probe batches (the maze map is shared).
+        final int cx = helper.absolutePos(new BlockPos(0, 0, 0)).getX() >> 4;
+        final int cz = helper.absolutePos(new BlockPos(0, 0, 0)).getZ() >> 4;
         final int x = cx * 16;
         final int z = cz * 16;
         final int y = OuterLands.ROOM_Y;
-        MazeHandler.putToHashMap(outer, new CellLoc(cx, cz), new Cell(KEY_ROOM_CELL));
+        // Keep the cell's chunk FULL for the whole probe: the ticket above makes
+        // it loaded and ticking, and the mandatory request is what the maze's own
+        // chunk-generation caller relies on in a real outer-lands game.
+        final ChunkAccess full = outer.getChunkSource().getChunk(cx, cz, ChunkStatus.FULL, true);
+        helper.assertTrue(full != null && full.getPersistedStatus() == ChunkStatus.FULL,
+                "the harness could not load the key-room cell chunk FULL (got "
+                        + (full == null ? "null" : full.getPersistedStatus()) + ")");
+        // The cell carries a west door on top of the feature-6 code: the room's
+        // lining gate clauses (ref L35-38) only open a door on a flagged side,
+        // and the probe asserts the gap below, so the flag is part of the shape
+        // under test. The parent's sweep probe keeps its own flagless cells.
+        final Cell keyCell = new Cell(KEY_ROOM_CELL);
+        keyCell.west = true;
+        MazeHandler.putToHashMap(outer, new CellLoc(cx, cz), keyCell);
 
         // GenKeyRoom's escort runs through the EldritchMobHost seam (the
         // guardians are TC-M6-06). The probe claims the seam for the duration
@@ -685,25 +720,61 @@ public final class OuterLandsGameTest {
         helper.assertTrue(built, "a feature-6 cell did not build");
         helper.assertTrue(MazeHandler.data(outer).isBuilt(cx, cz), "the built gate did not mark the key-room cell");
 
-        // The bedrock shell: ref L21-24 runs c over 1..10 and places while
-        // c < 10, so the shell's lowest block sits one above the room floor
-        // (the nest room's shell starts at the floor — the two rooms differ
-        // here, and the probe pins each). The interior is the eldritch void
-        // (code 8, ref L25-27) and the (3,*,3) corner is the purple stair
-        // (code 3, ref L35).
+        // The shell (ref L21-29): code 1 (BEDROCK) on the boundary ring, c over
+        // 0..12 — thirteen deep, one above the room floor at the bottom, one
+        // above the lining's top (the nest room's shell is 11 deep, ref
+        // GenNestRoom.java:16; the two rooms differ and the probe pins each).
         helper.assertTrue(outer.getBlockState(new BlockPos(x + 1, y + 1, z + 1)).is(Blocks.BEDROCK),
                 "the key room's bedrock shell is missing at its lowest corner");
-        helper.assertTrue(isVoid(outer.getBlockState(new BlockPos(x + 2, y + 1, z + 2))),
-                "the key room's eldritch void lining (code 8) is missing");
-        helper.assertTrue(outer.getBlockState(new BlockPos(x + 3, y + 1, z + 3))
-                        .is(CatalogDecorativeBlocks.BLOCK_STAIRS_ELDRITCH.get()),
-                "the key room's purple stair (code 3) is missing at (x+3,y+1,z+3)");
-        // The floor (ref L51-53) is code 2 (cosmetic solid, stone case); the
-        // 1-in-25 decoration queue may have turned it into crusted stone or an
-        // eldritch pedestal (GenCommon code 2 case), so both are the reference.
+        helper.assertTrue(outer.getBlockState(new BlockPos(x + 1, y + 12, z + 15)).is(Blocks.BEDROCK),
+                "the key room's shell does not reach c = 12 (ref L23)");
+        // The void lining (ref L31-43): code 8 on ring 2, cxx over 1..11.
+        // Every probe point below is chosen where the room's own legs do NOT
+        // overwrite it: the floor/ceiling trio (ref L63-68) re-codes y+1 and
+        // y+11 across the whole a/b 2..14 span, and the pyramids re-code the
+        // lower rings, so mid-height on a sealed wall is the only honest place
+        // to read the lining. The east wall (cell.east false → the ref L36
+        // clause seals it) at (14, 8, 8) has q = 0, so code 8 survives.
+        helper.assertTrue(isVoid(outer.getBlockState(new BlockPos(x + 14, y + 8, z + 8))),
+                "the key room's eldritch void lining (code 8, ref L39) is missing at (x+14,y+8,z+8)");
+        // The door gaps (ref L35-38): the west door opens the 4..11 span below
+        // cxx 10 and leaves the b = 3 corner sealed. (2, 2, 8) is air: the gate
+        // clause skips it (west open, cxx < 10) and q = 0 leaves the pyramids
+        // out; (2, 5, 3) is sealed by the b <= 3 clause and sits above the
+        // (2,3) pyramid's q-1 = 4 steps.
+        helper.assertTrue(outer.isEmptyBlock(new BlockPos(x + 2, y + 2, z + 8)),
+                "the open west side leaves no door gap in the lining (ref L35)");
+        helper.assertTrue(isVoid(outer.getBlockState(new BlockPos(x + 2, y + 5, z + 3))),
+                "the lining's b = 3 corner is open on a west door (ref L35)");
+        // The ring-3 lining (ref L45-59): the core window — the a/b 8 cross for
+        // cxxx 4..8 — is STONE_NOSPAWN (code 19, ref L51) and the rest of the
+        // ring is ROCK (code 18, ref L54). The (a==8 && b==8 && cxx==6) clause
+        // at ref L50 can never fire: the ring requires a==3||13||b==3||13.
+        helper.assertTrue(isRock(outer.getBlockState(new BlockPos(x + 8, y + 2, z + 3))),
+                "the key room's ring-3 lining (code 18 ROCK, ref L54) is missing at (x+8,y+2,z+3)");
+        helper.assertTrue(isNoSpawn(outer.getBlockState(new BlockPos(x + 8, y + 5, z + 3))),
+                "the key room's core window (code 19 STONE_NOSPAWN, ref L51) is missing at (x+8,y+5,z+3)");
+        // The floor/ceiling trio (ref L63-68) is code 2 across the 2..14 span;
+        // the 1-in-25 queue (GenCommon code 2 case) may have crusted it, so
+        // isFloor accepts the family.
         helper.assertTrue(isFloor(outer.getBlockState(new BlockPos(x + 8, y + 1, z + 8))),
-                "the key room's floor under the pedestal is missing (got "
+                "the key room's floor under the pedestal is missing (ref L65, got "
                         + outer.getBlockState(new BlockPos(x + 8, y + 1, z + 8)).getBlock() + ")");
+        helper.assertTrue(isFloor(outer.getBlockState(new BlockPos(x + 8, y + 11, z + 8))),
+                "the key room's ceiling (ref L68) is missing at (x+8,y+11,z+8)");
+        // The two pyramids off q = min(|8-a|, |8-b|): the floor rises q-1 steps
+        // (ref L69-75) and the ceiling drops q (ref L77-83), so (8,8) stays
+        // open and the cap under the tablet is not buried.
+        helper.assertTrue(isFloor(outer.getBlockState(new BlockPos(x + 5, y + 3, z + 5))),
+                "the floor pyramid stops short of q-1 = 2 steps (ref L73)");
+        helper.assertTrue(outer.isEmptyBlock(new BlockPos(x + 5, y + 4, z + 5)),
+                "the floor pyramid rises past q-1 (ref L72: g < q - 1)");
+        helper.assertTrue(outer.isEmptyBlock(new BlockPos(x + 8, y + 4, z + 8)),
+                "the (8,8) column is not open, so the cap and the tablet are buried (q = 0, ref L69-83)");
+        // The four directional stair runs at y+2 (ref L87-92).
+        helper.assertTrue(outer.getBlockState(new BlockPos(x + 6, y + 2, z + 4))
+                        .is(CatalogDecorativeBlocks.BLOCK_STAIRS_ELDRITCH.get()),
+                "the key room's stair run (code 10, ref L88) is missing at (x+6,y+2,z+4)");
 
         // The cap pedestal: ref L95 places blockEldritch meta 3 at (x+8,y+2,z+8).
         final BlockPos pedestal = new BlockPos(x + 8, y + 2, z + 8);
@@ -712,32 +783,33 @@ public final class OuterLandsGameTest {
                                 == EldritchRealmValues.ELDRITCH_CAP,
                 "the eldritch cap (meta 3) is not on the pedestal " + pedestal + " (got "
                         + outer.getBlockState(pedestal) + ")");
-        // Ref L65-70: the room's core above the pedestal is void (code 8).
-        helper.assertTrue(isVoid(outer.getBlockState(new BlockPos(x + 7, y + 5, z + 7))),
-                "the key room's inner void (ref L65-70) is missing above the pedestal");
 
         // The Runed Tablet (ref L96-100): eldritch object meta 2, on top of the
         // cap, never despawning — the vanilla stand-in for EntityPermanentItem.
         // The harness level is shared across the parallel probe batches, so the
         // census filters to the item the room drops (an eldritch object) and
-        // reports the rest, rather than trusting a raw item count.
-        final List<ItemEntity> all = outer.getEntitiesOfClass(ItemEntity.class, cellBox(cx, cz));
+        // reports the rest, rather than trusting a raw item count; the column
+        // covers the level's build height because a dropped tablet falls.
+        final List<ItemEntity> all = outer.getEntitiesOfClass(ItemEntity.class, cellColumn(outer, cx, cz));
         final List<ItemEntity> drops = all.stream()
                 .filter(e -> e.getItem().getItem() instanceof ItemEldritchObject).toList();
         helper.assertTrue(drops.size() == 1,
-                "the key room's cell holds " + drops.size() + " eldritch objects (" + all.size()
-                        + " item entities in the window); ref L97 drops one tablet");
+                "the key room's cell column holds " + drops.size() + " eldritch objects (" + all.size()
+                        + " item entities in the column, cell chunk " + full.getPersistedStatus() + "/"
+                        + full.getClass().getSimpleName() + ", the cell's entity section loaded: "
+                        + outer.areEntitiesLoaded(ChunkPos.asLong(cx, cz)) + "); ref L96 drops one tablet"
+                        + " on the cap");
         if (drops.isEmpty()) {
             helper.fail("no tablet on the pedestal");
             return;
         }
         final ItemEntity tablet = drops.get(0);
         helper.assertTrue(ItemEldritchObject.storedMeta(tablet.getItem()) == EldritchRealmValues.OBJECT_TABLET,
-                "the pedestal item is not the Runed Tablet (meta 2, ref L98)");
+                "the pedestal item is not the Runed Tablet (meta 2, ref L96)");
         helper.assertTrue(tablet.blockPosition().equals(pedestal.above()),
-                "the tablet is not on top of the cap (ref L97: y + 3.5)");
+                "the tablet is not on top of the cap (ref L96: y + 3.5)");
         helper.assertTrue(tablet.getAge() < 0,
-                "the tablet may despawn; the original's EntityPermanentItem never does (L23-25)");
+                "the tablet may despawn; the original's EntityPermanentItem never does (L24-28)");
 
         // The escort (ref L101-116): zz = 2 + (hard ? 2 : normal ? 1 : 0)
         // guardians, each at x + 8.5 + [1..3]*[-1..1] whole blocks, z likewise,
@@ -750,7 +822,7 @@ public final class OuterLandsGameTest {
         for (final BlockPos g : guardians) {
             helper.assertTrue(g.getX() >= x + 5 && g.getX() <= x + 11 && g.getY() == y + 2
                             && g.getZ() >= z + 5 && g.getZ() <= z + 11,
-                    "the guardian spot " + g + " is outside ref L107-108's 8.5 ± [1,3] box");
+                    "the guardian spot " + g + " is outside ref L105-108's 8.5 ± [1,3] box");
         }
         helper.assertTrue(GenCommon.DECORATED_BLOCKS.isEmpty(),
                 "processDecorations left " + GenCommon.DECORATED_BLOCKS.size() + " decorations queued");
@@ -1011,6 +1083,18 @@ public final class OuterLandsGameTest {
         return state.is(CatalogEldritchRealm.BLOCK_ELDRITCH_NOTHING.get());
     }
 
+    /** maze code 18 (ROCK) — blockCosmeticSolid, the ancient-rock variant. */
+    private static boolean isRock(final BlockState state) {
+        return state.is(CatalogDecorativeBlocks.BLOCK_COSMETIC_SOLID.get())
+                && state.getValue(BlockCosmeticSolid.VARIANT) == BlockCosmeticSolid.VARIANT_ANCIENT_ROCK;
+    }
+
+    /** maze code 19 (STONE_NOSPAWN) — blockCosmeticSolid, the ancient-stone-2 variant. */
+    private static boolean isNoSpawn(final BlockState state) {
+        return state.is(CatalogDecorativeBlocks.BLOCK_COSMETIC_SOLID.get())
+                && state.getValue(BlockCosmeticSolid.VARIANT) == BlockCosmeticSolid.VARIANT_ANCIENT_STONE_2;
+    }
+
     /** The trapped stone (blockEldritch meta 10, maze code 20 / STONE_TRAPPED). */
     private static boolean isTrap(final BlockState state) {
         return state.is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())
@@ -1043,6 +1127,17 @@ public final class OuterLandsGameTest {
     /** The probe's own cell window — the harness shares one level across probes. */
     private static AABB cellBox(final int cx, final int cz) {
         return new AABB(cx * 16, OuterLands.ROOM_Y - 8, cz * 16, cx * 16 + 16, OuterLands.ROOM_Y + 24, cz * 16 + 16);
+    }
+
+    /**
+     * The probe's cell column over the build height — a dropped tablet may fall.
+     * The bounds come from the level: 1.21.1's entity query bails (with a logged
+     * warning and an empty answer) when a scan box leaves the level's section
+     * range, so a hardcoded -64..320 is a trap on a level with a floor above it.
+     */
+    private static AABB cellColumn(final ServerLevel level, final int cx, final int cz) {
+        return new AABB(cx * 16, level.getMinBuildHeight(), cz * 16, cx * 16 + 16, level.getMaxBuildHeight(),
+                cz * 16 + 16);
     }
 
     private static int countInCell(final ServerLevel level, final int cx, final int cz, final int yFrom,
