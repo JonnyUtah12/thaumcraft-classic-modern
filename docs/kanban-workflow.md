@@ -72,6 +72,14 @@ card in its javadoc. The cost was four dead runs for work that was already on
   unlink, so any child gated on a terminal card is permanently unreachable and
   still shows as ordinary blocked work. Check a parent's status before relying on
   an edge to drain, and never gate new work on a terminal card.
+- **Retiring a card strands its live children.** The rule above says not to *gate*
+  new work on a terminal card, but nothing re-homes the children that already
+  exist — they stay `blocked` while the dispatcher keeps promising a retry.
+  Measured 2026-11-09: a split child of an archived card burned two `7200 s`
+  wall-clock runs, then sat unreachable while its own uncommitted work had already
+  been replayed onto `main` and was running there. When you archive or retire a
+  card, **re-file or retire its live children in the same breath**, and point each
+  at the commit that carries the work so the WIP is not lost from the board's view.
 
 ## `done` is not `landed`
 
