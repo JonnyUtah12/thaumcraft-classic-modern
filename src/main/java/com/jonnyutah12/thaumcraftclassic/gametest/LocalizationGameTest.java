@@ -111,7 +111,10 @@ public final class LocalizationGameTest {
             Map.entry("tc.handmirrorlinkedto", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorlinked", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorerror", "ItemHandMirror link message"),
-            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"));
+            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"),
+            Map.entry("death.attack.tentacle",
+                    "vanilla death message for damage type thaumcraft:tentacle "
+                            + "(DamageType messageId, dealt by EntityTaintacle:182)"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always

@@ -39,7 +39,13 @@ class LocalizationFileTest {
     /** 1.21.1 key conventions for the content this mod ships. */
     private static final List<String> CURRENT_PREFIXES = List.of(
             "item.thaumcraft.", "block.thaumcraft.", "container.thaumcraft.",
-            "entity.thaumcraft.", "itemGroup.thaumcraft.");
+            "entity.thaumcraft.", "itemGroup.thaumcraft.",
+            // TC-M6-06-s-e-ii: the damage-type death-message family. 1.21.1 builds
+            // "death.attack.<message_id>" from the DamageType row, so the shipped
+            // data/thaumcraft/damage_type/tentacle.json (message_id "tentacle")
+            // needs the original's string at exactly this shape
+            // (reference/assets/thaumcraft/lang/en_US.lang:683).
+            "death.attack.");
 
     /**
      * Keys the shipped code uses with the original 1.7.10 key shape, kept
@@ -51,7 +57,11 @@ class LocalizationFileTest {
             "item.ItemAmuletVis.text", "item.capacity.text",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
             "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror",
-            "tc.researcherror");
+            "tc.researcherror",
+            // Not a Component.translatable call site: vanilla assembles this key
+            // from DamageType#messageId, and the taintacle family is what deals
+            // thaumcraft:tentacle (EntityTaintacle.java:182).
+            "death.attack.tentacle");
 
     /** Registry-derived key shape: lower-case id plus an optional meta/tooltip suffix. */
     private static final Pattern KEY_SHAPE =
