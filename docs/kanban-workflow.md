@@ -55,6 +55,29 @@ requirement (evidence in the completion summary) rather than a column.
   the prescriptive one finished. It removes both this repo's most expensive
   failure mode (fabricated class names, D-017) and the cost of re-discovery.
 
+## `done` is not `landed`
+
+A card reaching `done` means its worker finished and pushed. It does **not** mean
+its work is on `main`. Measured 2026-11-09: **58 local branches carry commits
+ahead of `origin/main`** (plus 11 remote-only refs with no local branch) against
+**137 `done` cards** — roughly half the finished work is unlanded, and the
+pattern has produced a `done` parent whose `done` child is *also* unlanded.
+
+- A `done` card with a **pushed, unmerged** branch is an **open** item. It needs
+  a named consolidation owner — an existing landing card where one exists, not a
+  new card per discovery.
+- `git merge-base --is-ancestor <tip> origin/main` is the only test of landed. A
+  branch's own green CI is **not** evidence: it is green against its own base,
+  which may be 80–90 commits stale.
+- Enumerate from `git ls-remote origin 'refs/heads/*'`, **not** `git branch` —
+  remote-only heads are invisible to `git branch` by construction.
+- Detached-HEAD worktrees always read as unpushed (`refs/heads/HEAD` cannot
+  exist). Test reachability, never a branch name.
+- **Do not prune worktrees until the unlanded inventory is captured.** A
+  stale-looking worktree may hold the only copy of uncommitted work.
+- **Land on green, never on red.** A landing whose baseline is red cannot
+  attribute its own failures; that is how `main` stayed red unnoticed.
+
 ## A D-012 exhaustion makes its worktree a salvage site
 
 When a card is blocked for `Iteration budget exhausted (150/150)` — `consecutive_failures=2`,
