@@ -55,6 +55,24 @@ requirement (evidence in the completion summary) rather than a column.
   the prescriptive one finished. It removes both this repo's most expensive
   failure mode (fabricated class names, D-017) and the cost of re-discovery.
 
+## One milestone code, one live card
+
+A duplicated card code makes two workers do one job. Measured 2026-11-09: two
+live cards both carried `TC-M3-04-s-iii` — one burned `150/150` twice (plus two
+`7200 s` wall-clock runs on its split child) re-authoring files that the other
+had already landed, with the landed class eventually citing its own superseding
+card in its javadoc. The cost was four dead runs for work that was already on
+`main`.
+
+- Before filing, **grep the board for the code**, not only for the title. The
+  duplicate here had a different title and a different card id.
+- When a scope is re-filed, **retire the original in the same breath** — point it
+  at the card that supersedes it. An un-retired original reads as live work.
+- A card that is `done` or `archived` **cannot be a parent**: the toolset has no
+  unlink, so any child gated on a terminal card is permanently unreachable and
+  still shows as ordinary blocked work. Check a parent's status before relying on
+  an edge to drain, and never gate new work on a terminal card.
+
 ## `done` is not `landed`
 
 A card reaching `done` means its worker finished and pushed. It does **not** mean
