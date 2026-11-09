@@ -1,14 +1,22 @@
 package com.jonnyutah12.thaumcraftclassic.network;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
+import com.jonnyutah12.thaumcraftclassic.aspect.AspectCombinations;
+import com.jonnyutah12.thaumcraftclassic.aspect.AspectKnowledge;
+import com.jonnyutah12.thaumcraftclassic.menus.ResearchNoteMenu;
 import com.jonnyutah12.thaumcraftclassic.network.payload.AspectCombinationToServerPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.AspectPlaceToServerPayload;
+import com.jonnyutah12.thaumcraftclassic.network.payload.AspectPoolPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.NotePayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.PlayerCompleteToServerPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.ScannedToServerPayload;
+import com.jonnyutah12.thaumcraftclassic.player.ModAttachments;
+import com.jonnyutah12.thaumcraftclassic.player.PlayerKnowledgeData;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchManager;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 
 /**
@@ -32,16 +40,74 @@ public final class ServerNetworkHooks {
                 payload.scanType(), payload.scannedId(), payload.data());
     }
 
-    /** TODO(M4 research table): aspect combination in the research table, per original PacketAspectCombinationToServer. */
+    /**
+     * TC-M4-01: aspect combination in the research table, per original
+     * {@code PacketAspectCombinationToServer.onMessage}. The player-identity
+     * and world gates of the original ride the payload context (NeoForge
+     * delivers the handler with the sending connection's player). The
+     * tile-bonus branch ({@code TileResearchTable.bonusAspects}) belongs to
+     * the research-table tile card; a bonus claim from the client that finds
+     * an empty pool therefore pays nothing, exactly as the original does at a
+     * tile whose bonus pool is empty.
+     */
     static void combineAspects(final AspectCombinationToServerPayload payload, final Player player) {
-        LOGGER.debug("aspect combination from {} at {}: {} + {}", player.getGameProfile().getName(),
-                payload.tablePos(), payload.aspect1(), payload.aspect2());
+        if (!(player instanceof ServerPlayer serverPlayer)) {
+            return;
+        }
+        final Aspect aspect1 = Aspect.getAspect(payload.aspect1());
+        final Aspect aspect2 = Aspect.getAspect(payload.aspect2());
+        if (aspect1 == null || aspect2 == null) {
+            return;
+        }
+        final String tag1 = aspect1.getTag();
+        final String tag2 = aspect2.getTag();
+        PlayerKnowledgeData knowledge = serverPlayer.getData(ModAttachments.PLAYER_KNOWLEDGE);
+        final int pool1 = knowledge.aspectAmount(tag1);
+        final int pool2 = knowledge.aspectAmount(tag2);
+        if (!((pool1 > 0 || payload.bonus1()) && (pool2 > 0 || payload.bonus2()))) {
+            return;
+        }
+        final Aspect combo = AspectCombinations.getCombinationResult(aspect1, aspect2);
+        if (pool1 > 0 || !payload.bonus1()) {
+            final PlayerKnowledgeData paid = knowledge.withAspectPoolAdded(tag1, -1);
+            if (paid != knowledge) {
+                knowledge = paid;
+                serverPlayer.setData(ModAttachments.PLAYER_KNOWLEDGE, knowledge);
+            }
+            PacketDistributor.sendToPlayer(serverPlayer,
+                    new AspectPoolPayload(tag1, 0, knowledge.aspectAmount(tag1)));
+        }
+        if (pool2 > 0 || !payload.bonus2()) {
+            final PlayerKnowledgeData paid = knowledge.withAspectPoolAdded(tag2, -1);
+            if (paid != knowledge) {
+                knowledge = paid;
+                serverPlayer.setData(ModAttachments.PLAYER_KNOWLEDGE, knowledge);
+            }
+            PacketDistributor.sendToPlayer(serverPlayer,
+                    new AspectPoolPayload(tag2, 0, knowledge.aspectAmount(tag2)));
+        }
+        if (combo != null) {
+            AspectKnowledge.checkAndSyncAspectKnowledge(serverPlayer, combo, 1);
+        }
+        // Original ResearchManager.scheduleSave: the port's attachment
+        // autosaves with the player (BD-04).
     }
 
-    /** TODO(M4 research table): place aspect on the research table grid, per original PacketAspectPlaceToServer. */
+    /**
+     * TC-M3-04-s-iii: the hex-grid write. The original's packet routed to the
+     * {@code TileResearchTable} at the packet's position; this port routes to
+     * the open research-note menu, which owns the grid (the tile-backed
+     * research table ships on its own card).
+     */
     static void placeAspect(final AspectPlaceToServerPayload payload, final Player player) {
-        LOGGER.debug("aspect place from {} at {} ({},{}): {}", player.getGameProfile().getName(),
-                payload.tablePos(), payload.q(), payload.r(), payload.aspectTag().orElse("(none)"));
+        if (player instanceof ServerPlayer serverPlayer
+                && serverPlayer.containerMenu instanceof ResearchNoteMenu menu) {
+            menu.placeAspect(payload.q(), payload.r(), payload.aspectTag().orElse(null), serverPlayer);
+            return;
+        }
+        LOGGER.debug("aspect place from {} at {} ({},{}): {} (no research-note menu open)",
+                player.getGameProfile().getName(), payload.tablePos(), payload.q(), payload.r(),
+                payload.aspectTag().orElse("(none)"));
     }
 
     /**

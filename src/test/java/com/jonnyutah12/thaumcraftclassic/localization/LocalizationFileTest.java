@@ -56,7 +56,11 @@ class LocalizationFileTest {
             // its warp block, kept in the original 1.7.10 key shape.
             "item.researchnotes.unknown.1", "item.researchnotes.unknown.2",
             "tc.forbidden", "tc.forbidden.level.1", "tc.forbidden.level.2",
-            "tc.forbidden.level.3", "tc.forbidden.level.4", "tc.forbidden.level.5");
+            "tc.forbidden.level.3", "tc.forbidden.level.4", "tc.forbidden.level.5",
+            // TC-M3-04-s-iii: the research-note screen's ink tooltip lines and
+            // its copy-cost header (GuiResearchTable:172-183, :327), each string
+            // verbatim from the original en_US.lang.
+            "tile.researchtable.noink.0", "tile.researchtable.noink.1", "tc.research.copy");
 
     /** Registry-derived key shape: lower-case id plus an optional meta/tooltip suffix. */
     private static final Pattern KEY_SHAPE =
@@ -66,6 +70,9 @@ class LocalizationFileTest {
     private static final List<String> CODE_AUTHORED_KEYS = List.of(
             "container.thaumcraft.chesthungry", "container.thaumcraft.deconstructiontable",
             "container.thaumcraft.magicbox", "container.thaumcraft.spa",
+            // TC-M3-04-s-iii: the research-note screen's MenuType title
+            // ("Research Table", the original tile's inventory name).
+            "container.thaumcraft.gui_research_table",
             "item.thaumcraft.itemlootbag.tooltip", "item.thaumcraft.trunkspawner.tooltip",
             "item.thaumcraft.itemgolemupgrade.0", "item.thaumcraft.itemgolemupgrade.1",
             "item.thaumcraft.itemgolemupgrade.2", "item.thaumcraft.itemgolemupgrade.3",

@@ -2,6 +2,7 @@ package com.jonnyutah12.thaumcraftclassic.client;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.M3ResearchContent;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -43,6 +44,7 @@ public final class ModClientScreens {
     @SubscribeEvent
     public static void onRegisterScreens(final RegisterMenuScreensEvent event) {
         event.register(CatalogTrinketsLoot.GUI_TRUNK.get(), TrunkScreen::new);
+        event.register(M3ResearchContent.GUI_RESEARCH_TABLE.get(), ResearchNoteScreen::new);
     }
 
     private ModClientScreens() {

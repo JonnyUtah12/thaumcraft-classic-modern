@@ -2,10 +2,13 @@ package com.jonnyutah12.thaumcraftclassic.registration.catalog;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.items.ItemResearchNotes;
+import com.jonnyutah12.thaumcraftclassic.menus.ResearchNoteMenu;
 import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -34,9 +37,13 @@ public final class M3ResearchContent {
     private static final DeferredRegister.Items ITEMS =
             DeferredRegister.createItems(ThaumcraftClassic.MOD_ID);
 
-    /** Attach this card's holder to the mod bus (single wiring line). */
+    private static final DeferredRegister<MenuType<?>> MENUS =
+            DeferredRegister.create(net.minecraft.core.registries.Registries.MENU, ThaumcraftClassic.MOD_ID);
+
+    /** Attach this card's holders to the mod bus (single wiring line). */
     public static void init(final IEventBus modEventBus) {
         ITEMS.register(modEventBus);
+        MENUS.register(modEventBus);
     }
 
     /**
@@ -50,6 +57,16 @@ public final class M3ResearchContent {
                             .stacksTo(1)
                             .rarity(Rarity.RARE)
                             .component(ModDataComponents.ITEM_META.get(), 0)));
+
+    /**
+     * thaumcraft:gui_research_table — the research-note hex-grid menu
+     * (docs/content-mapping.csv row 972, original gui_id 10 /
+     * {@code GuiResearchTable} + {@code ContainerResearchTable}, TC-M3-04-s-iii).
+     */
+    public static final DeferredHolder<MenuType<?>, MenuType<ResearchNoteMenu>> GUI_RESEARCH_TABLE =
+            MENUS.register("gui_research_table",
+                    () -> new MenuType<>(ResearchNoteMenu::new,
+                            net.minecraft.world.flag.FeatureFlags.VANILLA_SET));
 
     private M3ResearchContent() {
     }
