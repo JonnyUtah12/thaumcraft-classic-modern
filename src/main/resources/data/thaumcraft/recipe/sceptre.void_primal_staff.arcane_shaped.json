@@ -1,0 +1,84 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research_all": [
+    "CAP_void",
+    "ROD_primal_staff",
+    "SCEPTRE"
+  ],
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 432
+    },
+    {
+      "aspect": "terra",
+      "amount": 432
+    },
+    {
+      "aspect": "ignis",
+      "amount": 432
+    },
+    {
+      "aspect": "aqua",
+      "amount": 432
+    },
+    {
+      "aspect": "ordo",
+      "amount": 432
+    },
+    {
+      "aspect": "perditio",
+      "amount": 432
+    }
+  ],
+  "pattern": [
+    "  C",
+    "CR ",
+    "FC "
+  ],
+  "key": {
+    "C": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandcap",
+      "meta": 7
+    },
+    "R": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandrod",
+      "meta": 100
+    },
+    "F": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:itemresource",
+      "meta": 15
+    }
+  },
+  "result": {
+    "id": "thaumcraft:wandcasting",
+    "count": 1,
+    "components": {
+      "thaumcraft:wand_cap": "void",
+      "thaumcraft:wand_rod": "primal_staff",
+      "thaumcraft:wand_sceptre": true,
+      "thaumcraft:item_meta": 432
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcap"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandrod"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcasting"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

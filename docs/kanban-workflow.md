@@ -106,6 +106,27 @@ card in its javadoc. The cost was four dead runs for work that was already on
   was created by copying the notification template. **Pass the profile name
   (`default`), never `@default`.** Repair: `hermes kanban assign <task_id> default`.
 
+## A notification is not a summary of card state
+
+The board's notifications render a **trailing event line**, not a description of
+where the card stands. The same card emits different templates as different
+trailing events land, and the header can be flatly false about the card's state.
+
+- **`dispatcher will retry` on a `done` card is template text.** Every claim path
+  CASes from a non-terminal status — `claim_task` from `ready`, and
+  `recompute_ready` promotes only from `todo`/`blocked` — so a `done` card is never
+  dispatched again, however many times the template fires.
+- **A `timed_out` event with `run_id = NULL` is not a run.** Measured 2026-11-09:
+  run 335 `completed`, the worker was reaped, and a late run-less `timed_out` was
+  recorded ~11 minutes later — which then emitted a *second* notification
+  ("timed out; dispatcher will retry") for a card that had been `done` throughout.
+  It is an accounting artifact, and a **rare** one: board-wide, 1 of 103
+  `timed_out` events carried `run_id = NULL`. Do not generalize it into a class.
+- **Test the claim, never the header.** A retry is real only when
+  `status = 'running'` **and** `current_run_id IS NOT NULL` **and** a run row is
+  open (no `ended_at`, outcome not in `(completed, timed_out)`). `hermes kanban show`
+  plus the `task_runs` rows settle it; the notification cannot.
+
 ## `done` is not `landed`
 
 A card reaching `done` means its worker finished and pushed. It does **not** mean

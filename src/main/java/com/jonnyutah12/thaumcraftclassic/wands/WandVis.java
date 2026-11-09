@@ -144,11 +144,20 @@ public final class WandVis {
         if (realCosts == null || realCosts.size() == 0) {
             return null;
         }
+        return consumeAllVis(pool, scaleToCenti(realCosts));
+    }
+
+    /**
+     * The original's whole-vis → centi-vis scaling step
+     * ({@code cost = aspects.getAmount(aspect) * 100},
+     * ItemWandCasting.java:316-320), used by both crafting payment paths.
+     */
+    public static AspectList scaleToCenti(final AspectList realCosts) {
         final AspectList centi = new AspectList();
         for (final Aspect aspect : realCosts.getAspects()) {
             centi.add(aspect, realCosts.getAmount(aspect) * CENTI_VIS_PER_VIS);
         }
-        return consumeAllVis(pool, centi);
+        return centi;
     }
 
     // ------------------------------------------------------------- stack glue

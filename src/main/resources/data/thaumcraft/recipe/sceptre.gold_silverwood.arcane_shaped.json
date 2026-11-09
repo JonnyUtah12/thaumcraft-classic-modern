@@ -1,0 +1,84 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research_all": [
+    "CAP_gold",
+    "ROD_silverwood",
+    "SCEPTRE"
+  ],
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 40
+    },
+    {
+      "aspect": "terra",
+      "amount": 40
+    },
+    {
+      "aspect": "ignis",
+      "amount": 40
+    },
+    {
+      "aspect": "aqua",
+      "amount": 40
+    },
+    {
+      "aspect": "ordo",
+      "amount": 40
+    },
+    {
+      "aspect": "perditio",
+      "amount": 40
+    }
+  ],
+  "pattern": [
+    "  C",
+    "CR ",
+    "FC "
+  ],
+  "key": {
+    "C": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandcap",
+      "meta": 1
+    },
+    "R": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandrod",
+      "meta": 2
+    },
+    "F": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:itemresource",
+      "meta": 15
+    }
+  },
+  "result": {
+    "id": "thaumcraft:wandcasting",
+    "count": 1,
+    "components": {
+      "thaumcraft:wand_cap": "gold",
+      "thaumcraft:wand_rod": "silverwood",
+      "thaumcraft:wand_sceptre": true,
+      "thaumcraft:item_meta": 40
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcap"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandrod"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcasting"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    }
+  ]
+}

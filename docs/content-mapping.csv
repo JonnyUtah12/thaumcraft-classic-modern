@@ -187,9 +187,9 @@ Thaumcraft:TileEldritchCrabSpawner,thaumcraft:tileeldritchcrabspawner,tile_entit
 Thaumcraft:TileFocalManipulator,thaumcraft:tilefocalmanipulator,tile_entity,TileFocalManipulator,not_started,not_tested,,class=TileFocalManipulator
 Thaumcraft:TileFluxScrubber,thaumcraft:tilefluxscrubber,tile_entity,TileFluxScrubber,not_started,not_tested,,class=TileFluxScrubber
 Thaumcraft:TileEldritchTrap,thaumcraft:tileeldritchtrap,tile_entity,TileEldritchTrap,not_started,not_tested,,class=TileEldritchTrap
-Thaumcraft:WandCasting,thaumcraft:wandcasting,item,,not_started,not_tested,id case change only (D-001),class=ItemWandCasting
-Thaumcraft:WandCap,thaumcraft:wandcap,item,Iron Cap / Gold Cap / Charged Thaumium Cap / Copper Cap / Charged Silver Cap / Inert Silver Cap / Inert Thaumium Cap / Charged Void metal Cap / Inert Void metal Cap,not_started,not_tested,id case change only (D-001),class=ItemWandCap
-Thaumcraft:WandRod,thaumcraft:wandrod,item,Greatwood Rod / Obsidian Rod / Silverwood Rod / Icy Rod / Quartz Rod / Reed Rod / Blazing Rod / Bone Rod / Greatwood Staff Core / Obsidian Staff Core / Silverwood Staff Core / Icy Staff Core / Quartz Staff Core / Reed Staff Core / Blazing Staff Core / Bone Staff Core / Staff Core of the Primal,not_started,not_tested,id case change only (D-001),class=ItemWandRod
+Thaumcraft:WandCasting,thaumcraft:wandcasting,item,,done,tested,id case change only (D-001),class=ItemWandCasting
+Thaumcraft:WandCap,thaumcraft:wandcap,item,Iron Cap / Gold Cap / Charged Thaumium Cap / Copper Cap / Charged Silver Cap / Inert Silver Cap / Inert Thaumium Cap / Charged Void metal Cap / Inert Void metal Cap,done,tested,id case change only (D-001),class=ItemWandCap
+Thaumcraft:WandRod,thaumcraft:wandrod,item,Greatwood Rod / Obsidian Rod / Silverwood Rod / Icy Rod / Quartz Rod / Reed Rod / Blazing Rod / Bone Rod / Greatwood Staff Core / Obsidian Staff Core / Silverwood Staff Core / Icy Staff Core / Quartz Staff Core / Reed Staff Core / Blazing Staff Core / Bone Staff Core / Staff Core of the Primal,done,tested,id case change only (D-001),class=ItemWandRod
 Thaumcraft:FocusPouch,thaumcraft:focuspouch,item,Focus Pouch,not_started,not_tested,id case change only (D-001),class=ItemFocusPouchBauble
 Thaumcraft:FocusFire,thaumcraft:focusfire,item,Wand Focus: Fire,not_started,not_tested,id case change only (D-001),class=ItemFocusFire
 Thaumcraft:FocusShock,thaumcraft:focusshock,item,Wand Focus: Shock,not_started,not_tested,id case change only (D-001),class=ItemFocusShock
@@ -379,30 +379,30 @@ Thaumcraft:monster.EntityPech,thaumcraft:monster.entitypech,mob_spawn,EntityPech
 Thaumcraft:monster.EntityFireBat,thaumcraft:monster.entityfirebat,mob_spawn,EntityFireBat,not_started,not_tested,,weight=10 min=1 max=2 type=monster
 Thaumcraft:monster.EntityFireBat,thaumcraft:monster.entityfirebat,mob_spawn,EntityFireBat,not_started,not_tested,,weight=5 min=1 max=2 type=monster
 Thaumcraft:monster.EntityWisp,thaumcraft:monster.entitywisp,mob_spawn,EntityWisp,not_started,not_tested,,weight=5 min=1 max=1 type=monster
-Thaumcraft:iron,thaumcraft:iron,wand_component,iron,not_started,not_tested,,kind=wand_cap const=WAND_CAP_IRON
-Thaumcraft:gold,thaumcraft:gold,wand_component,gold,not_started,not_tested,,kind=wand_cap const=WAND_CAP_GOLD
-Thaumcraft:thaumium,thaumcraft:thaumium,wand_component,thaumium,not_started,not_tested,,kind=wand_cap const=WAND_CAP_THAUMIUM
-Thaumcraft:void,thaumcraft:void,wand_component,void,not_started,not_tested,,kind=wand_cap const=WAND_CAP_VOID
-Thaumcraft:copper,thaumcraft:copper,wand_component,copper,not_started,not_tested,,kind=wand_cap const=WAND_CAP_COPPER
-Thaumcraft:silver,thaumcraft:silver,wand_component,silver,not_started,not_tested,,kind=wand_cap const=WAND_CAP_SILVER
-Thaumcraft:wood,thaumcraft:wood,wand_component,wood,not_started,not_tested,,kind=wand_rod const=WAND_ROD_WOOD
-Thaumcraft:greatwood,thaumcraft:greatwood,wand_component,greatwood,not_started,not_tested,,kind=wand_rod const=WAND_ROD_GREATWOOD
-Thaumcraft:obsidian,thaumcraft:obsidian,wand_component,obsidian,not_started,not_tested,,kind=wand_rod const=WAND_ROD_OBSIDIAN
-Thaumcraft:blaze,thaumcraft:blaze,wand_component,blaze,not_started,not_tested,,kind=wand_rod const=WAND_ROD_BLAZE
-Thaumcraft:ice,thaumcraft:ice,wand_component,ice,not_started,not_tested,,kind=wand_rod const=WAND_ROD_ICE
-Thaumcraft:quartz,thaumcraft:quartz,wand_component,quartz,not_started,not_tested,,kind=wand_rod const=WAND_ROD_QUARTZ
-Thaumcraft:bone,thaumcraft:bone,wand_component,bone,not_started,not_tested,,kind=wand_rod const=WAND_ROD_BONE
-Thaumcraft:reed,thaumcraft:reed,wand_component,reed,not_started,not_tested,,kind=wand_rod const=WAND_ROD_REED
-Thaumcraft:silverwood,thaumcraft:silverwood,wand_component,silverwood,not_started,not_tested,,kind=wand_rod const=WAND_ROD_SILVERWOOD
-Thaumcraft:greatwood,thaumcraft:greatwood,wand_component,greatwood,not_started,not_tested,,kind=staff_rod const=STAFF_ROD_GREATWOOD
-Thaumcraft:obsidian,thaumcraft:obsidian,wand_component,obsidian,not_started,not_tested,,kind=staff_rod const=STAFF_ROD_OBSIDIAN
-Thaumcraft:blaze,thaumcraft:blaze,wand_component,blaze,not_started,not_tested,,kind=staff_rod const=STAFF_ROD_BLAZE
-Thaumcraft:ice,thaumcraft:ice,wand_component,ice,not_started,not_tested,,kind=staff_rod const=STAFF_ROD_ICE
-Thaumcraft:quartz,thaumcraft:quartz,wand_component,quartz,not_started,not_tested,,kind=staff_rod const=STAFF_ROD_QUARTZ
-Thaumcraft:bone,thaumcraft:bone,wand_component,bone,not_started,not_tested,,kind=staff_rod const=STAFF_ROD_BONE
-Thaumcraft:reed,thaumcraft:reed,wand_component,reed,not_started,not_tested,,kind=staff_rod const=STAFF_ROD_REED
-Thaumcraft:silverwood,thaumcraft:silverwood,wand_component,silverwood,not_started,not_tested,,kind=staff_rod const=STAFF_ROD_SILVERWOOD
-Thaumcraft:primal,thaumcraft:primal,wand_component,primal,not_started,not_tested,,kind=staff_rod const=STAFF_ROD_PRIMAL
+Thaumcraft:iron,thaumcraft:iron,wand_component,iron,done,tested,,kind=wand_cap const=WAND_CAP_IRON
+Thaumcraft:gold,thaumcraft:gold,wand_component,gold,done,tested,,kind=wand_cap const=WAND_CAP_GOLD
+Thaumcraft:thaumium,thaumcraft:thaumium,wand_component,thaumium,done,tested,,kind=wand_cap const=WAND_CAP_THAUMIUM
+Thaumcraft:void,thaumcraft:void,wand_component,void,done,tested,,kind=wand_cap const=WAND_CAP_VOID
+Thaumcraft:copper,thaumcraft:copper,wand_component,copper,done,tested,,kind=wand_cap const=WAND_CAP_COPPER
+Thaumcraft:silver,thaumcraft:silver,wand_component,silver,done,tested,,kind=wand_cap const=WAND_CAP_SILVER
+Thaumcraft:wood,thaumcraft:wood,wand_component,wood,done,tested,,kind=wand_rod const=WAND_ROD_WOOD
+Thaumcraft:greatwood,thaumcraft:greatwood,wand_component,greatwood,done,tested,,kind=wand_rod const=WAND_ROD_GREATWOOD
+Thaumcraft:obsidian,thaumcraft:obsidian,wand_component,obsidian,done,tested,,kind=wand_rod const=WAND_ROD_OBSIDIAN
+Thaumcraft:blaze,thaumcraft:blaze,wand_component,blaze,done,tested,,kind=wand_rod const=WAND_ROD_BLAZE
+Thaumcraft:ice,thaumcraft:ice,wand_component,ice,done,tested,,kind=wand_rod const=WAND_ROD_ICE
+Thaumcraft:quartz,thaumcraft:quartz,wand_component,quartz,done,tested,,kind=wand_rod const=WAND_ROD_QUARTZ
+Thaumcraft:bone,thaumcraft:bone,wand_component,bone,done,tested,,kind=wand_rod const=WAND_ROD_BONE
+Thaumcraft:reed,thaumcraft:reed,wand_component,reed,done,tested,,kind=wand_rod const=WAND_ROD_REED
+Thaumcraft:silverwood,thaumcraft:silverwood,wand_component,silverwood,done,tested,,kind=wand_rod const=WAND_ROD_SILVERWOOD
+Thaumcraft:greatwood,thaumcraft:greatwood,wand_component,greatwood,done,tested,,kind=staff_rod const=STAFF_ROD_GREATWOOD
+Thaumcraft:obsidian,thaumcraft:obsidian,wand_component,obsidian,done,tested,,kind=staff_rod const=STAFF_ROD_OBSIDIAN
+Thaumcraft:blaze,thaumcraft:blaze,wand_component,blaze,done,tested,,kind=staff_rod const=STAFF_ROD_BLAZE
+Thaumcraft:ice,thaumcraft:ice,wand_component,ice,done,tested,,kind=staff_rod const=STAFF_ROD_ICE
+Thaumcraft:quartz,thaumcraft:quartz,wand_component,quartz,done,tested,,kind=staff_rod const=STAFF_ROD_QUARTZ
+Thaumcraft:bone,thaumcraft:bone,wand_component,bone,done,tested,,kind=staff_rod const=STAFF_ROD_BONE
+Thaumcraft:reed,thaumcraft:reed,wand_component,reed,done,tested,,kind=staff_rod const=STAFF_ROD_REED
+Thaumcraft:silverwood,thaumcraft:silverwood,wand_component,silverwood,done,tested,,kind=staff_rod const=STAFF_ROD_SILVERWOOD
+Thaumcraft:primal,thaumcraft:primal,wand_component,primal,done,tested,,kind=staff_rod const=STAFF_ROD_PRIMAL
 Thaumcraft:BASICS,thaumcraft:basics,research_category,BASICS,not_started,not_tested,,ResearchCategories.registerCategory
 Thaumcraft:THAUMATURGY,thaumcraft:thaumaturgy,research_category,THAUMATURGY,not_started,not_tested,,ResearchCategories.registerCategory
 Thaumcraft:ALCHEMY,thaumcraft:alchemy,research_category,ALCHEMY,not_started,not_tested,,ResearchCategories.registerCategory
