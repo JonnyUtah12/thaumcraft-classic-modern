@@ -287,6 +287,11 @@ def originalParticleCells = [
         // u = age%13/16, v = 0.1875 (FXWispEG.java:59-62) — row 3, columns
         // 0..12 = cells 48..60 of the sheet grid it indexes.
         'wisp_eg'     : (48..60).toList(),
+        // TC-M7-02-c-s-f3: the rune decal. FXBlockRunes draws u =
+        // runeIndex%16/16 at v = 0.375 (FXBlockRunes.java:51-54) — row 6,
+        // columns 0..15 = cells 96..111 of the sheet grid, all 16 frames,
+        // picked once per particle by the ctor's runeIndex roll (line 33).
+        'rune'        : (96..111).toList(),
 ]
 // TC-M7-02-b-s: the beam/bolt family draws whole sheet tiles, not grid cells
 // (FXBeam.java:77-81 /misc/beam*.png; FXLightningBolt.java:178-182

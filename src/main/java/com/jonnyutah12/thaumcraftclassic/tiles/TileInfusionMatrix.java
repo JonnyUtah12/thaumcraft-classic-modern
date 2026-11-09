@@ -39,6 +39,8 @@ import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.neoforged.neoforge.network.PacketDistributor;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcEffects;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcFxPlans;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -60,13 +62,15 @@ import java.util.UUID;
  *
  * <p>Documented divergences (docs/porting-decisions.md): activation is an
  * empty-hand use until the wand card (TC-M5) lands its IWandable seam; the
- * client-side particle/runes effects are deferred to the rendering card
- * (TC-M7-01) — the S2C FX payloads are sent as in the original; the flux
+ * crafting rune (the original's {@code doEffects} blockRunes) landed with the
+ * rune family (TC-M7-02-c-s-f3) in {@link #deviceDisplayTick}; the remaining
+ * client-side particle effects are deferred to the rendering card (TC-M7-01) —
+ * the S2C FX payloads are sent as in the original; the flux
  * goo/gas blocks of eject types 1/3 are only placed when registered; the
  * InfusionRunicAugmentRecipe has no counterpart until runic armor is ported.</p>
  */
 public class TileInfusionMatrix extends BlockEntity implements BlockDeviceBase.TickingDeviceTile,
-        BlockDeviceBase.DeviceUseTile {
+        BlockDeviceBase.DeviceUseTile, BlockDeviceBase.DeviceDisplayTickTile {
 
     private static final int ESSENTIA_RANGE = 12;
 
@@ -179,6 +183,20 @@ public class TileInfusionMatrix extends BlockEntity implements BlockDeviceBase.T
         this.pedestals.clear();
         this.pedestals.addAll(scan.pedestals());
         this.symmetry = scan.symmetry();
+    }
+
+    @Override
+    public void deviceDisplayTick(final net.minecraft.util.RandomSource rand) {
+        // TC-M7-02-c-s-f3: TileInfusionMatrix.doEffects (TileInfusionMatrix.java
+        // :813-827) — while a craft runs, EVERY client tick adds ONE rune two
+        // blocks below the matrix, rising (gravity -0.03), colour
+        // (0.5+r*0.2, 0.1, 0.7+r*0.3), dur 25. No particleCount gate and no
+        // loop in the original body, so neither here.
+        if (this.crafting) {
+            TcEffects.spawn(this.level, java.util.List.of(TcFxPlans.matrixRunes(
+                    this.worldPosition.getX(), this.worldPosition.getY(),
+                    this.worldPosition.getZ(), rand)));
+        }
     }
 
     // ------------------------------------------------------------------ crafting

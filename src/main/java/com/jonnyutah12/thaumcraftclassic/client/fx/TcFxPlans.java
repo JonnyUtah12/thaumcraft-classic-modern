@@ -567,4 +567,285 @@ public final class TcFxPlans {
     public static float blue(final int color) {
         return (color & 0xFF) / 255.0F;
     }
+
+    // ------------------------------------------------------------------------
+    // TC-M7-02-c-s-f3 — the rune decal family (thaumcraft.client.fx.particles.
+    // FXBlockRunes, spawned through ClientProxy.blockRunes:974-978).
+    // ------------------------------------------------------------------------
+
+    /**
+     * The rune sprite strip: 16 columns of one row in the original's 16x16 FX
+     * cell grid (the {@code runeIndex % 16} of FXBlockRunes.java:51), sliced at
+     * build time as {@code rune_0..rune_15}.
+     */
+    public static final int RUNE_FRAMES = 16;
+
+    /**
+     * The uv inset of the original's texture step: {@code 0.0624375} is
+     * {@code 0.999 / 16} (FXBlockRunes.java:52, 54), so the sprite is sampled
+     * to 0.999 of its cell, never to its exact edge.
+     */
+    public static final float RUNE_UV_MAX = 0.999F;
+
+    /** The ctor's {@code field_70547_e = 3 * dur} (FXBlockRunes.java:26). */
+    public static final int RUNE_LIFETIME_MULTIPLIER = 3;
+
+    /** The fade-in divisor of the envelope, {@code maxSize / 5} (line 73). */
+    public static final int RUNE_FADE_IN_DIVISOR = 5;
+
+    /** The render's alpha divisor, {@code particleAlpha / 2.0F} (lines 43, 59). */
+    public static final float RUNE_ALPHA_DIVISOR = 2.0F;
+
+    /** The ctor's yaw draw: {@code nextInt(4) * 90} (line 20). */
+    public static final int RUNE_YAW_STEPS = 4;
+    /** The ctor's yaw step in degrees (line 20). */
+    public static final int RUNE_YAW_DEGREES = 90;
+
+    /** The ctor's size: {@code 1.0 + nextGaussian() * 0.1} (line 36). */
+    public static final float RUNE_SCALE_BASE = 1.0F;
+    /** The ctor's size span (line 36). */
+    public static final float RUNE_SCALE_SPAN = 0.1F;
+
+    /** The ctor's in-plane jitter: {@code ofx = rand * 0.2} (line 34). */
+    public static final float RUNE_OFFSET_X_SPAN = 0.2F;
+    /** The ctor's in-plane jitter: {@code ofy = -0.3 + rand * 0.6} (line 35). */
+    public static final float RUNE_OFFSET_Y_BASE = -0.3F;
+    /** The ctor's in-plane jitter span (line 35). */
+    public static final float RUNE_OFFSET_Y_SPAN = 0.6F;
+
+    /**
+     * One rune, exactly the {@code ClientProxy.blockRunes} call
+     * (ClientProxy.java:974-978): the ctor's coordinates are the caller's plus
+     * 0.5 on every axis, the ctor's {@code dur} argument sets the lifetime to
+     * {@code 3 * dur}, and the call's {@code grav} reaches the particle through
+     * {@code setGravity}.
+     *
+     * <p>The ctor's random draws run in statement order — {@code rotation}
+     * (line 20), the {@code runeIndex} roll (line 33), {@code ofx} (34),
+     * {@code ofy} (35), {@code particleScale} (36) — and are kept in that
+     * order. The original draws {@code runeIndex} from {@code Math.random()}
+     * and the rest from the entity's own {@code Random}; the port draws all of
+     * them from the one source, the same adaptation the wisp particle documents,
+     * so a burst is reproducible from a single seed.</p>
+     */
+    public static ParticleSpawn blockRunes(final double x, final double y, final double z,
+            final float r, final float g, final float b, final int dur, final float gravity,
+            final RandomSource rand) {
+        // FXBlockRunes.java:16-18 — a zero RED is replaced by 1.0 before the
+        // colour is stored, which is why the warding stone's colourless rune
+        // reads red. Applied in the ctor, so the plan applies it.
+        final float red = r == 0.0F ? 1.0F : r;
+        final int yaw = rand.nextInt(RUNE_YAW_STEPS) * RUNE_YAW_DEGREES;
+        // Line 33 rolls 224..239; line 51 keeps only the %16 column.
+        final int frame = (int) (rand.nextDouble() * RUNE_FRAMES + 224.0) % RUNE_FRAMES;
+        final float ofx = rand.nextFloat() * RUNE_OFFSET_X_SPAN;
+        final float ofy = RUNE_OFFSET_Y_BASE + rand.nextFloat() * RUNE_OFFSET_Y_SPAN;
+        final float scale = (float) (RUNE_SCALE_BASE + rand.nextGaussian() * RUNE_SCALE_SPAN);
+        return new ParticleSpawn(ModParticles.RUNE.get(),
+                new TcRuneOptions(rgb(red, g, b), RUNE_LIFETIME_MULTIPLIER * dur, scale, frame, yaw,
+                        ofx, ofy, gravity),
+                x + 0.5, y + 0.5, z + 0.5, 0.0, 0.0, 0.0);
+    }
+
+    /** The warding stone's sky branch: {@code particleCount(2)} runes (BlockCosmeticSolid.java:288-300). */
+    public static final int WARDING_SKY_BASE = 2;
+    /** The warding stone's covered branch: {@code particleCount(3)} runes (line 305). */
+    public static final int WARDING_COVERED_BASE = 3;
+    /** Both stone branches raise the rune to {@code y + 0.7} (lines 292, 309). */
+    public static final float WARDING_RUNE_Y = 0.7F;
+    /** The sky branch's {@code dur} (line 299) and the covered branch's (line 316). */
+    public static final int WARDING_SKY_DUR = 20;
+    /** The covered branch's {@code dur} (line 316). */
+    public static final int WARDING_COVERED_DUR = 24;
+    /** Both stone branches use gravity {@code -0.02} (lines 300, 317). */
+    public static final float WARDING_GRAVITY = -0.02F;
+    /** The victim branch's base height, {@code y + 0.6} (line 329). */
+    public static final float WARDING_VICTIM_Y = 0.6F;
+    /** The victim branch's jitter floor, {@code Math.max(0.8F, eyeHeight)} (line 329). */
+    public static final float WARDING_VICTIM_JITTER_FLOOR = 0.8F;
+    /** The victim branch's {@code dur} (line 336) and gravity (line 337). */
+    public static final int WARDING_VICTIM_DUR = 20;
+    /** The victim branch's gravity (line 337). */
+    public static final float WARDING_VICTIM_GRAVITY = 0.0F;
+
+    /**
+     * The warding stone's ambient runes — the meta-3 body of the original's
+     * {@code BlockCosmeticSolid.randomDisplayTick}
+     * (BlockCosmeticSolid.java:284-341), whose three branches are
+     * mutually exclusive and run in this order:
+     *
+     * <ol>
+     *   <li>the stone sees the sky ({@code canBlockSeeTheSky}) →
+     *       {@code particleCount(2)} runes of (0.2+r*0.4, r*0.3, 0.8+r*0.2);</li>
+     *   <li>else the block above (or two above, gated on the block above) is
+     *       solid and not the airy placeholder → {@code particleCount(3)} runes
+     *       of (0.9+r*0.1, r*0.3, r*0.3);</li>
+     *   <li>else the first living non-player within the 1-block-expanded box
+     *       gets one rune of (0.6+r*0.4, 0.0, 0.3+r*0.7) at its eye height, and
+     *       the loop {@code break}s — exactly one victim rune.</li>
+     * </ol>
+     *
+     * @param skyVisible     {@code world.canBlockSeeTheSky(x, y, z)} (line 287)
+     * @param coveredAbove   the original's compound above-block test (lines 301-302),
+     *                       transcribed as written: the second clause re-tests
+     *                       the block at {@code y + 1}, not the one at
+     *                       {@code y + 2}
+     * @param victimEyeHeight the eye height of the first qualifying victim, or a
+     *                       negative value when the entity list produced none
+     * @param base           the {@code particleCount} base of the branch taken
+     */
+    public static List<ParticleSpawn> wardingStoneRunes(final BlockPos pos, final boolean skyVisible,
+            final boolean coveredAbove, final double victimEyeHeight, final int base,
+            final int particleSetting, final RandomSource rand) {
+        final List<ParticleSpawn> plan = new ArrayList<>();
+        if (skyVisible) {
+            for (int a = 0; a < FxParticleCounts.particleCount(base, particleSetting); a++) {
+                plan.add(blockRunes(pos.getX(), pos.getY() + WARDING_RUNE_Y, pos.getZ(),
+                        0.2F + rand.nextFloat() * 0.4F, rand.nextFloat() * 0.3F,
+                        0.8F + rand.nextFloat() * 0.2F, WARDING_SKY_DUR, WARDING_GRAVITY, rand));
+            }
+            return plan;
+        }
+        if (coveredAbove) {
+            for (int a = 0; a < FxParticleCounts.particleCount(base, particleSetting); a++) {
+                plan.add(blockRunes(pos.getX(), pos.getY() + WARDING_RUNE_Y, pos.getZ(),
+                        0.9F + rand.nextFloat() * 0.1F, rand.nextFloat() * 0.3F,
+                        rand.nextFloat() * 0.3F, WARDING_COVERED_DUR, WARDING_GRAVITY, rand));
+            }
+            return plan;
+        }
+        if (victimEyeHeight >= 0.0) {
+            // The draw order of the call's arguments is the original's (line
+            // 329 evaluates the y expression, which draws the jitter, before the
+            // colour arguments draw theirs).
+            final double y = pos.getY() + WARDING_VICTIM_Y
+                    + rand.nextFloat() * Math.max(WARDING_VICTIM_JITTER_FLOOR, victimEyeHeight);
+            plan.add(blockRunes(pos.getX(), y, pos.getZ(),
+                    0.6F + rand.nextFloat() * 0.4F, 0.0F, 0.3F + rand.nextFloat() * 0.7F,
+                    WARDING_VICTIM_DUR, WARDING_VICTIM_GRAVITY, rand));
+        }
+        return plan;
+    }
+
+    /** The Eldritch trap's rune: {@code dur = 16 + nextInt(4)} (BlockEldritch.java:308). */
+    public static final int ELDRITCH_DUR_BASE = 16;
+    /** The Eldritch trap's {@code dur} span (line 308). */
+    public static final int ELDRITCH_DUR_SPAN = 4;
+    /** The Eldritch trap's {@code gravity} (line 309). */
+    public static final float ELDRITCH_GRAVITY = 0.0F;
+    /** The radius of the Eldritch trap's cell roll: {@code i + nextInt(2) - nextInt(2)} (lines 296-298). */
+    public static final int ELDRITCH_CELL_SPAN = 2;
+
+    /**
+     * The Eldritch trap's floating rune — the meta-10 branch of the original's
+     * {@code BlockEldritch.randomDisplayTick}
+     * (BlockEldritch.java:295-312): roll a cell at ±1 on each axis (three draws,
+     * always consumed), and if that cell is AIR
+     * ({@code world.isAirBlock}, decompiled as {@code func_147437_c}) put one
+     * rune at a random point inside it with colour
+     * (0.5+r*0.5, r*0.3, 0.9+r*0.1) and {@code dur = 16 + nextInt(4)}.
+     *
+     * @param airAt the world's {@code isAirBlock} for the rolled cell
+     */
+    public static List<ParticleSpawn> eldritchTrapRunes(final BlockPos pos, final RandomSource rand,
+            final java.util.function.Predicate<BlockPos> airAt) {
+        final List<ParticleSpawn> plan = new ArrayList<>();
+        // The three cell rolls are drawn before the air test, so they are drawn
+        // whether or not the rune lands.
+        final int x = pos.getX() + rand.nextInt(ELDRITCH_CELL_SPAN) - rand.nextInt(ELDRITCH_CELL_SPAN);
+        final int y = pos.getY() + rand.nextInt(ELDRITCH_CELL_SPAN) - rand.nextInt(ELDRITCH_CELL_SPAN);
+        final int z = pos.getZ() + rand.nextInt(ELDRITCH_CELL_SPAN) - rand.nextInt(ELDRITCH_CELL_SPAN);
+        final BlockPos cell = new BlockPos(x, y, z);
+        if (airAt.test(cell)) {
+            plan.add(blockRunes(x + rand.nextFloat(), y + rand.nextFloat(), z + rand.nextFloat(),
+                    0.5F + rand.nextFloat() * 0.5F, rand.nextFloat() * 0.3F,
+                    0.9F + rand.nextFloat() * 0.1F,
+                    ELDRITCH_DUR_BASE + rand.nextInt(ELDRITCH_DUR_SPAN), ELDRITCH_GRAVITY, rand));
+        }
+        return plan;
+    }
+
+    /** The thaumometer's rune colour: {@code 0.3 + rand * 0.7} on red and blue (ItemThaumometer.java:74, 76). */
+    public static final float SCAN_COLOR_BASE = 0.3F;
+    /** The thaumometer's rune colour span (ItemThaumometer.java:74, 76). */
+    public static final float SCAN_COLOR_SPAN = 0.7F;
+    /** The thaumometer's rune gravity, {@code 0.03F} (ItemThaumometer.java:78, 101). */
+    public static final float SCAN_GRAVITY = 0.03F;
+    /** The block scan's {@code dur} (ItemThaumometer.java:100). */
+    public static final int SCAN_BLOCK_DUR = 15;
+    /** The block scan raises the rune by {@code y + 0.25} (ItemThaumometer.java:95). */
+    public static final float SCAN_BLOCK_Y = 0.25F;
+    /** The entity scan's {@code dur = (int)(entityHeight * 15)} (ItemThaumometer.java:77). */
+    public static final float SCAN_ENTITY_DUR_PER_HEIGHT = 15.0F;
+    /** The entity scan drops the rune by 0.5 on X and Z (lines 71, 73). */
+    public static final double SCAN_ENTITY_CENTER_OFFSET = -0.5;
+
+    /**
+     * The thaumometer's scan flash on an ENTITY — {@code ItemThaumometer.doScan}
+     * (ItemThaumometer.java:68-79): the rune rides the entity's eye line at
+     * {@code (posX - 0.5, posY + eyeHeight/2, posZ - 0.5)}, lives
+     * {@code (int)(height * 15)} ticks worth (×3 in the ctor) and drifts with
+     * gravity 0.03.
+     */
+    public static ParticleSpawn scanEntityRunes(final double x, final double y, final double z,
+            final double eyeHeight, final double height, final RandomSource rand) {
+        return blockRunes(x + SCAN_ENTITY_CENTER_OFFSET,
+                y + eyeHeight / 2.0F,
+                z + SCAN_ENTITY_CENTER_OFFSET,
+                SCAN_COLOR_BASE + rand.nextFloat() * SCAN_COLOR_SPAN, 0.0F,
+                SCAN_COLOR_BASE + rand.nextFloat() * SCAN_COLOR_SPAN,
+                (int) (height * SCAN_ENTITY_DUR_PER_HEIGHT), SCAN_GRAVITY, rand);
+    }
+
+    /**
+     * The thaumometer's scan flash on a BLOCK / node — {@code ItemThaumometer.doScan}
+     * (ItemThaumometer.java:91-102 and 132-143, the two block branches send the
+     * same values): {@code (blockX, blockY + 0.25, blockZ)}, dur 15, gravity
+     * 0.03, the same cyan-to-magenta roll.
+     */
+    public static ParticleSpawn scanBlockRunes(final BlockPos pos, final RandomSource rand) {
+        return blockRunes(pos.getX(), pos.getY() + SCAN_BLOCK_Y, pos.getZ(),
+                SCAN_COLOR_BASE + rand.nextFloat() * SCAN_COLOR_SPAN, 0.0F,
+                SCAN_COLOR_BASE + rand.nextFloat() * SCAN_COLOR_SPAN, SCAN_BLOCK_DUR,
+                SCAN_GRAVITY, rand);
+    }
+
+    /** The infusion matrix drops its rune 2 blocks below the structure centre (TileInfusionMatrix.java:818). */
+    public static final int MATRIX_RUNE_Y_DROP = 2;
+    /** The infusion matrix's {@code dur} (TileInfusionMatrix.java:824). */
+    public static final int MATRIX_RUNE_DUR = 25;
+    /** The infusion matrix's {@code gravity}, which makes the runes rise (line 825). */
+    public static final float MATRIX_RUNE_GRAVITY = -0.03F;
+    /** The matrix rune's colour roll: (0.5 + r*0.2, 0.1, 0.7 + r*0.3) (lines 821-823). */
+    public static final float MATRIX_RUNE_RED_BASE = 0.5F;
+    /** The matrix rune's red span (line 821). */
+    public static final float MATRIX_RUNE_RED_SPAN = 0.2F;
+    /** The matrix rune's fixed green (line 822). */
+    public static final float MATRIX_RUNE_GREEN = 0.1F;
+    /** The matrix rune's blue base (line 823). */
+    public static final float MATRIX_RUNE_BLUE_BASE = 0.7F;
+    /** The matrix rune's blue span (line 823). */
+    public static final float MATRIX_RUNE_BLUE_SPAN = 0.3F;
+
+    /**
+     * The infusion matrix's crafting rune — {@code TileInfusionMatrix.doEffects}
+     * (TileInfusionMatrix.java:813-827). While a craft runs, every client tick
+     * adds ONE rune — no {@code particleCount} gate, no loop — two blocks below
+     * the structure centre, colour (0.5+r*0.2, 0.1, 0.7+r*0.3), dur 25, gravity
+     * -0.03, so the purple runes rise through the matrix as it works. The
+     * sender runs this from the block entity's client ticker behind the
+     * {@code isCrafting()} gate.
+     *
+     * @param centerX the structure centre's block X
+     * @param centerY the structure centre's block Y (the rune spawns at Y-2)
+     * @param centerZ the structure centre's block Z
+     */
+    public static ParticleSpawn matrixRunes(final int centerX, final int centerY,
+            final int centerZ, final RandomSource rand) {
+        return blockRunes(centerX, centerY - MATRIX_RUNE_Y_DROP, centerZ,
+                MATRIX_RUNE_RED_BASE + rand.nextFloat() * MATRIX_RUNE_RED_SPAN,
+                MATRIX_RUNE_GREEN,
+                MATRIX_RUNE_BLUE_BASE + rand.nextFloat() * MATRIX_RUNE_BLUE_SPAN,
+                MATRIX_RUNE_DUR, MATRIX_RUNE_GRAVITY, rand);
+    }
 }

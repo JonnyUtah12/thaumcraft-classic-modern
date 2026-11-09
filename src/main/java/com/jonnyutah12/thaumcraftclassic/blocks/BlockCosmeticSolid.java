@@ -2,6 +2,9 @@ package com.jonnyutah12.thaumcraftclassic.blocks;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import com.jonnyutah12.thaumcraftclassic.client.fx.FxClientSettings;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcEffects;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcFxPlans;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -52,9 +55,10 @@ import net.minecraft.world.level.LevelReader;
  *
  * <p>Client-side scope notes (TC-M7-01): the 27-icon atlas with per-meta
  * connected-texture selection ({@code getIcon}/{@code getBlockIcon}, the
- * ancient-stone random-tile and totem stacking logic), the warding-stone rune
- * particles ({@code randomDisplayTick}), the meta-8 destroy burst/sound and
- * the paving sparkle are model/render territory.</p>
+ * ancient-stone random-tile and totem stacking logic), the meta-8 destroy
+ * burst/sound and the paving sparkle are model/render territory. The
+ * warding-stone rune particles ({@code randomDisplayTick} meta 3) landed with
+ * the rune family (TC-M7-02-c-s-f3) in {@link #animateTick}.</p>
  */
 public class BlockCosmeticSolid extends Block implements VariantDevice, EntityBlock {
 
@@ -172,6 +176,57 @@ public class BlockCosmeticSolid extends Block implements VariantDevice, EntityBl
                 ? state.setValue(VARIANT, VARIANT_GOLEM_FETTER)
                 : state;
         return VariantStateItems.withVariant(super.getCloneItemStack(level, pos, state), dropState);
+    }
+
+    /**
+     * TC-M7-02-c-s-f3: the warding-stone runes — the original's
+     * {@code randomDisplayTick} meta-3 body
+     * ({@code BlockCosmeticSolid.java:284-343}), whose three branches are
+     * mutually exclusive: sky-visible → {@code particleCount(2)} runes;
+     * else the compound above-block test → {@code particleCount(3)} runes;
+     * else one rune riding the first living non-player in the 1-block-expanded
+     * box, at its eye height, and the loop {@code break}s. All drawing uses
+     * {@code world.rand} (the original's {@code field_73012_v}); 1.21.1
+     * hands the same client-level random to {@code animateTick}, and the
+     * particle-setting gate is {@code ClientProxy.particleCount} (line 949-955)
+     * read off the game options, so {@link FxClientSettings#particleSetting()}.
+     */
+    @Override
+    public void animateTick(final BlockState state, final Level level, final BlockPos pos,
+            final net.minecraft.util.RandomSource random) {
+        if (variant(state) != VARIANT_PAVING_WARDING) {
+            return;
+        }
+        final int setting = FxClientSettings.particleSetting();
+        if (level.canSeeSky(pos)) {
+            TcEffects.spawn(level, TcFxPlans.wardingStoneRunes(pos, true, false, -1.0,
+                    TcFxPlans.WARDING_SKY_BASE, setting, random));
+            return;
+        }
+        // The original's compound test, transcribed as written (lines 301-302):
+        // the second clause re-tests the block at y + 1, not the one at y + 2.
+        final BlockState above1 = level.getBlockState(pos.above());
+        final BlockState above2 = level.getBlockState(pos.above(2));
+        final boolean solidAbove1 = above1.isRedstoneConductor(level, pos.above());
+        final boolean covered = (!(above1.getBlock() instanceof BlockAiry) && solidAbove1)
+                || (!(above2.getBlock() instanceof BlockAiry) && solidAbove1);
+        if (covered) {
+            TcEffects.spawn(level, TcFxPlans.wardingStoneRunes(pos, false, true, -1.0,
+                    TcFxPlans.WARDING_COVERED_BASE, setting, random));
+            return;
+        }
+        // getEntitiesWithinAABBExcludingEntity(null, box.expand(1,1,1)) — the
+        // first living non-player wins, exactly one rune (the original breaks).
+        double eyeHeight = -1.0;
+        for (final Entity entity : level.getEntities(null,
+                new net.minecraft.world.phys.AABB(pos).inflate(1.0, 1.0, 1.0))) {
+            if (entity instanceof LivingEntity living && !(entity instanceof Player)) {
+                eyeHeight = living.getEyeHeight();
+                break;
+            }
+        }
+        TcEffects.spawn(level, TcFxPlans.wardingStoneRunes(pos, false, false, eyeHeight,
+                1, setting, random));
     }
 
     /**

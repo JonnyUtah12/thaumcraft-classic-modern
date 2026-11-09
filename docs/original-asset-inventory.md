@@ -182,6 +182,9 @@ committed, because 1.21.1 treats the frame list as the particle's identity.
 | --- | --- | --- | --- |
 | `thaumcraft:sparkle` | `ClientProxy.blockSparkle` → `drawGenericParticles(..., 112, 9, 1, ...)` (ClientProxy.java:592-606), sent by `PacketFXBlockSparkle` | 112, 113, 114, 115, 116, 117, 118, 119, 120 (row 7, cols 0-8) | `sparkle_0..sparkle_8` (9 frames, `setSpriteFromAge` walks them over life, which is what `FXGeneric`'s `start + min(num * age/maxAge, num-1)` does) |
 | `thaumcraft:bubble` | `FXBubble` frame counter (`particle++` on the last two ticks, FxBubble.java:63-65), fed by `ClientProxy.crucibleBubble` from `PacketFXBlockBubble` | 16 (body), 17 (pop) (row 1, cols 0-1) | `bubble_0` (body), `bubble_1` (pop) |
+| `thaumcraft:impact` + `thaumcraft:sparkle_glow` | `FXBeamGolemBoss.java:253-255` (u = part/16, v = 0.3125 → row 5) and the arc's type-6 glow sparkle (`ClientProxy.java:1302`, cells 112..115) | 80..95 (row 5) and 112..115 (row 7 head) | `impact_0..impact_15`, `sparkle_glow_0..sparkle_glow_3` |
+| `thaumcraft:wisp_eg` | `FXWispEG.java:59-62` — u = age%13/16, v = 0.1875 (row 3, cols 0..12) | 48..60 | `wisp_eg_0..wisp_eg_12` |
+| `thaumcraft:rune` | `FXBlockRunes.java:51-54` — u = runeIndex%16/16, v = 0.375 (row 6, cols 0..15); the ctor rolls `runeIndex` once (line 33), so the particle picks its frame, it is not stepped | 96..111 | `rune_0..rune_15` (16 frames, `sprites.get(frame, 16)`) |
 
 Contract, pinned by `ParticleSpriteSlicingTest`: (1) each definition JSON names
 its frames in cell order, (2) each sliced PNG exists and is **pixel-identical**
@@ -197,9 +200,10 @@ path gates read paths, not pixels. A 1x1 sheet there is what kept every branch
 red from 2026-10-29 to 2026-11-02 (`(x + width) is outside of Raster`); the
 slicer now fails with the file, its measured size and the required size named.
 
-The sheet's other 246 cells stay untouched: the FX families that index them
+The sheet's other 200 cells stay untouched: the FX families that index them
 (`FXBoreParticles`, `FXVisSparkle`, the wisp and beam art) are on their own
 cards, and slicing a cell no particle names would put dead art in every jar.
+(56 unique cells sliced today: 16, 17, 48..60, 80..95, 96..111, 112..120.)
 
 ## Unused assets (38) — explicit, with reason
 
