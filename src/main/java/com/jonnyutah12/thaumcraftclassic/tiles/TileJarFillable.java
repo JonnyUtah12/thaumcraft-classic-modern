@@ -320,4 +320,14 @@ public class TileJarFillable extends BlockEntity
         this.amount = tag.getShort("Amount");
         this.facing = tag.getByte("facing");
     }
+
+    @Override
+    public CompoundTag getUpdateTag(final HolderLookup.Provider registries) {
+        // BD-18 slice 4 (t_6563ce50, D-021): the TER reads amount/aspect/aspectFilter/facing from the
+        // client tile; the keys ride the vanilla update tag (the pattern
+        // TilePedestal set), and the client applies them through
+        // loadAdditional -> readCustomNBT.
+        return this.saveWithoutMetadata(registries);
+    }
+
 }

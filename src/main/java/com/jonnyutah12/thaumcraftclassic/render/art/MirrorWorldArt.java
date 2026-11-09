@@ -68,7 +68,10 @@ public final class MirrorWorldArt {
      * ({@code :578-582}) added to the 0.02 standoff.
      */
     public static Plan plan(final boolean linked, final float instabilityJitter) {
-        throw new UnsupportedOperationException("BD-18 TER art not wired (t_6563ce50)");
+        if (linked) {
+            return new Plan(PANE_TRANSPARENT_SPRITE, TUNNEL_SPRITE, FIELD_SPRITE, PANE_OFFSET + instabilityJitter);
+        }
+        return new Plan(PANE_SPRITE, null, null, PANE_OFFSET);
     }
 
     /**
@@ -77,7 +80,10 @@ public final class MirrorWorldArt {
      * {@code nextFloat} per frame, {@code :582}).
      */
     public static float jitter(final int instability, final float randomUnit) {
-        throw new UnsupportedOperationException("BD-18 TER art not wired (t_6563ce50)");
+        if (instability <= 0) {
+            return 0.0F;
+        }
+        return randomUnit * (instability / 10000.0F);
     }
 
     private MirrorWorldArt() {

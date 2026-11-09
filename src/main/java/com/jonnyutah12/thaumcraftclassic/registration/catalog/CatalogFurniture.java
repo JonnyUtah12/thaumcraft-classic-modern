@@ -238,6 +238,20 @@ public final class CatalogFurniture {
             DeviceTileFactory.register(BLOCK_TABLE.get(), v, TileTable::new);
         }
         DeviceTileFactory.register(BLOCK_TABLE.get(), 14, TileDeconstructionTable::new);
+        // Own multi-variant block: the mirror family (BD-18 slice 4, t_6563ce50).
+        // The mirror tiles have carried BlockEntityTypes since their card, and
+        // BlockDeviceBase.newBlockEntity only creates a tile for a registered
+        // (block, variant) pair — no supplier was ever registered here, so a
+        // placed mirror had no tile at all: no transport, no tick, and no tile
+        // for the pane/portal renderer to read. Variants 0-5 are the plain
+        // mirror's six facings (BlockMirror.facingFor), 6-11 the essentia
+        // mirror's (BlockMirror.VARIANT_ESSENTIA_BASE).
+        for (int facing = 0; facing < BlockMirror.VARIANT_ESSENTIA_BASE; facing++) {
+            DeviceTileFactory.register(BLOCK_MIRROR.get(), facing, TileMirror::new);
+        }
+        for (int essentia = BlockMirror.VARIANT_ESSENTIA_BASE; essentia <= BlockMirror.MAX_VARIANT; essentia++) {
+            DeviceTileFactory.register(BLOCK_MIRROR.get(), essentia, TileMirrorEssentia::new);
+        }
     }
 
     private static void host(final net.minecraft.world.level.block.Block block, final int variant,

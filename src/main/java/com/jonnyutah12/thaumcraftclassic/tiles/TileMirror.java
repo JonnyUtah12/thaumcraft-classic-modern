@@ -278,4 +278,14 @@ public class TileMirror extends BlockEntity implements com.jonnyutah12.thaumcraf
             this.outputStacks.add(restored == null ? ItemStack.EMPTY : restored);
         }
     }
+
+    @Override
+    public CompoundTag getUpdateTag(final HolderLookup.Provider registries) {
+        // BD-18 slice 4 (t_6563ce50, D-021): the TER reads the link (linked/linkX/Y/Z/dim) + instability from the
+        // client tile; the keys ride the vanilla update tag (the pattern
+        // TilePedestal set), and the client applies them through
+        // loadAdditional -> readCustomNBT.
+        return this.saveWithoutMetadata(registries);
+    }
+
 }

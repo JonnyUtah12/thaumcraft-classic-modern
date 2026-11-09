@@ -1,0 +1,40 @@
+{
+  "sources": [
+    {
+      "type": "directory",
+      "source": "models"
+    },
+    {
+      "type": "directory",
+      "source": "aspects"
+    },
+    {
+      "type": "single",
+      "resource": "thaumcraft:models/label"
+    },
+    {
+      "type": "single",
+      "resource": "thaumcraft:models/crystal"
+    },
+    {
+      "type": "single",
+      "resource": "thaumcraft:misc/tunnel"
+    },
+    {
+      "type": "single",
+      "resource": "thaumcraft:misc/particlefield"
+    },
+    {
+      "type": "single",
+      "resource": "thaumcraft:block/mirrorpane"
+    },
+    {
+      "type": "single",
+      "resource": "thaumcraft:block/mirrorpanetrans"
+    },
+    {
+      "type": "single",
+      "resource": "thaumcraft:block/animatedglow"
+    }
+  ]
+}

@@ -51,7 +51,9 @@ public final class SpaWorldArt {
      * {@code amount / 5000} ({@code TileSpa.getTankAmount()}).
      */
     public static Plan plan(final int tankAmount, final int capacity) {
-        throw new UnsupportedOperationException("BD-18 TER art not wired (t_6563ce50)");
+        final int cap = Math.max(1, capacity);
+        final int amount = Math.min(Math.max(tankAmount, 0), cap);
+        return new Plan(amount > 0, amount / (float) cap);
     }
 
     private SpaWorldArt() {

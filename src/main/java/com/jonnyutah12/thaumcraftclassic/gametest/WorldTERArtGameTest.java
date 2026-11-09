@@ -192,7 +192,7 @@ public final class WorldTERArtGameTest {
                 "the water cluster tints colors[3] = 16727041 (BlockCustomOreItem.colors, via :70-72), got "
                         + CrystalWorldArt.tintFor(2));
         helper.assertTrue(CrystalWorldArt.tintFor(6) == 15650047,
-                "the mixed cluster mains on colors[5] = 15650047 (TileCrystalRenderer.java:69), got "
+                "the mixed cluster mains on colors[5] = 15650047 (TileCrystalRenderer.java:74), got "
                         + CrystalWorldArt.tintFor(6));
         helper.assertTrue(CrystalWorldArt.mixedShardTint(5) == 5592439
                         && CrystalWorldArt.mixedShardTint(1) == 16777086,
@@ -278,12 +278,14 @@ public final class WorldTERArtGameTest {
     public static void spaWaterFollowsTheTank(final GameTestHelper helper) {
         final BlockPos pos = new BlockPos(1, 3, 1);
         helper.setBlock(pos, CatalogDevices.BLOCK_STONE_DEVICE.get().defaultBlockState()
-                .setValue(variantProperty(CatalogDevices.BLOCK_STONE_DEVICE.get()), 12));
+                .setValue(variantProperty(CatalogDevices.BLOCK_STONE_DEVICE.get()), 11));
 
         final BlockEntity blockEntity = helper.getBlockEntity(pos);
         helper.assertTrue(blockEntity instanceof TileSpa
                         && blockEntity.getType() == CatalogFurniture.TILE_SPA.get(),
-                "stone device variant 12 must place the spa tile, got " + blockEntity
+                "stone device variant 11 must place the spa tile (the port numbers the original's "
+                        + "meta 12 as variant 11 — CatalogFurniture.wireDeviceTiles, "
+                        + "BlockStoneDeviceRenderer.java:240), got " + blockEntity
                         + " (placed " + stateAt(helper, pos) + ")");
         final TileSpa tile = (TileSpa) helper.getBlockEntity(pos);
 

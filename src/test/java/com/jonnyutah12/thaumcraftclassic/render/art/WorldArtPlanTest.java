@@ -25,16 +25,21 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * {@code TileJarRenderer.java:110}), label yaw map and crooked tilt
  * ({@code :55-65}); the crystal's tint table
  * ({@code TileCrystalRenderer.java:74-76, 89-92}) and the seeded shard
- * sequence at a fixed cell; the mirror's pane swap ({@code :622-637}); the
- * spa's tank read ({@code TileSpa.java:39, 65-71}). The game-test class is
+ * sequence at a fixed cell, with the supporting-face placement table
+ * ({@code :20-39}); the mirror's pane swap and standoff
+ * ({@code TileMirrorRenderer.java:617-629}); the spa's tank read (the port's
+ * {@code tiles/TileSpa.java:39, 65-71}). The game-test class is
  * the mutation-proof surface; this class pins the arithmetic so a formula
  * drift names itself.</p>
  *
  * <p>The sprite scan reads the shipped source (unit tests run from the
  * project dir): every quoted {@code "namespace/path"} constant in
- * {@code render/art/*.java} and {@code client/render/*.java} must be a
- * published row, {@code minecraft:} sprites are exempt (the CSV governs the
- * reference's assets, and vanilla's water sprite is not one).</p>
+ * {@code render/art/*.java} must be a published row — matched against either
+ * CSV column, because the {@code textures/blocks/} rows of the reference
+ * publish {@code textures/block/} targets in 1.21.1. {@code minecraft:}
+ * sprites are exempt (the CSV governs the reference's assets, and vanilla's
+ * water sprite is not one). Model ids are out of scope here: models are
+ * authored port files (D-004) and the asset-path contract walks them.</p>
  */
 class WorldArtPlanTest {
 
@@ -44,12 +49,12 @@ class WorldArtPlanTest {
     void jarFluidHeightIsTheOriginalsFormula() {
         // TileJarRenderer.java:110 — (float) amount / maxAmount * 0.625F.
         assertEquals(0.625F, JarWorldArt.fluidHeight(500, 500), 1.0E-5F,
-                "a full jar is 0.625 blocks tall (amount == maxAmount, :104)");
+                "a full jar is 0.625 blocks tall (amount == maxAmount, :110)");
         assertEquals(0.1875F, JarWorldArt.fluidHeight(150, 500), 1.0E-5F,
                 "150 units is 0.1875 blocks");
         assertEquals(0.0F, JarWorldArt.fluidHeight(0, 500), 1.0E-5F,
                 "an empty jar draws no fluid");
-        assertEquals(JarWorldArt.FILL_PER_UNIT, 0.625F, "the published formula constant is 0.625F (:104)");
+        assertEquals(JarWorldArt.FILL_PER_UNIT, 0.625F, "the published formula constant is 0.625F (:110)");
     }
 
     @Test
@@ -137,28 +142,44 @@ class WorldArtPlanTest {
 
     @Test
     void crystalOrientationPlacesMatchTheTranslationTable() {
-        // TileCrystalRenderer.java:17-38 (translateFromOrientation).
+        // TileCrystalRenderer.java:20-39 (translateFromOrientation): orientation
+        // 0 = DOWN, 1 = UP, 2 = NORTH, 3 = SOUTH, 4 = WEST, 5 = EAST.
         final float[] down = CrystalWorldArt.orientationPlacement(net.minecraft.core.Direction.DOWN);
         assertEquals(0.5F, down[0], 1.0E-5F);
         assertEquals(1.3F, down[1], 1.0E-5F);
         assertEquals(180.0F, down[3], 1.0E-5F, "orientation 0 flips the model 180 about X (:23)");
         final float[] up = CrystalWorldArt.orientationPlacement(net.minecraft.core.Direction.UP);
         assertEquals(-0.3F, up[1], 1.0E-5F, "orientation 1 sits at y - 0.3 (:25)");
+        final float[] south = CrystalWorldArt.orientationPlacement(net.minecraft.core.Direction.SOUTH);
+        assertEquals(-0.3F, south[2], 1.0E-5F, "orientation 3 sits at z - 0.3, rotated 90 about X (:30-31)");
+        assertEquals(90.0F, south[3], 1.0E-5F, "orientation 3 rotates 90 about X (:31)");
         final float[] north = CrystalWorldArt.orientationPlacement(net.minecraft.core.Direction.NORTH);
-        assertEquals(-0.3F, north[2], 1.0E-5F, "orientation 3 sits at z - 0.3 (:31)");
+        assertEquals(1.3F, north[2], 1.0E-5F, "orientation 2 sits at z + 1.3, rotated -90 about X (:27-28)");
+        assertEquals(-90.0F, north[3], 1.0E-5F, "orientation 2 rotates -90 about X (:28)");
+        final float[] west = CrystalWorldArt.orientationPlacement(net.minecraft.core.Direction.WEST);
+        assertEquals(1.3F, west[0], 1.0E-5F, "orientation 4 sits at x + 1.3 (:33)");
+        assertEquals(90.0F, west[5], 1.0E-5F, "orientation 4 rotates 90 about Z (:34)");
+        final float[] east = CrystalWorldArt.orientationPlacement(net.minecraft.core.Direction.EAST);
+        assertEquals(-0.3F, east[0], 1.0E-5F, "orientation 5 sits at x - 0.3 (:36)");
+        assertEquals(-90.0F, east[5], 1.0E-5F, "orientation 5 rotates -90 about Z (:37)");
     }
 
     // --------------------------------------------------------------- mirror
 
     @Test
     void mirrorPaneSwapsWithTheLink() {
-        // TileMirrorRenderer.java:622-637.
+        // TileMirrorRenderer.java:617-629: the linked branch draws the
+        // mirrorpanetrans quad (:621), the unlinked branch the mirrorpane quad
+        // (:629), both at the 0.02F + jitter standoff (:620, :628).
         final var linked = MirrorWorldArt.plan(true, 0.0F);
         final var unlinked = MirrorWorldArt.plan(false, 0.0F);
         assertEquals(MirrorWorldArt.PANE_TRANSPARENT_SPRITE, linked.paneSprite(),
-                "linked draws mirrorpanetrans (:625)");
-        assertEquals(MirrorWorldArt.PANE_SPRITE, unlinked.paneSprite(), "unlinked draws mirrorpane (:636)");
-        assertEquals(0.02F, unlinked.paneOffset(), 1.0E-5F, "the pane standoff is 0.02F (:636)");
+                "linked draws mirrorpanetrans (:621)");
+        assertEquals(MirrorWorldArt.PANE_SPRITE, unlinked.paneSprite(), "unlinked draws mirrorpane (:629)");
+        assertEquals(0.02F, unlinked.paneOffset(), 1.0E-5F, "the pane standoff is 0.02F (:628)");
+        assertEquals(0.02F + MirrorWorldArt.jitter(50, 1.0F),
+                MirrorWorldArt.plan(true, MirrorWorldArt.jitter(50, 1.0F)).paneOffset(), 1.0E-5F,
+                "a live link's pane rides the instability jitter (:620 standoff, :578-581 jitter)");
         assertEquals(MirrorWorldArt.TUNNEL_SPRITE, linked.tunnelSprite());
         assertEquals(MirrorWorldArt.FIELD_SPRITE, linked.fieldSprite());
     }
@@ -182,6 +203,67 @@ class WorldArtPlanTest {
                 "fill fraction across the face");
         assertEquals(1.0F, SpaWorldArt.plan(5000, SpaWorldArt.TANK_CAPACITY).uScale(), 1.0E-5F);
         assertEquals(5000, SpaWorldArt.TANK_CAPACITY, "TileSpa.TANK_CAPACITY");
+    }
+
+    // ------------------------------------------------------------- armature
+
+    /**
+     * The card's armature scope names
+     * {@code BlockArmourersStandRenderer} /
+     * {@code BlockEntityDummyRenderer.java:52-70}; the reference tree contains
+     * neither, so there is no scene to port: no TER, no plan class, and the
+     * registration source must not invent one.
+     */
+    @Test
+    void armatureDeclinesBecauseTheReferenceHasNoRenderer() throws IOException {
+        final Path root = findRepoRoot();
+        final String registration = Files.readString(
+                root.resolve("src/main/java/com/jonnyutah12/thaumcraftclassic/client/render/"
+                        + "DeviceBlockEntityRenderers.java"),
+                StandardCharsets.UTF_8);
+        final List<String> registrations = registration.lines()
+                .filter(line -> line.contains("registerBlockEntityRenderer"))
+                .toList();
+        assertTrue(registrations.stream().noneMatch(line -> {
+            final String l = line.toLowerCase();
+            return l.contains("armature") || l.contains("armour") || l.contains("dummy")
+                    || l.contains("mannequin");
+        }), "the registration source must register no armature scene: the reference has no "
+                + "armourer/dummy renderer to port (the decline lives in its javadoc, never in a "
+                + "registration); registrations = " + registrations);
+        final Path artDir = root.resolve("src/main/java/com/jonnyutah12/thaumcraftclassic/render/art");
+        try (final var files = Files.list(artDir)) {
+            assertTrue(files.noneMatch(p -> p.getFileName().toString().toLowerCase().contains("armature")
+                            || p.getFileName().toString().toLowerCase().contains("dummy")),
+                    "the declined armature scene must not grow a plan class");
+        }
+        final Path reference = referenceTreeRoot();
+        assumeTrue(reference != null, "reference tree not on disk");
+        try (final var files = Files.walk(reference)) {
+            final List<String> renderers = files.map(p -> p.getFileName().toString())
+                    .filter(name -> name.contains("Renderer"))
+                    .filter(name -> name.contains("Armour") || name.contains("Dummy")
+                            || name.contains("Mannequin"))
+                    .sorted()
+                    .toList();
+            assertTrue(renderers.isEmpty(), "no armourer/dummy/mannequin RENDERER exists in the "
+                    + "reference (the tree's only Dummy-named files are ContainerDummy, "
+                    + "ChampionModDummy and api/internal/DummyInternalMethodHandler — none renders "
+                    + "anything), so the card's armature scope has nothing to port; found " + renderers);
+        }
+    }
+
+    /** The decompiled reference, found by walking up from the project dir. */
+    private static Path referenceTreeRoot() {
+        Path dir = Path.of("").toAbsolutePath();
+        while (dir != null) {
+            final Path candidate = dir.resolve("reference/decompiled/thaumcraft/thaumcraft");
+            if (Files.isDirectory(candidate)) {
+                return candidate;
+            }
+            dir = dir.getParent();
+        }
+        return null;
     }
 
     // -------------------------------------------------- published sprites
@@ -213,8 +295,11 @@ class WorldArtPlanTest {
                         continue;
                     }
                     final String target = "textures/" + path + ".png";
+                    // The mod's sprites are the CSV's *target* column in 1.21.1
+                    // layout (a textures/blocks/ source row publishes a
+                    // textures/block/ target), so match either column.
                     final boolean published = rows.stream().anyMatch(
-                            row -> row.startsWith(target + ",") || row.startsWith(target + ","));
+                            row -> row.startsWith(target + ",") || row.contains("," + target + ","));
                     assertTrue(published, source.getFileName() + " names the sprite path " + path
                             + " which has no published row " + target + " (D-005 / published-sprite contract)");
                     checked++;

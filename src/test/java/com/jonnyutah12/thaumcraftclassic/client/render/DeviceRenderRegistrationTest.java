@@ -53,22 +53,34 @@ import org.junit.jupiter.api.DynamicTest;
  */
 class DeviceRenderRegistrationTest {
 
-    private static final Path SUBSCRIBER = Path.of(
-            "src/main/java/com/jonnyutah12/thaumcraftclassic/client/render/DeviceBlockEntityRenderers.java");
+    /**
+     * The subscriber source, resolved from the repo root: Gradle runs tests
+     * with a working dir that is not the project dir, so a cwd-relative path
+     * (the shape {@code terSubscriberExists} shipped with) reads nothing.
+     */
+    private static Path subscriber() {
+        Path dir = Path.of("").toAbsolutePath();
+        while (dir != null && !Files.isDirectory(dir.resolve("src/main/java"))) {
+            dir = dir.getParent();
+        }
+        assertTrue(dir != null, "no repo root above the test working dir");
+        return dir.resolve("src/main/java/com/jonnyutah12/thaumcraftclassic/client/render/"
+                + "DeviceBlockEntityRenderers.java");
+    }
 
     // ---------------------------------------------------------------- wiring
 
     @Test
     void terSubscriberExists() {
-        assertTrue(Files.isRegularFile(SUBSCRIBER),
+        assertTrue(Files.isRegularFile(subscriber()),
                 "the TER subscriber file must ship (D-021: jar, crystal, mirror, spa scenes are TERs): "
-                        + SUBSCRIBER);
+                        + subscriber());
     }
 
     @Test
     void terSubscriberDeclaresModBusAndClientDist() throws IOException {
-        assumeTrue(Files.isRegularFile(SUBSCRIBER), "subscriber missing (RED at the parent tip)");
-        final String source = Files.readString(SUBSCRIBER, StandardCharsets.UTF_8);
+        assumeTrue(Files.isRegularFile(subscriber()), "subscriber missing (RED at the parent tip)");
+        final String source = Files.readString(subscriber(), StandardCharsets.UTF_8);
         assertTrue(source.contains("bus = EventBusSubscriber.Bus.MOD"),
                 "RegisterRenderers fires on the MOD bus; the FML default game bus is where "
                         + "OreBlockColors sat dead — the bus must be declared");
@@ -81,8 +93,8 @@ class DeviceRenderRegistrationTest {
 
     @Test
     void everySceneTileTypeIsRegistered() throws IOException {
-        assumeTrue(Files.isRegularFile(SUBSCRIBER), "subscriber missing (RED at the parent tip)");
-        final String source = Files.readString(SUBSCRIBER, StandardCharsets.UTF_8);
+        assumeTrue(Files.isRegularFile(subscriber()), "subscriber missing (RED at the parent tip)");
+        final String source = Files.readString(subscriber(), StandardCharsets.UTF_8);
         for (final String tile : List.of("TILE_JAR", "TILE_JAR_VOID", "TILE_CRYSTAL",
                 "TILE_MIRROR", "TILE_MIRROR_ESSENTIA", "TILE_SPA")) {
             assertTrue(source.contains(tile + ".get()"),
@@ -93,7 +105,7 @@ class DeviceRenderRegistrationTest {
     @Test
     void atlasShipsTheTerOnlySprites() throws IOException {
         final Path atlas = Path.of("src/main/resources/assets/thaumcraft/atlases/blocks.json");
-        assumeTrue(Files.isRegularFile(SUBSCRIBER), "subscriber missing (RED at the parent tip)");
+        assumeTrue(Files.isRegularFile(subscriber()), "subscriber missing (RED at the parent tip)");
         assertTrue(Files.isRegularFile(atlas),
                 "TER-only sprites (label, crystal, aspect icons) need explicit atlas entries — "
                         + "nothing model-references them");
@@ -123,8 +135,9 @@ class DeviceRenderRegistrationTest {
         final Path file = reference("client/renderers/tile/TileCrystalRenderer.java");
         assumeTrue(Files.isRegularFile(file), "reference tree not on disk");
         final List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
-        assertTrue(lines.get(79).contains("field_145848_d * te.field_145849_e"),
-                "TileCrystalRenderer.java:80 seeds metadata + x + y * z: " + lines.get(79));
+        assertTrue(lines.get(79).contains("field_145851_c + tco.field_145848_d * tco.field_145849_e"),
+                "TileCrystalRenderer.java:80 seeds getMetadata() + xCoord + yCoord * zCoord "
+                        + "(SRG field names in the reference): " + lines.get(79));
         assertTrue(lines.get(97).contains("72 * a"),
                 "TileCrystalRenderer.java:98 is the shard yaw: " + lines.get(97));
     }

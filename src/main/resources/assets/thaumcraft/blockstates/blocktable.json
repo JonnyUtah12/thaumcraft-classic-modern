@@ -1,7 +1,58 @@
 {
   "variants": {
-    "": {
-      "model": "thaumcraft:block/blocktable_table"
-    }
+    "variant=0": [
+      { "model": "thaumcraft:block/blocktable_table" },
+      { "model": "thaumcraft:block/blocktable_cloth" }
+    ],
+    "variant=1": [
+      { "model": "thaumcraft:block/blocktable_table" },
+      { "model": "thaumcraft:block/blocktable_cloth", "y": 90 }
+    ],
+    "variant=2": [
+      { "model": "thaumcraft:block/blocktable_table" },
+      { "model": "thaumcraft:block/blocktable_cloth" }
+    ],
+    "variant=3": [
+      { "model": "thaumcraft:block/blocktable_table" },
+      { "model": "thaumcraft:block/blocktable_cloth" }
+    ],
+    "variant=4": [
+      { "model": "thaumcraft:block/blocktable_table" },
+      { "model": "thaumcraft:block/blocktable_cloth" }
+    ],
+    "variant=5": [
+      { "model": "thaumcraft:block/blocktable_table" },
+      { "model": "thaumcraft:block/blocktable_cloth" }
+    ],
+    "variant=6": [
+      { "model": "thaumcraft:block/blocktable_table" }
+    ],
+    "variant=7": [
+      { "model": "thaumcraft:block/blocktable_table" }
+    ],
+    "variant=8": [
+      { "model": "thaumcraft:block/blocktable_table" }
+    ],
+    "variant=9": [
+      { "model": "thaumcraft:block/blocktable_table" }
+    ],
+    "variant=10": [
+      { "model": "thaumcraft:block/blocktable_table" }
+    ],
+    "variant=11": [
+      { "model": "thaumcraft:block/blocktable_table" }
+    ],
+    "variant=12": [
+      { "model": "thaumcraft:block/blocktable_table" }
+    ],
+    "variant=13": [
+      { "model": "thaumcraft:block/blocktable_table" }
+    ],
+    "variant=14": [
+      { "model": "thaumcraft:block/blocktable_table" }
+    ],
+    "variant=15": [
+      { "model": "thaumcraft:block/blocktable_table" }
+    ]
   }
 }
