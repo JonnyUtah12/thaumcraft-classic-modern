@@ -285,16 +285,26 @@ public final class ZombieMobGameTest {
         final BlockPos at = helper.absolutePos(new BlockPos(1, 3, 1));
         villager.moveTo(at.getX() + 3.5, at.getY(), at.getZ() + 0.5, 0.0F, 0.0F);
         level.addFreshEntity(villager);
-        helper.runAtTickTime(helper.getTick() + 40L, () -> {
+        // The target is acquired by the LEVEL — the goal runs from the mob's own AI
+        // tick — so this leg is a delta contract: poll the outcome, do not schedule it.
+        // The old form parked the assert at getTick() + 40, which made the harness's
+        // scheduler part of the port's contract; the 400-tick budget below is now a
+        // watchdog only, and at the watchdog the failure that surfaces IS this
+        // condition's message (GameTestSequence#tickAndFailIfNotComplete), so the
+        // diagnosis survives the conversion. docs/testing.md, "assert the OUTCOME".
+        helper.succeedWhen(() -> {
+            // Stated first, so a layout/harness change reports the precondition by
+            // name and not as a target that never arrived.
+            assertMobCellIsTicking(helper, zombie, "the angry zombie");
             helper.assertTrue(zombie.getTarget() == villager,
                     "the angry zombie did not acquire the villager 3 blocks away as its target; the "
                             + "parent's nearest-target goal is not installed (target="
                             + zombie.getTarget() + ", tickCount=" + zombie.tickCount
+                            + ", probeTick=" + helper.getTick()
                             + ", difficulty=" + level.getDifficulty() + ", villagers in the pad="
                             + level.getEntitiesOfClass(Villager.class, mobBox(helper)).size() + ")");
             villager.discard();
             zombie.discard();
-            helper.succeed();
         });
     }
 
@@ -392,7 +402,12 @@ public final class ZombieMobGameTest {
         // here the contract is that the live box and the live attack base TRACK
         // that value (the failure this probe guards is the box sitting at the
         // anger-1.0 size 1.32 x 3.96).
-        helper.runAtTickTime(helper.getTick() + 3L, () -> {
+        // This leg is SELF-CONTAINED: the mob's own tick() is fed by the leg below, so
+        // the measurement does not read the harness's clock at all. The old form parked
+        // it at getTick() + 3, which put a scheduling delay inside the contract for no
+        // measurement benefit and left the batch one more way to redden the probe. Run
+        // it inline: no probe tick gates it now (docs/testing.md, "assert the OUTCOME").
+        final Runnable angerDelta = () -> {
             // The clock is the mob's per-tick body, driven here, and the
             // measurement is self-contained IN THIS LEG: the server ticks the
             // mobs of a ticking area from ServerLevel#tickNonPassenger (which
@@ -434,8 +449,12 @@ public final class ZombieMobGameTest {
                             + " (the unscaled angry-zombie box would be 0.6 x 1.95, the "
                             + "anger-1.0 size 1.32 x 3.96)");
             giant.discard();
-            helper.succeed();
-        });
+        };
+        // The tick-list precondition, stated before the leg that depends on the pad's
+        // layout, so a harness change reports the precondition by name.
+        assertMobCellIsTicking(helper, giant, "the furious zombie");
+        angerDelta.run();
+        helper.succeed();
     }
 
     @GameTest(template = "empty", timeoutTicks = 600)
@@ -479,7 +498,18 @@ public final class ZombieMobGameTest {
         final float decayPerTick = 0.002F;                  // :23
         final float angerFloor = 1.0F;                      // :22
         final float[] base = new float[4];
-        helper.runAtTickTime(helper.getTick() + 5L, () -> {
+        // The leg needs ONE server tick of the mob — the tick that resizes the loaded
+        // fury's box to (1.2 + anger) — and that tick is the LEVEL's work, not the
+        // probe's. The old form asserted at getTick() + 5, i.e. it GUESSED when the
+        // level would get there: that is the shape that went red 2/2 in the
+        // with-Curios CI job as "tickCount 0" while the same sha was green locally.
+        // Poll for the tick instead. timeoutTicks = 600 below is a watchdog, and a
+        // watchdog failure surfaces this condition's own message
+        // (GameTestSequence#tickAndFailIfNotComplete), so the diagnosis survives.
+        // Measured on this pad (283-test batch): the mob's tickCount tracks the probe
+        // 1:1 from probe tick 1, so the leg opens one tick in and the watchdog carries
+        // ~600x margin over a healthy run.
+        helper.succeedWhen(() -> {
             assertMobCellIsTicking(helper, giant, "the furious zombie");
             base[0] = giant.getAnger();
             base[1] = giant.tickCount;
@@ -494,7 +524,9 @@ public final class ZombieMobGameTest {
                             + " originAlign16=" + (helper.absolutePos(BlockPos.ZERO).getX() & 15)
                             + "," + (helper.absolutePos(BlockPos.ZERO).getZ() & 15)
                             + " cellEntityTicking=" + helper.getLevel()
-                                    .isPositionEntityTicking(giant.blockPosition()));
+                                    .isPositionEntityTicking(giant.blockPosition())
+                            + " | polled " + helper.getTick() + " probe ticks, mob tickCount "
+                            + giant.tickCount);
 
             final var settled = giant.getDimensions(giant.getPose());
             base[2] = settled.width();
@@ -559,7 +591,6 @@ public final class ZombieMobGameTest {
                             + " driven mob ticks: " + giant.getAttributeBaseValue(Attributes.ATTACK_DAMAGE)
                             + " at anger " + anger);
             giant.discard();
-            helper.succeed();
         });
     }
 
