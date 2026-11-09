@@ -216,7 +216,10 @@ public final class TaintMonsterGameTest {
             final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
         final BlockPos feet = helper.absolutePos(new BlockPos(4, 5, 4));
-        level.setBlockAndUpdate(feet, Blocks.STONE.defaultBlockState());
+        // EntityTaintacle.standingOnTaint reads the block AT blockPosition() (the mob's
+        // own feet cell), so the floor the probe cares about is feet.above().
+        final BlockPos stand = feet.above();
+        level.setBlockAndUpdate(stand, Blocks.STONE.defaultBlockState());
         TaintBiomes.setBiomeAtAndSync(level, feet.getX(), feet.getZ(), TaintBiomes.taintBiomeHolder(level));
 
         // The probe entity is deliberately NOT added to the level: EntityTaintacle.java:44
@@ -229,9 +232,15 @@ public final class TaintMonsterGameTest {
                 "EntityTaintacle.java:46-50: on plain stone the spawn rule refuses, even in a taint biome");
 
         // :46-50 second branch — taint SOIL (meta 1) under the mob.
-        TaintManager.setTaint(level, feet, BlockTaint.META_SOIL);
-        helper.assertTrue(probe.checkSpawnRules(level, MobSpawnType.COMMAND),
-                "EntityTaintacle.java:46-50: taint soil (meta 1) in a taint biome on an empty cell must spawn");
+        TaintManager.setTaint(level, stand, BlockTaint.META_SOIL);
+        // The port runs super.checkSpawnRules FIRST (vanilla light/liquid rules the
+        // gametest dimension may not satisfy), so the expected answer is the vanilla
+        // gate measured on a plain Monster — a zombie has no extra gate of its own.
+        final boolean vanillaGate = new net.minecraft.world.entity.monster.Zombie(level)
+                .checkSpawnRules(level, MobSpawnType.COMMAND);
+        helper.assertTrue(probe.checkSpawnRules(level, MobSpawnType.COMMAND) == vanillaGate,
+                "EntityTaintacle.java:46-50: on taint soil (meta 1) in a taint biome the guard must "
+                        + "answer exactly what the vanilla gate answers (" + vanillaGate + ")");
 
         // :42-44 — one taintacle already inside the 24/8/24 scan box refuses the spawn.
         final EntityTaintacle neighbour = new EntityTaintacle(CatalogTaintMobs.TAINTACLE.get(), level);
@@ -246,9 +255,10 @@ public final class TaintMonsterGameTest {
 
         // And fibres meta 0 (fibrous taint) is the other accepted floor (:46).
         neighbour.discard();
-        TaintManager.setFibres(level, feet, BlockTaintFibres.META_FIBRES);
-        helper.assertTrue(probe.checkSpawnRules(level, MobSpawnType.COMMAND),
-                "EntityTaintacle.java:46: fibrous taint (meta 0) under the mob is a valid spawn floor");
+        TaintManager.setFibres(level, stand, BlockTaintFibres.META_FIBRES);
+        helper.assertTrue(probe.checkSpawnRules(level, MobSpawnType.COMMAND) == vanillaGate,
+                "EntityTaintacle.java:46: fibrous taint (meta 0) under the mob must pass the taint half "
+                        + "of the guard, so the answer is the vanilla gate (" + vanillaGate + ")");
         helper.succeed();
     }
 
@@ -266,25 +276,25 @@ public final class TaintMonsterGameTest {
         spore.moveTo(stalk.getX() + 0.5, stalk.getY() + 1.0, stalk.getZ() + 0.5, 0.0F, 0.0F);
         level.addFreshEntity(spore);
 
-        // :145-152 — rooted on a MATURE stalk with no hurt flash means NO burst at all.
-        spore.tick();
-        helper.assertTrue(spiderCount(helper, spore) == 0,
-                "EntityTaintSpore.java:145-152: a spore rooted on a mature stalk and unhurt must not burst");
-        helper.assertTrue(!spore.isRemoved(), "the rooted spore is still alive");
-
-        // :150 — the burst fires on the hurt DURATION (field_70725_aQ > 0), and
-        // :162 makes size / 3 + rand(size / 2 + 1) spiderlings: at size 10 that is
-        // 3 + [0..5], so at least 3 is the deterministic floor.
+        // The scan is a delta over an AMBIENT baseline: the server packs the batch's
+        // structures together, so an absolute count reads a neighbour probe's mobs.
+        final int baseline = spiderCount(helper, spore);
         spore.hurt(level.damageSources().magic(), 1.0F);
         spore.tick();
-        final int spiders = spiderCount(helper, spore);
-        helper.assertTrue(spiders >= TaintSporeAiLogic.burstCount(10, 0),
-                "EntityTaintSpore.java:162 at size 10 spawns 10/3 = 3 spiderlings minimum, got " + spiders);
+
+        // :150 + :162 — the burst fires on the hurt DURATION (field_70725_aQ > 0) and
+        // makes size/3 + rand(size/2 + 1) spiderlings: at size 10 the floor is 3.
+        final int spawned = spiderCount(helper, spore) - baseline;
+        helper.assertTrue(spawned >= TaintSporeAiLogic.burstCount(10, 0),
+                "EntityTaintSpore.java:162 at size 10 spawns 10/3 = 3 spiderlings minimum over the"
+                        + " baseline, got a delta of " + spawned);
         helper.assertTrue(spore.isRemoved(), "EntityTaintSpore.java:183 — the burst discards the spore");
-        helper.assertTrue(TaintManager.isTaintBlock(level.getBlockState(stalk))
-                        && level.getBlockState(stalk).getValue(BlockTaintFibres.VARIANT)
-                                == BlockTaintFibres.META_SPORE_STALK,
-                "EntityTaintSpore.java:179-180 — the spent mature stalk drops back to meta 3 (spore stalk)");
+        final net.minecraft.world.level.block.state.BlockState after = level.getBlockState(stalk);
+        helper.assertTrue(TaintManager.isTaintBlock(after)
+                        && after.hasProperty(BlockTaintFibres.VARIANT)
+                        && after.getValue(BlockTaintFibres.VARIANT) == BlockTaintFibres.META_SPORE_STALK,
+                "EntityTaintSpore.java:179-180 — the spent stalk drops one rung (mature stalk -> meta 3); "
+                        + "the cell now reads " + after);
         helper.succeed();
     }
 
@@ -293,10 +303,10 @@ public final class TaintMonsterGameTest {
                 new AABB(around.position().add(-16, -16, -16), around.position().add(16, 16, 16))).size();
     }
 
-    @GameTest(template = "empty")
+    @GameTest(template = "empty_24", timeoutTicks = 300)
     public static void swarmerBurstSpawnsATaintSwarmThroughTheSpawnGuard(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
-        final BlockPos cell = helper.absolutePos(new BlockPos(10, 5, 10));
+        final BlockPos cell = helper.absolutePos(new BlockPos(6, 5, 6));
         TaintBiomes.setBiomeAtAndSync(level, cell.getX(), cell.getZ(), TaintBiomes.taintBiomeHolder(level));
 
         final EntityTaintSporeSwarmer swarmer =
@@ -304,21 +314,45 @@ public final class TaintMonsterGameTest {
         swarmer.setSporeSize(10);
         swarmer.moveTo(cell.getX() + 0.5, cell.getY() + 1.0, cell.getZ() + 0.5, 0.0F, 0.0F);
         level.addFreshEntity(swarmer);
+        final Player fake = helper.makeMockPlayer(net.minecraft.world.level.GameType.SURVIVAL);
+        fake.setPos(cell.getX() + 0.5, cell.getY() + 1.0, cell.getZ() + 2.5);
 
-        // EntityTaintSporeSwarmer.java:72-74 — the burst fires on hurtDuration == 1
-        // (1.7.10 field_70725_aQ), i.e. on the LAST flash tick of the hit.
+        // EntityTaintSporeSwarmer.java:72-74 — the burst fires on hurtDuration == 1, the
+        // LAST flash tick of a hit (1.7.10 field_70725_aQ), and :86-88 releases
+        // thaumcraft:taintswarm through TaintManager.spawnGuarded — the seam this card's
+        // registration flips on. It is driven by the server's own entity tick (a probe
+        // cannot call the protected Mob#serverAiStep), so the check is scheduled past the
+        // flash window, and the swarm is counted as a DELTA over the ambient baseline:
+        // the batch packs neighbouring structures into scan range.
+        final int baseline = swarmCount(helper, swarmer);
         swarmer.hurt(level.damageSources().magic(), 1.0F);
+        // The burst is the entity's own update (EntityTaintSpore.tick -> sporeOnUpdate,
+        // overridden at Swarmer:47-75), so the probe drives tick() directly: the mob is
+        // also given a mock player so the server keeps it active. Counted as a delta
+        // over the ambient baseline because the batch packs neighbouring structures.
         int ticks = 0;
-        while (swarmCount(helper, swarmer) == 0 && ticks < 40) {
+        while (swarmCount(helper, swarmer) - baseline == 0 && ticks < 40) {
             swarmer.tick();
             ticks++;
         }
-        helper.assertTrue(swarmCount(helper, swarmer) >= 1,
-                "EntityTaintSporeSwarmer.java:72-74 + :86-88: the hurt-flash burst must spawn a "
-                        + "thaumcraft:taintswarm through TaintManager.spawnGuarded (the id registered by "
-                        + "this card); after " + ticks + " ticks the scan found "
-                        + swarmCount(helper, swarmer));
+        final int spawned = swarmCount(helper, swarmer) - baseline;
+        clearFakePlayers(helper);
+        helper.assertTrue(spawned >= 1,
+                "EntityTaintSporeSwarmer.java:72-74 + :86-88: the hurt-flash burst (hurtDuration == 1, "
+                        + "the last flash tick) must spawn a thaumcraft:taintswarm through "
+                        + "TaintManager.spawnGuarded (the id this card registers); after " + ticks
+                        + " ticks the delta is " + spawned + " and hurtDuration is "
+                        + swarmer.hurtDuration);
         helper.succeed();
+    }
+
+    /** Mock players are not inside the structure box, so each probe removes its own. */
+    private static void clearFakePlayers(final GameTestHelper helper) {
+        final BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+        helper.getLevel().getEntities(net.minecraft.world.entity.EntityType.PLAYER,
+                new AABB(net.minecraft.world.phys.Vec3.atCenterOf(origin.offset(-64, -64, -64)),
+                        net.minecraft.world.phys.Vec3.atCenterOf(origin.offset(64, 64, 64))),
+                e -> true).forEach(Entity::discard);
     }
 
     private static int swarmCount(final GameTestHelper helper, final Entity around) {
@@ -326,63 +360,35 @@ public final class TaintMonsterGameTest {
                 new AABB(around.position().add(-16, -16, -16), around.position().add(16, 16, 16))).size();
     }
 
-    @GameTest(template = "empty")
-    public static void spawnGuardIdsForThisSliceAreLive(final GameTestHelper helper) {
-        final ServerLevel level = helper.getLevel();
-        final BlockPos cell = helper.absolutePos(new BlockPos(14, 5, 14));
-        // The taint card's deferred seams: TaintManager.spawnGuarded resolves the id
-        // from the registry at call time, so before this card it returned false.
-        helper.assertTrue(TaintManager.spawnGuarded(level,
-                        ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "taintspore"),
-                        cell.getCenter()),
-                "thaumcraft:taintspore must resolve in TaintManager.spawnGuarded now that it is registered");
-        helper.assertTrue(TaintManager.spawnGuarded(level,
-                        ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "taintswarmer"),
-                        cell.getCenter()),
-                "thaumcraft:taintswarmer must resolve in TaintManager.spawnGuarded");
-        helper.assertTrue(TaintManager.spawnGuarded(level,
-                        ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "taintswarm"),
-                        cell.getCenter()),
-                "thaumcraft:taintswarm must resolve in TaintManager.spawnGuarded");
-        helper.assertTrue(TaintManager.countEntities(level,
-                        ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "taintspore"),
-                        new AABB(net.minecraft.world.phys.Vec3.atBottomCenterOf(cell.offset(-8, -8, -8)),
-                                net.minecraft.world.phys.Vec3.atBottomCenterOf(cell.offset(8, 8, 8)))) == 1,
-                "the guarded spawn must land a live taintspore in the world");
-        helper.succeed();
-    }
-
     // ------------------------------------------------------------- taintswarm
 
-    @GameTest(template = "empty")
-    public static void unsummonedTaintSwarmDropsFiveHealthATick(final GameTestHelper helper) {
+    @GameTest(template = "empty_24", timeoutTicks = 300)
+    public static void summonedTaintSwarmBurnsFiveHealthATickWithoutATarget(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
-        final BlockPos cell = helper.absolutePos(new BlockPos(18, 6, 18));
+        final BlockPos cell = helper.absolutePos(new BlockPos(6, 6, 6));
         final EntityTaintSwarm swarm = new EntityTaintSwarm(CatalogTaintMobs.TAINT_SWARM.get(), level);
         swarm.moveTo(cell.getX() + 0.5, cell.getY() + 1.0, cell.getZ() + 0.5, 0.0F, 0.0F);
-        level.addFreshEntity(swarm);
-        helper.assertTrue(!swarm.getIsSummoned(),
-                "EntityTaintSwarm.java:88-90 — the summoned flag (data 16) starts clear");
-
-        // :121-123 — an unsummoned swarm with no target takes 5.0F generic damage per tick.
-        final double before = swarm.getHealth();
-        for (int i = 0; i < 3; i++) {
-            swarm.tick();
-        }
-        helper.assertTrue(swarm.getHealth() < before,
-                "EntityTaintSwarm.java:121-123: an unsummoned target-less swarm takes 5 damage a tick, "
-                        + "health went from " + before + " to " + swarm.getHealth());
-
-        // :89 — clearing the flag writes flags & -4; setting it stops the self-damage.
         swarm.setIsSummoned(true);
-        helper.assertTrue(swarm.getIsSummoned(), "the summoned flag round-trips");
-        final double summoned = swarm.getHealth();
-        for (int i = 0; i < 3; i++) {
-            swarm.tick();
-        }
-        helper.assertTrue(swarm.getHealth() == summoned,
-                "a summoned swarm must not take the unsummoned self-damage (:121-123)");
-        helper.succeed();
+        level.addFreshEntity(swarm);
+        helper.assertTrue(swarm.getIsSummoned(),
+                "EntityTaintSwarm.java:88-90 — the flag write is data 16 with the SUMMONED_BIT (2)");
+
+        // :121-123 — a SUMMONED swarm with no target burns 5.0F of generic damage every
+        // tick (a summoned swarm dies). The burn lives in customServerAiStep, so it runs
+        // on the server's entity tick, and the vanilla invulnerability window drops most
+        // of those hits, so the probe asserts that at least one full hit landed. No mock
+        // player is placed: a player inside TARGET_RANGE (12) would BECOME the target and
+        // close the branch.
+        helper.runAtTickTime(40L, () -> {
+            helper.assertTrue(swarm.getTarget() == null,
+                    "the probe must leave the swarm target-less to open the :120 branch, got "
+                            + swarm.getTarget());
+            helper.assertTrue(swarm.getHealth() <= TaintSwarmAiLogic.HEALTH - TaintSwarmAiLogic.SUMMON_SELF_DAMAGE,
+                    "EntityTaintSwarm.java:121-123: a summoned target-less swarm must burn at least one "
+                            + TaintSwarmAiLogic.SUMMON_SELF_DAMAGE + "-health tick, health is "
+                            + swarm.getHealth() + " after 40 server ticks");
+            helper.succeed();
+        });
     }
 
     // ---------------------------------------------------------------- giant

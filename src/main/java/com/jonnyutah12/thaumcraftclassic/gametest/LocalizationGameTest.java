@@ -111,7 +111,11 @@ public final class LocalizationGameTest {
             Map.entry("tc.handmirrorlinkedto", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorlinked", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorerror", "ItemHandMirror link message"),
-            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"));
+            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"),
+            Map.entry("tc.boss.enrage", "EntityTaintacleGiant enrage announcement — the key is "
+                    + "TaintacleGiantAiLogic.ENRAGE_LANG_KEY, the original's "
+                    + "StatCollector.translateToLocal(\"tc.boss.enrage\") at "
+                    + "EntityTaintacleGiant.java:122 (en_US.lang:761)"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always
