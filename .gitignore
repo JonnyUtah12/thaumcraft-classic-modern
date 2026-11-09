@@ -34,3 +34,6 @@ reference/
 
 ### OS ###
 .DS_Store
+/reference
+__pycache__/
+logs/
