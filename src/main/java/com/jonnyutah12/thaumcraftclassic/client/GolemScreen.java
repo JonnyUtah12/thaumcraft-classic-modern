@@ -26,7 +26,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * resolved (the core is synched data, so this is synced state, not a drawn
  * fake).</p>
  *
- * <p><b>Background (docs/BEHAVIORAL_DEVIATIONS.md BD-17).</b> The original
+ * <p><b>Background (docs/BEHAVIORAL_DEVIATIONS.md BD-37).</b> The original
  * draws its whole panel from {@code guigolem.png} (256x256, overlay-only
  * per D-004, so not in the code-only jar): the panel, the 24x24
  * type-varied slot frames, the 24x8 scroll arrows, the 8x8 toggle pips, the
@@ -35,7 +35,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * frames the window cells with vanilla {@code minecraft:container/slot}
  * sprites — no original texel is referenced.</p>
  *
- * <p><b>What is not drawn, and why (BD-19).</b> The programming UI — the
+ * <p><b>What is not drawn, and why (BD-38).</b> The programming UI — the
  * guard-target toggles (core 4, buttons 51..54), the Fill amount toggle
  * (core 0, button 50), the Use action toggles (core 8, buttons 50..52), the
  * sort toggles (Upgrade-5, buttons 55..57) and the per-slot color tabs
@@ -101,8 +101,8 @@ public class GolemScreen extends AbstractContainerScreen<GolemMenu> {
 
         if (windowVisible(this.menu)) {
             // The six window cells at the original 24x24 frame boxes, framed
-            // with vanilla slot sprites (BD-17): the slots themselves bind
-            // when the mob inventory lands (BD-19).
+            // with vanilla slot sprites (BD-37): the slots themselves bind
+            // when the mob inventory lands (BD-38).
             for (int cell = 0; cell < ContainerLayout.GOLEM_WINDOW_SLOTS; cell++) {
                 ScreenPanel.frameArea(guiGraphics, this.leftPos, this.topPos,
                         ContainerLayout.golemFrameX(cell), ContainerLayout.golemFrameY(cell),
@@ -124,7 +124,7 @@ public class GolemScreen extends AbstractContainerScreen<GolemMenu> {
      * ({@code (111,68,24,8)} / {@code (135,68,24,8)}) send menu buttons 66/67
      * — same boxes, same buttons. The color-tab, guard/fill/use and sort
      * hitboxes of the original are not wired here while their widgets are not
-     * drawn (BD-19); their geometry is pinned in {@code ContainerLayout}.
+     * drawn (BD-38); their geometry is pinned in {@code ContainerLayout}.
      */
     @Override
     public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {

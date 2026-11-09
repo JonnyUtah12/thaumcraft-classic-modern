@@ -288,7 +288,7 @@ public final class GolemAiInstallationGameTest {
 
     /**
      * The load path re-runs {@code setupGolem()} (the original's :693-694), and
-     * BD-18's clear-both-selectors rule must keep the set from stacking: a
+     * BD-31's clear-both-selectors rule must keep the set from stacking: a
      * save → fresh entity → load round trip ends with exactly the same goal set
      * as a fresh install, not two copies of each Guard goal.
      */
@@ -305,7 +305,7 @@ public final class GolemAiInstallationGameTest {
         final EntityGolemBase reloaded = CatalogGolems.GOLEM.get().create(level);
         reloaded.load(tag);
         reloaded.setup(HOME_FACING);
-        // setup() installs once; the load path installs again — the BD-18 clear
+        // setup() installs once; the load path installs again — the BD-31 clear
         // has to keep the second pass idempotent.
         final List<String> afterLoad = installed(reloaded);
         helper.assertTrue(fresh.size() == afterLoad.size(),

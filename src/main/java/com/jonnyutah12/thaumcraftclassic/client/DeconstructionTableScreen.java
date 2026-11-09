@@ -25,7 +25,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * the player's aspect pool, and plays {@code thaumcraft:hhoff}. The original
  * could read the tile's {@code aspect} field directly because it held the tile;
  * 1.21.1 hands a screen only the menu, so the revealed aspect is not
- * client-visible here (BD-17).</p>
+ * client-visible here (BD-37).</p>
  *
  * <p>What this screen draws: the panel and player piece, the input slot frame,
  * the 46 px break bar rail with the synced break-time fill
@@ -87,7 +87,7 @@ public class DeconstructionTableScreen extends AbstractContainerScreen<Deconstru
         }
 
         // The original's aspect box, where its collect click lives. The aspect
-        // itself is not synced to the client (BD-17), so the box is framed, not drawn into.
+        // itself is not synced to the client (BD-37), so the box is framed, not drawn into.
         ScreenPanel.frameArea(guiGraphics, this.leftPos, this.topPos,
                 ContainerLayout.DECON_ASPECT_X, ContainerLayout.DECON_ASPECT_Y,
                 ContainerLayout.DECON_ASPECT_SIZE, ContainerLayout.DECON_ASPECT_SIZE);
@@ -96,7 +96,7 @@ public class DeconstructionTableScreen extends AbstractContainerScreen<Deconstru
     /**
      * The original {@code func_73864_a}: super handles the slots, then the
      * {@code (64,48)} 16x16 box sends menu button 1. Same hitbox, same button,
-     * same order — only the icon inside it is missing (BD-17).
+     * same order — only the icon inside it is missing (BD-37).
      */
     @Override
     public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {

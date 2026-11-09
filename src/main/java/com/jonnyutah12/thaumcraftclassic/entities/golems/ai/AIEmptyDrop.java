@@ -40,7 +40,7 @@ import java.util.EnumSet;
  *
  * <h2>Deviations</h2>
  * <ul>
- *   <li>DEVIATION (BD-23): the original compared {@code cc != home} on
+ *   <li>DEVIATION (BD-36): the original compared {@code cc != home} on
  *       {@code ChunkCoordinates} <em>references</em>
  *       ({@code AIEmptyDrop.java:24}, {@code :55}), so it never excluded
  *       anything; the port compares positions ({@link BlockPos#equals}), which is
@@ -51,7 +51,7 @@ import java.util.EnumSet;
  *       ({@code item.field_145804_b = 10}); 1.21.1's {@code ItemEntity.age} has
  *       no setter, so the port uses {@link ItemEntity#setPickUpDelay(int)}, the
  *       field that plays that role today.</li>
- *   <li>DEVIATION (BD-20): the original's {@code theGolem.updateCarried()}
+ *   <li>DEVIATION (BD-33): the original's {@code theGolem.updateCarried()}
  *       ({@code AIEmptyDrop.java:78}) has no equivalent in this tree.
  *       // SEAM: add the carried-display repaint and call it here.</li>
  *   <li>The original's {@code resetTask()} (resetTask) is empty

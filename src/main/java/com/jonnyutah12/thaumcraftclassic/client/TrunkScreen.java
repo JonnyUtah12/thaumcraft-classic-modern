@@ -25,7 +25,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * pitch, wider than vanilla's 18 px), and the player inventory is the standard
  * 3x9 grid at {@code y = 118 + row*18} with the hotbar at {@code y = 176}.</p>
  *
- * <p><b>Background (docs/BEHAVIORAL_DEVIATIONS.md BD-17).</b> The original drew
+ * <p><b>Background (docs/BEHAVIORAL_DEVIATIONS.md BD-37).</b> The original drew
  * {@code guitrunkbase.png}, a texture that only ships in an asset-overlay build
  * (the original assets are All Rights Reserved and are never committed, D-004),
  * so it is not in the code-only jar this card is gated on. The panel is

@@ -46,7 +46,7 @@ import java.util.List;
  * <h2>Deviations</h2>
  * <ul>
  *   <li>DEVIATION: the mutation goes through the shipped
- *       {@link EntityGolemBase#actHomeTake()} (BD-17), which drains the home
+ *       {@link EntityGolemBase#actHomeTake()} (BD-30), which drains the home
  *       container's need list into the carry and the golem inventory, bounded by
  *       {@code getCarrySpace()} — the same face, the same bound. The gate keeps
  *       a local simulated extraction so the need-list/valid-target/colour
@@ -122,7 +122,7 @@ public final class AIHomeTake extends GolemGoal {
                         continue;
                     }
                     // DEVIATION: the shipped act method owns the mutation
-                    // (BD-17): home face, carry-space bound.
+                    // (BD-30): home face, carry-space bound.
                     if (!this.golem.actHomeTake()) {
                         return false;
                     }

@@ -25,7 +25,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * the original coordinates, and nothing else: the transport itself is
  * {@link HandMirrorMenu}'s server-side per-tick slot diff. Background deviation
  * (the original sheet is overlay-only) is
- * docs/BEHAVIORAL_DEVIATIONS.md BD-17.</p>
+ * docs/BEHAVIORAL_DEVIATIONS.md BD-37.</p>
  */
 @OnlyIn(Dist.CLIENT)
 public class HandMirrorScreen extends AbstractContainerScreen<HandMirrorMenu> {

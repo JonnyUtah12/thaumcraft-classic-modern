@@ -199,7 +199,7 @@ public class AIEssentiaGather extends GolemGoal {
         if (taken > 0) {
             this.golem.setEssentia(aspect, this.golem.getEssentiaAmount() + taken);
             playSwim(0.05F); // :141-147 — this goal's sound is quieter: 0.05F
-            // DEVIATION (BD-20): updateCarried() (:148) publishes the carry payload to the
+            // DEVIATION (BD-33): updateCarried() (:148) publishes the carry payload to the
             // golem's display stack, which this tree has not shipped yet (TC-M6-08-s-c).
         } else {
             // The original clears the aspect and leaves the amount as it was

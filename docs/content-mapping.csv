@@ -312,7 +312,7 @@ Thaumcraft:GolemOrb,thaumcraft:golemorb,entity,Energy Orb,done,tested,,class=Ent
 Thaumcraft:ShockOrb,thaumcraft:shockorb,entity,Shocking Orb,not_started,not_tested,,class=EntityShockOrb mod_index=14
 Thaumcraft:ExplosiveOrb,thaumcraft:explosiveorb,entity,Explosive Fireball,not_started,not_tested,,class=EntityExplosiveOrb mod_index=15
 Thaumcraft:Ember,thaumcraft:ember,entity,,not_started,not_tested,,class=EntityEmber mod_index=16
-Thaumcraft:Golem,thaumcraft:golem,entity,Golem,done,tested,,class=EntityGolemBase mod_index=17
+Thaumcraft:Golem,thaumcraft:golem,entity,Golem,done,tested,,class=EntityGolemBase mod_index=17; renderer=RenderGolemBase/ModelGolem/ModelGolemAccessories TC-M6-08-s-c2
 Thaumcraft:TravelingTrunk,thaumcraft:travelingtrunk,entity,Traveling Trunk,not_started,not_tested,,class=EntityTravelingTrunk mod_index=18
 Thaumcraft:BrainyZombie,thaumcraft:brainyzombie,entity,Angry Zombie,done,tested,,class=EntityBrainyZombie mod_index=19 - TC-M6-06-s-c2 port; anger 1.0 start decay 0.002 cap 2.0; party buff 2.0 + 0.5 per neighbour to 5.0; size 1.2+anger; attack 7.0 + 5.0 per anger over 1.0; 5 goal slots override vanilla's 8
 Thaumcraft:GiantBrainyZombie,thaumcraft:giantbrainyzombie,entity,Furious Zombie,done,tested,,class=EntityGiantBrainyZombie mod_index=20 - TC-M6-06-s-c2 port; anger cap 2.0 + doubled damage; size x2; xp 14 + 2 per point over 20; damage rewrite 7.0 + 5.0 per anger over 1.0; drops x4 and 12 flesh flips of 2; the 1.7.10 scale hook is ported on the box
@@ -326,7 +326,7 @@ Thaumcraft:CultistKnight,thaumcraft:cultistknight,entity,Crimson Knight,not_star
 Thaumcraft:CultistCleric,thaumcraft:cultistcleric,entity,Crimson Cleric,not_started,not_tested,,class=EntityCultistCleric mod_index=28
 Thaumcraft:CultistLeader,thaumcraft:cultistleader,entity,Praetor %s the %d,not_started,not_tested,,class=EntityCultistLeader mod_index=29
 Thaumcraft:CultistPortal,thaumcraft:cultistportal,entity,Crimson Portal,not_started,not_tested,,class=EntityCultistPortal mod_index=30
-Thaumcraft:EldritchGolem,thaumcraft:eldritchgolem,entity,%s Eldritch Construct,done,tested,,class=EntityEldritchGolem mod_index=31; TC-M6-08-s-c: entity type registered from the original registration row (ConfigEntities.java:84/89/119/154) with its hitbox/tracking/interval; behaviour deferred
+Thaumcraft:EldritchGolem,thaumcraft:eldritchgolem,entity,%s Eldritch Construct,done,tested,,class=EntityEldritchGolem mod_index=31; TC-M6-08-s-c: entity type registered from the original registration row (ConfigEntities.java:84/89/119/154) with its hitbox/tracking/interval; behaviour deferred; renderer=RenderEldritchGolem/ModelEldritchGolem TC-M6-08-s-c2 (unregistered in game until the Monster behaviour card)
 Thaumcraft:EldritchCrab,thaumcraft:eldritchcrab,entity,Eldritch Crab,not_started,not_tested,,class=EntityEldritchCrab mod_index=32
 Thaumcraft:InhabitedZombie,thaumcraft:inhabitedzombie,entity,Shambling Husk,not_started,not_tested,,class=EntityInhabitedZombie mod_index=33
 Thaumcraft:ThaumSlime,thaumcraft:thaumslime,entity,Thaumic Slime,not_started,not_tested,,class=EntityThaumicSlime mod_index=34
@@ -344,7 +344,7 @@ Thaumcraft:TaintedSheep,thaumcraft:taintedsheep,entity,Tainted Sheep,not_started
 Thaumcraft:TaintedVillager,thaumcraft:taintedvillager,entity,Tainted Villager,not_started,not_tested,,class=EntityTaintVillager mod_index=46
 Thaumcraft:TaintacleGiant,thaumcraft:taintaclegiant,entity,Giant Taintacle,not_started,not_tested,,class=EntityTaintacleGiant mod_index=47
 Thaumcraft:SpecialItemGrate,thaumcraft:specialitemgrate,entity,,done,tested,,class=EntityItemGrate mod_index=48
-Thaumcraft:GolemBobber,thaumcraft:golembobber,entity,Golem Fishing Bobber,done,tested,,class=EntityGolemBobber mod_index=49; TC-M6-08-s-c: entity type registered from the original registration row (ConfigEntities.java:84/89/119/154) with its hitbox/tracking/interval; behaviour deferred
+Thaumcraft:GolemBobber,thaumcraft:golembobber,entity,Golem Fishing Bobber,done,tested,,class=EntityGolemBobber mod_index=49; TC-M6-08-s-c: entity type registered from the original registration row (ConfigEntities.java:84/89/119/154) with its hitbox/tracking/interval; behaviour deferred; renderer=RenderGolemBobber TC-M6-08-s-c2
 Thaumcraft:spawnegg.BrainyZombie,thaumcraft:spawnegg.brainyzombie,spawner_egg,BrainyZombie,not_started,not_tested,,egg_colors=FFC0FF/008000
 Thaumcraft:spawnegg.GiantBrainyZombie,thaumcraft:spawnegg.giantbrainyzombie,spawner_egg,GiantBrainyZombie,not_started,not_tested,,egg_colors=FFC0FF/004000
 Thaumcraft:spawnegg.Wisp,thaumcraft:spawnegg.wisp,spawner_egg,Wisp,not_started,not_tested,,egg_colors=FFC0FF/FFFFFF
@@ -357,7 +357,7 @@ Thaumcraft:spawnegg.CultistKnight,thaumcraft:spawnegg.cultistknight,spawner_egg,
 Thaumcraft:spawnegg.CultistCleric,thaumcraft:spawnegg.cultistcleric,spawner_egg,CultistCleric,not_started,not_tested,,egg_colors=FF5055/800000
 Thaumcraft:spawnegg.CultistLeader,thaumcraft:spawnegg.cultistleader,spawner_egg,CultistLeader,not_started,not_tested,,egg_colors=FF5055/505050
 Thaumcraft:spawnegg.CultistPortal,thaumcraft:spawnegg.cultistportal,spawner_egg,CultistPortal,not_started,not_tested,,egg_colors=FF5055/FF50FF
-Thaumcraft:spawnegg.EldritchGolem,thaumcraft:spawnegg.eldritchgolem,spawner_egg,EldritchGolem,done,tested,,egg_colors=555555/404040; TC-M6-08-s-c3: registered as a DeferredSpawnEggItem under this row's dotted new_id verbatim (CatalogGolems.java) with the original's colour pair - ItemSpawnerEgg.addMapping 5592405/4210752 (ConfigEntities.java:120) read back through SpawnEggItem.getColor(0)/(1); model models/item/spawnegg.eldritchgolem.json parents minecraft:item/template_spawn_egg; pinned by GolemMenuGameTest.eldritchSpawnEggCarriesTheOriginalColours; the localization audit resolves the key by longest inventoried id prefix (BD-22)
+Thaumcraft:spawnegg.EldritchGolem,thaumcraft:spawnegg.eldritchgolem,spawner_egg,EldritchGolem,done,tested,,egg_colors=555555/404040; TC-M6-08-s-c3: registered as a DeferredSpawnEggItem under this row's dotted new_id verbatim (CatalogGolems.java) with the original's colour pair - ItemSpawnerEgg.addMapping 5592405/4210752 (ConfigEntities.java:120) read back through SpawnEggItem.getColor(0)/(1); model models/item/spawnegg.eldritchgolem.json parents minecraft:item/template_spawn_egg; pinned by GolemMenuGameTest.eldritchSpawnEggCarriesTheOriginalColours; the localization audit resolves the key by longest inventoried id prefix (BD-40)
 Thaumcraft:spawnegg.EldritchCrab,thaumcraft:spawnegg.eldritchcrab,spawner_egg,EldritchCrab,not_started,not_tested,,egg_colors=555555/550000
 Thaumcraft:spawnegg.InhabitedZombie,thaumcraft:spawnegg.inhabitedzombie,spawner_egg,InhabitedZombie,not_started,not_tested,,egg_colors=557755/550000
 Thaumcraft:spawnegg.ThaumSlime,thaumcraft:spawnegg.thaumslime,spawner_egg,ThaumSlime,not_started,not_tested,,egg_colors=FFC0FF/FF80FF

@@ -365,7 +365,7 @@ public class EntityGolemBase extends AbstractGolem {
      *   <li>a held {@code ItemWandCasting} is refused so wand right-clicks
      *       keep their own use. The wand item is not in this tree (only the
      *       {@code IVisContainerItem} seam), so that leg cannot be reproduced
-     *       here; it is recorded in docs/BEHAVIORAL_DEVIATIONS.md (BD-19) and
+     *       here; it is recorded in docs/BEHAVIORAL_DEVIATIONS.md (BD-38) and
      *       lands with the wand family;</li>
      *   <li>the core-attachment and upgrade-attachment legs of
      *       {@code func_70085_c} (and the decoration/cake legs of
@@ -399,7 +399,7 @@ public class EntityGolemBase extends AbstractGolem {
             return InteractionResult.PASS;
         }
         // Original customInteraction GUI gate: core > -1 && ItemGolemCore.hasGUI(core).
-        // The ItemWandCasting exclusion is NOT reproducible here (BD-19).
+        // The ItemWandCasting exclusion is NOT reproducible here (BD-38).
         final int core = this.getCore();
         if (core > -1 && ItemGolemCore.hasGUI(core) && !this.level().isClientSide) {
             player.openMenu(new SimpleMenuProvider(
@@ -1051,7 +1051,7 @@ public class EntityGolemBase extends AbstractGolem {
      * (needs {@code EntityGolemBobber}, core 11 — so core 11 installs no task
      * goal at all and {@link GolemCoreTask#implemented()} stays false for it).</p>
      *
-     * <p><b>Deviation BD-18:</b> the original clears only the task list
+     * <p><b>Deviation BD-31:</b> the original clears only the task list
      * ({@code field_70714_bg.field_75782_a.clear()}, :216) and never the target
      * list, because in 1.7.10 it is called once per placement/core change and
      * duplicate target tasks were tolerated. This port is also called on every
@@ -1290,7 +1290,7 @@ public class EntityGolemBase extends AbstractGolem {
         this.syncHealth();
         // Original EntityGolemBase.java:693-694 — the load path re-runs setupGolem()
         // and setupGolemInventory() once the core is read, so a loaded golem gets the
-        // goals its saved core owes. setupGolem clears both selectors first (BD-18).
+        // goals its saved core owes. setupGolem clears both selectors first (BD-31).
         this.setupGolem();
         this.setupGolemInventory();
     }

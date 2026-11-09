@@ -57,7 +57,7 @@ import net.minecraft.world.item.ItemStack;
  *       returns for a core without an inventory.</li>
  * </ul>
  *
- * <h2>What does not ship, and why (docs/BEHAVIORAL_DEVIATIONS.md BD-19)</h2>
+ * <h2>What does not ship, and why (docs/BEHAVIORAL_DEVIATIONS.md BD-38)</h2>
  * The golem-side window is bound only when {@code ItemGolemCore.hasInventory(
  * core)} over an {@code InventoryMob} — that inventory container
  * ({@code setupGolemInventory}, slot counts, {@code SlotGhost}/
@@ -68,7 +68,7 @@ import net.minecraft.world.item.ItemStack;
  * live container to bind, the color-tab buttons {@code a} and {@code a +
  * slotCount} address an empty range, and the toggle buttons 50-57 flip arrays
  * the entity does not carry. The menu does not fake them, and the screen does
- * not draw them (BD-17 precedent: drawn state must be synced state). The
+ * not draw them (BD-37 precedent: drawn state must be synced state). The
  * original's {@code refreshInventory} rebuild is unreachable by construction
  * while the clamp keeps {@code currentScroll} pinned.
  */
@@ -144,7 +144,7 @@ public class GolemMenu extends AbstractContainerMenu {
      * TC-M6-08-s-b and is not in this tree, so the shipped answer is 0 — the
      * gate {@code getCore() > -1 && ItemGolemCore.hasInventory(core)} is the
      * original's, kept visible so the window binds the moment the container
-     * lands (BD-19).
+     * lands (BD-38).
      */
     public int golemSlotCount() {
         if (this.golem == null) {
@@ -168,7 +168,7 @@ public class GolemMenu extends AbstractContainerMenu {
      * stays in {@code ContainerLayout} for the screen's window frames.
      */
     private void buildWindow() {
-        // golemSlotCount() == 0 today (BD-19): nothing to bind. The loop the
+        // golemSlotCount() == 0 today (BD-38): nothing to bind. The loop the
         // moment the container lands is
         //   for (int a = 0; a < Math.min(6, slotCount); a++)
         //       addSlot(new Slot(mobInv, a + currentScroll * 6,
@@ -209,7 +209,7 @@ public class GolemMenu extends AbstractContainerMenu {
      * are golem runtime state (TC-M6-08-s-b) — with them absent their legs
      * address empty ranges, the clamp pins the page at 0, and only the
      * original's tail survives to run: the {@code random.click} at the golem
-     * (0.2 / 0.8) and the {@code true} return (BD-19).
+     * (0.2 / 0.8) and the {@code true} return (BD-38).
      */
     @Override
     public boolean clickMenuButton(final Player player, final int button) {

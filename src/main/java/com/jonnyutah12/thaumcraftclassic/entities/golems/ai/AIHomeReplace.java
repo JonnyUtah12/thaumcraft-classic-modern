@@ -58,7 +58,7 @@ import java.util.List;
  * <h2>Deviations</h2>
  * <ul>
  *   <li>DEVIATION: the container mutation is the shipped
- *       {@link EntityGolemBase#actHomeDrop()} (the parent's BD-17 seam) instead
+ *       {@link EntityGolemBase#actHomeDrop()} (the parent's BD-30 seam) instead
  *       of the original's inline
  *       {@code InventoryUtils.placeItemStackIntoInventory(getCarried(), tile,
  *       facing.ordinal(), true)} ({@code AIHomeReplace.java:102}); the shipped
@@ -155,7 +155,7 @@ public final class AIHomeReplace extends GolemGoal {
             }
             if (tile instanceof Container container) {
                 // DEVIATION: the shipped act method owns the container mutation
-                // (BD-17); it places on the home face, the face the original
+                // (BD-30); it places on the home face, the face the original
                 // passed as facing.ordinal() (AIHomeReplace.java:102).
                 if (this.golem.actHomeDrop()) {
                     this.markDirty(container);

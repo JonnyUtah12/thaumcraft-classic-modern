@@ -44,7 +44,7 @@ import java.nio.file.Path;
  * golem while it is open, seeds the player rows at the original coordinates,
  * opens from the golem's right-click only under the original's gate, enforces
  * the original's squared-distance validity, and stays silent (no fake window)
- * over the golem inventory the runtime card has not shipped (BD-19).
+ * over the golem inventory the runtime card has not shipped (BD-38).
  *
  * <p>What these probes do <b>not</b> claim: rendered pixels (the game-test
  * server is a dedicated server and never fires {@code RegisterMenuScreensEvent}
@@ -85,7 +85,7 @@ public final class GolemMenuGameTest {
      * {@code ((EntityGolemBase)mobInv.ent).paused = true}) and the menu seeds
      * ONLY the 36 player slots at the original coordinates — the 84 px grid
      * rows {@code (8 + j*18, 84 + i*18)} and the hotbar {@code (8 + i*18,
-     * 142)}; with the mob inventory absent (BD-19) no golem window slots bind,
+     * 142)}; with the mob inventory absent (BD-38) no golem window slots bind,
      * which is the original's own slot list for a core without
      * {@code hasInventory}.
      */

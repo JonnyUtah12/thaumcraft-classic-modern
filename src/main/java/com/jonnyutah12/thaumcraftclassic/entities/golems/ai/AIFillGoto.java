@@ -51,13 +51,13 @@ import java.util.List;
  *
  * <h2>Deviations</h2>
  * <ul>
- *   <li>DEVIATION (BD-21): the Entropy-upgrade arm widened the missing list through
+ *   <li>DEVIATION (BD-34): the Entropy-upgrade arm widened the missing list through
  *       {@code OreDictionary.getOreID}/{@code getOres}
  *       ({@code AIFillGoto.java:39-51}). 1.21.1 has no ore dictionary; this
  *       tree's convention for that seam returns the sample alone
  *       ({@code InventoryMob.fuzzyCandidates}, {@code InventoryMob.java:404}),
  *       so the loop keeps its shape and the list is the plain missing items.</li>
- *   <li>DEVIATION (BD-21): the watched item is a goal-local stand-in for the entity
+ *   <li>DEVIATION (BD-34): the watched item is a goal-local stand-in for the entity
  *       field {@code theGolem.itemWatched} ({@code AIFillGoto.java:61}); the
  *       tree has no such field. {@code AIFillTake} seeds its own copy from the
  *       same {@code getMissingItems} source.

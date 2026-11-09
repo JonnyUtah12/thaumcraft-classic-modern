@@ -49,7 +49,7 @@ import java.util.EnumSet;
  * <h2>Deviations</h2>
  * <ul>
  *   <li>DEVIATION: the mutation is the shipped
- *       {@link EntityGolemBase#actSortingPlace()} (BD-17). The original placed
+ *       {@link EntityGolemBase#actSortingPlace()} (BD-30). The original placed
  *       the <em>carried</em> stack into the recorded container
  *       ({@code AISortingPlace.java:107}, {@code doit = true}); the shipped act
  *       moves goods from the <em>home</em> container into a marked container
@@ -154,7 +154,7 @@ public final class AISortingPlace extends GolemGoal {
             for (final byte color : this.golem.getColorsMatching(this.golem.getCarried())) {
                 for (final int side : GolemHelper.getMarkedSides(this.golem, tile, color)) {
                     // DEVIATION: the shipped act method owns the mutation
-                    // (BD-17): it moves goods the target already holds out of
+                    // (BD-30): it moves goods the target already holds out of
                     // the home container, bounded by getCarrySpace(). The
                     // original inserted the carried stack on this side
                     // (AISortingPlace.java:107).

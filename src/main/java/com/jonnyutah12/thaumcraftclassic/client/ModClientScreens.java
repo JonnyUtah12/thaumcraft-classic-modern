@@ -37,7 +37,7 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
  * (TC-M7-04-s, carried into main by the golem-visual lane, t_17686882),
  * {@code gui_golem} (TC-M7-04-m3-a, over the golem-content branch) and
  * {@code gui_research_note} — the hex-grid research-note window
- * (TC-M3-04-s-iii: menu contract BD-26, hex-grid presentation BD-27,
+ * (TC-M3-04-s-iii: menu contract BD-44, hex-grid presentation BD-45,
  * NOTE-SCREEN-2 t_32a29c93). The remaining GUI ids in
  * {@code docs/content-mapping.csv} have
  * no menu type yet (the crucible, arcane workbench, alchemy furnace, arcane
@@ -61,8 +61,8 @@ public final class ModClientScreens {
         // TC-M7-04-s-cr1: the traveling trunk (gui_id 2, GuiTravelingTrunk).
         event.register(CatalogTrinketsLoot.GUI_TRUNK.get(), TrunkScreen::new);
         // TC-M3-04-s-iii: the research-note window over thaumcraft:gui_research_note
-        // — the hex grid, aspect pool, drag machine and copy plate (BD-27) over
-        // the menu contract (BD-26). The MenuType must be screen-complete, so the
+        // — the hex grid, aspect pool, drag machine and copy plate (BD-45) over
+        // the menu contract (BD-44). The MenuType must be screen-complete, so the
         // pairing lives here (the hex grid landed in NOTE-SCREEN-2 t_32a29c93).
         event.register(M3ResearchContent.GUI_RESEARCH_NOTE.get(), ResearchNoteScreen::new);
         // TC-M7-04-s, the four remaining menu types:

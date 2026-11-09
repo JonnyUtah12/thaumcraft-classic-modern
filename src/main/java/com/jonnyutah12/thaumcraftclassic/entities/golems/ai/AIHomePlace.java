@@ -43,7 +43,7 @@ import java.util.EnumSet;
  * <h2>Deviations</h2>
  * <ul>
  *   <li>DEVIATION: the real insert is the shipped
- *       {@link EntityGolemBase#actHomeDrop()} (BD-17) in place of the original's
+ *       {@link EntityGolemBase#actHomeDrop()} (BD-30) in place of the original's
  *       inline {@code InventoryUtils.placeItemStackIntoInventory(..., true)}; it
  *       uses the same home face, sets the carried leftover and starts the action
  *       timer. The gate keeps a local <em>simulated</em> insert because
@@ -127,7 +127,7 @@ public final class AIHomePlace extends GolemGoal {
      */
     @Override
     public void start() {
-        // DEVIATION: the shipped act method owns the mutation (BD-17). It
+        // DEVIATION: the shipped act method owns the mutation (BD-30). It
         // inserts on the home face, sets the carried leftover, starts the
         // action timer and reports whether anything moved — the original's
         // inline block (AIHomePlace.java:96-111).

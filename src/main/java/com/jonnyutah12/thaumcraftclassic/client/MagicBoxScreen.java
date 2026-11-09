@@ -26,7 +26,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * default 84/142 (the shared player origin every other container here uses),
  * so the panel is derived from 84 as every screen in this crate is.</p>
  *
- * <p><b>Known deviation (BD-17).</b> The box contents are a growable list and
+ * <p><b>Known deviation (BD-37).</b> The box contents are a growable list and
  * {@link MagicBoxMenu} exposes up to {@code 27 * 8} slots for a linked cluster,
  * while the original rebound the container one 3-row page at a time
  * ({@code ContainerMagicBox.bindBoxInventory(row)} + {@code refreshInventory}).
@@ -82,7 +82,7 @@ public class MagicBoxScreen extends AbstractContainerScreen<MagicBoxMenu> {
         for (int i = 0; i < boxSlots; i++) {
             final Slot slot = this.menu.slots.get(i);
             if (!ContainerLayout.fitsInMachineRegion(slot.y, this.machineRegionHeight)) {
-                continue; // a page past the panel's box region (BD-17)
+                continue; // a page past the panel's box region (BD-37)
             }
             ScreenPanel.frameSlot(guiGraphics, this.leftPos, this.topPos, slot);
         }

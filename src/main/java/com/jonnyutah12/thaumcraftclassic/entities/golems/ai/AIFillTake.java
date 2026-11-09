@@ -48,14 +48,14 @@ import java.util.List;
  *
  * <h2>Deviations</h2>
  * <ul>
- *   <li>DEVIATION (BD-21): the original's watched item lives on the entity
+ *   <li>DEVIATION (BD-34): the original's watched item lives on the entity
  *       ({@code theGolem.itemWatched}, written by
  *       {@code AIFillGoto.ground()}, {@code AIFillGoto.java:61}). This tree
  *       has no such field, so the goal keeps a local copy and seeds it from
  *       {@code GolemHelper.getMissingItems} — the same source the goto reads.
  *       // SEAM: move the watched stack onto the golem and this seed goes away.</li>
  *   <li>DEVIATION: the extraction is the shipped
- *       {@link EntityGolemBase#actHomeTake()} (BD-17) — the original pulled from
+ *       {@link EntityGolemBase#actHomeTake()} (BD-30) — the original pulled from
  *       the <em>adjacent marked</em> container inside {@code ground()}
  *       ({@code AIFillTake.java:45-47}, {@code doit = true}); the shipped act
  *       drains the <em>home</em> container's need list. The gate keeps a local
@@ -134,7 +134,7 @@ public final class AIFillTake extends GolemGoal {
                         continue;
                     }
                     // DEVIATION: the shipped act method owns the mutation
-                    // (BD-17); it drains the home container's need list.
+                    // (BD-30); it drains the home container's need list.
                     if (!this.golem.actHomeTake()) {
                         return false;
                     }

@@ -55,7 +55,7 @@ import java.util.EnumSet;
  *       tree has no such method.
  *       // SEAM: add the golem's carried-display repaint and call it here.</li>
  *   <li>DEVIATION: the deposit branch. The shipped
- *       {@link EntityGolemBase#actHomeDrop()} (BD-17) is used when the home pos
+ *       {@link EntityGolemBase#actHomeDrop()} (BD-30) is used when the home pos
  *       <em>is</em> a container, which the original's gate excludes
  *       ({@code AIHomeDrop.java:33}) — that arm is a safety net and never runs
  *       behind the original gate.</li>
@@ -114,7 +114,7 @@ public final class AIHomeDrop extends GolemGoal {
     @Override
     public void start() {
         this.count = 200;
-        // DEVIATION: the shipped act method (BD-17) when the home block is a
+        // DEVIATION: the shipped act method (BD-30) when the home block is a
         // container. The original's gate rules that case out, so behind a
         // faithful gate this arm is inert.
         if (this.golem.actHomeDrop()) {

@@ -27,8 +27,28 @@ import net.minecraft.world.level.Level;
  */
 public class EntityGolemBobber extends Entity {
 
+    /**
+     * Original {@code public EntityGolemBase fisher = null}
+     * ({@code reference/.../common/entities/golems/EntityGolemBobber.java:25}).
+     * A transient, unsaved, unsynched pointer, set at the throw site — the
+     * bobber's renderer draws its line to it, gated by the {@code fisher != null}
+     * check of {@code RenderGolemBobber.java:45}. The throw site itself is golem
+     * behaviour (TC-M6-08-s-b2, t_03c5d088), so the renderer draws only the ball
+     * until that card wires it.
+     */
+    private EntityGolemBase fisher;
+
     public EntityGolemBobber(final EntityType<? extends EntityGolemBobber> type, final Level level) {
         super(type, level);
+    }
+
+    /** The original's public {@code fisher} field, as an accessor pair. */
+    public EntityGolemBase getFisher() {
+        return this.fisher;
+    }
+
+    public void setFisher(final EntityGolemBase fisher) {
+        this.fisher = fisher;
     }
 
     @Override

@@ -46,7 +46,7 @@ import java.util.List;
  * <h2>Deviations</h2>
  * <ul>
  *   <li>DEVIATION: the real extraction is the shipped
- *       {@link EntityGolemBase#actHomeTake()} (BD-17) — the home container, the
+ *       {@link EntityGolemBase#actHomeTake()} (BD-30) — the home container, the
  *       home face, the need list, bounded by {@code getCarrySpace()}; it fills
  *       the carry and the golem inventory. The gate keeps the original's local
  *       simulated extraction.</li>
@@ -153,7 +153,7 @@ public final class AIHomeTakeSorting extends GolemGoal {
                         GolemHelper.getItemsNeeded(this.golem, this.golem.getUpgradeAmount(5) > 0);
                 if (neededList != null && !neededList.isEmpty()) {
                     // DEVIATION: the shipped act method owns the mutation
-                    // (BD-17) — home container, home face, need list, bounded by
+                    // (BD-30) — home container, home face, need list, bounded by
                     // getCarrySpace(); the original extracted the first matching
                     // stack inline (AIHomeTakeSorting.java:122-124).
                     if (this.golem.actHomeTake()) {

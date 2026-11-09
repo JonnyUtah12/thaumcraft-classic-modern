@@ -18,7 +18,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * one vanilla {@code minecraft:container/slot} sprite per machine slot. No
  * original Thaumcraft sheet is referenced — they ship only in the
  * asset-overlay build (D-004) — and no legacy GL is used: 1.21.1 draws through
- * {@link GuiGraphics} (docs/BEHAVIORAL_DEVIATIONS.md BD-17).</p>
+ * {@link GuiGraphics} (docs/BEHAVIORAL_DEVIATIONS.md BD-37).</p>
  */
 @OnlyIn(Dist.CLIENT)
 final class ScreenPanel {

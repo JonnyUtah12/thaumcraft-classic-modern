@@ -28,7 +28,7 @@ import net.minecraft.resources.ResourceLocation;
  * grid, which is why its numbers are cross-checked against this class in the
  * tests rather than duplicated here.</p>
  *
- * <p><b>Backgrounds (docs/BEHAVIORAL_DEVIATIONS.md BD-17).</b> The original
+ * <p><b>Backgrounds (docs/BEHAVIORAL_DEVIATIONS.md BD-37).</b> The original
  * sheets ({@code guihandmirror.png}, {@code gui_decontable.png},
  * {@code gui_spa.png}) ship only in the asset-overlay build; the original
  * assets are All Rights Reserved and are never committed (D-004), so the
@@ -62,7 +62,7 @@ public final class ContainerLayout {
     public static final int PLAYER_GRID_TOP = 84;
     public static final int PLAYER_HOTBAR_TOP = 142;
 
-    /** The flat vanilla panel fill and its 1 px frame (BD-17). */
+    /** The flat vanilla panel fill and its 1 px frame (BD-37). */
     public static final int PANEL_FILL = 0xFFC6C6C6;
     public static final int PANEL_FRAME = 0xFF555555;
 
@@ -184,7 +184,7 @@ public final class ContainerLayout {
     public static final int GOLEM_PORTRAIT_X = 51;
     public static final int GOLEM_PORTRAIT_Y = 75;
 
-    /** Authored stand-in for the original bar texels, which only ship in the overlay (BD-17). */
+    /** Authored stand-in for the original bar texels, which only ship in the overlay (BD-37). */
     public static final int DECON_BAR_FILL = 0xFF8A5CC8;
 
     // ------------------------------------------------------- arcane spa
@@ -246,7 +246,7 @@ public final class ContainerLayout {
      * of the slot anchor, so its last row is {@code slotY + 17}. Slots past the
      * region are still live in the menu — the magic box exposes up to 216 of
      * them, the original paged them — but framing them would draw over the player
-     * grid, so they are left unframed and the deviation is recorded (BD-17).
+     * grid, so they are left unframed and the deviation is recorded (BD-37).
      */
     public static boolean fitsInMachineRegion(final int slotY, final int machineRegionHeight) {
         return slotY + SLOT_FRAME - 1 <= machineRegionHeight;

@@ -55,12 +55,12 @@ import java.util.EnumSet;
  *   <li>DEVIATION: the joined double-chest arms
  *       ({@code AIEmptyPlace.java:50-60}, {@code 111-125}) are inert —
  *       {@code GolemHelper.getDoubleChest} returns {@code null} in this tree
- *       (BD-22). The loop shape is kept.</li>
+ *       (BD-35). The loop shape is kept.</li>
  *   <li>DEVIATION: the original assigns {@code itemCarried = null} when the
  *       stack is fully placed; 1.21.1's carry is an {@code ItemStack} that goes
  *       empty, so the port stores {@code null} for an emptied carry
  *       ({@link EntityGolemBase#setCarried}).</li>
- *   <li>DEVIATION (BD-20): the original's {@code theGolem.updateCarried()}
+ *   <li>DEVIATION (BD-33): the original's {@code theGolem.updateCarried()}
  *       ({@code AIEmptyPlace.java:139}) has no equivalent in this tree.
  *       // SEAM: add the carried-display repaint and call it here.</li>
  * </ul>
@@ -168,7 +168,7 @@ public final class AIEmptyPlace extends GolemGoal {
                     }
                 }
                 // DEVIATION: the joined double-chest arm
-                // (AIEmptyPlace.java:111-125) is inert in this tree (BD-22).
+                // (AIEmptyPlace.java:111-125) is inert in this tree (BD-35).
                 if (doubleChest(tile) != null && this.golem.getCarried() != null) {
                     for (final int side : GolemHelper.getMarkedSides(this.golem, tile, color)) {
                         final Container joined = doubleChest(tile);
@@ -296,7 +296,7 @@ public final class AIEmptyPlace extends GolemGoal {
     /**
      * DEVIATION: this tree's {@code GolemHelper.getDoubleChest}
      * ({@code GolemHelper.java:1101}) is package-private and returns
-     * {@code null} for a joined double chest in 21.1.259 (BD-22); the
+     * {@code null} for a joined double chest in 21.1.259 (BD-35); the
      * goal mirrors it with a local stub so the original's loop shape survives.
      */
     private static Container doubleChest(final BlockEntity tile) {

@@ -34,7 +34,7 @@ import net.minecraft.world.level.pathfinder.Path;
  * installed (it is abstract in the original too).</p>
  *
  * <h2>1.7.10 → 1.21.1</h2>
- * <p>DEVIATION (BD-19): the gate {@code theEntity.field_70123_F}
+ * <p>DEVIATION (BD-32): the gate {@code theEntity.field_70123_F}
  * ({@code AIDoorInteract.java:24}) is the 1.7.10 {@code PathfinderMob} boolean
  * that mirrored "this mob's navigator may open doors"; 1.21.1 keeps that flag
  * only on {@link GroundPathNavigation#canOpenDoors()}, so the port reads the
@@ -43,7 +43,7 @@ import net.minecraft.world.level.pathfinder.Path;
  * reads). Behaviour is identical for the golem, whose constructor turns the
  * navigator flag on.</p>
  *
- * <p>DEVIATION (BD-19): {@code findUsableDoor} whitelists the 1.7.10 door ids
+ * <p>DEVIATION (BD-32): {@code findUsableDoor} whitelists the 1.7.10 door ids
  * wooden door (id 64, a {@code BlockDoor}) and iron door (id 71, a
  * {@code BlockIronDoor extends BlockDoor}) and returns air for everything
  * else, including fence gates ({@code AIDoorInteract.java:73-76}). 1.21.1

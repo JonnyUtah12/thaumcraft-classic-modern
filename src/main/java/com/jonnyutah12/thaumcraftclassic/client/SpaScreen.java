@@ -23,7 +23,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * and plays {@code thaumcraft:cameraclack}. The original read the tile directly
  * for both the fluid level and {@code getMix()}; a 1.21.1 screen gets only the
  * menu, and this menu has no data slots, so neither state is client-visible
- * here (BD-17).</p>
+ * here (BD-37).</p>
  *
  * <p>What this screen draws: the panel and player piece, the bath-salt slot
  * frame, the tank frame at the original coordinates, and the frame of the 8x8
@@ -70,12 +70,12 @@ public class SpaScreen extends AbstractContainerScreen<SpaMenu> {
         ScreenPanel.frameSlot(guiGraphics, this.leftPos, this.topPos, this.menu.slots.get(SLOT_BATH_SALT));
 
         // The original tank frame; its fluid column needs the tank synced, which
-        // this menu does not do (BD-17).
+        // this menu does not do (BD-37).
         ScreenPanel.frameArea(guiGraphics, this.leftPos, this.topPos,
                 ContainerLayout.SPA_TANK_X, ContainerLayout.SPA_TANK_TOP,
                 ContainerLayout.SPA_TANK_WIDTH, ContainerLayout.SPA_TANK_HEIGHT);
         // The original 8x8 mix box: the toggle's hitbox, framed because the
-        // mix state itself is not synced (BD-17).
+        // mix state itself is not synced (BD-37).
         ScreenPanel.frameArea(guiGraphics, this.leftPos, this.topPos, MIX_X, MIX_Y, MIX_SIZE, MIX_SIZE);
     }
 

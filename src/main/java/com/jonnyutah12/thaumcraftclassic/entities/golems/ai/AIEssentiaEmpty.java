@@ -43,7 +43,7 @@ import java.util.EnumSet;
  *
  * <h2>Port shape</h2>
  * The container mutation runs through the shipped
- * {@link EntityGolemBase#actEssentiaEmpty()} (parent deviation {@code BD-17}):
+ * {@link EntityGolemBase#actEssentiaEmpty()} (parent deviation {@code BD-30}):
  * it re-resolves the same jar with {@link GolemHelper#findJarWithRoom} and applies
  * {@link TileJarFillable#addToContainer}, which returns exactly the remainder the
  * original assigned to {@code essentiaAmount}. The goal keeps the original's
@@ -111,10 +111,10 @@ public class AIEssentiaEmpty extends GolemGoal {
         if (tile instanceof TileJarFillable) {
             // The jar arm (AIEssentiaEmpty.java:53-65): addToContainer returns the
             // remainder, which becomes the golem's essentiaAmount; actEssentiaEmpty
-            // is the shipped act method that does exactly that (BD-17).
+            // is the shipped act method that does exactly that (BD-30).
             if (this.golem.actEssentiaEmpty()) {
                 playSwim(0.2F);
-                // DEVIATION (BD-20): the original's updateCarried() (AIEssentiaEmpty.java:64)
+                // DEVIATION (BD-33): the original's updateCarried() (AIEssentiaEmpty.java:64)
                 // publishes the carry payload to the golem's display/renders; this
                 // tree has no display stack yet (TC-M6-08-s-c), and the payload is
                 // read straight from getEssentia()/getEssentiaAmount().
