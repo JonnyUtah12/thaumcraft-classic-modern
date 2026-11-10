@@ -679,18 +679,23 @@ public final class GolemCombatAiGameTest {
      * toward it ({@code :73-81}).
      *
      * <p>Observables, in order: an unlit fuse never arms the goal (that test is deterministic),
-     * and once the fuse is lit the goal arms on <b>some</b> tick — the spot search is a random
-     * draw over 4 tries of an offset cell ({@code DefaultRandomPos.findPositionAway}) and the
-     * route must reach it, so one call to {@code canUse} arms the goal on roughly one tick in ten
-     * (measured on the game-test server: a 41-tick, one-draw-per-tick window armed the goal in
-     * one suite run and missed the window entirely in the next). The probe therefore samples the
-     * gate {@value #FLEE_DRAWS_PER_TICK} draws a tick for {@value #FLEE_WINDOW} ticks after the
-     * fuse and records the first tick on which a draw passes (the gate closes again a tick or two later, once the golem is out of
-     * the 5-block radius, so the window is sampled every tick), and on that tick asserts the
-     * arming state, the hop's direction, and that the spot the goal picked is further from the
-     * creeper than the golem. 28 ticks after the fuse, the golem is further from the creeper than
-     * when it was lit; 75 ticks after, with the creeper exploded and the flee goal out of the
-     * way, the golem is back on its home cell.</p>
+     * and once the fuse is lit the goal arms on <b>some</b> draw — one call to {@code canUse} is
+     * one draw of a random flee spot ({@code DefaultRandomPos.getPosAway}, 10 tries) plus 1.7.10's
+     * last-node route test, and measured on the game-test server it passes on roughly one draw in
+     * five (the red leg A12: 18 accepted of 600 spot tries, 13 of them with a route that reaches
+     * the spot). The probe installs the goal on the golem's live selector, so the engine drives the
+     * very goal the probe samples, and that goal's {@code start()} hops the golem and puts a route
+     * of up to 16 blocks under it: a window opened on the tick after the fuse therefore samples a
+     * gate whose 5-block detection box has already closed (leg A12: an 18-node route, the golem 12
+     * blocks down it, 480 draws and no arming — red). The probe spends its whole draw budget —
+     * {@value #FLEE_WINDOW} ticks × {@value #FLEE_DRAWS_PER_TICK} draws = 480 calls — on the tick
+     * the fuse is lit, where the golem is the two blocks from the creeper that the probe put there
+     * and the goal provably has not armed yet (the entity ticked that tick with the fuse unlit),
+     * and keeps the per-tick window of {@value #FLEE_DRAWS_PER_TICK} draws for
+     * {@value #FLEE_WINDOW} ticks as the fallback. On the arming draw the probe asserts
+     * the arming state, the hop's direction, and that the spot the goal picked is further from the
+     * creeper than the golem. 28 ticks after, the golem is further from the creeper than
+     * when it was lit, and the fuse is still the lit one.</p>
      *
      * <p>The probe lays a clearing around the template ({@link #layClearing}): the goal wants an
      * open reachable spot and the game-test world is void outside the 24-wide template.</p>
@@ -724,21 +729,30 @@ public final class GolemCombatAiGameTest {
             startDistance[0] = golem.distanceToSqr(creeper);
         });
 
-        helper.runAfterDelay(pLit, () -> {
-            // The baseline is the tick the fuse is lit: the goal arms on a later tick of its own
-            // choosing and the golem is already moving by then, so the arming tick is not the
-            // distance the flee has to beat.
-            litDistance[0] = golem.distanceToSqr(creeper);
-            creeper.setSwellDir(1);
-        });
-
-        // The spot search is a random draw, so the arming tick is not knowable in advance: watch
-        // every tick from the one after the fuse and catch the first tick the goal's own gate
-        // passes. The gate closes again within a tick or two (the golem is outside the 5-block
-        // radius as soon as the flee starts), so a coarser window misses the arming entirely.
-        // The follow-up, scheduled from the tick the goal actually armed (the spot search is a
-        // random draw, so that tick is not knowable in advance): 28 ticks after the arming, the
-        // golem is measurably further from the creeper and the fuse is still the lit one.
+        // The armed check is one shared closure, so the same-tick sampling below and the
+        // per-tick window assert exactly the same facts.
+        //
+        // Why the gate is sampled inside the tick the fuse is lit. This probe installs its own
+        // AIAvoidCreeperSwell on the golem's live goal selector (that is the priority assertion
+        // the probe opens with), so the engine drives the same goal the probe samples: the
+        // selector runs a mob's goals on the parity of (tickCount + getId()) % 2
+        // (Mob.serverAiStep) and calls canUse once a tick, and the goal's own start() applies the
+        // original's hop impulse plus a flee path of up to 16 blocks
+        // (AIAvoidCreeperSwell.java:73-81, :54). Measured on the game-test server
+        // (t_8dce1837, 24 base-control legs on 7933db8, leg A12 red): the engine armed the goal
+        // on the first tick of the window — the sampled golem was already off the ground with an
+        // 18-node path whose last node sat 17 blocks from the home cell — and walked 12 of those
+        // blocks across the window, so the goal's 5-block detection box
+        // (AIAvoidCreeperSwell.java, DETECTION_RADIUS) was closed for nearly every draw the probe
+        // took. The red leg's own gate line says exactly that (golemToCreeper=8.39, spot=null,
+        // nodes=null) and its 480-draw histogram over 600 spot tries:
+        // dirNull=228 outside=68 restricted=1 notStable=196 malus=89 accepted=18 furtherFail=0
+        // pathNull=3 pathShort=0 pathOk=13, armedTick=0. So the arming race is with the engine,
+        // not with the spot search: the tick on which the geometry behind the gate is known is the
+        // tick the fuse is lit, where the golem is the two blocks from the creeper the probe put
+        // there — the entity has already ticked with the fuse unlit, so the goal cannot have armed
+        // yet. Sampling the goal's whole draw budget on that tick is race-free; the per-tick
+        // window below, which races, stays as the fallback.
         final Runnable afterFlee = () -> {
             alive(helper, golem, "the golem");
             final double after = golem.distanceToSqr(creeper);
@@ -761,14 +775,76 @@ public final class GolemCombatAiGameTest {
             helper.succeed();
         };
 
+        final Runnable onArmed = () -> {
+            if (armedTick[0] != 0) {
+                return;
+            }
+            alive(helper, golem, "the golem");
+            armedTick[0] = helper.getTick();
+            startDistance[0] = golem.distanceToSqr(creeper);
+            // canUse() does not touch the navigation: the route and the spot are the goal's
+            // own entityPathEntity/targetBlock (:20-22), read here through reflection.
+            final Path path = (Path) readField(flee, "entityPathEntity");
+            final Vec3 fleeSpot = (Vec3) readField(flee, "targetBlock");
+            helper.assertTrue(fleeSpot != null,
+                    "the arming tick picked a flee spot (:55-59), tick " + helper.getTick());
+            helper.assertTrue(path != null && path.getNodeCount() > 0,
+                    "and the route reaches it (entityPathEntity, :63): " + nodeTrail(path)
+                    + ", tick " + helper.getTick());
+            final Node last = path.getEndNode();
+            helper.assertTrue(Math.floor(fleeSpot.x) == last.x && Math.floor(fleeSpot.z) == last.z,
+                    "the last node is the flee spot, which is what 1.7.10's PathEntity.findTargetPos "
+                    + "compares (:63): spot " + fleeSpot + ", last node (" + last.x + ", " + last.y
+                    + ", " + last.z + "), tick " + helper.getTick());
+            final double spotSquared = creeper.distanceToSqr(fleeSpot);
+            helper.assertTrue(spotSquared > startDistance[0],
+                    "the flee spot is further from the creeper than the golem: spot squared "
+                    + spotSquared + " against golem " + startDistance[0] + " (:57-59), tick "
+                    + helper.getTick());
+            golem.setDeltaMovement(Vec3.ZERO);
+            flee.start();
+            final Vec3 hop = golem.getDeltaMovement();
+            // The port scales the impulse toward targetBlock + 0.5 (1.7.10 EntityAIAvoidEntity's
+            // own quirk, kept per the class javadoc), so the probe reproduces that arithmetic
+            // and asks which way the hop points.
+            final Vec3 toSpot = new Vec3(fleeSpot.x + 0.5 - golem.getX(), 0.0,
+                    fleeSpot.z + 0.5 - golem.getZ());
+            helper.assertTrue(hop.lengthSqr() > 0.0 && hop.y > 0.0,
+                    "start() gave the original's hop impulse: delta " + hop + ", motionY 0.3 (:73-81), tick "
+                    + helper.getTick());
+            helper.assertTrue(hop.x * toSpot.x + hop.z * toSpot.z > 0.0,
+                    "and the hop points at the flee spot the goal chose: delta (" + hop.x + ", " + hop.z
+                    + "), toward the spot (" + toSpot.x + ", " + toSpot.z + ") (:74-79), tick "
+                    + helper.getTick());
+            helper.runAfterDelay(28, afterFlee);
+        };
+
+        helper.runAfterDelay(pLit, () -> {
+            // The baseline is the tick the fuse is lit: the goal arms on a later tick of its own
+            // choosing and the golem is already moving by then, so the arming tick is not the
+            // distance the flee has to beat.
+            litDistance[0] = golem.distanceToSqr(creeper);
+            creeper.setSwellDir(1);
+            // Every draw is one call of the goal's own gate, and this tick is the one on which
+            // the geometry behind that gate is known: the golem is the two blocks from the
+            // swelling creeper that the probe put there, inside the detection box, in frame.
+            for (int attempt = 0; attempt < FLEE_WINDOW * FLEE_DRAWS_PER_TICK; attempt++) {
+                draws[0]++;
+                if (flee.canUse()) {
+                    onArmed.run();
+                    return;
+                }
+            }
+        });
+
+
+        // The window is the fallback, for the case the lit tick's sampling above does not arm.
         // One canUse() call is one draw of a random flee spot (DefaultRandomPos.getPosAway,
-        // :49-54) plus 1.7.10's last-node route test (:63), which rejects a route that stops
-        // short of the spot. Measured on the game-test server: one draw per tick arms the goal on
-        // about one tick in ten, so a 41-tick one-draw window armed in one suite run and missed
-        // the whole window in the next. Eight draws per tick over a 60-tick window is 480 draws
-        // of the goal's own gate — each call is exactly what the engine calls once a tick.
+        // :49-54) plus 1.7.10's last-node route test (:63), which rejects a route that stops short
+        // of the spot; measured on the game-test server, a draw passes on roughly one call in five
+        // with the golem inside the detection box. The window spends FLEE_DRAWS_PER_TICK draws on
+        // each of FLEE_WINDOW ticks — each call is exactly what the engine calls once a tick.
         for (int t = pLit + 1; t <= pLit + FLEE_WINDOW; t++) {
-            final int tick = t;
             helper.runAfterDelay(t, () -> {
                 // The armed check comes first: once the goal has armed, the follow-up owns the
                 // probe, its succeed() ends the test, and the framework removes the fixture
@@ -784,44 +860,7 @@ public final class GolemCombatAiGameTest {
                 if (!armed) {
                     return;
                 }
-                alive(helper, golem, "the golem");
-                armedTick[0] = helper.getTick();
-                startDistance[0] = golem.distanceToSqr(creeper);
-                // canUse() does not touch the navigation: the route and the spot are the goal's
-                // own entityPathEntity/targetBlock (:20-22), read here through reflection.
-                final Path path = (Path) readField(flee, "entityPathEntity");
-                final Vec3 fleeSpot = (Vec3) readField(flee, "targetBlock");
-                helper.assertTrue(fleeSpot != null,
-                        "the arming tick picked a flee spot (:55-59), tick " + helper.getTick());
-                helper.assertTrue(path != null && path.getNodeCount() > 0,
-                        "and the route reaches it (entityPathEntity, :63): " + nodeTrail(path)
-                        + ", tick " + helper.getTick());
-                final Node last = path.getEndNode();
-                helper.assertTrue(Math.floor(fleeSpot.x) == last.x && Math.floor(fleeSpot.z) == last.z,
-                        "the last node is the flee spot, which is what 1.7.10's PathEntity.findTargetPos "
-                        + "compares (:63): spot " + fleeSpot + ", last node (" + last.x + ", " + last.y
-                        + ", " + last.z + "), tick " + helper.getTick());
-                final double spotSquared = creeper.distanceToSqr(fleeSpot);
-                helper.assertTrue(spotSquared > startDistance[0],
-                        "the flee spot is further from the creeper than the golem: spot squared "
-                        + spotSquared + " against golem " + startDistance[0] + " (:57-59), tick "
-                        + helper.getTick());
-                golem.setDeltaMovement(Vec3.ZERO);
-                flee.start();
-                final Vec3 hop = golem.getDeltaMovement();
-                // The port scales the impulse toward targetBlock + 0.5 (1.7.10 EntityAIAvoidEntity's
-                // own quirk, kept per the class javadoc), so the probe reproduces that arithmetic
-                // and asks which way the hop points.
-                final Vec3 toSpot = new Vec3(fleeSpot.x + 0.5 - golem.getX(), 0.0,
-                        fleeSpot.z + 0.5 - golem.getZ());
-                helper.assertTrue(hop.lengthSqr() > 0.0 && hop.y > 0.0,
-                        "start() gave the original's hop impulse: delta " + hop + ", motionY 0.3 (:73-81), tick "
-                        + helper.getTick());
-                helper.assertTrue(hop.x * toSpot.x + hop.z * toSpot.z > 0.0,
-                        "and the hop points at the flee spot the goal chose: delta (" + hop.x + ", " + hop.z
-                        + "), toward the spot (" + toSpot.x + ", " + toSpot.z + ") (:74-79), tick "
-                        + helper.getTick());
-                helper.runAfterDelay(28, afterFlee);
+                onArmed.run();
             });
         }
 

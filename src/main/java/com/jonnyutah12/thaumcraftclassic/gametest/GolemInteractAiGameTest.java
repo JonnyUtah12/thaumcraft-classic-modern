@@ -123,6 +123,38 @@ public final class GolemInteractAiGameTest {
     /** The matching test-tick phase: {@code MOB_SETTLE} plus the 6-tick spawn delay. */
     private static final int SETTLE = MOB_SETTLE + 10;
 
+    /**
+     * Walk budget for the stray leg of
+     * {@code interact_returnHomeUsesTheHomeRadiusAndTheEntityTeleportsFromBeyond48} — the 8-block
+     * drop-off the goal has to walk back on its own. Measured on the game-test server (t_8dce1837,
+     * 24 base-control legs on 7933db8): a driver that calls {@code start()} on every tick of an
+     * open gate re-issues {@code moveTo} every tick, which rebuilds the path every tick, and that
+     * walk ran between 30 and 315 ticks for the same 8 blocks (0.2 down to 0.013 blocks a tick);
+     * the leg at the slow end went red 4 blocks out with {@code navDone=true}, the watchdog on the
+     * whole test. Driven the way the goal selector drives it — one {@code start()}, then
+     * {@code tick()} while {@code canContinueToUse} holds — the goal walks on its own 20-tick
+     * attempt ladder (AIReturnHome.java:55-56, :100-121) at the golem's speed attribute: 8 blocks
+     * at 0.1 (the shared fixture) is 80 ticks, at 0.0446 (the accessory-speed variant of the
+     * dependency-present batch) 180, plus the goal-selector parity gate that costs the first 5
+     * ticks ({@code (tickCount + getId()) % 2}, Mob.serverAiStep). The budget is that range with
+     * margin; the test watchdog sits above the phases that use it.
+     */
+    private static final int WALK_BUDGET = 800;
+
+    /**
+     * The goal's own arrival threshold in squared blocks: {@code AIReturnHome.canUse} clears the
+     * goal under 3 squared blocks from home (AIReturnHome.java:37). The probe states its arrival
+     * in that unit rather than in a block count of its own.
+     */
+    private static final double HOME_THRESHOLD_SQUARED = 3.0D;
+
+    /**
+     * The entity's own leash in squared blocks: {@code EntityGolemBase} teleports a golem home
+     * from 48 squared-blocks and beyond (the 2304.0D gate in its base tick), on the parity tick
+     * {@code (tickCount + getId()) % 2}.
+     */
+    private static final double LEASH_SQUARED = 2304.0D;
+
     private GolemInteractAiGameTest() {
     }
 
@@ -779,9 +811,17 @@ public final class GolemInteractAiGameTest {
     // ------------------------------------------------------------------
     // 6. Return home: the 48-block leash brings the golem back
     // (EntityGolemBase.java:1110-1127, AIReturnHome; no @GameTest in the original)
+    //
+    // Deterministic design: the probe never asserts a tick phase. It gates on the
+    // golem's own tickCount (MOB_SETTLE), drives AIReturnHome exactly as the goal
+    // selector drives a goal (one start(), then tick() while canContinueToUse, stop()
+    // when it turns false), and states both success bounds in the units the product
+    // uses — the goal's 3.0 squared-block threshold and the entity's 2304 squared-block
+    // leash. The only window is the WALK_BUDGET on the stray leg, sized from the
+    // measured walk (see the constant), with the test watchdog above it.
     // ------------------------------------------------------------------
 
-    @GameTest(template = "empty_24", timeoutTicks = 700)
+    @GameTest(template = "empty_24", timeoutTicks = SETTLE + WALK_BUDGET + 120)
     public static void interact_returnHomeUsesTheHomeRadiusAndTheEntityTeleportsFromBeyond48(
             final GameTestHelper helper) {
         clearGolemCaches();
@@ -789,11 +829,14 @@ public final class GolemInteractAiGameTest {
         final BlockPos home = at(helper, 4, 0, 12);
         // Phase 1 drop-off: 8 blocks from home — past AIReturnHome's own
         // 3-block threshold (AIReturnHome.java:76) and well inside the entity's
-        // 48-block leash teleport (EntityGolemBase.java:1110-1127), so the goal
+        // 48-block leash teleport (EntityGolemBase.java, the 2304.0 gate), so the goal
         // is the only thing that can bring the golem back.
         final BlockPos strayedCell = at(helper, 4, 0, 4);
-        helper.assertTrue(home.distSqr(strayedCell) > 3.0D && home.distSqr(strayedCell) < 2304.0D,
-                "the phase-1 drop-off is not between the goal threshold and the leash radius");
+        helper.assertTrue(home.distSqr(strayedCell) > HOME_THRESHOLD_SQUARED
+                        && home.distSqr(strayedCell) < LEASH_SQUARED,
+                "the phase-1 drop-off is not between the goal's " + HOME_THRESHOLD_SQUARED
+                        + " squared-block threshold and the entity's " + LEASH_SQUARED
+                        + " squared-block leash");
         // Phase 2 drop-off: 56 blocks, past the 48-block leash. That is outside
         // the 24x24x24 template, so force-load the chunk and floor it.
         final BlockPos beyond = at(helper, 4, 0, 4 - 56);
@@ -803,8 +846,9 @@ public final class GolemInteractAiGameTest {
                 level.setBlock(beyond.below().offset(dx, 0, dz), Blocks.STONE.defaultBlockState(), 3);
             }
         }
-        helper.assertTrue(home.distSqr(beyond) >= 2304.0D,
-                "the probe's phase-2 drop-off cell is not past the 48-block home radius");
+        helper.assertTrue(home.distSqr(beyond) >= LEASH_SQUARED,
+                "the probe's phase-2 drop-off cell is not past the entity's " + LEASH_SQUARED
+                        + " squared-block leash (48 blocks)");
 
         final EntityGolemBase[] golems = new EntityGolemBase[1];
         final AIReturnHome[] goal = new AIReturnHome[1];
@@ -818,11 +862,12 @@ public final class GolemInteractAiGameTest {
         });
 
         final int[] phase = { 0 };
+        final boolean[] running = { false };
         final AtomicInteger goalUses = new AtomicInteger(0);
         final AtomicBoolean arrivedWithGoal = new AtomicBoolean(false);
         final AtomicBoolean leashedHome = new AtomicBoolean(false);
         final StringBuilder trace = new StringBuilder();
-        drive(helper, SETTLE + 320, () -> {
+        drive(helper, SETTLE + WALK_BUDGET, () -> {
             if (golems[0] == null) {
                 return;
             }
@@ -842,19 +887,32 @@ public final class GolemInteractAiGameTest {
             final double homeDistance =
                     golem.distanceToSqr(home.getX() + 0.5D, home.getY() + 0.5D, home.getZ() + 0.5D);
             if (phase[0] == 1) {
-                if (goal[0].canUse()) {
+                // Drive the goal the way the goal selector drives it (GoalSelector.tick): one
+                // start() on canUse, then tick() while canContinueToUse holds, stop() when it
+                // turns false. The first version of this probe called start() on every tick of an
+                // open gate, and start() re-issues moveTo, which rebuilds the path every tick: the
+                // 8-block walk then measured anywhere from 30 to 315 ticks (WALK_BUDGET), which is
+                // the axis that reddened the leg. The goal's own cadence is the 20-tick attempt
+                // ladder of AIReturnHome (count, prevX/Y/Z, the stuck escape at :102-120).
+                if (!running[0] && goal[0].canUse()) {
                     goalUses.incrementAndGet();
                     goal[0].start();
+                    running[0] = true;
                 }
-                if (goal[0].canContinueToUse()) {
-                    goal[0].tick();
-                } else {
-                    goal[0].stop();
+                if (running[0]) {
+                    if (goal[0].canContinueToUse()) {
+                        goal[0].tick();
+                    } else {
+                        goal[0].stop();
+                        running[0] = false;
+                    }
                 }
-                if (goalUses.get() >= 1 && homeDistance < 3.0D) {
+                if (goalUses.get() >= 1 && homeDistance < HOME_THRESHOLD_SQUARED) {
                     arrivedWithGoal.set(true);
-                    // Second phase: past the leash radius, where only the
-                    // entity's own teleport can bring it back.
+                    // Second phase: past the leash radius, where only the entity's own teleport
+                    // can bring it back — the 2304.0 gate on getRestrictCenter() in
+                    // EntityGolemBase.tick() (:1362), and the fixture set that centre to the home
+                    // cell.
                     golem.setPos(beyond.getX() + 0.5D, beyond.getY(), beyond.getZ() + 0.5D);
                     golem.setDeltaMovement(Vec3.ZERO);
                     golem.fallDistance = 0.0F;
@@ -862,7 +920,9 @@ public final class GolemInteractAiGameTest {
                     return;
                 }
             } else if (phase[0] == 2) {
-                if (golem.blockPosition().distSqr(home) < 256.0D) {
+                // The teleport lands the golem in the passable cell the leash scan finds at the
+                // home centre, so success is the goal's own arrival threshold, not a wider ring.
+                if (golem.blockPosition().distSqr(home) < HOME_THRESHOLD_SQUARED) {
                     leashedHome.set(true);
                 }
             }
@@ -874,22 +934,27 @@ public final class GolemInteractAiGameTest {
             }
         });
 
-        helper.runAfterDelay(SETTLE + 320, () -> {
+        helper.runAfterDelay(SETTLE + WALK_BUDGET + 40, () -> {
             clearGolemCaches();
             assertAlive(golems[0]);
             final EntityGolemBase golem = golems[0];
             helper.assertTrue(phase[0] >= 1, "the probe never moved the golem out of the home radius");
             helper.assertTrue(goalUses.get() >= 1,
-                    "AIReturnHome never activated with the golem outside its home radius (" + state(golem)
+                    "AIReturnHome never activated with the golem outside its home radius (the goal's"
+                            + " gate is " + HOME_THRESHOLD_SQUARED + " squared blocks; " + state(golem)
                             + " strayedCell=" + strayedCell + " trace=" + trace + ")");
             helper.assertTrue(arrivedWithGoal.get(),
-                    "the golem did not path back inside the goal's home threshold (feet="
-                            + golem.blockPosition() + ", home=" + home + ", uses=" + goalUses.get()
-                            + ", trace=" + trace + ", " + state(golem) + ")");
+                    "the golem did not walk back inside the goal's own threshold of "
+                            + HOME_THRESHOLD_SQUARED + " squared blocks from home within the walk"
+                            + " budget of " + WALK_BUDGET + " ticks (feet=" + golem.blockPosition()
+                            + ", home=" + home + ", squared distance="
+                            + (long) golem.distanceToSqr(home.getX() + 0.5D, home.getY() + 0.5D,
+                                    home.getZ() + 0.5D)
+                            + ", uses=" + goalUses.get() + ", trace=" + trace + ", " + state(golem) + ")");
             helper.assertTrue(leashedHome.get(),
-                    "the entity never came back from beyond the 48-block home radius (feet="
-                            + golem.blockPosition() + ", home=" + home + ", beyond=" + beyond
-                            + ", trace=" + trace + ", " + state(golem) + ")");
+                    "the entity never came back from beyond its own leash of " + LEASH_SQUARED
+                            + " squared blocks (48 blocks; feet=" + golem.blockPosition() + ", home="
+                            + home + ", beyond=" + beyond + ", trace=" + trace + ", " + state(golem) + ")");
             passed("interact_returnHomeUsesTheHomeRadiusAndTheEntityTeleportsFromBeyond48");
             helper.succeed();
         });
