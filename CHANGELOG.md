@@ -17,6 +17,17 @@ Work heading for `0.1.0-alpha.5`, gated per merge on `main`.
   screens exist in the wip tree is measured false (0 screen classes in `src`, 0 in
   `wip-salvage`), so the rest are authoring work, not porting.
 
+- **Particle and beam FX family** (`TC-M7-02-s`, `TC-M7-02-b-s`): block sparkle and the
+  crucible bubble as real 1.21.1 particles, and the world-rendered beam/bolt family as
+  custom-geometry particles, including `PacketFXWispZap`'s fractal bolt. The 1.7.10 FX
+  sprites are cells in a 16x16 grid inside `textures/misc/particles.png`, so the build
+  slices the cells the port uses (sparkle 112..120, bubble 16/17, impact 80..95,
+  sparkle_glow 112..115) into one sprite per cell and copies the whole-tile beam/bolt
+  art; the sheet is read at build time, so no original bytes are shipped (D-004). Gate:
+  371 unit tests / 0 failures, 116/116 game tests with and without Curios.
+  **The wisp family is not in this build** — the wip on `wt/fx-f1` does not compile
+  (19 errors) and is re-scoped as TC-M7-02-c-s-f1b.
+
 ## [0.1.0-alpha.4] - 2026-10-28
 
 Fourth pre-release. Still deliberately a pre-release, not playable end-to-end:
