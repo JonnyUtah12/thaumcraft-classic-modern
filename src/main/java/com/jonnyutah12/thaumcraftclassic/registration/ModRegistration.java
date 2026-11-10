@@ -12,6 +12,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaSto
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogGolems;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogPech;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResearchBook;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTaint;
@@ -217,6 +218,13 @@ public final class ModRegistration {
         // data/thaumcraft/recipe/ name. The rows themselves ride the
         // CatalogArcaneWorkbench type/serializer pair above.
         CatalogWandRecipes.init(modEventBus);
+
+        // TC-M6-06-s-c3-a: the pech — thaumcraft:pech (EntityPech, monster
+        // with its own hand-rolled AI/navigation in PechAiLogic) and
+        // thaumcraft:pechblast (EntityPechBlast, the pech wand's projectile).
+        // Renderer + spawn egg stay on TC-M7-03-s / TC-M6-06-s-c6; the trade
+        // GUI has no menu surface in the port (BD row).
+        CatalogPech.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-
