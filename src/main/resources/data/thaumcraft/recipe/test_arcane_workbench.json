@@ -1,0 +1,26 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "ALUMENTUM",
+  "aspects": [
+    {
+      "aspect": "ignis",
+      "amount": 2
+    },
+    {
+      "aspect": "aqua",
+      "amount": 2
+    }
+  ],
+  "pattern": [
+    "i"
+  ],
+  "key": {
+    "i": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "result": {
+    "id": "minecraft:glass",
+    "count": 1
+  }
+}

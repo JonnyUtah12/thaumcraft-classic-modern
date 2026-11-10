@@ -64,6 +64,12 @@ public final class ModRegistration {
         // NewRegistryEvent and its 48 holders attach here, same constructor-
         // time rule as the chain above (docs/aspects.md).
         ModAspects.register(modEventBus);
+
+        // TC-M4-03: arcane workbench — the blocktable block (only variant 15
+        // is wired: tile + menu; the rest of the table family stays with the
+        // abandoned TC-M6-04d), the tilearcaneworkbench BE, the
+        // gui_arcane_workbench menu and the arcane_workbench recipe type.
+        com.jonnyutah12.thaumcraftclassic.registration.catalog.M403ArcaneWorkbench.register(modEventBus);
     }
 
     private ModRegistration() {

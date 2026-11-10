@@ -1,0 +1,22 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research": "ALUMENTUM",
+  "aspects": [
+    {
+      "aspect": "ordo",
+      "amount": 1
+    }
+  ],
+  "ingredients": [
+    {
+      "item": "minecraft:coal"
+    },
+    {
+      "item": "minecraft:coal"
+    }
+  ],
+  "result": {
+    "id": "minecraft:glass",
+    "count": 1
+  }
+}
