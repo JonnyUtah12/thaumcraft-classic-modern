@@ -62,6 +62,10 @@ neoForge {
             // TC-M2-01 registration harness: probe content + the id-contract CSV.
             systemProperty 'thaumcraft.testprobe', 'true'
             systemProperty 'tc.contentMappingFile', file('docs/content-mapping.csv').getAbsolutePath()
+            // TC-M7-01-b: the built mod's language files and the committed port-authored
+            // names — LocalizationGameTest asserts every registered id resolves to a name.
+            systemProperty 'tc.langPackDir', layout.buildDirectory.dir('resources/main/assets/thaumcraft/lang').get().asFile.absolutePath
+            systemProperty 'tc.portLangFile', file('src/main/lang-port-authored/en_us.json').absolutePath
         }
 
         data {
@@ -198,11 +202,160 @@ def transformOriginalSoundsJson = tasks.register("transformOriginalSoundsJson") 
     }
 }
 
+// --- Original language pipeline (TC-M7-01-b, docs/architecture/localization.md)
+// The original strings are 1.7.10 `assets/thaumcraft/lang/<locale>.lang` key=value
+// files that 1.21.1 never opens. Its language loader reads
+// `assets/<ns>/lang/<locale>.json` keyed `<type>.<namespace>.<path>` — the
+// platform's own file shows the shape (`block.minecraft.acacia_wood`) — so the
+// build converts every locale of the user's own reference tree. The strings are
+// All Rights Reserved and stay out of the repository (D-004), exactly as the
+// textures and sounds do.
+//
+// Key mapping is derived from the shapes in the real en_US.lang, cross-checked
+// against the ids pinned in docs/content-mapping.csv — never guessed:
+//   tile.<name>.name           -> block.thaumcraft.<name>   (148 + 91 + 16 keys;
+//   tile.<name>.<n>.name                                       index segments in
+//   tile.<name>.<n>.<m>.name                                   the middle are dropped)
+//   item.<name>.name           -> item.thaumcraft.<name>
+//   entity.<ns>.<name>.name    -> entity.thaumcraft.<name>  (all 47 entity rows
+//   entity.<ns>.<name>.<n>.name                              carry `Thaumcraft.`
+//                                                          in the key itself,
+//                                                          which is not repeated
+//                                                          in the 1.21.1 key)
+//   fluid.<path>               -> fluid.thaumcraft.<path>    (no `.name` suffix)
+//   everything else            dropped. The dropped families are UI or sub-names
+//                              with no id in 1.21.1: `tc.*` (Thaumcraft's own UI
+//                              strings, read through its own StatCollector-style
+//                              lookup in the original), `focus.*`, `enchantment.*`,
+//                              `potion.*`, `champion.*`, `warp.*`, `recipe.*`,
+//                              `text.*`, `death.*`, `container.*`, `itemGroup.*`,
+//                              `nodetype/nodemod.*`, `golem*blurb/text`, and the
+//                              sub-item names `item.<name>.rod|cap|obj|desc|cost*`.
+// Id paths are lowercased: 1.21.1 ids are `[a-z0-9._/-]` only and the D-001 rule
+// already freezes our registry ids that way, so `tile.blockCustomOre.0.name` maps
+// to `block.thaumcraft.blockcustomore` — the key the player saw as a tooltip.
+// Two further shapes come from the real file, not from a guess:
+//   entity.Thaumcraft.Golem.name  — 1.7.10 repeated the namespace INSIDE the key
+//                                   (every one of its 47 entity rows does; only
+//                                   `entity.trunk.*`, which is not a name, does
+//                                   not). 1.21.1 carries the namespace in the key's
+//                                   middle position, so a leading namespace segment
+//                                   is dropped rather than doubled.
+//   one id, several rows           — a multi-state/multi-form block has one row per
+//                                   state (`tile.blockCustomOre.0.name` .. `.7.name`)
+//                                   or per form (`tile.blockCosmeticSlabStone.arcane
+//                                   .name`), and 1.21.1 gives ONE name per id. No
+//                                   named-kind id in docs/content-mapping.csv has a
+//                                   dotted path, so the variant segment cannot name
+//                                   a real id: it is dropped and the FIRST row of
+//                                   en_US.lang wins (en_US is the master key list;
+//                                   for blockCustomOre that is its state 0, "Cinnabar
+//                                   Ore" — what the 1.7.10 tooltip showed for the
+//                                   block itself). Later rows of the same id are
+//                                   dropped and counted.
+//
+// Two sources feed `en_us`: the converted original (ARR, generated below) and the
+// committed port-authored names in `src/main/lang-port-authored/` for ids this
+// port invented and the original never named (the docs/content-mapping.csv rows
+// with no original counterpart, plus the harness probe ids). Only en_us carries
+// the port names — every other locale is a translated copy of the original list,
+// and inventing new translations is out of scope. Where both sources define a key
+// the ORIGINAL wins: the port never rewords an original display string
+// (docs/licensing-and-attribution.md).
+def originalLangDir = file("${originalAssetsDir}/thaumcraft/lang")
+def originalLangFiles = originalLangDir.exists() ? originalLangDir.listFiles().toList().findAll { f -> f.name.endsWith('.lang') } : []
+def portLangFile = file('src/main/lang-port-authored/en_us.json')
+def langKeyTypes = [tile: 'block', item: 'item', entity: 'entity', fluid: 'fluid']
+def langNamespace = mod_id
+
+def transformOriginalLangJson = tasks.register("transformOriginalLangJson") {
+    def generatedLangDir = layout.buildDirectory.dir('generated/resources/original-lang/assets/thaumcraft/lang')
+    inputs.file(portLangFile)
+    inputs.files(originalLangFiles) // empty without the reference tree
+    outputs.dir(generatedLangDir)
+    doLast {
+
+        def langOut = generatedLangDir.get().asFile
+        def portNames = new JsonSlurper().parseText(portLangFile.getText('UTF-8'))
+        def perLocale = new LinkedHashMap() // locale -> [language key -> string]
+        def collapsedRows = new LinkedHashMap() // locale -> rows of an id already named
+        if (originalLangFiles.isEmpty()) {
+            println('[transformOriginalLangJson] no reference tree: only the port-authored names ship')
+        }
+        originalLangFiles.each { source ->
+            def locale = (source.name - '.lang').toLowerCase()
+            if (!locale.matches('[a-z]{2}_[a-z]{2}')) { return } // lang/README.md etc.
+            def names = new LinkedHashMap()
+            def collapsed = [0]
+            def text = source.getText('UTF-8')
+            if (text.startsWith('\uFEFF')) { text = text.substring(1) } // strip BOM
+            text.split('\n').toList().each { rawLine ->
+                def line = rawLine.trim()
+                def equals = line.indexOf('=')
+                if (equals > 0 && !line.startsWith('#')) {
+                    def parts = line.substring(0, equals).split(/\./).toList()
+                    def type = langKeyTypes[parts[0]]
+                    if (type != null) {
+                        def stop = parts.size()
+                        if (type != 'fluid') {
+                            if (parts[parts.size() - 1] != 'name') { return } // sub-name or UI text
+                            stop = parts.size() - 1
+                        }
+                        def segments = parts.subList(1, stop).findAll { x -> !x.isInteger() } // state indexes dropped
+                        if (!segments.isEmpty() && segments[0].toLowerCase() == langNamespace) {
+                            segments = segments.size() > 1 ? segments.subList(1, segments.size()) : []
+                        }
+                        if (!segments.isEmpty()) {
+                            def path = segments[0].toLowerCase() // the id path; variants collapse onto it
+                            if (path.matches('[a-z0-9_-]+')) {
+                                def key = type + '.' + langNamespace + '.' + path
+                                if (names.containsKey(key)) {
+                                    collapsed[0] += 1 // a later state/form of an id already named
+                                } else {
+                                    names[key] = line.substring(equals + 1) // verbatim, reworded nowhere
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            perLocale[locale] = names
+            collapsedRows[locale] = collapsed[0]
+        }
+        // Only en_us carries the port-authored names: every other locale is a
+        // translated copy of the original key list, and inventing translations is
+        // out of scope. Where both sources define a key the ORIGINAL wins, so the
+        // port file only ever fills ids the original never named.
+        def enUs = perLocale.containsKey('en_us') ? perLocale['en_us'] : new LinkedHashMap()
+        def portOnly = [0]
+        portNames.each { key, value ->
+            if (!enUs.containsKey(key)) {
+                enUs[key] = value
+                portOnly[0] += 1
+            }
+        }
+        perLocale['en_us'] = enUs
+        perLocale.each { locale, names ->
+            // `file(...)` inside a closure is not config-cache-safe; the output dir
+            // was already declared as the task's output, so plain paths are fine.
+            def out = new java.io.File(langOut.getAbsolutePath(), "${locale}.json")
+            out.parentFile.mkdirs()
+            java.io.File.FileOps.writeText(out.getPath(), JsonOutput.prettyPrint(JsonOutput.toJson(names.toSorted())))
+            def added = locale == 'en_us' ? portOnly[0] : 0
+            def fromOriginal = names.size() - added
+            def dropped = collapsedRows.containsKey(locale) ? collapsedRows[locale] : 0
+            def suffix = added > 0 ? " + ${added} port-authored" : ''
+            println("[transformOriginalLangJson] ${locale}.json: ${names.size()} names (${fromOriginal} converted original${suffix}); ${dropped} variant rows of an already-named id dropped")
+        }
+    }
+}
+
 sourceSets.main.resources {
     srcDir(layout.buildDirectory.dir('generated/resources/original-assets'))
     srcDir(layout.buildDirectory.dir('generated/resources/original-sounds'))
+    srcDir(layout.buildDirectory.dir('generated/resources/original-lang'))
 }
-tasks.named('processResources') { dependsOn overlayOriginalAssets, transformOriginalSoundsJson }
+tasks.named('processResources') { dependsOn overlayOriginalAssets, transformOriginalSoundsJson, transformOriginalLangJson }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
     var replaceProperties = [
@@ -230,7 +383,9 @@ neoForge.ideSyncTask generateModMetadata
 // gradle.properties stays the single source of truth (docs/release-process.md).
 tasks.named('test', Test).configure {
     useJUnitPlatform()
-    dependsOn generateModMetadata, overlayOriginalAssets, transformOriginalSoundsJson
+    // The language tests assert the language files of the built mod, so they need
+    // the processed resource tree (TC-M7-01-b).
+    dependsOn generateModMetadata, overlayOriginalAssets, transformOriginalSoundsJson, transformOriginalLangJson, processResources
     systemProperty 'tc.modId', mod_id
     systemProperty 'tc.modName', mod_name
     systemProperty 'tc.modLicense', mod_license
@@ -250,6 +405,11 @@ tasks.named('test', Test).configure {
             file('docs/config-reference.md').absolutePath
     systemProperty 'tc.contentMappingFile',
             file('docs/content-mapping.csv').absolutePath
+    // TC-M7-01-b: the language files of the built mod (docs/architecture/localization.md).
+    systemProperty 'tc.langPackDir',
+            layout.buildDirectory.dir('resources/main/assets/thaumcraft/lang').get().asFile.absolutePath
+    systemProperty 'tc.portLangFile',
+            file('src/main/lang-port-authored/en_us.json').absolutePath
     // TC-M8-01 accessory layer guards: bytecode isolation (no core class may
     // reference Curios types) + Curios data-file/slot-model consistency.
     systemProperty 'tc.mainClassesDir',
