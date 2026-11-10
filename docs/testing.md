@@ -68,10 +68,17 @@ without the evidence for its stages.
 - Regression: identifier stability tests over the content mapping; previously
   fixed bugs get a guarding test.
 - **Game test structures share a level and pack densely.** The game test server
-  lays every test in a batch out on a grid whose spacing comes from the test's
-  *template size*: the `empty` template (1×1×1) packs structures ~6 blocks apart
-  in x and ~25 in z, so probes run concurrently in the same 25-block
-  neighbourhood. Two failure modes follow, both seen on this repo: a neighbour
+  lays every test in a batch out on a walk, not a rectangular grid:
+  `StructureGridSpawner` advances the next slot by `template width + 5` in x AND
+  `template depth + 6` in z for each structure it places, and `TestGenerator`
+  restarts the walk at the batch corner every `maxPerBatch = 40` tests (the batch
+  also clears space for the previous batch's box). So a 1×1×1 `empty` neighbour sits
+  6 blocks away in BOTH axes, a 24³ `empty_24` neighbour advances 29 in each and its
+  cell edge reaches to 5 blocks from the next cell's origin, and probes run
+  concurrently in the same 25-block neighbourhood. Measured on this tree (283 tests,
+  grid origin 2011583, -60, -4860956): two probes packed next to each other in the
+  batch order landed at (+29, +68) and (0, +249) from one another. Two failure modes
+  follow, both seen on this repo: a neighbour
   can `setBlock` on top of the cell another probe just built (a crucible probe
   found its `blockMetalDevice` replaced by a neighbouring probe's arcane lamp),
   and a probe whose logic scans a wide box reads the neighbour's blocks
@@ -84,6 +91,35 @@ without the evidence for its stages.
   widens the packing footprint), and a probe whose assertions depend on a world
   scan measures DELTAS over an ambient baseline scan, never absolute totals.
   Prefer both over reordering tests: the layout is not stable across runs.
+- **A probe whose verdict is about item entities must attribute them, not just
+  filter them.** A scan over a box wider than the probe's cell reads the
+  neighbourhood — `mobBox` spans ±12 (25³) and a 1×1×1 `empty` neighbour sits 6
+  away, so a foreign stack in the box is the normal case, not the exception.
+  Filtering by item identity does NOT fix it where the contract IS the item set
+  (a drop-table probe): the stack a defect produces is the probe's own item, so an
+  identity filter is blind to exactly the bug it is guarding. Attribute by capture:
+  scan the box immediately before and immediately after each action that produces
+  entities and keep the UUID delta. The server thread is single-threaded and an
+  action is not re-entered, so the delta is that action's output — no clock, no
+  position, no draw enters the verdict. Foreign stacks stay in the failure message
+  (they are the diagnostic) and are never counted: `ZombieMobGameTest.DeathDrops`,
+  `assertOwnedDeathDropsAre`. Measured as CI run 42573819914 (sha 1430745):
+  `furiouszombiedeathdropsdoubletherollsandthestack` failed on
+  `minecraft:stone_button` at grid origin 12969321, -60, -6539840 while the same sha
+  was green in 42573817477 — `GameTestServer#startTests` draws the origin from
+  `Level#getRandom`, so an unfiltered pad scan is a draw bet. The item is not
+  producible by that probe's drop bodies: `stone_button` appears 0 times in
+  `src/main/java`, in no vanilla structure NBT and in no vanilla loot table, so it is
+  not terrain loot; the project's only `stone_button` is the ported essentia entry
+  `data/thaumcraft/essentia/tags.json` `itemTags[195]` (`machina 1`), which a
+  neighbouring machine probe can eject into the box.
+  Green is not proof: pair the arm with a standing foreign stack in the box on the
+  producing tick (`ZombieMobGameTest.breakForeignBlockInPad`) plus a self-check that
+  the fixture is still landing (`aForeignStackInAPadIsNamedAndNotCounted`), and sweep
+  the mutation surface (the drop tables) to show the probe goes RED. The
+  identity-filtered `ownedBy` pattern (`OreDropGameTest`) is the right tool only where
+  the contract names the item and the mutation surface is the count.
+
 - **A probe that lets the LEVEL tick its mob must place that mob in the chunk the harness vouches.**
   `StructureUtils#prepareTestStructure` calls `forceLoadChunks` on the **template's bounding box**,
   and `GameTestInfo#tick` refuses to start a probe until every one of those chunks answers
@@ -105,6 +141,33 @@ without the evidence for its stages.
   (x, z) (`ZombieMobGameTest.MOB_CELL = (0,3,0)`), and assert the cell is entity-ticking BEFORE
   reading a per-tick counter, so a harness/layout change reports the precondition by name instead of
   arriving as a rate that cannot be measured.
+- **A goal left on a live selector is armed by the ENGINE, and a route gate closes off the ground.**
+  `Mob.serverAiStep` ticks the goal selector and `GoalSelector#tick` starts a goal on the
+  `(tickCount + id) % 2` parity tick (`GoalSelector.java:74-105`). A probe that hand-drives a goal's
+  `canUse` measures its registration priority and then takes the goal OFF the selector: left on it,
+  the engine arms it first — on a parity the entity id decides, so the loss is a rate and not a
+  constant — and the goal's own `start()` movement is the state the probe goes on to sample. The
+  paired wall is the ground: `GroundPathNavigation#canUpdatePath` is
+  `onGround || isInLiquid || isPassenger` (`GroundPathNavigation.java:40-43`) and
+  `PathNavigation#createPath` answers `null` while it is false (`:136`); that same method answers
+  `null` when the target's chunk is not loaded (`:44-49`). Both walls print as the same "no route"
+  line, so a gate that reads a route asserts BOTH preconditions where it can read them and names
+  them in its own message. Measured on this tree: `combat_golemFleesOnlyACreeperWhoseFuseIsLit` went
+  red on ~1 leg in 5 (`-Ptc.noCurios`) with `nodes=null, lastNode=-` across all 480 `canUse` draws,
+  and the standing hypothesis — the flee spot reaching a chunk the harness does not vouch — measured
+  FALSE: a sweep of the flee domain on the phase ticks of 8 legs found every chunk column loaded
+  (36 of 36) on every sample, while `onGround=false` closed 10 of 10 sampled flee routes on all 8
+  airborne samples and `onGround=true` left 10 of 10 open on all 18 grounded samples. The engine had
+  armed the goal on the tick after the fuse (about one entity id in two) and the goal's own
+  `motionY` 0.3 hop (`AIAvoidCreeperSwell.java:74-79`) put the golem airborne and outside its own
+  detection box. Fix the PRECONDITION — goal off the selector, preconditions asserted at the fuse
+  tick with the `align16` and chunk facts — and keep the detector loud: the mutation that puts the
+  golem airborne at the fuse tick turns the probe red naming `canUpdatePath`/`onGround`, and the
+  mutation that holds it airborne through the window reproduces the original `nodes=null` red
+  verbatim, now reported with `onGround=false, canUpdatePath=false, loaded=true,
+  fleeDomainUnloaded=0`. Tick order decides mutations: `onGround` is recomputed in the physics step
+  at the END of a tick, so a `setDeltaMovement` applied in the same tick as the probe's draws is
+  invisible to those draws — an airborne mutation has to be established one tick early to be seen.
 - **A probe asserts an OUTCOME, never a tick budget.** `helper.runAtTickTime(getTick() + N, …)` puts the
   harness's scheduler inside the port's contract: the assert fires on the **probe's** clock, while the
   fact it reads is produced by the **LEVEL** — an entity's AI tick, a chunk's block-tick pass — and
