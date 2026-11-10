@@ -1,12 +1,30 @@
 package com.jonnyutah12.thaumcraftclassic.aspect;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.BowItem;
+import net.minecraft.world.item.DiggerItem;
+import net.minecraft.world.item.HoeItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemEnchantedBook;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.PickaxeItem;
+import net.minecraft.world.item.ShearsItem;
+import net.minecraft.world.item.SwordItem;
+import net.minecraft.world.item.TieredItem;
+import net.minecraft.world.item.Tiers;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -225,6 +243,163 @@ public final class EssentiaTags {
             return toAspectList(tag.aspects());
         }
         return null;
+    }
+
+    // ------------------------------------------------- bonus tags (TC-M4-06)
+
+    /**
+     * Vanilla enchantment id -> aspect tag merged at the enchantment's level,
+     * from the original {@code getBonusTags}'s enchantment-id chain. The srg
+     * {@code Enchantment.field_*} constants were decoded through
+     * {@code reference/mcp-mappings/fields_1.7.10_mcp_stable_11.csv}; the
+     * aspect tags through {@code api/aspects/Aspect.java}. The two Thaumcraft
+     * enchantments ({@code Config.enchHaste} -> motus, {@code Config.enchRepair}
+     * -> instrumentum) keep their ids here and stay dormant until those
+     * enchantments are registered by their own card.
+     */
+    private static final Map<ResourceLocation, String> ENCHANT_BONUS_ASPECTS = Map.ofEntries(
+            Map.entry(mc("aqua_affinity"), "aqua"),
+            Map.entry(mc("bane_of_arthropods"), "bestia"),
+            Map.entry(mc("blast_protection"), "tutamen"),
+            Map.entry(mc("efficiency"), "instrumentum"),
+            Map.entry(mc("feather_falling"), "volatus"),
+            Map.entry(mc("fire_aspect"), "ignis"),
+            Map.entry(mc("fire_protection"), "tutamen"),
+            Map.entry(mc("flame"), "ignis"),
+            Map.entry(mc("fortune"), "lucrum"),
+            Map.entry(mc("infinity"), "fabrico"),
+            Map.entry(mc("knockback"), "aer"),
+            Map.entry(mc("looting"), "lucrum"),
+            Map.entry(mc("power"), "telum"),
+            Map.entry(mc("projectile_protection"), "tutamen"),
+            Map.entry(mc("protection"), "tutamen"),
+            Map.entry(mc("punch"), "aer"),
+            Map.entry(mc("respiration"), "aer"),
+            Map.entry(mc("sharpness"), "telum"),
+            Map.entry(mc("silk_touch"), "permutatio"),
+            Map.entry(mc("thorns"), "telum"),
+            Map.entry(mc("smite"), "perditio"),
+            Map.entry(mc("unbreaking"), "terra"),
+            Map.entry(mc("luck_of_the_sea"), "lucrum"),
+            Map.entry(mc("lure"), "bestia"),
+            Map.entry(tc("haste"), "motus"),
+            Map.entry(tc("repair"), "instrumentum"));
+
+    private static ResourceLocation mc(final String path) {
+        return ResourceLocation.withDefaultNamespace(path);
+    }
+
+    private static ResourceLocation tc(final String path) {
+        return ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, path);
+    }
+
+    /**
+     * Port of {@code ThaumcraftCraftingManager.getBonusTags} (TC-M4-06): the
+     * carried-aspect bonus of an item being smelted — its own container
+     * contents, the source tags, gear-class bonuses and enchantment bonuses,
+     * culled. The original's gear checks key off 1.7.10 item classes; the
+     * modern equivalents are one-for-one (ItemArmor -> ArmorItem, ItemSword ->
+     * SwordItem, ItemPickaxe/ItemTool -> PickaxeItem/DiggerItem, ItemShears ->
+     * ShearsItem). The sword bonus reads the stack's total attack damage
+     * (base 1 + ADD_VALUE modifiers) because 1.7.10's {@code getDamage()} was
+     * that total; the shears bonus keeps the original durability thresholds,
+     * which are the same numbers as the modern {@link Tiers} use-counts.
+     */
+    public static AspectList getBonusTags(final ItemStack stack, final AspectList sourceTags) {
+        AspectList tmp = new AspectList();
+        final Item item = stack.getItem();
+        if (item instanceof IEssentiaContainerItem container) {
+            tmp = container.getAspects(stack);
+            if (tmp != null && tmp.size() > 0) {
+                for (final Aspect tag : tmp.copy().getAspects()) {
+                    if (tmp.getAmount(tag) <= 0) {
+                        tmp.remove(tag);
+                    }
+                }
+            }
+        }
+        if (tmp == null) {
+            tmp = new AspectList();
+        }
+
+        if (sourceTags != null) {
+            for (final Aspect tagx : sourceTags.getAspects()) {
+                if (tagx != null) {
+                    tmp.add(tagx, sourceTags.getAmount(tagx));
+                }
+            }
+        }
+
+        if (item != null) {
+            if (item instanceof ArmorItem armor) {
+                tmp.merge(getAspectOrSkip("tutamen"), armor.getDefense());
+            } else if (item instanceof SwordItem && attackDamageOf(stack) + 1.0F > 0.0F) {
+                tmp.merge(getAspectOrSkip("telum"), (int) (attackDamageOf(stack) + 1.0F));
+            } else if (item instanceof BowItem) {
+                tmp.merge(getAspectOrSkip("telum"), 3).merge(getAspectOrSkip("volatus"), 1);
+            } else if (item instanceof PickaxeItem) {
+                tmp.merge(getAspectOrSkip("perfodio"), ((TieredItem) item).getTier().getTier() + 1);
+            } else if (item instanceof DiggerItem) {
+                tmp.merge(getAspectOrSkip("instrumentum"), ((TieredItem) item).getTier().getTier() + 1);
+            } else if (item instanceof ShearsItem || item instanceof HoeItem) {
+                final int durability = stack.getMaxDamage();
+                if (durability <= Tiers.WOOD.getUses()) {
+                    tmp.merge(getAspectOrSkip("meto"), 1);
+                } else if (durability <= Tiers.STONE.getUses() || durability <= Tiers.GOLD.getUses()) {
+                    tmp.merge(getAspectOrSkip("meto"), 2);
+                } else if (durability <= Tiers.IRON.getUses()) {
+                    tmp.merge(getAspectOrSkip("meto"), 3);
+                } else {
+                    tmp.merge(getAspectOrSkip("meto"), 4);
+                }
+            }
+
+            ItemEnchantments ench = null;
+            if (item instanceof ItemEnchantedBook) {
+                ench = stack.get(DataComponents.STORED_ENCHANTMENTS);
+            } else {
+                ench = stack.getEnchantments();
+            }
+
+            if (ench != null && !ench.isEmpty()) {
+                int totalLevels = 0;
+                for (final Map.Entry<Holder<Enchantment>, Integer> entry : ench.entrySet()) {
+                    final ResourceLocation enchId = BuiltInRegistries.ENCHANTMENT.getKey(entry.getKey().value());
+                    final String aspectTag = enchId == null ? null : ENCHANT_BONUS_ASPECTS.get(enchId);
+                    if (aspectTag != null) {
+                        tmp.merge(getAspectOrSkip(aspectTag), entry.getValue());
+                    }
+                    totalLevels += entry.getValue();
+                }
+                if (totalLevels > 0) {
+                    tmp.merge(getAspectOrSkip("praecantatio"), totalLevels);
+                }
+            }
+        }
+
+        return AspectCombinations.cullTags(tmp);
+    }
+
+    /** Total melee attack damage of the stack: base 1 + ADD_VALUE modifiers. */
+    private static double attackDamageOf(final ItemStack stack) {
+        double damage = 1.0D;
+        final ItemAttributeModifiers modifiers =
+                stack.getOrDefault(DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
+        for (final ItemAttributeModifiers.Entry entry : modifiers.modifiers()) {
+            if (entry.attribute() == Attributes.ATTACK_DAMAGE
+                    && entry.modifier().operation() == AttributeModifier.Operation.ADD_VALUE) {
+                damage += entry.modifier().amount();
+            }
+        }
+        return damage;
+    }
+
+    private static Aspect getAspectOrSkip(final String tag) {
+        final Aspect aspect = Aspect.getAspect(tag);
+        if (aspect == null) {
+            LOGGER.warn("bonus tags reference unknown aspect tag {}", tag);
+        }
+        return aspect;
     }
 
     // ------------------------------------------------------------- helpers

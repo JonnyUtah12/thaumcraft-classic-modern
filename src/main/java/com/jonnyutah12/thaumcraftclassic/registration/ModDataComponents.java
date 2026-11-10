@@ -6,6 +6,7 @@ import com.jonnyutah12.thaumcraftclassic.wands.VisPool;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -52,6 +53,22 @@ public final class ModDataComponents {
                     () -> DataComponentType.<VisPool>builder()
                             .persistent(VisPool.CODEC)
                             .networkSynchronized(VisPool.STREAM_CODEC)
+                            .build());
+
+    /**
+     * The aspect filter carried by a filled essentia jar (TC-M4-06): the
+     * original stored the filter as the jar tile's {@code aspectFilter} field
+     * and copied it onto the dropped item via the jar item's NBT; the modern
+     * equivalent is this component, applied by {@code TileJarFillable}
+     * implicit-component hooks. The value is the aspect tag (the aspect
+     * registry type has no codec; tags are the stable identity used by
+     * {@code Aspect.getAspect}).
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> ASPECT_FILTER =
+            DATA_COMPONENT_TYPES.register("aspect_filter",
+                    () -> DataComponentType.<String>builder()
+                            .persistent(Codec.STRING)
+                            .networkSynchronized(ByteBufCodecs.STRING_UTF8)
                             .build());
 
     private ModDataComponents() {
