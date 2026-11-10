@@ -173,8 +173,28 @@ When a card is blocked for `Iteration budget exhausted (150/150)` — `consecuti
 ### Measurement rules that have bitten this board
 
 - **Pass `-C <worktree>` and an explicit SHA.** `git branch -r --contains HEAD` without `-C` silently evaluates the *main checkout's* HEAD and will "verify" pushes that were never checked.
+- **`-C` binds the repository, not the shell's cwd — so a `HEAD:` refspec in a `-C` push is the `-C` repo's head.** `git -C "$repo" push origin HEAD:refs/heads/<branch>` run from inside a *temp* worktree pushes **main's tip**, not the worktree you were preserving. Measured 2026-11-09: 24 `salvage/*` refs were created this way, all pointing at main's tip while the 23 salvage commits stayed local; the verification line printed main's SHA, which is only useful if the comparison is a string compare, not a glance. **Push a SHA expanded from the thing being preserved:** `SHA=$(git -C "$wt" rev-parse HEAD); git -C "$repo" push origin "$SHA:refs/heads/<branch>"`, then require `git ls-remote origin refs/heads/<branch>` to equal `$SHA`.
+- **Never type a SHA you know only by prefix.** Completing `c84c6a2c3e09…` by hand produced `fatal: bad object` — a fabricated 40-char string. Expand from source (`git rev-parse <ref>`) in the refspec itself.
+- **A dirty count is not a measure of unique work.** The 203 dirty entries at `t_5eb27d02` classified per-path: **197 blobs already byte-identical on origin, 5 unique**. Classify per path — hash the worktree file and test the blob against origin's trees (`git ls-tree -r <ref>` over all fetched `refs/remotes/origin/*`) — before calling a site a salvage site, and say which number you are reporting.
 - A **detached-HEAD** worktree's branch is literally named `HEAD`, so it can never match a remote ref and will **always** read "unpushed" — test reachability by SHA instead.
-- **`add -A -- src docs` sweeps shared files** (`FEATURE_MATRIX.md`, `compatibility-matrix.md`, `en_us.json`) into a lane branch with no per-hunk check. Prefer explicit paths; if a shared file must go in, verify the diff is single-hunk and single-lane, and **name the caveat on the card** if it was not.
+- **Re-audit a live site before acting.** `wt/m7-fx-decal` read `dirty=22, ahead=1, not on origin` (the worst exposure in the population) and 30 minutes later read `dirty=0, on origin` — its own worker pushed it. An exposure list is a snapshot, not a queue.
+- **`add -A -- src docs` sweeps shared files** (`FEATURE_MATRIX.md`, `compatibility-matrix.md`, `en_us.json`) into a lane branch with no per-hunk check. Prefer explicit paths; if a shared file must go in, verify the diff is single-hunk and single-lane, and **name the caveat on the card** if it was not. `docs/feature-tracking.md` measured **10+ divergent working copies** across the worktree fleet, so a shared tracking file in a *lane* branch is a collision you are creating, not preserving — put such snapshots on a `salvage/*` branch, which is declared uncompiled/ungated by construction.
+
+### The cleanup gate is one script: `scripts/worktree-audit.sh`
+
+`scripts/worktree-audit.sh <worktree>` prints the verified tuple and the gate verdict; `--all` covers the **primary checkout plus every linked worktree** (the primary is the tree every landing writes to, and is *not* in `.worktrees/*`; **stashes are in neither** — `git stash list` + a per-entry blob check belongs in the manifest too).
+
+```
+path  branch  head  ahead  behind  dirty  on_origin_by_sha  reachable_from_origin_ref
+fast_forwardable  diff_files  diff_ins  diff_del  gate  gate_reason
+```
+
+- `ahead`/`behind` come from `git rev-list --left-right --count <base>...<head>` — **three-dot**, split, so a branch whose base is an ancestor of main never reports main's later work as deletions.
+- `on_origin_by_sha` = the exact SHA is the tip of a live ref on origin (`git ls-remote`, fetched once per run). `reachable_from_origin_ref` = the SHA is inside some fetched `origin/*` history — the test a detached HEAD passes; a head can be safe with no ref of its own.
+- Enumerate remote truth from `git ls-remote origin 'refs/heads/*'`, never from `git branch`: refs that exist only on origin (measured: 8 of 92 unlanded) are **invisible** to a local listing, so a `refs/heads`-based manifest reads them as non-existent.
+- `gate=PASS` requires all three conditions (dirty=0, three-dot ahead=0, head present on origin). The script **never removes anything** — it exits 1 on FAIL so it can gate a removal command.
+- Count the unlanded refs by **ancestry cluster**, not by ref: 92 unlanded refs = 56 clusters (the 6-head golem lane is ONE landing). Distinct tips disprove aliasing, not independence.
+- Exit code: for a single path, 0 = gate PASS, 1 = gate FAIL (usable as the pre-removal check). For `--all` a FAIL row is data.
 
 ## A notification can describe an INTERMEDIATE attempt, not the card's end state
 
