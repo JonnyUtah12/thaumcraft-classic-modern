@@ -127,7 +127,15 @@ public final class LocalizationGameTest {
             Map.entry("tc.forbidden.level.3", "ItemResearchNotes warp tooltip level 3"),
             Map.entry("tc.forbidden.level.4", "ItemResearchNotes warp tooltip level 4"),
             Map.entry("tc.forbidden.level.5", "ItemResearchNotes warp tooltip level 5"),
-            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"));
+            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"),
+            // TC-M3-04-s-iii-b research-note menu: the two out-of-ink tooltip
+            // lines (the original's TileResearchTable ink gate, keys verbatim
+            // from en_US.lang) and the copy-cost header the RESEARCHDUPE plate
+            // draws. All three are read by the note GUI, not by a registry id,
+            // so they are code-authored like the container titles.
+            Map.entry("tile.researchtable.noink.0", "ResearchNoteMenu ink gate (GuiResearchTable tooltip)"),
+            Map.entry("tile.researchtable.noink.1", "ResearchNoteMenu ink gate (GuiResearchTable tooltip)"),
+            Map.entry("tc.research.copy", "ResearchNoteMenu copy-cost header (GuiResearchTable)"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always
