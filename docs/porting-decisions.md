@@ -706,3 +706,104 @@ now measures a **delta** over a baseline, because `TestProbeContent`'s probe
 drain counter is static and the merged registration order put
 `CrucibleGameTest`'s essentia leg in front of it — the absolute read was a
 cross-test read, not a regression.
+
+## D-021 — The BD ledger's id space is `main`'s: incoming rows append, they never renumber (ledger reconcile, `t_9a2c9f91`)
+
+**Status: Accepted.** `docs/BEHAVIORAL_DEVIATIONS.md` is one file that carried
+many ledgers at once. Measured on 118 live heads against `main` = `7933db8`:
+**14-44 `| BD-` rows per head, median 18, 111 of the 118 heads at least 9 rows
+short of `main`'s 45, and not one head at `main`'s count.** The card that owns
+this (`t_9a2c9f91`) opened on 29 rows on `main` and 16/19/20/27/27 on the first
+five heads it measured, and grew to twelve+ ledgers as more clusters were
+adjudicated; between that measurement and this reconcile the golem lane landed
+its own reconcile (`0c66385`, see the precedent below) and `main` grew from
+BD-01…BD-29 to BD-01…BD-45. So the divergence is not a numbering drift, it is
+**deleted rows**: a stale head merged with a wholesale "take theirs" on this
+prose file deletes every row that head never carried — a row nobody edited
+carries no conflict marker, so the deletion lands green. The same channel
+reverted 43 rows of `docs/content-mapping.csv`. `BD-19` had three distinct
+occupants at once: Wisp FX art on `main`, Scribing Tools on `d0ed716`, the
+KnowFrag recipe row on `96b247a`, and the id space is contiguous with no slack,
+so every reassignment shifts its neighbours.
+
+**The decision, and why this direction.** `main`'s rows are the **incumbent**:
+their ids and their text are kept verbatim, and the incoming rows are appended
+on the **end** of main's id space. Three moves are forbidden, and they are
+forbidden in code, not in prose — renumbering to match a branch's numbering is
+what produced the divergent ledgers; trimming rows to make two counts agree
+deletes real records; taking either side of the file wholesale on the strength
+of it conflicting is the deletion channel above. A head's row is **rejected**
+(not appended) when `main` already owns that deviation, measured three ways:
+its fingerprint appears in a historical blob of the ledger in main's history
+(a stale predecessor of a row main rewrote), its System cell is textually the
+same row as a main row (token Jaccard ≥ 0.50), or main's ledger narrates ≥ 55 %
+of its distinctive tokens on a token set big enough to be a fair test (≥ 12).
+Variants of one deviation across several heads collapse to one row keyed by the
+deviation's label — the System cell before its first parenthesis — and the
+fullest variant is canonical, because lanes suffix the same label with their own
+card ids (`Thaumatorium window (TC-M7-04-m2c / t_8f57a102)` vs the same label
+with `…and TC-M7-04-m2e / t_f1395853`).
+
+**Ids.** The reconcile appended **19 deviations as BD-46 … BD-64** (measured:
+19 novel deviations across 118 heads; 39 head-rows collapsed into them), and
+**rejected 17** head rows as deviations main already owns. The two rejections
+that need a name, pinned in `ADJUDICATED` in `scripts/bd_ledger.py` with the
+measured coverage: `Container screen backgrounds and client-visible machine
+state` → **BD-37** (main's row records `authored as BD-17 on wt/m7-gui,
+renumbered at landing`; coverage of main's ledger 1.00 for the
+`wt/m7-gui-tau-glyphs` variant, 0.69 for `wt/m7-gui-state`, whose only delta is
+"state sync closed by TC-M7-04-m4" — that fact belongs in BD-37's cells when the
+GUI fleet lands, not in a new row), and `Wisp block collision` → **BD-19**
+(main's row documents the ported push verbatim, `FxWispPush` reading the mote's
+own cell, coverage 0.57). Every (head, old id) pair is in the generated
+**`docs/bd-id-map.csv`** (39 rows, `head,head_sha,old_id,new_id,card,canonical,system`)
+— that file is what a queued landing cites: rewrite your citations to the
+allocated id, and where the map says your row is covered, edit the incumbent
+row's cells at landing instead of adding a row. One incumbent row is touched,
+and only its cell placement: `BD-13`'s id cell carried
+`BD-13 (see D-019 for the GUI port posture)`, which made the row count in the
+`^| BD-` line count every card quotes and vanish from a strict parse — a row
+invisible to a merge audit. The parenthetical moved to its System cell.
+
+**The tool, and the test that keeps it true.** `scripts/bd_ledger.py` runs the
+rule: `audit` (per-head row counts, novel rows, and the rejections with their
+reasons), `emit` (writes the reconciled ledger + the id map, main incumbent),
+`check` (count floor, id uniqueness/contiguity/zero-padding, the two counting
+methods agreeing, declared status token per row, every citation resolving), and
+`revert` (merge-tree each head onto the reconciled tree and report the incumbent
+rows its merge deletes). `BehavioralDeviationLedgerContractTest`
+(`src/test/java/com/jonnyutah12/thaumcraftclassic/docs/`, 7 probes, pure JDK —
+the ledger is plain Markdown, so it belongs in `./gradlew test`, CI's `build`
+job, not the game-test harness) freezes all 45 incumbent rows as
+id → System-cell fingerprints and asserts: the count never decreases and both
+counting methods agree; the incumbent rows survive with their System cells
+verbatim (the anti-revert assertion); ids unique / zero-padded / contiguous;
+every `BD-NN` cited anywhere in `docs/`, `src/`, `scripts/`, `README.md`,
+`CHANGELOG.md` resolves to exactly one row; every row carries a token the file's
+own `Status vocabulary:` paragraph declares (the paragraph was extended to the
+11 classes the rows actually use, measured over the reconciled file); the map
+resolves and every appended row names its source head, old id and landing card;
+and appended ids start exactly where the incumbent space ends, so an incoming
+row can never steal a main id.
+
+**Precedent, not invention.** The golem lane did exactly this in-branch
+(`0c66385`, "the six golem renderers/models + BD-30..BD-45 renumbering",
+`t_647f672e`): main's BD-01…BD-29 kept as incumbent, its own rows appended as
+BD-30…BD-45, no side-pick, no count-matching trim. That landing is why `main`
+carries 45 rows here, and it is the measured proof that the rule lands.
+
+**Gate evidence on the reconciled tree.** The test was written first and shown
+**RED** on the unreconciled tree: `./gradlew test --tests
+'*BehavioralDeviationLedgerContractTest*'` → **exit 1**, `7 tests completed, 6
+failed` (deleted incumbent BD-13, missing `docs/bd-id-map.csv`, 3 cited ids
+resolving to 0 rows, the loose/strict count split at 45 vs 44, 19 rows with no
+declared status token). After the reconcile the same command → **exit 0**
+(`BUILD SUCCESSFUL`, 7/7 probes, 0 skipped). `./gradlew build --rerun-tasks` →
+**exit 0** with **733 unit tests / 0 failures / 0 errors / 2 pre-existing
+skips**; `./gradlew runGameTestServer` → **exit 0 "All 292 required tests
+passed :)"**; `./gradlew -Ptc.noCurios runGameTestServer` → **exit 0** with the
+same 292. `python3 scripts/bd_ledger.py --main <reconciled head> revert` over
+**121 heads (57 of them CONFLICTED on this very file)** reports
+**`total reverting rows across 121 heads: 0`, exit 0** — no head's merge deletes
+an incumbent row once the ids are allocated and the map exists.
+
