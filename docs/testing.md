@@ -168,6 +168,30 @@ without the evidence for its stages.
   fleeDomainUnloaded=0`. Tick order decides mutations: `onGround` is recomputed in the physics step
   at the END of a tick, so a `setDeltaMovement` applied in the same tick as the probe's draws is
   invisible to those draws — an airborne mutation has to be established one tick early to be seen.
+  The same rule runs on the **TARGET** selector, where the rate is a draw and not a parity:
+  `NearestAttackableTargetGoal#canUse` passes 1 in `reducedTickDelay(10)` = 5
+  (`NearestAttackableTargetGoal.java:45-48`), its scan is the mob's `FOLLOW_RANGE`
+  (`Mob#createMobAttributes` → 16.0) and `TargetGoal#start()` ends in `mob.setTarget(scanned)`, so a
+  probe that hand-sets `setTarget` on a mob whose ctor installs a player row
+  (`EntityTaintCreeper.java:48-49`) has that target taken on the engine's draw. The fuse gate is the
+  one that bites: `AICreeperSwell#update` holds the byte at 1 only while the target IT captured in
+  `start()` sits inside squared distance 49.0 with line of sight, and the packing grid puts a
+  neighbouring probe 6 to 7 blocks away (72+), so the tick that arms the row writes `-1` and the fuse
+  reads 0. Measured on this tree: an in-probe sweep of 24 `-Ptc.noCurios` legs at `104ccce` (318
+  required tests) and 24 at `81fdde6` (307) printed the byte at 1, the fuse at 1, the goal's captured
+  target = the probe's own prey, `los=true`, a 32-block scan holding ZERO players and both selectors
+  fully run, in every one of the 48 — and the id-parity lead measured DEAD (27 legs at parity 0, 21 at
+  parity 1, every leg green on that probe). The player the row wants is not constructible in this
+  harness: 1.21.1's `GameTestHelper#makeMockPlayer` returns a bare `Player` at `BlockPos.ZERO` that is
+  never added to the level (measured with one carried to 12 blocks: `dist2=144.0`, `canAttack=true`, the
+  level scan still counts 0 players, the row's `canUse` false across 60 draws), and the only API that
+  joins a level-present player, `GameTestHelper#makeMockServerPlayerInLevel`, dies in the game-test
+  server with `Payload neoforge:sync_attachments may not be sent to the client!` and took two sibling
+  probes down in the same leg. So the probe takes the rows OFF the target selector, drives the byte
+  through the installed goal, and asserts the precondition by name: the mutation that moves the target
+  to 12 blocks turns the fixed probe red verbatim — `got state=-1 fuse=0 … target distance 144.0 of
+  that cap … targets=0 rows` — and the shipped form is green on **10** no-Curios **and 4** with-Curios
+  legs.
 - **A probe asserts an OUTCOME, never a tick budget.** `helper.runAtTickTime(getTick() + N, …)` puts the
   harness's scheduler inside the port's contract: the assert fires on the **probe's** clock, while the
   fact it reads is produced by the **LEVEL** — an entity's AI tick, a chunk's block-tick pass — and

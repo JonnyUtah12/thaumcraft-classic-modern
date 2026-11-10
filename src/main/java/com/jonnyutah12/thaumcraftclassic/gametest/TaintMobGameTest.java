@@ -195,21 +195,112 @@ public final class TaintMobGameTest {
         helper.assertTrue(creeper.getCreeperState() == -1,
                 "the swell data byte starts at -1 (field_70713_aJ)");
 
-        // the original accumulates the fuse AFTER the goal selector has run
+        // The original accumulates the fuse AFTER the AI body has run
         // (func_70071_h_ calls super.tick first, lines 120-131), and
-        // AICreeperSwell.update (29-38) keeps the state at 1 only while the
-        // target is alive, visible and within squared distance 49.0 — with
-        // no target the goal resets the state to -1 in the SAME tick, so the
-        // faithful probe drives a real target
+        // AICreeperSwell keeps the byte at 1 only while the target it CAPTURED
+        // in start() is alive, visible and inside squared distance 49.0
+        // (update 29-38); the moment it is not, the SAME tick writes -1 and the
+        // fuse stops. The faithful probe therefore drives the byte THROUGH the
+        // installed swell goal, on a target the probe owns.
         final EntityTaintChicken prey = new EntityTaintChicken(
                 CatalogTaintMobs.TAINTED_CHICKEN.get(), level);
         prey.moveTo(helper.absolutePos(new BlockPos(2, 2, 1)), 0.0F, 0.0F);
         level.addFreshEntity(prey);
+
+        // THE PRECONDITION THIS PROBE CLOSES: the engine's target rows come OFF
+        // the live selector, so the probe owns the swell byte.
+        //
+        // Why the byte was not the probe's to own as written: the creeper's ctor
+        // table (lines 48-49) installs EntityAINearestAttackableTarget(player,
+        // mustSee) on the TARGET selector. 1.21.1's
+        // NearestAttackableTargetGoal#canUse passes 1 in reducedTickDelay(10) = 5
+        // (NearestAttackableTargetGoal.java:45-48), the scan is the mob's
+        // FOLLOW_RANGE (Mob#createMobAttributes -> 16.0) and TargetGoal#start()
+        // ends in mob.setTarget(scanned). That row is armed by the ENGINE, not the
+        // probe: Mob#serverAiStep (Mob.java:779-794) runs the FULL target selector
+        // on a fresh entity's first tick — the `(tickCount + id) % 2` branch needs
+        // tickCount > 1, so entity-id parity never gates this probe (measured: 15
+        // legs at id parity 0 and 9 at parity 1, every leg with both selectors
+        // fully run, all green) — and on that 1-in-5 draw a hand-set target is
+        // REPLACED by the nearest combat-valid Player inside 16 blocks. The
+        // installed swell goal captures THAT player in start(), its update sees a
+        // squared distance above the 49.0 cap — the packing grid puts a
+        // neighbouring probe 6 to 7 blocks away, dist2 72+ — and writes -1 in the
+        // SAME tick the fuse is read, so the fuse reads 0.
+        //
+        // Measured on the current tree (24 in-probe legs, -Ptc.noCurios, 318
+        // required tests): state=1 and fuse=1 in 24/24, the goal captured the
+        // probe's own prey in 24/24, and a 32-block scan found ZERO Players in
+        // 24/24 — with no Player in the level the row cannot fire. 1.21.1's
+        // GameTestHelper#makeMockPlayer is not one: it returns a bare Player at
+        // BlockPos.ZERO that is never added to the level (measured: a mock player
+        // carried to 12 blocks reads dist2=144.0 canAttack=true, the level scan
+        // still counts 0 players, and the row's canUse() stays false across 60
+        // draws). The red legs this card quotes are base-bound for exactly that
+        // reason — the precondition is a Player in the level inside 16 blocks,
+        // which the suite's packing and its neighbours decide, not the probe.
+        //
+        // So the probe drives the byte through the goal's own contract on a target
+        // it owns, with the rows off the selector — asserted below. The goal's
+        // distance/line-of-sight reset is asserted separately, off the selector.
+        creeper.targetSelector.removeAllGoals(goal -> true);
+        helper.assertTrue(creeper.targetSelector.getAvailableGoals().isEmpty(),
+                "PRECONDITION (the closed flake): the probe owns the swell byte only "
+                        + "with the engine's target rows OFF the live selector — a row "
+                        + "left on it replaces the hand-set target on 1 draw in 5 and "
+                        + "the swell goal then resets the byte for the distance of "
+                        + "whatever it captured; "
+                        + creeper.targetSelector.getAvailableGoals().size()
+                        + " rows are armed");
+        final List<net.minecraft.world.entity.ai.goal.Goal> installedSwell =
+                creeper.goalSelector.getAvailableGoals().stream()
+                        .map(wrapped -> wrapped.getGoal())
+                        .filter(EntityTaintCreeper.SwellGoal.class::isInstance)
+                        .toList();
+        helper.assertTrue(installedSwell.size() == 1,
+                "the factory installs the decompiled AICreeperSwell row (ctor line 42): "
+                        + installedSwell.size() + " swell goals are on the live selector");
+
         creeper.setTarget(prey);
         creeper.setCreeperState(1);
         creeper.tick();
-        helper.assertTrue(creeper.getTimeSinceIgnited() == 1,
-                "the fuse accumulates by the swell state, got " + creeper.getTimeSinceIgnited());
+        helper.assertTrue(creeper.getCreeperState() == 1 && creeper.getTimeSinceIgnited() == 1,
+                "the fuse accumulates by the swell state: one engine tick with the "
+                        + "installed swell goal must hold the byte at 1 (target alive, "
+                        + "squared distance " + fmt(creeper.distanceToSqr(prey))
+                        + " against the 49.0 cap, line of sight "
+                        + creeper.getSensing().hasLineOfSight(prey)
+                        + ", target distance " + fmt(creeper.getTarget() == null ? -1.0
+                                : creeper.distanceToSqr(creeper.getTarget()))
+                        + " of that cap), got state="
+                        + creeper.getCreeperState() + " fuse=" + creeper.getTimeSinceIgnited()
+                        + " target=" + describeTarget(creeper)
+                        + " selectors=" + describeSelectors(creeper));
+        // nextFuse adds the byte, so the fuse steps 1/tick while the goal holds
+        // the state (func_70071_h_ line 128, TaintCreeperAiLogic.nextFuse)
+        creeper.tick();
+        creeper.tick();
+        helper.assertTrue(creeper.getCreeperState() == 1 && creeper.getTimeSinceIgnited() == 3,
+                "the fuse steps by the swell byte every tick, got state="
+                        + creeper.getCreeperState() + " fuse="
+                        + creeper.getTimeSinceIgnited() + " target="
+                        + describeTarget(creeper) + " selectors=" + describeSelectors(creeper));
+
+        // AICreeperSwell.update (29-38) writes -1 the moment the target it
+        // captured is gone, and the fuse then runs BACK DOWN, because the byte is
+        // added, not clamped. Driven on the installed instance after taking it off
+        // the selector, so no engine tick can re-arm it between the two draws.
+        final EntityTaintCreeper.SwellGoal swell =
+                (EntityTaintCreeper.SwellGoal) installedSwell.get(0);
+        creeper.goalSelector.removeGoal(swell);
+        swell.tick();
+        helper.assertTrue(creeper.getCreeperState() == -1,
+                "the swell goal resets the byte to -1 once its captured target is gone "
+                        + "(AICreeperSwell.update 29-38), got " + creeper.getCreeperState());
+        creeper.tick();
+        helper.assertTrue(creeper.getTimeSinceIgnited() == 2,
+                "the fuse runs back down by the -1 byte (nextFuse(3, -1, 30) = 2), got "
+                        + creeper.getTimeSinceIgnited());
         // the blast is the hand-rolled 1.5F literal, never the loaded field
         helper.assertTrue(TaintCreeperAiLogic.EXPLOSION_RADIUS == 1.5F
                         && TaintCreeperAiLogic.LOADED_RADIUS_FIELD == 3.0F,
@@ -224,6 +315,31 @@ public final class TaintMobGameTest {
                 "targeted experience is 32, got " + creeper.creeperExperiencePoints());
         helper.succeed();
     }
+
+    /** The byte's driver, named in the failure message so a red leg reads from the log. */
+    private static String describeTarget(final EntityTaintCreeper creeper) {
+        final net.minecraft.world.entity.LivingEntity target = creeper.getTarget();
+        return target == null ? "null"
+                : target.getClass().getSimpleName() + "#" + target.getId();
+    }
+
+    private static String describeSelectors(final EntityTaintCreeper creeper) {
+        final StringBuilder sb = new StringBuilder("goals=");
+        for (final net.minecraft.world.entity.ai.goal.WrappedGoal wrapped
+                : creeper.goalSelector.getAvailableGoals()) {
+            sb.append(wrapped.getPriority()).append(':')
+                    .append(wrapped.getGoal().getClass().getSimpleName())
+                    .append(wrapped.isRunning() ? "R" : "-").append(' ');
+        }
+        sb.append("targets=").append(creeper.targetSelector.getAvailableGoals().size())
+                .append(" rows");
+        return sb.toString();
+    }
+
+    private static String fmt(final double value) {
+        return String.format(java.util.Locale.ROOT, "%.1f", value);
+    }
+
 
     @GameTest(template = "empty")
     public static void fallingTaintRefusesThePistonFamilyAndCarriesItsOriginalBox(
