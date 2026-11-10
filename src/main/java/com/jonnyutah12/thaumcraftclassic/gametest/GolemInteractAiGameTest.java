@@ -483,22 +483,23 @@ public final class GolemInteractAiGameTest {
         return state.hasProperty(DoorBlock.OPEN) ? "[" + state.getValue(DoorBlock.OPEN) + "]" : "[n/a]";
     }
 
-    /** Every non-air block in the 3x3x3 around a template-relative cell. */
-    private static String around(final GameTestHelper helper, final BlockPos centre) {
-        final StringBuilder out = new StringBuilder();
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dy = -1; dy <= 1; dy++) {
-                for (int dz = -1; dz <= 1; dz++) {
-                    final BlockPos cell = centre.offset(dx, dy, dz);
-                    final BlockState state = helper.getBlockState(cell);
-                    if (!state.isAir()) {
-                        out.append(cell.getX()).append(',').append(cell.getY()).append(',')
-                                .append(cell.getZ()).append('=').append(state.getBlock()).append(' ');
-                    }
-                }
-            }
-        }
-        return out.toString().trim();
+    /** An absolute position as the template-relative cell a message should name. */
+    private static String rel(final GameTestHelper helper, final BlockPos absolute) {
+        final BlockPos r = absolute.subtract(helper.absolutePos(BlockPos.ZERO));
+        return r.getX() + "," + r.getY() + "," + r.getZ();
+    }
+
+    /**
+     * Keep a game-test failure message inside the writable_book page cap. The
+     * framework writes a probe's failure message into a writable book on a lectern,
+     * and a {@code minecraft:writable_book} page is a string of range [0-1024]: a
+     * longer message throws in {@code ItemStack#save} at chunk save — {@code Util:
+     * Error saving [1 minecraft:writable_book]} plus a {@code LecternBlockEntity}
+     * "exception trying to write state" — and the diagnosis is buried under a
+     * serialization stack (measured t_67f61f59: a 2785-char message).
+     */
+    private static String cap(final String message) {
+        return message.length() <= 1000 ? message : message.substring(0, 997) + "...";
     }
 
     private static int countLogs(final GameTestHelper helper, final int xFrom, final int xTo) {
@@ -520,33 +521,51 @@ public final class GolemInteractAiGameTest {
     // target (blockTestedGolem.java:217-235)
     // ------------------------------------------------------------------
 
+    /**
+     * The Use goal's activation sphere, the original's literal: {@code AIUseItem#tick}
+     * right-clicks only when {@code distanceToSqr(target) <= 4.0}
+     * (reference AIUseItem.java:116-125, port {@code AIUseItem.java:120-127}).
+     * It is the precondition the probe below asserts, so it is written as the
+     * product's own number, not a probe-chosen radius: a golem that starts
+     * INSIDE the sphere can never click, and a mutation of the product's
+     * comparison reddens the probe.
+     */
+    private static final double USE_CLICK_SPHERE = 4.0;
+
     @GameTest(template = "empty_24", timeoutTicks = 520)
     public static void interact_useItemCorePlacesItsCarriedBlockOnItsMarkedTarget(final GameTestHelper helper) {
         clearGolemCaches();
-        final BlockPos home = at(helper, 4, 0, 4);
         final BlockPos spawnAt = at(helper, 5, 0, 4);
         final BlockPos target = at(helper, 7, 0, 4);
-        // The placement target is an empty, non-solid cell over a solid floor:
-        // with toggle 0 (pickup) off, findSomething() only accepts a marker on a
-        // NON-solid block (the XOR at AIUseItem.java:233-235), the marked face is
-        // UP so the cell under it is the solid anchor the marker needs
-        // (AIUseItem.java:236-239), and the goal walks there — a cell covered in
-        // a snow layer is not a path target (createPath returns null, so
-        // canContinueToUse's "!navigation.isDone()" at AIUseItem.java:113 fails
-        // the round after start()). Air is Blocks.Properties.replaceable, so the
-        // click's BlockPlaceContext places into the clicked cell itself and the
-        // carried block lands on the marked target.
-        // The target sits two cells out from the spawn, not beside it: canUse's
-        // reach is sqrt(range / 3) (AIUseItem.java:84) so the marker has to be
-        // within ~2.3 cells, and 1.21.1's Path.isDone() is true the moment the
-        // walker is on the last node — an adjacent target is a two-node path, so
-        // canContinueToUse's "!navigation.isDone()" (AIUseItem.java:113) kills the
-        // goal the round after start() and tick(), the only click site
-        // (AIUseItem.java:123-127), never runs. Two cells out gives a three-node
-        // path and a real walk, which is the shape the goal has in play.
-        helper.setBlock(7, 0, 4, Blocks.AIR.defaultBlockState());
-        helper.setBlock(6, 0, 4, Blocks.AIR.defaultBlockState());
-        helper.setBlock(7, -1, 4, Blocks.STONE.defaultBlockState());
+
+        // GEOMETRY, owned by the probe (t_67f61f59). The framework drops the pad on a
+        // random terrain column — GameTestServer#startTests draws the whole grid's
+        // origin from Level#getRandom — so on the incumbent fixture the golem's feet
+        // cell (5,0,4) was the NATURAL ground, a solid grass/dirt cube on part of the
+        // draws. A golem spawned inside a solid cube (a) takes a damage per tick and
+        // (b) trips EntityGolemBase's {@code isInWall()} home-teleport arm, which scans
+        // the 3x3x3 around restrictCenter (dy +1 first, then 0, dx/dz -1..1) and lands
+        // it on the FIRST non-suffocating cell: on the "surface at y=1" draw that cell
+        // is (6,0,4) — the one cell ADJACENT to the marker, the only free cell of that
+        // scan. From there the goal can never click (see the poll's first assert), so
+        // the probe was measuring a terrain draw, not the goal. The row is now the
+        // probe's: AIR at y=0 and y=1 for x=3..9 over a STONE floor at y=-1, so the
+        // golem stands on stone, is never in a wall, the teleport arm has nothing to
+        // move it to, and the goal always starts 2 cells out.
+        //
+        // The marked cell stays an empty non-solid cell over a solid anchor: with
+        // toggle 0 (pickup) off, findSomething() accepts a marker only on a NON-solid
+        // block (the XOR at AIUseItem.java:232-235), the marked face is UP so the cell
+        // under it is the solid anchor the marker needs (AIUseItem.java:236-239), and
+        // air is replaceable, so the click's BlockPlaceContext puts the carried block
+        // INTO the marked cell. Two cells out also keeps the walk real: 1.21.1's
+        // Path.isDone() is true the moment the walker reaches the last node, so an
+        // adjacent start is a one-node path that dies on the first navigation tick.
+        for (int x = 3; x <= 9; x++) {
+            helper.setBlock(x, -1, 4, Blocks.STONE.defaultBlockState());
+            helper.setBlock(x, 0, 4, Blocks.AIR.defaultBlockState());
+            helper.setBlock(x, 1, 4, Blocks.AIR.defaultBlockState());
+        }
 
         final AIUseItem[] goal = new AIUseItem[1];
         final EntityGolemBase[] golems = new EntityGolemBase[1];
@@ -558,20 +577,32 @@ public final class GolemInteractAiGameTest {
             golem.setCarried(new ItemStack(Blocks.OAK_LOG));
             mark(golem, target, Direction.UP);
             helper.assertTrue(golem.getMarkers().size() == 1, "marking the target stored no marker");
+            // The cells the drive's contract rests on, asserted where they are set, so a
+            // template/framework/terrain change reports the cell and not a rate.
+            helper.assertTrue(helper.getBlockState(new BlockPos(5, 0, 4)).isAir()
+                            && helper.getBlockState(new BlockPos(5, -1, 4)).is(Blocks.STONE),
+                    "the golem's footing cell (5,0,4) is not air over a solid floor: the golem spawns "
+                            + "inside a solid cube, which suffocates it and trips the isInWall() "
+                            + "home-teleport arm that moves it to its first scan hit");
+            helper.assertTrue(helper.getBlockState(new BlockPos(7, -1, 4)).is(Blocks.STONE),
+                    "the marked cell (7,0,4) has no solid anchor behind its UP face");
             golems[0] = golem;
             goal[0] = new AIUseItem(golem);
         });
 
         final AtomicBoolean activated = new AtomicBoolean(false);
         final AtomicBoolean placed = new AtomicBoolean(false);
+        // Monotone latch, false until the goal's FIRST activation: was the golem
+        // already inside the goal's own click sphere when it started?
+        final AtomicBoolean startedInsideClickSphere = new AtomicBoolean(false);
+        final StringBuilder activation = new StringBuilder();
         // GoalSelector keeps the running bit outside the goal (1.21.1's Goal has
         // no isRunning()), so the probe tracks it the same way.
         final boolean[] running = new boolean[1];
         final int[] starts = new int[1];
         final int[] ticks = new int[1];
         final int[] stops2 = new int[1];
-        final StringBuilder trace = new StringBuilder();
-        drive(helper, SETTLE + 160, () -> {
+        drive(helper, SETTLE + 320, () -> {
             if (goal[0] == null) {
                 return;
             }
@@ -585,17 +616,6 @@ public final class GolemInteractAiGameTest {
             final boolean gate = running[0] ? goal[0].canContinueToUse() : goal[0].canUse();
             if (placed.get() && !running[0] && starts[0] > 0) {
                 return;
-            }
-            if (starts[0] + ticks[0] + stops2[0] < 45 && trace.length() < 1800) {
-                trace.append("tc=").append(golem.tickCount)
-                        .append(" run=").append(running[0])
-                        .append(" gate=").append(gate)
-                        .append(" nav=").append(golem.getNavigation().isDone())
-                        .append(" carried=").append(golem.getCarried() == null ? "null"
-                                : (golem.getCarried().isEmpty() ? "none" : "log"))
-                        .append(" tgt=").append(helper.getBlockState(new BlockPos(7, 0, 4)).getBlock())
-                        .append(" s=").append(starts[0]).append("/t=").append(ticks[0])
-                        .append("/p=").append(placed.get()).append(" | ");
             }
             // Drive the goal exactly as GoalSelector does: canUse -> start while
             // it is idle, tick while canContinueToUse, stop when it lapses. The
@@ -614,23 +634,48 @@ public final class GolemInteractAiGameTest {
                     stops2[0]++;
                 }
             } else if (gate) {
-                activated.set(true);
+                if (activated.compareAndSet(false, true)) {
+                    final double d2 = golem.distanceToSqr(target.getX() + 0.5, target.getY() + 0.5,
+                            target.getZ() + 0.5);
+                    startedInsideClickSphere.set(d2 <= USE_CLICK_SPHERE);
+                    activation.append("feet=").append(rel(helper, golem.blockPosition()))
+                            .append(" feetBlk=").append(helper.getBlockState(
+                                    golem.blockPosition().subtract(helper.absolutePos(BlockPos.ZERO))).getBlock())
+                            .append(" d2=").append(Math.round(d2 * 100.0) / 100.0)
+                            .append(" inwall=").append(golem.isInWall())
+                            .append(" hp=").append(golem.getHealth());
+                }
                 starts[0]++;
                 goal[0].start();
                 running[0] = true;
             }
         });
 
-        helper.runAfterDelay(SETTLE + 160, () -> {
-            clearGolemCaches();
-            assertAlive(golems[0]);
+        // The OUTCOME poll (docs/testing.md "a probe asserts an OUTCOME, never a tick
+        // budget"): the placement is produced by the LEVEL — the golem's AI tick and
+        // its navigation — and GameTestInfo#tickInternal gives no contract for how much
+        // of that lands inside N probe ticks. The old body asserted on a fixed tick
+        // (SETTLE + 160) and read a rate; the 520-tick budget is now only a watchdog,
+        // and the diagnosis survives it because tickAndFailIfNotComplete fails with the
+        // condition's own message.
+        helper.succeedWhen(() -> {
+            final EntityGolemBase golem = require(golems, 0);
+            // The precondition FIRST, so a layout/terrain change names the closed gate.
+            helper.assertTrue(!startedInsideClickSphere.get(), cap(
+                    "the Use goal activated with the golem INSIDE its own click sphere (" + activation
+                    + "), a cell from which it can never click: tick() is the only click site, it runs"
+                    + " only while canContinueToUse() holds, and that ends on !navigation.isDone(), so"
+                    + " a golem adjacent to the marker gets a one-node path that is done on the first"
+                    + " navigation tick. The probe pins the feet to (5,0,4), 2 cells out; the activation"
+                    + " cell moved, which is a fixture/layout change, not a placement race. "
+                    + state(golem)));
             helper.assertTrue(activated.get(),
-                    "the Use goal never activated on the marked target (" + state(golems[0]) + ")");
-            helper.assertTrue(placed.get(),
-                    "the Use goal activated at the target cell " + target + " but never placed the "
-                            + "carried block there (" + state(golems[0])
-                            + " around=" + around(helper, new BlockPos(7, 0, 4))
-                            + " trace=" + trace + ")");
+                    "the Use goal never activated on the marked target (" + state(golem) + ")");
+            helper.assertTrue(placed.get(), cap(
+                    "the Use goal activated at the marked cell " + rel(helper, target) + " (absolute "
+                    + target + ") but never placed the carried block there (" + state(golem)
+                    + " activation=" + activation + " starts=" + starts[0] + " ticks=" + ticks[0]
+                    + " stops=" + stops2[0] + ")"));
             // The block lands on the marked target only: not in the cell the
             // golem walked through, not above the marked face, and the solid
             // anchor under the marker stays put.
@@ -645,7 +690,6 @@ public final class GolemInteractAiGameTest {
             helper.assertTrue(helper.getBlockState(new BlockPos(7, -1, 4)).is(Blocks.STONE),
                     "the solid anchor under the marked cell changed");
             passed("interact_useItemCorePlacesItsCarriedBlockOnItsMarkedTarget");
-            helper.succeed();
         });
     }
 
