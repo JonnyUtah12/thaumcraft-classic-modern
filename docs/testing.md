@@ -281,20 +281,34 @@ without the evidence for its stages.
   0 % red at one tree and 100 % at the next, and 2 red CI draws in 5. Assert a floor with margin
   (the LOW mode, 1646) or a fact the probe's own fixture produces, and keep the knife-edge census
   in the gate print and the failure message, where a shift is a fact and not a coin flip.
-- **The boss room's doorway lands on ONE plane, and it is the last open side that gets it.**
-  `GenBossRoom.java:141-163` is the original's if-chain (ref L39-64): `if (cell.north) …`
-  `if (cell.south) …` `if (cell.east) …` `if (cell.west) …` all write into the SAME `xx`/`zz` pair,
-  so a cell open on all four sides lays its single 7x7 `PAT_DOORWAY` on the **west** face
-  (`x0+3`, `y=ROOM_Y+2..+8`) and the other three planes carry only the room's own
-  `blockcosmeticsolid`/`blockstairseldritch`. Measured on a probe-printed cell (cell 70,70): west
-  **49/49** non-air with `blockEldritch v7` (gate) and `blockAiry` (the void doorway), north 28,
-  south 24, east 24; envelope gate/lock variants **25**, every one at `x0+3` — `PAT_DOORWAY`'s
-  21 gate + 4 lock + 20 void, exactly. With every side closed (the `Cell` constructor's default,
-  i.e. shipped `Cell(BOSS_CELL)`) the chain leaves `xx=zz=0` and the sweep parks at the **world
-  column (0,y,0)** — 7 cells, 14 of 14 legs — while the cell's own envelope reads 16 air cells at
-  its edge column: that fixture has no doorway in its own envelope at all. Assert the doorway on
-  the plane the generator writes it, on a fixture whose sides are open, and name the chain in the
-  message.
+- **The boss room's doorway lands on ONE plane, and the LAST OPEN SIDE gets it only while the
+  2x2 shell has not formed.** `GenBossRoom.java:141-163` is the original's if-chain (ref L39-64),
+  inside the 7x7 doorway sweep at `139-193`: `if (cell.north) …` `if (cell.south) …`
+  `if (cell.east) …` `if (cell.west) …` all write into the SAME `xx`/`zz` pair, so one cell lays
+  exactly one 7x7 `PAT_DOORWAY` and the last open side in the chain owns that plane. Three arms,
+  each measured cell by cell where the chain writes (probe-printed cell 70,70):
+  (a) **open-sided feature-2 cell, no formed 2x2 group** — west plane **25** gate/lock variants
+  (**7/8**) + **20** `blockAiry` at `x0+3`, `y=ROOM_Y+2..+8`; envelope gate/lock variants **25**,
+  every one at `x0+3`, = `PAT_DOORWAY`'s 21 gate + 4 lock + 20 void, exactly; west **49/49**
+  non-air with `blockEldritch v7` (gate) and `blockAiry` (the void doorway), north **28**, south
+  **24**, east **24** — the other three planes carry only the room's own
+  `blockcosmeticsolid`/`blockstairseldritch`. Deterministic.
+  (b) **the same open-sided cell INSIDE a formed 2x2 group** — gate **0** / airy **0** on **all
+  four** planes in **10/10** legs: the shell's own room build lands on top of the sweep, so the
+  doorway is gone from every plane. In `generateRoom` the shell (`Gen2x2.generateRoom`,
+  `121-136`) runs BEFORE the sweep (`139-193`) for the cell it is called on, so the covering
+  build is a sibling cell's call landing later in the batch — the same queue-driven formation
+  behind the **1646 / 1871** split in the rule above. "The last open side gets it" is a fact about
+  a cell whose shell has not formed, not a property of an open-sided cell.
+  (c) **the shipped `Cell(BOSS_CELL)`** (every side closed — the `Cell` constructor's default,
+  **14/14** legs) — the chain leaves `xx=zz=0`, so the sweep parks at the **world column
+  `(0,y,0)`**, 7 cells, while the cell's own envelope edge column reads **16 air**: that fixture
+  has no doorway in its own envelope at all.
+  Assert the doorway on the plane the generator writes it, on a fixture whose sides are open AND
+  whose shell has not formed, print the shell mode beside the count, and name the chain in the
+  message. History note: the landed fix's own commit-message subject/body (`d1844dc`, twin
+  `8e9cd84`, merged as `d057b15`) carry the superseded "the last open side takes it" phrasing —
+  read that history with this rule.
 - **A probe's pad is its own: clear it, and print what it cleared.** The golem-combat pads are
   packed in a grid, the harness runs one probe at a time, and a probe's mobs are never cleaned up,
   so a sibling probe's mob stands in the pad on the producing tick — measured: a brainy zombie in
