@@ -94,6 +94,95 @@ public final class TestProbeContent {
         }
     }
 
+    /**
+     * TC-M6-05: damageable probe implementing the Repair enchantment's item
+     * contracts (IRepairable marker + IVisContainerItem vis payment). The
+     * gametest supplies the object-tag cost directly, since the shipped
+     * essentia tables contain no damageable items until TC-M6-01.
+     */
+    public static final DeferredItem<ProbeRepairableVis> PROBE_REPAIRABLE =
+            ModItems.ITEMS.register("test_probe_repairable",
+                    () -> new ProbeRepairableVis(new Item.Properties().stacksTo(1).durability(32)));
+
+    public static class ProbeRepairableVis extends Item
+            implements com.jonnyutah12.thaumcraftclassic.api.IRepairable,
+                       com.jonnyutah12.thaumcraftclassic.wands.VisContainerItem {
+
+        public ProbeRepairableVis(final Properties properties) {
+            super(properties);
+        }
+
+        @Override
+        public int getMaxVis(final ItemStack stack) {
+            return 2500;
+        }
+
+        @Override
+        public int getVis(final ItemStack stack,
+                          final com.jonnyutah12.thaumcraftclassic.aspect.Aspect aspect) {
+            return com.jonnyutah12.thaumcraftclassic.wands.WandVis.getVis(
+                    com.jonnyutah12.thaumcraftclassic.wands.WandVis.poolOf(stack), aspect);
+        }
+
+        @Override
+        public void storeVis(final ItemStack stack,
+                             final com.jonnyutah12.thaumcraftclassic.aspect.Aspect aspect,
+                             final int amount) {
+            com.jonnyutah12.thaumcraftclassic.wands.WandVis.setPool(stack,
+                    com.jonnyutah12.thaumcraftclassic.wands.WandVis.withVis(
+                            com.jonnyutah12.thaumcraftclassic.wands.WandVis.poolOf(stack), aspect, amount));
+        }
+
+        @Override
+        public com.jonnyutah12.thaumcraftclassic.aspect.AspectList getAspectsWithRoom(
+                final ItemStack stack) {
+            return com.jonnyutah12.thaumcraftclassic.wands.WandVis.getAspectsWithRoom(
+                    com.jonnyutah12.thaumcraftclassic.wands.WandVis.poolOf(stack), 2500);
+        }
+
+        @Override
+        public com.jonnyutah12.thaumcraftclassic.aspect.AspectList getAllVis(final ItemStack stack) {
+            return com.jonnyutah12.thaumcraftclassic.wands.WandVis.getAllVis(
+                    com.jonnyutah12.thaumcraftclassic.wands.WandVis.poolOf(stack));
+        }
+
+        @Override
+        public boolean consumeAllVis(final ItemStack stack,
+                                     final Player player,
+                                     final com.jonnyutah12.thaumcraftclassic.aspect.AspectList centiCosts,
+                                     final boolean doit, final boolean crafting) {
+            final var pool = com.jonnyutah12.thaumcraftclassic.wands.WandVis.poolOf(stack);
+            final var paid = com.jonnyutah12.thaumcraftclassic.wands.WandVis.consumeAllVis(pool, centiCosts);
+            if (paid == null) {
+                return false;
+            }
+            if (doit) {
+                com.jonnyutah12.thaumcraftclassic.wands.WandVis.setPool(stack, paid);
+            }
+            return true;
+        }
+
+        @Override
+        public int addVis(final ItemStack stack,
+                          final com.jonnyutah12.thaumcraftclassic.aspect.Aspect aspect,
+                          final int amount, final boolean doUpdate) {
+            return com.jonnyutah12.thaumcraftclassic.wands.WandVis.addVis(
+                    com.jonnyutah12.thaumcraftclassic.wands.WandVis.poolOf(stack), aspect, amount, 2500).leftover();
+        }
+
+        @Override
+        public int addRealVis(final ItemStack stack,
+                              final com.jonnyutah12.thaumcraftclassic.aspect.Aspect aspect,
+                              final int centiAmount, final boolean doUpdate) {
+            final var res = com.jonnyutah12.thaumcraftclassic.wands.WandVis.addRealVis(
+                    com.jonnyutah12.thaumcraftclassic.wands.WandVis.poolOf(stack), aspect, centiAmount, 2500);
+            if (doUpdate) {
+                com.jonnyutah12.thaumcraftclassic.wands.WandVis.setPool(stack, res.pool());
+            }
+            return res.leftover();
+        }
+    }
+
     /** Forces class initialization (entry registration) from {@link ModRegistration}. */
     static void init() {
     }
