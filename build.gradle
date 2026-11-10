@@ -514,6 +514,11 @@ tasks.named('test', Test).configure {
     useJUnitPlatform()
     dependsOn generateModMetadata, overlayOriginalAssets, transformOriginalSoundsJson, sliceOriginalParticleSprites
     systemProperty 'tc.modId', mod_id
+    // The BD-ledger contract (t_9a2c9f91) reads docs/BEHAVIORAL_DEVIATIONS.md and
+    // walks docs/, src/, scripts/ for BD id citations; :test's working dir is not
+    // the project dir, so the root is wired explicitly.
+    systemProperty 'tc.repoRootDir', projectDir.absolutePath
+    systemProperty 'tc.behavioralDeviationsFile', file('docs/BEHAVIORAL_DEVIATIONS.md').absolutePath
     systemProperty 'tc.modName', mod_name
     systemProperty 'tc.modLicense', mod_license
     systemProperty 'tc.modVersion', mod_version
