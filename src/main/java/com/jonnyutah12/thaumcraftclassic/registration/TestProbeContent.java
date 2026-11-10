@@ -4,22 +4,21 @@ import com.jonnyutah12.thaumcraftclassic.accessory.AccessoryItem;
 import com.jonnyutah12.thaumcraftclassic.accessory.AccessorySlot;
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.aspect.IAspectSource;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
-
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Test-only probe block + item for the registration/id-stability harness
@@ -187,6 +186,50 @@ public final class TestProbeContent {
             pool.put(aspect, held - taken);
             drainedTotal += taken;
             return taken;
+        }
+    }
+
+    /**
+     * TC-M6-05-s: the probe the ench_repair leg runs against — an item that
+     * satisfies BOTH contracts the original's {@code EventHandlerEntity
+     * .doRepair} gate reads (the {@code api/IRepairable} marker, which
+     * {@code enchantment/EnchantmentBehaviours} reads by reflection the same
+     * way 1.7.10 read it, and {@code wands/IVisContainerItem}, the vis
+     * payment). Damage 1 of 32 is the repairable state; a vis-free stack
+     * proves the original's {@code vis >= 10} gate.
+     */
+    public static final DeferredItem<ProbeRepairableVis> PROBE_REPAIRABLE =
+            ModItems.ITEMS.register("test_probe_repairable",
+                    () -> new ProbeRepairableVis(new Item.Properties().stacksTo(1).durability(32)));
+
+    /** {@link #PROBE_REPAIRABLE}'s class: IRepairable marker + vis container. */
+    public static class ProbeRepairableVis extends Item
+            implements com.jonnyutah12.thaumcraftclassic.api.IRepairable,
+                       com.jonnyutah12.thaumcraftclassic.wands.IVisContainerItem {
+
+        public ProbeRepairableVis(final Properties properties) {
+            super(properties);
+        }
+
+        @Override
+        public com.jonnyutah12.thaumcraftclassic.aspect.AspectList getAspectsWithRoom(final ItemStack stack) {
+            return new com.jonnyutah12.thaumcraftclassic.aspect.AspectList();
+        }
+
+        @Override
+        public void addVis(final ItemStack stack,
+                           final com.jonnyutah12.thaumcraftclassic.aspect.Aspect aspect,
+                           final int amount, final boolean doUpdate) {
+        }
+
+        @Override
+        public String getCapTag(final ItemStack stack) {
+            return "probe";
+        }
+
+        @Override
+        public String getRodTag(final ItemStack stack) {
+            return "probe";
         }
     }
 

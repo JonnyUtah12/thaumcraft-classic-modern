@@ -1,0 +1,7 @@
+{
+  "values": [
+    "thaumcraft:ench_repair",
+    "minecraft:unbreaking"
+  ],
+  "required": true
+}

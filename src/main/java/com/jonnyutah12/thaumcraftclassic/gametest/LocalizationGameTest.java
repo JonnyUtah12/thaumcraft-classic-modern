@@ -111,7 +111,36 @@ public final class LocalizationGameTest {
             Map.entry("tc.handmirrorlinkedto", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorlinked", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorerror", "ItemHandMirror link message"),
-            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"));
+            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"),
+            // Warp event chat lines: the key is data (a field of the WarpLogic
+            // outcome table), so the literal-key scan cannot see the call site;
+            // WarpEvents.chat passes it to Component.translatable. The wording
+            // is verbatim from the original lang file (en_US.lang:55-69).
+            // NOT shipped: the original warp.text.hunger.1/2 - their call site
+            // is EventHandlerEntity.java:700-702 (the hunger/food handler),
+            // outside TC-M6-05-s.
+            Map.entry("warp.text.1", "WarpLogic.outcome chat (WarpEvents.chat)"),
+            Map.entry("warp.text.2", "WarpLogic.outcome chat (WarpEvents.chat)"),
+            Map.entry("warp.text.3", "WarpLogic.outcome chat (WarpEvents.chat)"),
+            Map.entry("warp.text.4", "WarpLogic.outcome chat (WarpEvents.chat)"),
+            Map.entry("warp.text.5", "WarpLogic.outcome chat (WarpEvents.chat)"),
+            Map.entry("warp.text.6", "WarpLogic.outcome chat (WarpEvents.chat)"),
+            Map.entry("warp.text.7", "WarpLogic.outcome chat (WarpEvents.chat)"),
+            Map.entry("warp.text.8", "WarpLogic.outcome chat (WarpEvents.chat)"),
+            Map.entry("warp.text.9", "WarpLogic.outcome chat (WarpEvents.chat)"),
+            Map.entry("warp.text.10", "WarpLogic.outcome chat (WarpEvents.chat)"),
+            Map.entry("warp.text.11", "WarpLogic.outcome chat (WarpEvents.chat)"),
+            Map.entry("warp.text.12", "WarpLogic.outcome chat (WarpEvents.chat)"),
+            Map.entry("warp.text.13", "WarpLogic.outcome chat (WarpEvents.chat)"),
+            Map.entry("warp.text.14", "WarpLogic.outcome chat (WarpEvents.chat)"),
+            Map.entry("warp.text.15", "WarpLogic.outcome chat (WarpEvents.chat)"),
+            // TC-M6-05: vanilla composes the death message as
+            // death.attack.<message_id> from the damage type's own payload
+            // (data/thaumcraft/damage_type/taint.json message_id "taint"), so no
+            // code site passes the key to Component.translatable. Strings verbatim
+            // from the original en_US.lang:681-682.
+            Map.entry("death.attack.taint", "DamageType.message_id (thaumcraft:taint)"),
+            Map.entry("death.attack.taint.player", "DamageType.message_id + player suffix (thaumcraft:taint)"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always
@@ -132,7 +161,7 @@ public final class LocalizationGameTest {
     @GameTest(template = "empty")
     public static void everyRegisteredNameHasAnEntry(final GameTestHelper helper) {
         final JsonObject lang = loadLang(helper);
-        final Set<String> required = requiredKeys();
+        final Set<String> required = requiredKeys(helper.getLevel().registryAccess());
         final Set<String> missing = new TreeSet<>();
         for (final String key : required) {
             if (!lang.has(key)) {
@@ -235,7 +264,7 @@ public final class LocalizationGameTest {
     @GameTest(template = "empty")
     public static void noDeadLangEntries(final GameTestHelper helper) {
         final JsonObject lang = loadLang(helper);
-        final Set<String> required = requiredKeys();
+        final Set<String> required = requiredKeys(helper.getLevel().registryAccess());
         final Set<String> dead = new TreeSet<>();
         for (final String key : lang.keySet()) {
             if (required.contains(key) || CODE_AUTHORED_KEYS.containsKey(key)) {
@@ -264,8 +293,13 @@ public final class LocalizationGameTest {
 
     // ------------------------------------------------------------------ helpers
 
-    /** Every translation key the live registries make reachable, plus the keys the code passes to translatable(). */
-    private static Set<String> requiredKeys() {
+    /**
+     * Every translation key the live registries make reachable, plus the keys
+     * the code passes to translatable(). The {@code registries} parameter is
+     * for the datapack registries (enchantments), which have no
+     * {@code BuiltInRegistries} field.
+     */
+    private static Set<String> requiredKeys(final net.minecraft.core.RegistryAccess registries) {
         final Set<String> keys = new LinkedHashSet<>();
 
         for (final Block block : BuiltInRegistries.BLOCK) {
@@ -306,6 +340,26 @@ public final class LocalizationGameTest {
             final ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(type);
             if (eligible(id)) {
                 keys.add("entity.thaumcraft." + id.getPath());
+            }
+        }
+
+        // TC-M6-05-s: mob effects and enchantments render their own names
+        // (effect HUD/tooltip, enchantment tooltip), so their keys are
+        // registry-derived content too. Enchantments are a datapack registry;
+        // BuiltInRegistries carries the synced datapack contents on the server.
+        for (final net.minecraft.world.effect.MobEffect effect : BuiltInRegistries.MOB_EFFECT) {
+            final ResourceLocation id = BuiltInRegistries.MOB_EFFECT.getKey(effect);
+            if (eligible(id)) {
+                keys.add("effect.thaumcraft." + id.getPath());
+            }
+        }
+
+        for (final net.minecraft.world.item.enchantment.Enchantment value :
+                registries.registryOrThrow(Registries.ENCHANTMENT)) {
+            final ResourceLocation id = registries.registryOrThrow(Registries.ENCHANTMENT)
+                    .getKey(value);
+            if (eligible(id)) {
+                keys.add("enchantment.thaumcraft." + id.getPath());
             }
         }
 

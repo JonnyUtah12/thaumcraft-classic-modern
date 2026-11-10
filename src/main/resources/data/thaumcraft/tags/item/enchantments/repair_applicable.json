@@ -1,0 +1,8 @@
+{
+  "values": [
+    "thaumcraft:test_probe_repairable",
+    "#minecraft:enchantable/durability",
+    "#minecraft:enchantable/equippable"
+  ],
+  "required": true
+}

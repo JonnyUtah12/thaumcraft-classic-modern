@@ -31,6 +31,27 @@ public final class ModEnchantments {
                 ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, path));
     }
 
+    /**
+     * Thaumcraft:ench_haste — boots-only speed bonus, content-mapping row
+     * {@code Thaumcraft:EnchantmentHaste} (the original
+     * {@code EventHandlerEntity.updateSpeed} per-tick scan). The JSON payload
+     * is {@code data/thaumcraft/enchantment/ench_haste.json}; the runtime
+     * effect is the 1.5%-per-level movement-speed attribute modifier
+     * ({@code haste * 0.015F}) in {@code enchantment/EnchantmentBehaviours}.
+     */
+    public static final ResourceKey<Enchantment> ENCHANTMENT_HASTE = id("ench_haste");
+
+    /**
+     * Thaumcraft:ench_repair — mends {@code api/IRepairable} gear from the
+     * wand's vis every 40 ticks (the original
+     * {@code EventHandlerEntity.doRepair}). The JSON payload is
+     * {@code data/thaumcraft/enchantment/ench_repair.json}; the original's
+     * {@code canCombine} exclusion of Unbreaking is carried by the
+     * {@code #thaumcraft:exclusive_set/repair} enchantment tag
+     * (docs/architecture/enchantments-potions.md).
+     */
+    public static final ResourceKey<Enchantment> ENCHANTMENT_REPAIR = id("ench_repair");
+
     private ModEnchantments() {
     }
 }

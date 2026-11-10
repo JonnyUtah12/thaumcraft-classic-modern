@@ -39,7 +39,18 @@ class LocalizationFileTest {
     /** 1.21.1 key conventions for the content this mod ships. */
     private static final List<String> CURRENT_PREFIXES = List.of(
             "item.thaumcraft.", "block.thaumcraft.", "container.thaumcraft.",
-            "entity.thaumcraft.", "itemGroup.thaumcraft.");
+            "entity.thaumcraft.", "itemGroup.thaumcraft.",
+            // TC-M6-05-s: registry-derived keys. 1.21.1 builds the display key
+            // as "<kind>.<namespace>.<path>", so a MobEffect registered as
+            // thaumcraft:potion.fluxtaint resolves effect.thaumcraft.potion.fluxtaint
+            // (MobEffect#getDescriptionId) and an enchantment's JSON
+            // description carries enchantment.thaumcraft.<id> verbatim.
+            "effect.thaumcraft.", "enchantment.thaumcraft.",
+            // TC-M6-05-s: the death message. Vanilla composes it as
+            // death.attack.<message_id> from the damage type's own payload
+            // (data/thaumcraft/damage_type/taint.json carries message_id
+            // "taint"), so the key is vanilla-shape and no code site names it.
+            "death.attack.");
 
     /**
      * Keys the shipped code uses with the original 1.7.10 key shape, kept
@@ -51,11 +62,23 @@ class LocalizationFileTest {
             "item.ItemAmuletVis.text", "item.capacity.text",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
             "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror",
-            "tc.researcherror");
+            "tc.researcherror",
+            // TC-M6-05-s: the warp-event chat lines. The original passes these
+            // literal keys to StatCollector.translateToLocal from
+            // WarpEvents.checkWarpEvent, and the port keeps them verbatim
+            // (warp/WarpEvents.chat + WarpLogic's outcome table), so the
+            // original en_US.lang strings apply unchanged.
+            "warp.text.1", "warp.text.2", "warp.text.3", "warp.text.4", "warp.text.5",
+            "warp.text.6", "warp.text.7", "warp.text.8", "warp.text.9", "warp.text.10",
+            "warp.text.11", "warp.text.12", "warp.text.13", "warp.text.14", "warp.text.15");
 
     /** Registry-derived key shape: lower-case id plus an optional meta/tooltip suffix. */
-    private static final Pattern KEY_SHAPE =
-            Pattern.compile("(?:item|block|entity|itemGroup)\\.thaumcraft\\.[a-z0-9_]+(?:\\.[a-z0-9]+)?");
+    private static final Pattern KEY_SHAPE = Pattern.compile(
+            "(?:item|block|entity|itemGroup)\\.thaumcraft\\.[a-z0-9_]+(?:\\.[a-z0-9]+)?"
+            // effect/enchantment: the id path may itself contain dots, because
+            // the ported MobEffect ids keep the original's dotted names
+            // (thaumcraft:potion.fluxtaint, thaumcraft:ench_repair).
+            + "|(?:effect|enchantment)\\.thaumcraft\\.[a-z0-9._]+");
 
     /** Every translation key the shipped code passes to Component.translatable that is not registry-derived. */
     private static final List<String> CODE_AUTHORED_KEYS = List.of(
@@ -128,7 +151,8 @@ class LocalizationFileTest {
             assertTrue(current || legacy,
                     key + " is neither a 1.21.1 current-shape key nor a documented original-shape key");
             if (key.startsWith("item.thaumcraft.") || key.startsWith("block.thaumcraft.")
-                    || key.startsWith("entity.thaumcraft.")) {
+                    || key.startsWith("entity.thaumcraft.") || key.startsWith("effect.thaumcraft.")
+                    || key.startsWith("enchantment.thaumcraft.")) {
                 assertTrue(KEY_SHAPE.matcher(key).matches(), key + " is not a lower-case id key");
             }
         }
