@@ -23,6 +23,23 @@ property range (meta 6 is unnamed, there is no meta 11).
 **The published alpha.5 jar is unchanged** (built from `7c4ebaf`); everything in this
 section reaches players only in the next release cut.
 
+- **The BD ledger has one id space again** (`t_9a2c9f91`, D-021): `docs/BEHAVIORAL_DEVIATIONS.md`
+  carried one row count on `main` and a different one on every live head — measured **14-44 rows
+  across 118 heads** against `main`'s 45, median 18, 111 heads at least 9 rows short, none at
+  `main`'s count, and three different rows claiming `BD-19` on three sides of three landings.
+  `main`'s 45 rows stay the incumbent, ids and text verbatim, and **19 deviations arrive as
+  BD-46 … BD-64** with their source head, sha, old id and landing card named in each row's last
+  cell; **17 head rows are rejected** as deviations `main` already owns (`Container screen
+  backgrounds and client-visible machine state` → **BD-37**, `Wisp block collision` → **BD-19**).
+  `docs/bd-id-map.csv` (generated) is the old→new map every queued landing cites;
+  `scripts/bd_ledger.py` runs the rule (`audit` / `emit` / `check` / `revert`); and
+  `BehavioralDeviationLedgerContractTest` (7 unit probes) freezes the incumbent rows and the id
+  contract — the count never decreases, both counting methods agree, no `BD-NN` citation dangles,
+  no merge takes one side of the file wholesale. `BD-13`'s parenthetical moved out of its id cell,
+  which is the row the `^| BD-` count saw and a strict parse did not. Measured on the reconciled
+  tree: unit **733 / 0 failures / 2 skips**, **All 292 required tests passed** in both the Curios
+  and `-Ptc.noCurios` modes, and **`total reverting rows across 121 heads: 0`** (57 of them
+  conflicted on this very file).
 - **Angry / Furious zombie pair** (`TC-M6-06-s-c2`): `thaumcraft:brainyzombie` and
   `thaumcraft:giantbrainyzombie` land as 1.21.1 `Zombie`s with the originals' figures cited line by
   line — 25.0 health / 5.0 attack with the reinforcement attribute pinned at 0.0 and armour +3 capped at
