@@ -57,15 +57,10 @@ public final class FxBeamGameTest {
             helper.assertTrue(BuiltInRegistries.PARTICLE_TYPE.containsKey(id),
                     "particle type " + id + " is not in the registry");
         }
-        // TC-M7-02-s (2) + TC-M7-02-b-s (6) + TC-M7-02-c-s-f1b (3: wisp,
-        // wisp_eg, wisp_arcing). The mod registers exactly the particle types
-        // the M7-02 cards scope, no more — the wip left this pin at 8, which is
-        // why the beam probe went red the moment the wisp types registered.
-        long registered = BuiltInRegistries.PARTICLE_TYPE.holders()
-                .filter(key -> ThaumcraftClassic.MOD_ID.equals(key.key().location().getNamespace()))
-                .count();
-        helper.assertTrue(registered == 11,
-                "thaumcraft-namespace particle types must be the 11 ported ones, found " + registered);
+        // The exact-set contract (FxParticleGameTest.PORTED_PARTICLE_PATHS) is
+        // the one shared pin: this probe's own count literal sat at 8 while the
+        // particle probe's sat at 11, so each slice had to bump both by hand.
+        FxParticleGameTest.assertParticleRegistryIsExact(helper);
         helper.assertTrue(ModParticles.BOLT.get().codec() == TcBoltOptions.MAP_CODEC,
                 "bolt type must decode through TcBoltOptions.MAP_CODEC");
         helper.assertTrue(ModParticles.BEAM.get().codec() == TcBeamOptions.MAP_CODEC,

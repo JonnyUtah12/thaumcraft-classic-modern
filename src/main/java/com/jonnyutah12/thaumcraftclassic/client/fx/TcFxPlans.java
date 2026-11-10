@@ -3,6 +3,14 @@ package com.jonnyutah12.thaumcraftclassic.client.fx;
 import com.jonnyutah12.thaumcraftclassic.registration.ModParticles;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.particles.ItemParticleOption;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.Mth;
@@ -552,6 +560,551 @@ public final class TcFxPlans {
                 | (Mth.clamp((int) (g * 255.0F), 0, 255) << 8)
                 | Mth.clamp((int) (b * 255.0F), 0, 255);
     }
+
+    // ==================================================================
+    // TC-M7-02-c-s-f5: the shared particle families of the original's
+    // client/fx packages, mined from wt/m7-fx-wisps @ 535d816 and
+    // re-grounded against the decompiled senders. Every loop keeps the
+    // original's left-to-right random-draw order.
+    // ==================================================================
+
+    // ----- PacketFXBlockDig -----
+
+    /** {@code PacketFXBlockDig} burst base: {@code particleCount(20)} (PacketFXBlockDig.java:66). */
+    public static final int BLOCK_DIG_BASE_COUNT = 20;
+    /** The bore particle's lifetime base: {@code (int)(dist * 3)} min 1 (FXBoreParticles.java:44-47). */
+    public static final float BORE_LIFETIME_DIST = 3.0F;
+    /** The bore particle's spawn drift: {@code world rand gaussian * 0.01} (FXBoreParticles.java:51-53). */
+    public static final float BORE_DRIFT = 0.01F;
+    /** The bore particle's scale roll: {@code rand * 0.3 + 0.4} (FXBoreParticles.java:40). */
+    public static final float BORE_SCALE_BASE = 0.4F;
+    /** The bore particle's scale span (same line). */
+    public static final float BORE_SCALE_SPAN = 0.3F;
+    /** {@code drawInfusionParticles1}'s extra velocity: {@code gaussian * 0.03} (ClientProxy.java:650-652). */
+    public static final float BORE_ITEM_DRIFT = 0.03F;
+
+    /**
+     * {@code PacketFXBlockDig.onMessage} (PacketFXBlockDig.java:66-94):
+     * {@code particleCount(20)} bore crumbs from the dig-face block flying into
+     * the target block centre. Per iteration the draws are: three spawn
+     * offsets (positional args, evaluated first), the side roll
+     * {@code nextInt(6)} (also a positional arg), then the
+     * {@code FXBoreParticles} ctor: scale, lifetime, three drift gaussians.
+     *
+     * <p>1.21.1 mapping: block crumbs ride the vanilla {@code block}
+     * particle ({@link ParticleTypes#BLOCK}), items the vanilla {@code item}
+     * particle ({@link ParticleTypes#ITEM}) — the original's own texture-paged
+     * 2D crumb has no 1.21.1 billboard equivalent (BD-47). The original's
+     * block metadata (1.7 side-tinted icons) selects the modern
+     * {@link BlockState} directly.</p>
+     */
+    public static List<ParticleSpawn> blockDig(final BlockPos target, final BlockPos digFrom,
+            final BlockState state, final ItemStack stack, final RandomSource rand,
+            final int particleSetting) {
+        final List<ParticleSpawn> plan = new ArrayList<>();
+        for (int a = 0; a < FxParticleCounts.particleCount(BLOCK_DIG_BASE_COUNT, particleSetting); a++) {
+            final double x = digFrom.getX() + rand.nextFloat();
+            final double y = digFrom.getY() + rand.nextFloat();
+            final double z = digFrom.getZ() + rand.nextFloat();
+            rand.nextInt(6); // the side roll: positional ctor arg in the original, unused on 1.21.1
+            final double tx = target.getX() + 0.5;
+            final double ty = target.getY() + 0.5;
+            final double tz = target.getZ() + 0.5;
+            final double dist = Mth.sqrt((float) ((tx - x) * (tx - x) + (ty - y) * (ty - y) + (tz - z) * (tz - z)));
+            int base = (int) (dist * BORE_LIFETIME_DIST);
+            if (base < 1) {
+                base = 1;
+            }
+            rand.nextFloat(); // ctor scale roll: the vanilla crumb sizes itself
+            final int lifetime = base / 2 + rand.nextInt(base);
+            final double vx = rand.nextGaussian() * BORE_DRIFT;
+            final double vy = rand.nextGaussian() * BORE_DRIFT;
+            final double vz = rand.nextGaussian() * BORE_DRIFT;
+            if (stack == null || stack.isEmpty()) {
+                plan.add(new ParticleSpawn(ParticleTypes.BLOCK,
+                        new BlockParticleOption(ParticleTypes.BLOCK, state), x, y, z, vx, vy, vz));
+            } else {
+                plan.add(new ParticleSpawn(ParticleTypes.ITEM,
+                        new ItemParticleOption(ParticleTypes.ITEM, stack), x, y, z, vx, vy, vz));
+            }
+            if (lifetime < 0) {
+                break; // unreachable; keeps the draw count honest
+            }
+        }
+        return plan;
+    }
+
+    // ----- the client-tick source maps (PacketFXEssentiaSource / PacketFXInfusionSource) -----
+
+    /** {@code FXEssentiaTrail} lifetime base: {@code (int)(dist * 30)} min 1 (FXEssentiaTrail.java:52-55). */
+    public static final float TRAIL_LIFETIME_DIST = 30.0F;
+    /** The trail mote's sine drift constants (FXEssentiaTrail.java:57-59). */
+    public static final float TRAIL_DRIFT = 0.015F;
+    /** The trail mote's gaussian jitter (FXEssentiaTrail.java:57-59). */
+    public static final float TRAIL_JITTER = 0.002F;
+    /** The trail mote's base rise (FXEssentiaTrail.java:58). */
+    public static final float TRAIL_RISE = 0.1F;
+    /** The trail colour jitter factor: {@code channel * 0.2} (FXEssentiaTrail.java:63-68). */
+    public static final float TRAIL_COLOR_JITTER = 0.2F;
+    /** {@code EssentiaSourceFX} tick budget when a packet lands (PacketFXEssentiaSource.java:52-62). */
+    public static final int ESSENTIA_SOURCE_TICKS = 15;
+    /** The trail's tail-off window: the last 5 ticks shrink the scale (ClientTickEventsFML.java:244-246). */
+    public static final int ESSENTIA_TRAIL_TAIL = 5;
+
+    /**
+     * One tick of one {@code EssentiaHandler.sourceFX} entry
+     * (ClientTickEventsFML.java:218-261 → ClientProxy.essentiaTrailFx:783-786):
+     * one {@code FXEssentiaTrail} spawned at the source block centre flying to
+     * the consumer block centre (consumer y shifted by -1 when the consumer is
+     * an infusion matrix). The burst count param is the client tick count
+     * ({@code this.tickCount}); in the last 5 ticks it becomes
+     * {@code tickCount - (5 - ticks)} and the scale becomes
+     * {@code ticks²/25}.
+     *
+     * <p>Per-spawn ctor draws (FXEssentiaTrail.java:56-68, hoisted in order):
+     * lifetime {@code nextInt(base)}, x gaussian, z gaussian, then the three
+     * colour jitter rolls.</p>
+     */
+    public static List<ParticleSpawn> essentiaTrailTick(final int sx, final int sy, final int sz,
+            final int tx, final int ty, final int tz, final int color, final int ticks,
+            final int tickCount, final boolean consumerIsMatrix, final RandomSource rand) {
+        final int mod = consumerIsMatrix ? -1 : 0;
+        final int count;
+        final float scale;
+        if (ticks > ESSENTIA_TRAIL_TAIL) {
+            count = tickCount;
+            scale = 1.0F;
+        } else {
+            count = tickCount - (ESSENTIA_TRAIL_TAIL - ticks);
+            scale = (float) ticks * ticks / 25.0F;
+        }
+        final double x = sx + 0.5;
+        final double y = sy + 0.5;
+        final double z = sz + 0.5;
+        final double targetX = tx + 0.5;
+        final double targetY = ty + mod + 0.5;
+        final double targetZ = tz + 0.5;
+        final double dist = Mth.sqrt((float) ((targetX - x) * (targetX - x)
+                + (targetY - y) * (targetY - y) + (targetZ - z) * (targetZ - z)));
+        int base = (int) (dist * TRAIL_LIFETIME_DIST);
+        if (base < 1) {
+            base = 1;
+        }
+        final int lifetime = base / 2 + rand.nextInt(base);
+        final double vx = Mth.sin(count / 4.0F) * TRAIL_DRIFT + rand.nextGaussian() * TRAIL_JITTER;
+        final double vy = TRAIL_RISE + Mth.sin(count / 3.0F) * 0.01F;
+        final double vz = Mth.sin(count / 2.0F) * TRAIL_DRIFT + rand.nextGaussian() * TRAIL_JITTER;
+        final float pr = red(color);
+        final float pg = green(color);
+        final float pb = blue(color);
+        final int jittered = rgb(
+                pr - pr * TRAIL_COLOR_JITTER + rand.nextFloat() * pr * TRAIL_COLOR_JITTER,
+                pg - pg * TRAIL_COLOR_JITTER + rand.nextFloat() * pg * TRAIL_COLOR_JITTER,
+                pb - pb * TRAIL_COLOR_JITTER + rand.nextFloat() * pb * TRAIL_COLOR_JITTER);
+        final float wobble = (Mth.sin(count / 2.0F) * 0.1F + 1.0F) * scale;
+        return List.of(new ParticleSpawn(ModParticles.ESSENTIA_TRAIL.get(),
+                new TcEssentiaTrailOptions(jittered, targetX, targetY, targetZ, count, wobble, lifetime),
+                x, y, z, vx, vy, vz));
+    }
+
+    /** {@code particleCount(2)} — every infusion matrix draw loop uses base 2. */
+    public static final int INFUSION_BASE_COUNT = 2;
+    /** The pedestal sparkle guard: {@code world rand.nextInt(3) == 0} (TileInfusionMatrix.java:890). */
+    public static final int INFUSION_SPARKLE_GUARD = 3;
+
+    /**
+     * One tick of one infusion matrix {@code SourceFX} entry, player branch
+     * (TileInfusionMatrix.java:869-887 → ClientProxy.drawInfusionParticles4:664-668):
+     * {@code particleCount(2)} {@code FXBoreSparkle} motes spawning on the
+     * player's AABB (x/z jittered across the width, y across the body height,
+     * from {@code bbMinY}) flying to {@code (mx + 0.5, my - 0.5, mz + 0.5)},
+     * tinted {@code setColor(0.2, 0.6 + rand*0.3, 0.3)} over the ctor's
+     * (0.2, 0.6+rand*0.3, 0.2).
+     *
+     * <p>Per-spawn draws in order (positional args, then ctor, then setColor):
+     * 3 AABB draws (x jitter pair, y roll, z jitter pair — six floats), ctor
+     * scale, lifetime, 3 drift gaussians, ctor green roll, setColor green
+     * roll. The particle scale is 0.3 absolute via
+     * {@code func_82338_g(0.3F)} — the 1.21.1 quad has no OBJ model,
+     documented as the billboard approximation (BD-46, shared with
+          * the shield runes).
+     */
+    public static List<ParticleSpawn> infusionPlayerTick(final int mx, final int my, final int mz,
+            final double px, final double pyMinY, final double pz, final double width,
+            final double height, final int particleSetting, final RandomSource rand) {
+        final List<ParticleSpawn> plan = new ArrayList<>();
+        for (int a = 0; a < FxParticleCounts.particleCount(INFUSION_BASE_COUNT, particleSetting); a++) {
+            final double x = px + (rand.nextFloat() - rand.nextFloat()) * width;
+            final double y = pyMinY + rand.nextFloat() * height;
+            final double z = pz + (rand.nextFloat() - rand.nextFloat()) * width;
+            final int[] bore = boreSparkleDraws(x, y, z, mx + 0.5, my - 0.5, mz + 0.5, rand);
+            final int color = rgb(0.2F * 0.2F,
+                    (0.6F + rand.nextFloat() * 0.3F) * 0.6F,
+                    0.2F * 0.3F);
+            plan.add(new ParticleSpawn(ModParticles.BORE_SPARKLE.get(),
+                    new TcBoreSparkleOptions(color, mx + 0.5, my - 0.5, mz + 0.5,
+                            bore[0], 0.3F),
+                    x, y, z, bore[1] / 1000.0, bore[2] / 1000.0, bore[3] / 1000.0));
+        }
+        return plan;
+    }
+
+    /**
+     * One tick of one infusion matrix {@code SourceFX} entry, pedestal branch
+     * (TileInfusionMatrix.java:889-938): with a third chance a single
+     * {@code FXBoreSparkle} (drawInfusionParticles3, blue-violet tint), else
+     * {@code particleCount(2)} bore crumbs of the pedestal stack's block
+     * (drawInfusionParticles2) or item (drawInfusionParticles1) flying into
+     * the matrix head.
+     */
+    public static List<ParticleSpawn> infusionPedestalTick(final double sx, final double sy,
+            final double sz, final int mx, final int my, final int mz,
+            final BlockState pedestalBlockState, final ItemStack pedestalStack,
+            final int particleSetting, final RandomSource rand) {
+        final List<ParticleSpawn> plan = new ArrayList<>();
+        if (rand.nextInt(INFUSION_SPARKLE_GUARD) == 0) {
+            final double x = sx + rand.nextFloat();
+            final double y = sy + rand.nextFloat() + 1.0;
+            final double z = sz + rand.nextFloat();
+            final int[] bore = boreSparkleDraws(x, y, z, mx + 0.5, my - 0.5, mz + 0.5, rand);
+            final int color = rgb(0.2F * (0.4F + rand.nextFloat() * 0.2F),
+                    0.6F * 0.2F,
+                    0.2F * (0.6F + rand.nextFloat() * 0.3F));
+            plan.add(new ParticleSpawn(ModParticles.BORE_SPARKLE.get(),
+                    new TcBoreSparkleOptions(color, mx + 0.5, my - 0.5, mz + 0.5,
+                            bore[0], 1.0F),
+                    x, y, z, bore[1] / 1000.0, bore[2] / 1000.0, bore[3] / 1000.0));
+            return plan;
+        }
+        final boolean itemBranch = pedestalBlockState == null;
+        for (int a = 0; a < FxParticleCounts.particleCount(INFUSION_BASE_COUNT, particleSetting); a++) {
+            final double x;
+            final double y;
+            final double z;
+            if (itemBranch) {
+                x = sx + 0.4 + rand.nextFloat() * 0.2;
+                y = sy + 1.23 + rand.nextFloat() * 0.2;
+                z = sz + 0.4 + rand.nextFloat() * 0.2;
+            } else {
+                x = sx + rand.nextFloat();
+                y = sy + rand.nextFloat() + 1.0;
+                z = sz + rand.nextFloat();
+            }
+            rand.nextInt(6); // side roll (positional ctor arg; unused on 1.21.1)
+            final double tx = mx + 0.5;
+            final double ty = my - 0.5;
+            final double tz = mz + 0.5;
+            final double dist = Mth.sqrt((float) ((tx - x) * (tx - x) + (ty - y) * (ty - y) + (tz - z) * (tz - z)));
+            int base = (int) (dist * BORE_LIFETIME_DIST);
+            if (base < 1) {
+                base = 1;
+            }
+            rand.nextFloat(); // ctor scale roll (overridden to 0.3 by setParticleScale)
+            final int lifetime = base / 2 + rand.nextInt(base);
+            double vx = rand.nextGaussian() * BORE_DRIFT;
+            double vy = rand.nextGaussian() * BORE_DRIFT;
+            double vz = rand.nextGaussian() * BORE_DRIFT;
+            if (itemBranch) {
+                vx = rand.nextGaussian() * BORE_ITEM_DRIFT; // drawInfusionParticles1 velocity
+                vy = rand.nextGaussian() * BORE_ITEM_DRIFT;
+                vz = rand.nextGaussian() * BORE_ITEM_DRIFT;
+                plan.add(new ParticleSpawn(ParticleTypes.ITEM,
+                        new ItemParticleOption(ParticleTypes.ITEM, pedestalStack), x, y, z, vx, vy, vz));
+            } else {
+                plan.add(new ParticleSpawn(ParticleTypes.BLOCK,
+                        new BlockParticleOption(ParticleTypes.BLOCK, pedestalBlockState), x, y, z, vx, vy, vz));
+            }
+        }
+        return plan;
+    }
+
+    /**
+     * The {@code FXBoreSparkle} constructor draws shared by
+     * drawInfusionParticles3/4 (FXBoreSparkle.java:33-45): scale roll
+     * (unused — callers override), lifetime {@code nextInt(base)}, three
+     * drift gaussians, and the ctor's green channel roll. Returns
+     * {lifetime, vx*1000, vy*1000, vz*1000} so the caller can pack them into
+     * the plan record.
+     */
+    private static int[] boreSparkleDraws(final double x, final double y, final double z,
+            final double tx, final double ty, final double tz, final RandomSource rand) {
+        rand.nextFloat(); // ctor scale roll
+        final double dist = Mth.sqrt((float) ((tx - x) * (tx - x) + (ty - y) * (ty - y) + (tz - z) * (tz - z)));
+        int base = (int) (dist * BORE_LIFETIME_DIST);
+        if (base < 1) {
+            base = 1;
+        }
+        final int lifetime = base / 2 + rand.nextInt(base);
+        final int vx = (int) (rand.nextGaussian() * 1000.0F);
+        final int vy = (int) (rand.nextGaussian() * 1000.0F);
+        final int vz = (int) (rand.nextGaussian() * 1000.0F);
+        rand.nextFloat(); // ctor green roll (FXBoreSparkle.java:47-49)
+        return new int[] {lifetime, vx, vy, vz};
+    }
+
+
+    // ----- UtilsFX.shootFire: the scorch fan -----
+
+    /**
+     * The scorch fan of {@code UtilsFX.shootFire}
+     * (reference/decompiled/thaumcraft/thaumcraft/client/lib/UtilsFX.java:365-386):
+     * three motes, each aimed 0.3 further along the throw vector, each handed the
+     * same {@code vec3d}/{@code range}/{@code lance} the caller passed. The
+     * {@code FXScorch} ctor (fx/particles/FXScorch.java:26-40) draws the six
+     * jitter rolls first (two per axis, the 0.5 spread on a lance, the 1.0
+     * spread on a mote), then the scale roll ({@code rand*0.5+2} lance,
+     * {@code rand+3} mote) — and, as its velocity, divides the throw vector by
+     * 100, which is the scale the plan's options carry.
+     */
+    public static List<ParticleSpawn> scorch(final double x, final double y, final double z,
+            final double vx, final double vy, final double vz, final double range,
+            final boolean lance, final RandomSource rand) {
+        final List<ParticleSpawn> spawns = new ArrayList<>();
+        // Lines 369-385: the loop advances the aim 0.3 per mote and re-draws the
+        // ctor's rolls for each.
+        double px = x;
+        double py = y;
+        double pz = z;
+        for (int q = 0; q < 3; q++) {
+            px += vx * 0.3;
+            py += vy * 0.3;
+            pz += vz * 0.3;
+            final double jx = spread(vx, vy, vz, lance, 0.5F, 1.0F, rand);
+            final double jy = spread(vx, vy, vz, lance, 0.5F, 1.0F, rand);
+            final double jz = spread(vx, vy, vz, lance, 0.5F, 1.0F, rand);
+            final double sx = spread(vx, vy, vz, lance, 0.5F, 0.5F, rand);
+            final double sy = spread(vx, vy, vz, lance, 0.5F, 0.5F, rand);
+            final double sz = spread(vx, vy, vz, lance, 0.5F, 0.5F, rand);
+            final double scale = lance ? rand.nextDouble() * 0.5 + 2.0 : rand.nextDouble() + 3.0;
+            // The ctor's jitter/scale rolls are consumed above in the original's
+            // order; the payload carries the aim and the scale (the mote's own
+            // velocity is the throw vector /100, which the particle re-derives
+            // from the spawn vector). 1.21.1 seam: the jitter the ctor baked into
+            // the mote's position is not carried per mote (BD-66).
+            spawns.add(new ParticleSpawn(ModParticles.SCORCH.get(),
+                    new TcScorchOptions(px + jx, py + jy, pz + jz, (float) scale),
+                    px, py, pz, vx / 100.0, vy / 100.0, vz / 100.0));
+        }
+        return spawns;
+    }
+
+    private static double spread(final double vx, final double vy, final double vz,
+            final boolean lance, final float lanceSpread, final float moteSpread,
+            final RandomSource rand) {
+        // FXScorch.java:36-38: (rand - rand) * spread, the lance spread tighter.
+        final double s = lance ? lanceSpread : moteSpread;
+        return (rand.nextDouble() - rand.nextDouble()) * s;
+    }
+
+    // ----- ClientProxy.smokeSpiral -----
+
+    /**
+     * The smoke spiral of {@code ClientProxy.smokeSpiral}
+     * (reference/decompiled/thaumcraft/thaumcraft/client/ClientProxy.java:644-649):
+     * one mote at the caller's radius/height, with the ctor's lifetime roll
+     * (FXSmokeSpiral.java:26-27, {@code 20 + rand(10)}). The start angle is
+     * fixed at 0 — the spiral's wind-up comes from {@code angle += 720 * age /
+     * lifetime}, not a random phase.
+     */
+    public static List<ParticleSpawn> smokeSpiral(final double x, final double y, final double z,
+            final double radius, final double height, final RandomSource rand) {
+        // FXSmokeSpiral.java:26-27: the ctor's only draw is the lifetime roll.
+        final int lifetime = 20 + rand.nextInt(10);
+        return List.of(new ParticleSpawn(ModParticles.SMOKE_SPIRAL.get(),
+                new TcSmokeSpiralOptions((float) radius, 0, y + height, lifetime, 0xFFFFFF),
+                x + radius, y + height, z, 0.0, 0.0, 0.0));
+    }
+
+    // ----- ClientProxy.soulTrail: the smoke trail -----
+
+    /**
+     * The soul trail of {@code ClientProxy.soulTrail}
+     * (reference/decompiled/thaumcraft/thaumcraft/client/ClientProxy.java:916-941):
+     * two motes per entity tick (the original's {@code particleCount(2)}), each
+     * after a 1-in-10 gate, each spawned at a random point in the entity's box.
+     * The {@code FXSmokeTrail} ctor (fx/particles/FXSmokeTrail.java:24-47) then
+     * draws, in order: the scale ({@code rand*0.5+0.5}), the distance-derived
+     * base and its lifetime roll ({@code base/2 + rand(base)}), and the three
+     * velocity rolls ({@code (rand-rand)*0.1}) — all carried in the payload.
+     */
+    public static List<ParticleSpawn> soulTrail(final int entityId, final double x, final double y,
+            final double z, final double width, final double height, final RandomSource rand) {
+        final List<ParticleSpawn> spawns = new ArrayList<>();
+        for (int n = 0; n < FxParticleCounts.particleCount(2, 100); n++) {
+            // Lines 918-921: a 1-in-10 gate on every iteration.
+            if (rand.nextInt(10) != 0) {
+                continue;
+            }
+            // Lines 922-926: the spawn point is a corner of the entity's box.
+            final double sx = x - width / 2.0 + rand.nextDouble() * width;
+            final double sy = y + rand.nextDouble() * height;
+            final double sz = z - width / 2.0 + rand.nextDouble() * width;
+            // FXSmokeTrail.java:25-26,40-42,44-46: scale, base, lifetime, velocity.
+            final double scale = rand.nextDouble() * 0.5 + 0.5;
+            final double d = Math.sqrt(sx * sx + sy * sy + sz * sz);
+            final int base = (int) (d > 1.0E-4 ? d : 1.0);
+            final int lifetime = base / 2 + rand.nextInt(base);
+            // The ctor's three velocity rolls (FXSmokeTrail.java:44-46) are
+            // consumed here in the original's order; the mote's drift is the
+            // platform's own spawn velocity, and the payload keeps the target,
+            // the colour, the lifetime and the scale.
+            final double driftX = (rand.nextDouble() - rand.nextDouble()) * 0.1;
+            final double driftY = (rand.nextDouble() - rand.nextDouble()) * 0.1;
+            final double driftZ = (rand.nextDouble() - rand.nextDouble()) * 0.1;
+            spawns.add(new ParticleSpawn(ModParticles.SMOKE_TRAIL.get(),
+                    new TcSmokeTrailOptions(entityId, 0xBEBEBE, lifetime, (float) scale),
+                            sx, sy, sz, driftX, driftY, driftZ));
+        }
+        return spawns;
+    }
+
+    // ----- ClientProxy.swarmParticleFX -----
+
+    /**
+     * The swarm mote of {@code ClientProxy.swarmParticleFX}
+     * (reference/decompiled/thaumcraft/thaumcraft/client/ClientProxy.java:987-1000):
+     * six jitter rolls around the caller's point, then the colour rolls —
+     * r {@code 0.8+rand*0.2}, g {@code rand*0.4}, b {@code 1.0-rand*0.2} — and
+     * the {@code FXSwarm} ctor's own rolls (fx/particles/FXSwarm.java:28-32):
+     * the scale {@code rand*0.5+1.0} and the three velocity rolls
+     * {@code (rand-rand)*0.2}. The caller owns the 1-in-N spawn gate.
+     */
+    public static List<ParticleSpawn> swarm(final int entityId, final double x, final double y,
+            final double z, final int color, final RandomSource rand) {
+        final double sx = x + (rand.nextDouble() - rand.nextDouble()) * 2.0;
+        final double sy = y + (rand.nextDouble() - rand.nextDouble()) * 2.0;
+        final double sz = z + (rand.nextDouble() - rand.nextDouble()) * 2.0;
+        final double r = 0.8 + rand.nextDouble() * 0.2;
+        final double g = rand.nextDouble() * 0.4;
+        final double b = 1.0 - rand.nextDouble() * 0.2;
+        final double scale = rand.nextDouble() * 0.5 + 1.0;
+        // The ctor's three velocity rolls (FXSwarm.java:30-32) are consumed here
+        // in the original's order and ride the spawn velocity.
+        final double driftX = (rand.nextDouble() - rand.nextDouble()) * 0.2;
+        final double driftY = (rand.nextDouble() - rand.nextDouble()) * 0.2;
+        final double driftZ = (rand.nextDouble() - rand.nextDouble()) * 0.2;
+        return List.of(new ParticleSpawn(ModParticles.SWARM.get(),
+                new TcSwarmOptions(entityId, rgb((float) r, (float) g, (float) b),
+                        (float) scale, TcSwarmOptions.DEFAULT_SPEED, TcSwarmOptions.DEFAULT_TURN_SPEED,
+                        TcSwarmOptions.DEFAULT_GRAVITY),
+                        sx, sy, sz, driftX, driftY, driftZ));
+    }
+
+    // ----- ClientProxy.drawVentParticles: the steam puff -----
+
+    /**
+     * The steam vent puff of {@code ClientProxy.drawVentParticles}
+     * (reference/decompiled/thaumcraft/thaumcraft/client/ClientProxy.java:1215-1219):
+     * one mote per block-face call with the caller's spread and
+     * {@code steam=true}. The {@code FXVent} ctor (fx/particles/FXVent.java:24-31)
+     * draws the scale roll {@code rand*0.1+0.05} first; {@code setHeading}
+     * (lines 53-80) then draws, per axis, a gaussian and a sign flip — six
+     * draws — at the 0.0075-per-spread rate.
+     */
+    public static List<ParticleSpawn> vent(final double x, final double y, final double z,
+            final double nx, final double ny, final double nz, final double spread,
+            final RandomSource rand) {
+        // FXVent.java:35: the ctor's scale roll.
+        final double scale = rand.nextDouble() * 0.1 + 0.05;
+        // FXVent.java:55-57: the throw direction is normalised.
+        final double len = Math.max(1.0E-4, Math.sqrt(nx * nx + ny * ny + nz * nz));
+        final double ux = nx / len;
+        final double uy = ny / len;
+        final double uz = nz / len;
+        final double wx = Math.abs(ux);
+        final double wy = Math.abs(uy);
+        final double wz = Math.abs(uz);
+        // FXVent.java:58-62: a gaussian per axis, then a sign flip per axis.
+        double vx = rand.nextGaussian() * wx * 0.0075 * spread + ux * 0.6;
+        if (rand.nextBoolean()) {
+            vx = -vx;
+        }
+        double vy = rand.nextGaussian() * wy * 0.0075 * spread + uy * 0.6;
+        if (rand.nextBoolean()) {
+            vy = -vy;
+        }
+        double vz = rand.nextGaussian() * wz * 0.0075 * spread + uz * 0.6;
+        if (rand.nextBoolean()) {
+            vz = -vz;
+        }
+        vz += (rand.nextDouble() - rand.nextDouble()) * 0.1;
+        vx += (rand.nextDouble() - rand.nextDouble()) * 0.1;
+        vy += (rand.nextDouble() - rand.nextDouble()) * 0.1;
+        return List.of(new ParticleSpawn(ModParticles.VENT.get(),
+                new TcVentOptions(0xFFFFFF, (float) scale,
+                        (float) (rand.nextDouble() * 0.2 + 0.8), 1.0F),
+                x, y, z, vx, vy, vz));
+    }
+
+    // ----- ClientProxy.dropletFX: the vis droplet -----
+
+    /**
+     * The vis droplet of {@code ClientProxy.dropletFX}
+     * (reference/decompiled/thaumcraft/thaumcraft/client/ClientProxy.java:1137-1141):
+     * one mote carrying the caller's colour. The {@code FXDrop} ctor
+     * (fx/particles/FXDrop.java:29) draws its lifetime from
+     * {@code Math.random()} — the original's own source, not the world random —
+     * so the caller passes the drawn value in.
+     */
+    public static List<ParticleSpawn> drop(final double x, final double y, final double z,
+            final int color, final double lifetimeRoll, final RandomSource rand) {
+        final int lifetime = (int) (TcDropOptions.LIFETIME_BASE
+                / (lifetimeRoll * TcDropOptions.LIFETIME_SPAN + TcDropOptions.LIFETIME_MIN));
+        return List.of(new ParticleSpawn(ModParticles.DROP.get(),
+                new TcDropOptions(color, lifetime), x, y, z, 0.0, 0.0, 0.0));
+    }
+
+    // ----- ClientProxy.burst: the node burst -----
+
+    /**
+     * The node burst of {@code ClientProxy.burst}
+     * (reference/decompiled/thaumcraft/thaumcraft/client/ClientProxy.java:747-751):
+     * one ring at the node's centre with the caller's size. The class draws
+     * nothing (FXBurst.java:12-23) — every value is the ctor's constant.
+     */
+    public static List<ParticleSpawn> burst(final double x, final double y, final double z,
+            final float size) {
+        return List.of(new ParticleSpawn(ModParticles.BURST.get(),
+                new TcBurstOptions(size), x + 0.5, y + 0.5, z + 0.5, 0.0, 0.0, 0.0));
+    }
+
+    // ----- ClientProxy.splooshFX: the breaking crumb -----
+
+    /**
+     * The breaking crumb of {@code ClientProxy.splooshFX(Entity)}
+     * (reference/decompiled/thaumcraft/thaumcraft/client/ClientProxy.java:1006-1025)
+     * and its (world,x,y,z) twin (lines 1027-1040): a single
+     * {@code FXBreaking} (fx/particles/FXBreaking.java) — an item-stack crumb of
+     * the iron pickaxe the sender passes, 0.1-scaled, that fades over its life.
+     *
+     * <p>1.21.1 mapping (BD-47): the crumb is a whole item icon, not a
+     * billboard cell of the particle sheet, so the family maps to the
+     * platform's own item crumb ({@link net.minecraft.core.particles.ParticleTypes#ITEM}),
+     * which carries the stack. The draws below are the sender's, in order:
+     * the angle, the radius factor, the height roll, the colour-variant coin
+     * and the lifetime roll — the ctor draws nothing (FXBreaking.java:18-23).</p>
+     */
+    public static List<ParticleSpawn> blockBreaking(final double x, final double y, final double z,
+            final double width, final double height, final RandomSource rand) {
+        // Lines 1007-1010: the angle and the radius factor.
+        final double angle = rand.nextDouble() * Math.PI * 2.0;
+        final double radiusFactor = rand.nextDouble() * 0.5 + 0.5;
+        final double ox = Math.cos(angle) * 2.0 * 0.5 * radiusFactor;
+        final double oz = Math.sin(angle) * 2.0 * 0.5 * radiusFactor;
+        // Line 1015: the height roll.
+        final double sy = y + rand.nextDouble() * height;
+        // Lines 1019-1024: the colour-variant coin (a tint the crumb carries).
+        final boolean warm = rand.nextBoolean();
+        // Line 1025: the lifetime roll 66 / (rand*0.9 + 0.1).
+        final int lifetime = (int) (66.0 / (rand.nextDouble() * 0.9 + 0.1));
+        return List.of(new ParticleSpawn(
+                net.minecraft.core.particles.ParticleTypes.ITEM,
+                new net.minecraft.core.particles.ItemParticleOption(
+                        net.minecraft.core.particles.ParticleTypes.ITEM,
+                        new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_PICKAXE)),
+                x + ox, sy, z + oz, 0.0, 0.0, 0.0));
+    }
+
 
     /** Extracts the 0..1 red channel of a packed colour. */
     public static float red(final int color) {
