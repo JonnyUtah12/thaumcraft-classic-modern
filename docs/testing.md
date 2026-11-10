@@ -198,6 +198,41 @@ without the evidence for its stages.
   window at all (the golem probes' `runAtTickTime(6, () -> spawn(…))`, which then gate on the golem's own
   `tickCount`, never on a test-tick phase). Convert the assertion, not the bookkeeping.
   Exemplars: `63b5806` (firebat devil-health delta), `wt/t_f19061fc` (the zombie trio and the furnace cook).
+  Quantified on this tree (`ZombieMobGameTest.angryZombieTargetsTheNearestPlayer`, the card that swept it): the villager is acquired on probe
+  tick **1-12** over the 8 legs swept at the fixed tree (card t_752fbabd, 585c90d + in-probe prints: 1,1,2,8,9,10,10,12) and **1-28** over the 8
+  legs swept at the pre-fix tree (f18e71f + the same prints: 1,2,5,11,13,17,25,28) — 16 legs, `mobTicks == probeTick` on all 16 — against a
+  **400**-tick watchdog. The gate is a geometric draw: `NearestAttackableTargetGoal#canUse` passes 1 time in `reducedTickDelay(10)` = **5**
+  (`Goal.java:50-52` halves the interval), and `Mob#serverAiStep` runs the full `targetSelector.tick()` only on the `(tickCount + id) % 2` parity
+  tick (`Mob.java:779-794`), so acquisition is ~**1/10 per mob tick**. The old `getTick() + 40` window therefore reddened on `0.9^40` = **1.48 %**
+  of legs; the converted probe reddens on `0.9^372` = **9.5e-18**. A fixed window on a geometric process is a rate, stated here as a number: the
+  conversion is what removed it.
+- **A stochastic band arm is mean +- 4 sd of the BINOMIAL SUM, widened to the drop's quantum — and it is never the only arm.**
+  A band built from a multiple of the **per-death** sd is the same defect in statistical clothing. At `f18e71f`,
+  `angryZombieDeathDropsFollowTheOriginalRolls` asserted `9..21` on a `Binom(30, 1/2)` sum (mean 15, sd 2.74): the width was 3 x the **5-kill** sd
+  (1.5) and stayed `+-6` when the kill count doubled to 10, so the span was **+-2.19 sd of the sum** and tripped **1.61 %** of honest legs —
+  measured red at 8 flesh. The giant's `87..153` on `2*Binom(120, 1/2)` (mean 120, sd 10.95) was `+-3.01 sd` -> **0.245 %**. With the target
+  window's `0.9^40` = 1.48 %, the suite tripped **3.34 %** of legs = 1 red in 30, which is the 2-reds-in-40 the card reported. Both probes were
+  green for weeks and red at a rate; neither assert was ever about the mod.
+  So: **4 sd of the sum**, widened **outward to the drop's quantum** — a stack of 2 can only leave an even total, so a band edge that is not a
+  multiple of the quantum bites on legal draws. `45 +- 4 sd` (30 deaths, 90 flips of 1) -> `[26, 64]`, exact trip **2.97e-5**; `120 +- 4 sd`
+  widened by the stack of 2 -> `[76, 164]`, exact **3.24e-5**; the pair **6.21e-5** a leg = 1 red in 16 104 legs.
+  Pick the kill count for **power**, and state it as the fraction of legs on which the DEFECT reddens: at 30 deaths a doubled rolls body (mean 90
+  against `[26, 64]`) reddens on **99.993 %** of legs, while at 10 deaths the same defect against `[4, 26]` reddens on **81.7 %** and hides on
+  **18.3 %**. State the derivation (flips, quantum, mean, sd, band, whole support) **in the failure message** — `assertRollBand` — so the next
+  reader computes the trip rate instead of re-measuring it.
+  A rate band cannot see a **rescaled stack** (a stack of 2 doubles the mean and the sd together), so pair it with the deterministic arms: the
+  **per-death stack cap x deaths** (3 flips -> at most 3 stacks a death, 30 deaths -> 90; the giant's 2 loops x 6 flips plus its one 4-way
+  `dropAllLoot` stack -> at most 13 a death, 10 deaths -> 130) and the stack **quantum** (`func_145779_a(rotten_flesh, 1)` is 1, the giant's is 2,
+  asserted on every owned stack). Each reddens a rescaled body on 100 % of legs: the `M3b` mutation (giant, one loop with the stack at 4) fired the
+  quantum arm ALONE, band 120 and cap 70 green.
+  The band only means something over the subset the probe **owns** — see the attribution rule above: per-kill UUID delta (`DeathDrops`), never an
+  item-id filter, foreign stacks named and never counted. Prove each arm with its own mutation, and expect the harness to test you: an injected
+  census that reported 0 for the rate arm reddened BOTH drops probes — the band's low side, loud. Measured, swept inside the probes so the packing
+  grid did not move, 10 kills a leg: the owned census sat at **11-17** flesh (angry) at the fixed tree and **13-20** at the pre-fix tree, and
+  **98-142** / **100-130** (giant), against binomial means 15 and 120 — so no vanilla zombie loot table rides a modded id — and every stack in the
+  25-block box was owned, **16/16** legs, foreign = 0 (8 legs per tree, the two sweeps above; both ran 10 kills, so the angry mean there is 15,
+  not the shipped probe's 45).
+
 - A `@GameTest` body that touches a block entity must not park the server
   thread. The game test server shuts down by unloading chunks
   (`LevelChunk.clearAllBlockEntities` → `BlockEntity.setRemoved`), and a
