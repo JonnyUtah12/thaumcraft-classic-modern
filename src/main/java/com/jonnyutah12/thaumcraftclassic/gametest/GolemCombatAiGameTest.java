@@ -98,6 +98,23 @@ import java.util.Set;
  *       {@code null} whenever it is false ({@code PathNavigation.java:127}). A probe that wants a
  *       real route has to leave the golem its AI and let it land, and has to give it a couple of
  *       ticks after any {@code setPos} before the path finder runs.</li>
+ *   <li><b>A goal installed on a live selector is armed by the engine.</b> {@code GoalSelector.tick}
+ *       starts a goal on the {@code (tickCount + id) % 2} parity tick ({@code GoalSelector.java
+ *       :74-105}) inside the goal tick that {@code Mob.serverAiStep} runs, so a probe that
+ *       hand-drives a goal's {@code canUse} measures the registration priority and then takes the
+ *       goal off the selector. Left on it, the engine arms the goal first — on a parity the entity
+ *       id decides, which is a rate and not a constant — and the goal's own {@code start()}
+ *       movement is then the state the probe samples. The creeper-flee probe is the measured case:
+ *       ~1 leg in 5 read "the goal never armed" while the engine had armed it one tick earlier.</li>
+ *   <li><b>Both route walls print as "no route".</b> {@code PathNavigation.createPath} answers
+ *       {@code null} on {@code canUpdatePath} (the bullet above) and
+ *       {@code GroundPathNavigation.createPath} answers {@code null} when the target's chunk is not
+ *       loaded ({@code GroundPathNavigation.java:44-49}); the harness vouches only the chunks the
+ *       template box intersects ({@code StructureUtils.java:126,167-169}), and the grid origin is
+ *       drawn from {@code Level#getRandom} inside {@code GameTestServer.TEST_POSITION_RANGE}. A gate
+ *       that reads a route asserts both preconditions where it can read them and names them in its
+ *       own message, the standing {@code assertMobCellIsTicking} has in
+ *       {@code ZombieMobGameTest.java:126-146}.</li>
  *   <li>The golem's feet must sit in an AIR cell next to its target; a golem built inside a solid
  *       block suffocates at 1 damage per tick and dies mid-probe, so every phase asserts liveness
  *       ({@link #alive}) and a death reports itself with its own message.</li>
@@ -134,6 +151,14 @@ public final class GolemCombatAiGameTest {
 
     /** Mob AI settles onto a fresh game-test mob slowly; the sibling probes see tick ~190. */
     private static final int SETTLE = 120;
+
+    /**
+     * The original's flee-spot search radius: {@code RandomPositionGenerator.getPosAway(golem, 16,
+     * 7, pos)} ({@code AIAvoidCreeperSwell.java:124} → {@code DefaultRandomPos.getPosAway}), an
+     * offset cell up to {@value} blocks from the creeper in x and z. It is the width of the
+     * geometry the route has to reach, so it is the width the probe vouches for the path finder.
+     */
+    private static final int FLEE_SPOT_RANGE = 16;
 
     /**
      * Ticks the creeper-flee probe watches for its goal to arm, and how many draws of the goal's
@@ -355,6 +380,7 @@ public final class GolemCombatAiGameTest {
                 + level.getBlockState(cell.below()).getBlock());
     }
 
+
     /** A short fixed-precision form of a position or delta, for assertion messages. */
     private static String v(final Vec3 pos) {
         return String.format("(%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
@@ -385,6 +411,29 @@ public final class GolemCombatAiGameTest {
      * golem's own cell — and {@code PathNavigation.moveTo} accepts that, so "no path" is not the
      * shape of an unreachable target; the route simply does not end there.
      */
+    /**
+     * The tick-list precondition, stated where it can be read — the same standing as
+     * {@code ZombieMobGameTest.assertMobCellIsTicking} (:126-146), copied to this class because
+     * each probe class in this source set carries its own copy of the shared parts. The harness
+     * force-loads and vouches ticking only for the chunks the template box intersects
+     * ({@code StructureUtils.java:126, 167-169}), and the grid origin is drawn from
+     * {@code Level#getRandom} inside {@code GameTestServer.TEST_POSITION_RANGE}, so a layout
+     * regression reports HERE, by name, and not as an arming rate downstream.
+     */
+    private static void assertMobCellIsTicking(final GameTestHelper helper, final Mob mob,
+            final String who) {
+        final ServerLevel level = helper.getLevel();
+        final BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+        final net.minecraft.world.level.ChunkPos cell = mob.chunkPosition();
+        helper.assertTrue(level.isPositionEntityTicking(mob.blockPosition()),
+                who + " stands in chunk " + cell.x + "," + cell.z + " (structure origin "
+                        + origin.toShortString() + " is chunk " + (origin.getX() >> 4) + ","
+                        + (origin.getZ() >> 4) + ", align16 " + (origin.getX() & 15) + ","
+                        + (origin.getZ() & 15) + "), and that chunk is not entity-ticking: the "
+                        + "harness force-loads and vouches only the chunks the template box "
+                        + "intersects, so the golem's cell has left the vouched footprint");
+    }
+
     private static boolean reaches(final Path path, final BlockPos cell) {
         if (path == null || path.getNodeCount() == 0) {
             return false;
@@ -692,6 +741,19 @@ public final class GolemCombatAiGameTest {
      * when it was lit; 75 ticks after, with the creeper exploded and the flee goal out of the
      * way, the golem is back on its home cell.</p>
      *
+     * <p>The goal is installed for the registration-priority claim and then taken OFF the live
+     * selector, and the fuse tick asserts the preconditions that let a route be built at all. Both
+     * are the shape of this probe, not decoration: left on the selector, {@code Mob.serverAiStep}
+     * ticks it and the engine arms the flee goal on its own parity tick, the goal's {@code start()}
+     * applies the original's {@code motionY} 0.3 hop, and the golem spends the window airborne and
+     * outside its own detection box, where {@code GroundPathNavigation.canUpdatePath()} is false and
+     * {@code createPath} answers null. Measured with a sweep of the flee domain on the phase ticks
+     * of 8 no-Curios legs at {@code a06301d}: 8 samples found the golem airborne with 10 of 10
+     * flee-range routes null and 18 found it on the ground with 10 of 10 routes present, and the leg
+     * where the engine won that race is the leg that read "nodes=null, lastNode=-". Every chunk
+     * column of the flee domain was loaded on every sample of every leg (36/36), so the vouched-chunk
+     * class was not this probe's wall — the ground was.</p>
+     *
      * <p>The probe lays a clearing around the template ({@link #layClearing}): the goal wants an
      * open reachable spot and the game-test world is void outside the 24-wide template.</p>
      */
@@ -707,7 +769,30 @@ public final class GolemCombatAiGameTest {
         creeper.setSwellDir(0);
         final AIAvoidCreeperSwell flee = new AIAvoidCreeperSwell(golem);
         assertPriorityOnGoalSelector(helper, golem, flee, FLEE_PRIORITY, "the creeper flee goal");
+        // The registration priority is measured, and the goal then comes OFF the live selector,
+        // because this probe hand-drives it and a goal on a running selector is armed by the ENGINE.
+        // `Mob.serverAiStep` ticks the goal selector (Mob.java:736-751) and GoalSelector.tick starts
+        // a goal on the `(tickCount + id) % 2` parity tick (GoalSelector.java:74-105) — the tick
+        // after the fuse is lit is one such parity tick for about one entity id in two — so the flee
+        // goal can arm by itself, and the original's start() (motionY 0.3 plus a 0.8 impulse toward
+        // the spot, AIAvoidCreeperSwell.java:74-79) puts the golem airborne while it walks out of
+        // the goal's own detection box (canContinueToUse, :98-104). Off the ground the route cannot
+        // be built at all: GroundPathNavigation.canUpdatePath() is onGround||isInLiquid||isPassenger
+        // (GroundPathNavigation.java:40-43) and PathNavigation.createPath answers null while it is
+        // false (PathNavigation.java:136) — the rule this class cites at its javadoc line 127. The
+        // probe's 480 hand draws then face a gate that stays closed for the rest of the window and
+        // the report reads "nodes=null, lastNode=-". Measured on the game-test server with a sweep
+        // of the flee domain on each phase tick: onGround=false closed 10/10 of the sampled flee
+        // routes on every one of 8 airborne samples, onGround=true left all 10 open on every one of
+        // 18 grounded samples (26 samples over 8 legs), and the probe went red on exactly the legs
+        // where the engine armed first — the ~1 leg in 5 no-Curios measured at a06301d.
+        golem.goalSelector.removeGoal(flee);
         final double[] startDistance = new double[1];
+        // The two facts that make the route answer null, and the grid alignment they ride on, read
+        // at the tick the fuse is lit: see the precondition asserts in the pLit phase below.
+        final int[] fleeDomainUnloaded = new int[1];
+        final String[] fleeDomainChunks = new String[1];
+        final int[] originAlign = new int[2];
         final double[] litDistance = new double[1];
         final long[] armedTick = new long[1];
         final int[] draws = new int[2];
@@ -725,6 +810,56 @@ public final class GolemCombatAiGameTest {
         });
 
         helper.runAfterDelay(pLit, () -> {
+            // The route precondition, stated where it can be read. The flee goal builds its route
+            // through the mob's own navigation, and that answers null on exactly two facts: the mob
+            // cannot update a path (GroundPathNavigation.java:40-43, closed by PathNavigation
+            // .java:136) and a chunk of the route is not loaded (GroundPathNavigation.java:44-49 —
+            // the harness vouches only the chunks the template box intersects, StructureUtils.java
+            // :126, 167-169). Assert both before the window opens, naming the grid alignment, so a
+            // run whose geometry is not there fails as its geometry and not as the "goal never
+            // armed" rate below — the same standing as assertMobCellIsTicking in ZombieMobGameTest.
+            final ServerLevel level = helper.getLevel();
+            final BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+            final BlockPos golemCell = golem.blockPosition();
+            originAlign[0] = origin.getX() & 15;
+            originAlign[1] = origin.getZ() & 15;
+            final int x0 = (golemCell.getX() - FLEE_SPOT_RANGE) >> 4;
+            final int x1 = (golemCell.getX() + FLEE_SPOT_RANGE) >> 4;
+            final int z0 = (golemCell.getZ() - FLEE_SPOT_RANGE) >> 4;
+            final int z1 = (golemCell.getZ() + FLEE_SPOT_RANGE) >> 4;
+            final StringBuilder unloadedChunks = new StringBuilder();
+            int unloaded = 0;
+            int columns = 0;
+            for (int cx = x0; cx <= x1; cx++) {
+                for (int cz = z0; cz <= z1; cz++) {
+                    columns++;
+                    if (level.getChunkSource().getChunkNow(cx, cz) == null) {
+                        unloaded++;
+                        unloadedChunks.append(' ').append(cx).append(',').append(cz);
+                    }
+                }
+            }
+            fleeDomainUnloaded[0] = unloaded;
+            fleeDomainChunks[0] = unloadedChunks.toString();
+            helper.assertTrue(unloaded == 0,
+                    "the whole flee domain is loaded before the fuse is lit: the original's flee-spot "
+                    + "search reaches " + FLEE_SPOT_RANGE + " blocks from the creeper "
+                    + "(AIAvoidCreeperSwell.java:124), the route to that spot is built by the mob's "
+                    + "navigation, and the navigation answers null when a route chunk is not loaded "
+                    + "(GroundPathNavigation.java:44-49) — " + unloaded + " of " + columns
+                    + " chunk columns unloaded:" + unloadedChunks + " | structure origin "
+                    + origin.toShortString() + " align16 " + originAlign[0] + "," + originAlign[1]
+                    + " | golem " + golemCell.toShortString() + " tick " + helper.getTick());
+            assertMobCellIsTicking(helper, golem, "the fleeing golem");
+            helper.assertTrue(golem.onGround() || golem.isInLiquid() || golem.isPassenger(),
+                    "the golem can path at all: GroundPathNavigation.canUpdatePath() is "
+                    + "onGround||isInLiquid||isPassenger (GroundPathNavigation.java:40-43) and "
+                    + "PathNavigation.createPath returns null while it is false (:136) — onGround="
+                    + golem.onGround() + " inLiquid=" + golem.isInLiquid() + " passenger="
+                    + golem.isPassenger() + " | golem " + golemCell.toShortString() + " floor="
+                    + level.getBlockState(golemCell.below()).getBlock() + " — a golem not on the "
+                    + "floor is not standing in the clearing this probe laid, tick "
+                    + helper.getTick());
             // The baseline is the tick the fuse is lit: the goal arms on a later tick of its own
             // choosing and the golem is already moving by then, so the arming tick is not the
             // distance the flee has to beat.
@@ -844,6 +979,18 @@ public final class GolemCombatAiGameTest {
                             && creeper.distanceToSqr(spot) > golem.distanceToSqr(creeper))
                     + ", nodes=" + (route == null ? "null" : route.getNodeCount())
                     + ", lastNode=" + (last == null ? "-" : last.x + "," + last.y + "," + last.z)
+                    // The route preconditions, named: the navigation answers null on a mob that
+                    // cannot update a path (GroundPathNavigation.java:40-43, closed at :136) and on
+                    // a route whose chunk is not loaded (:44-49), so a reader can tell which wall
+                    // the "nodes=null" is — and the alignment facts say why a chunk would be out.
+                    + ", onGround=" + golem.onGround()
+                    + ", canUpdatePath=" + (golem.onGround() || golem.isInLiquid() || golem.isPassenger())
+                    + ", golemChunk=" + (golem.blockPosition().getX() >> 4) + ","
+                    + (golem.blockPosition().getZ() >> 4) + " loaded="
+                    + (helper.getLevel().getChunkSource().getChunkNow(
+                            golem.blockPosition().getX() >> 4, golem.blockPosition().getZ() >> 4) != null)
+                    + ", fleeDomainUnloaded=" + fleeDomainUnloaded[0] + fleeDomainChunks[0]
+                    + ", align16=" + originAlign[0] + "," + originAlign[1]
                     + ", floorOfSpot=" + (spot == null ? "-" : Math.floor(spot.x) + ","
                             + Math.floor(spot.y) + "," + Math.floor(spot.z))
                     + ", golemCell=" + golem.blockPosition().toShortString()
@@ -857,7 +1004,12 @@ public final class GolemCombatAiGameTest {
                     "the flee goal armed inside the watched window after the fuse was lit (tick "
                     + armedTick[0] + ", window " + (pLit + 1) + "-" + (pLit + FLEE_WINDOW)
                     + ", canUse draws " + draws[0] + "), goals:"
-                    + goalSummary(golem.goalSelector) + ", gates: " + gate[0]);
+                    + goalSummary(golem.goalSelector) + ", gates: " + gate[0]
+                    // Live, at the tick the window closed: the goal arms off the live selector
+                    // (removed above), so an unarmed window is the goal's own gate, not the engine
+                    // arming first; onGround is the route precondition that closes it.
+                    + " | onGround now=" + golem.onGround()
+                    + " squared distance to the creeper now=" + golem.distanceToSqr(creeper));
         });
     }
 
