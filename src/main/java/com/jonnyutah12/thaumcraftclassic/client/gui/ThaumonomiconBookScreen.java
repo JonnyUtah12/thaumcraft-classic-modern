@@ -2,7 +2,6 @@ package com.jonnyutah12.thaumcraftclassic.client.gui;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
-import com.jonnyutah12.thaumcraftclassic.aspect.AspectRegistry;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchEntryData;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchManager;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchPageData;
@@ -108,9 +107,8 @@ public class ThaumonomiconBookScreen extends Screen {
 
     @Override
     public boolean keyPressed(final int keyCode, final int scanCode, final int modifiers) {
-        // Original: ESC (and the book key) clear history and return to the browser at the same map position.
-        if (this.minecraft.isRunning()
-                && (keyCode == 256 /* GLFW_ESCAPE */ || keyCode == 45 /* GLFW_KEY_R slot for the book key */)) {
+        // Original: ESC (and the book keybind) clear history and return to the browser at the same map position.
+        if (keyCode == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
             HISTORY.clear();
             this.minecraft.setScreen(new ThaumonomiconScreen(restoreX, restoreY));
             return true;
@@ -217,7 +215,7 @@ public class ThaumonomiconBookScreen extends Screen {
                                 final int side, final int sw, final int sh, final int mouseX, final int mouseY) {
         int count = 0;
         for (final ResearchEntryData.AspectTag tag : pageData.aspects()) {
-            final Aspect aspect = AspectRegistry.get(tag.aspect());
+            final Aspect aspect = Aspect.getAspect(tag.aspect());
             if (aspect == null) {
                 continue;
             }
@@ -241,12 +239,12 @@ public class ThaumonomiconBookScreen extends Screen {
             graphics.pose().popPose();
 
             // Localized name centered under the tag.
-            final String name = aspect.getLocalizedName();
+            final String name = aspect.getName();
             graphics.drawString(this.font, name, tx + 16 - this.font.width(name) / 2, ty + 33, 5263440, false);
 
             if (!aspect.isPrimal()) {
-                final Aspect left = aspect.getComponentAspects().get(0);
-                final Aspect right = aspect.getComponentAspects().get(1);
+                final Aspect left = aspect.getComponents().get(0);
+                final Aspect right = aspect.getComponents().get(1);
                 final int offset = Math.max(0, this.font.width(name) - 100);
                 graphics.drawString(this.font, name, tx + 16 - offset + 50, ty + 30, 5263440, true);
 
@@ -261,8 +259,8 @@ public class ThaumonomiconBookScreen extends Screen {
                 TcGuiSupport.drawTag(graphics, right.getTag(), 0, 0, 0, 1.0F);
                 graphics.pose().popPose();
 
-                final String leftName = left.getLocalizedName();
-                final String rightName = right.getLocalizedName();
+                final String leftName = left.getName();
+                final String rightName = right.getName();
                 graphics.drawString(this.font, leftName, tx + 54 - this.font.width(leftName) / 2 + 8, ty + 30,
                         5263440, true);
                 graphics.drawString(this.font, rightName, tx + 96 - this.font.width(rightName) / 2 + 8, ty + 30,
