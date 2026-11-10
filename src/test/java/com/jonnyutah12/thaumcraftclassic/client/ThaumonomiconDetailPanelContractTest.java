@@ -1,6 +1,8 @@
 package com.jonnyutah12.thaumcraftclassic.client;
 
 import com.jonnyutah12.thaumcraftclassic.research.ResearchDetailModel;
+import com.jonnyutah12.thaumcraftclassic.research.book.BookDetailPanelLayout;
+import com.jonnyutah12.thaumcraftclassic.recipes.RecipePageLayout;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
@@ -124,6 +126,148 @@ class ThaumonomiconDetailPanelContractTest {
         assertEquals("parents|parentsHidden|siblings",
                 String.join("|", ResearchDetailModel.linkKinds()),
                 "the link kinds are the graph's own field names, in the order the panel draws them");
+    }
+
+    // ------------------------------ TC-M3-04-s-iv-b-2: the panel's recipe body (BD-64)
+
+    /**
+     * The panel splits its own box: a region at the bottom for the row's picture,
+     * the kept text rows above it, and every number is a function of the box the
+     * screen hands it (the split tracks the text pitch, so a font change moves it).
+     *
+     * <p>Fed the shipped panel — {@code DETAIL_WIDTH} wide, from
+     * {@code ROWS_TOP - 2} to {@code PANE_HEIGHT - 4}, at {@code DETAIL_PITCH} —
+     * the region is 100x146, the original's 104x156 box fits it scaled down
+     * (never up), and the KNOWFRAG 3x3 plus its result and label land inside the
+     * plate. The items stay native size and each offset rounds on its own
+     * (BD-17's delta, recorded in {@code RecipePageLayout}), which puts the last
+     * row's 18 px slot square one pixel past the fitted box: inside the plate's
+     * inset and inside the pane, so nothing is clipped.</p>
+     */
+    @Test
+    void thePanelReservesARegionAtItsBottomForTheRecipeBody() {
+        final int pitch = ThaumonomiconScreen.DETAIL_PITCH;
+        final int right = ThaumonomiconScreen.DETAIL_LEFT + ThaumonomiconScreen.DETAIL_WIDTH;
+        final BookDetailPanelLayout panel = new BookDetailPanelLayout(
+                ThaumonomiconScreen.DETAIL_LEFT, ThaumonomiconScreen.ROWS_TOP - 2,
+                ThaumonomiconScreen.DETAIL_WIDTH, ThaumonomiconScreen.PANE_HEIGHT - 4, pitch);
+
+        assertEquals(panel.top() + BookDetailPanelLayout.TEXT_TOP_PAD
+                        + BookDetailPanelLayout.TEXT_ROWS_KEPT * pitch + BookDetailPanelLayout.BODY_GAP,
+                panel.bodyTop(), "the body starts under the kept text rows");
+        assertTrue(panel.bodyTop() - panel.top() >= BookDetailPanelLayout.TEXT_ROWS_KEPT * pitch,
+                "the kept rows are above the body, not under it");
+        assertEquals(panel.bottom(), panel.textBottom(), "with no body the text keeps the whole panel");
+        assertEquals(panel.bodyTop(), panel.textBottomWithBody(),
+                "with a body the text stops where the body starts");
+        assertTrue(panel.bodyFits(), "the shipped panel must have room for the block, got a "
+                + panel.bodyHeight() + " px region for a "
+                + panel.bodyLayout().size(RecipePageLayout.BLOCK_HEIGHT) + " px block");
+
+        final RecipePageLayout layout = panel.bodyLayout();
+        assertTrue(layout.scale() > RecipePageLayout.MIN_SCALE && layout.scale() <= 1.0F,
+                "the block fits the panel scaled down from the original's box, never enlarged, got "
+                        + layout.scale() + " for a " + RecipePageLayout.BLOCK_WIDTH + "x"
+                        + RecipePageLayout.BLOCK_HEIGHT + " block in " + panel.width() + "x"
+                        + panel.bodyHeight());
+        assertEquals(Math.round(RecipePageLayout.BLOCK_WIDTH * layout.scale()),
+                panel.bodyLayout().size(RecipePageLayout.BLOCK_WIDTH), "the frame is the scaled box");
+        assertTrue(layout.x(0) >= panel.left()
+                        && layout.x(0) + layout.size(RecipePageLayout.BLOCK_WIDTH) <= right + 1,
+                "the block's frame is centred in the panel column: " + layout.x(0) + " + "
+                        + layout.size(RecipePageLayout.BLOCK_WIDTH) + " in " + panel.left() + " .. " + right);
+        assertTrue(layout.y(0) >= panel.bodyTop()
+                        && layout.y(0) + layout.size(RecipePageLayout.BLOCK_HEIGHT) <= panel.bottom(),
+                "the block's frame is inside the region it was given");
+
+        for (int col = 0; col < RecipePageLayout.MAX_GRID; col++) {
+            assertTrue(layout.cellX(col) >= panel.left()
+                            && layout.cellX(col) + RecipePageLayout.ITEM <= right,
+                    "grid column " + col + "'s item draws outside the panel column");
+            assertTrue(layout.slotX(col) >= panel.left() - 1
+                            && layout.slotX(col) + layout.slotSize() <= right + 1,
+                    "grid column " + col + "'s slot square draws outside the panel column");
+        }
+        for (int row = 0; row < RecipePageLayout.MAX_GRID; row++) {
+            assertTrue(layout.cellY(row) >= panel.bodyTop()
+                            && layout.cellY(row) + RecipePageLayout.ITEM <= panel.bottom() + 1,
+                    "grid row " + row + "'s item draws outside the region");
+            assertTrue(layout.slotY(row) >= panel.bodyTop() - 1
+                            && layout.slotY(row) + layout.slotSize() <= ThaumonomiconScreen.PANE_HEIGHT,
+                    "grid row " + row + "'s slot square draws outside the pane");
+        }
+        assertTrue(layout.resultX() >= panel.left()
+                        && layout.resultX() + RecipePageLayout.ITEM <= right
+                        && layout.resultY() >= panel.bodyTop()
+                        && layout.resultY() + RecipePageLayout.ITEM <= panel.bottom(),
+                "the result beside the grid draws outside the panel");
+        assertTrue(layout.headerX(40) >= panel.left() && layout.headerX(40) + 40 <= right,
+                "the station label, centred on the original's centre line, draws outside the panel");
+    }
+
+    /**
+     * The panel with no room for a picture shows its text body: the block is never
+     * scaled below {@link RecipePageLayout#MIN_SCALE}, so the region gives, and the
+     * text column is the whole panel again — the same shape as an entry with no
+     * linked row and a row the live {@code RecipeManager} does not carry.
+     */
+    @Test
+    void thePanelWithNoRoomForTheBlockKeepsItsTextBody() {
+        final int pitch = ThaumonomiconScreen.DETAIL_PITCH;
+        final BookDetailPanelLayout cramped = new BookDetailPanelLayout(
+                0, 0, panelWidth() / 5,
+                BookDetailPanelLayout.TEXT_TOP_PAD + BookDetailPanelLayout.TEXT_ROWS_KEPT * pitch, pitch);
+        assertTrue(cramped.bodyHeight() < 0,
+                "the kept text already reaches the panel's bottom, got " + cramped.bodyHeight());
+        assertEquals(RecipePageLayout.MIN_SCALE, cramped.bodyScale(), 0.0F,
+                "the fit floors at MIN_SCALE: a picture is never scaled into unreadability");
+        assertTrue(!cramped.bodyFits(), "no room for the block: the panel must draw its text body");
+        assertTrue(cramped.bodyLayout().size(RecipePageLayout.BLOCK_HEIGHT) > cramped.bodyHeight(),
+                "the block at its floor is taller than the region, which is why the region gives");
+        assertEquals(cramped.bottom(), cramped.textBottom(), "the text keeps the whole panel");
+    }
+
+    /**
+     * The window draws the body the panel reserves, and it is the only place a
+     * recipe type is touched: the server-safe half — the detail record, the page
+     * state, the panel geometry, the join — carries the row's <b>id</b> and imports
+     * no Minecraft type, so the game probes build the panel on a dedicated server
+     * (D-019 rule 2) and the picture can only come from the client's live
+     * {@code RecipeManager}.
+     */
+    @Test
+    void theWindowResolvesTheRowIdTheServerSafeHalfCarries() throws Exception {
+        final String source = stripComments(readSource(SCREEN_SOURCE));
+        assertTrue(source.contains("BookDetailPanelLayout"),
+                "the window splits the panel through the record that owns the geometry");
+        assertTrue(source.contains("textBottomWithBody()") && source.contains("bodyFits()"),
+                "the text stops at the body, and the record decides when there is no room for one");
+        assertTrue(source.contains("renderRecipeBody"), "the window draws the row's picture");
+        assertTrue(source.contains("RecipePageDisplay.resolve(") && source.contains("getRecipeManager()"),
+                "the picture is read out of the live RecipeManager, in the window");
+        assertTrue(source.contains("detail.recipeId()"),
+                "the window asks the detail for the row id; it composes no link of its own");
+        assertTrue(source.contains("SLOT_SPRITE") && source.contains("renderTooltip"),
+                "vanilla slot framing and the original's ingredient tooltip (BD-17, GuiResearchRecipe.java:807-818, 866-884)");
+        assertFalse(source.contains("net.minecraft.world.item.crafting"),
+                "the window touches no recipe type: RecipePageDisplay is the seam");
+        for (final String serverSafe : List.of("research/ResearchDetailModel.java",
+                "research/book/BookPageView.java", "research/book/BookDetailPanelLayout.java",
+                "research/book/ResearchRecipeLinks.java")) {
+            final String stripped = stripComments(readSource(serverSafe));
+            assertFalse(stripped.contains("net.minecraft"),
+                    serverSafe + " is the measurable half of the page body and must import no Minecraft"
+                            + " type — it carries the row's id, never a recipe (D-019 rule 2)");
+        }
+        assertTrue(java.util.Arrays.stream(ResearchDetailModel.Detail.class.getRecordComponents())
+                        .anyMatch(component -> "recipeId".equals(component.getName())
+                                && component.getType() == String.class),
+                "the detail carries the row's id as a String, so the page state stays id-only");
+    }
+
+    /** The panel's column, as the shipped screen sizes it. */
+    private static int panelWidth() {
+        return ThaumonomiconScreen.DETAIL_WIDTH;
     }
 
     /** The comments stripped, so the scans above target the executable code. */

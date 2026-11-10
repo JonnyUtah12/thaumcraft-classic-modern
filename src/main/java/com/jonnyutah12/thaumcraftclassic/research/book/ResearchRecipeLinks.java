@@ -1,5 +1,8 @@
 package com.jonnyutah12.thaumcraftclassic.research.book;
 
+import com.jonnyutah12.thaumcraftclassic.research.ResearchEntryData;
+import com.jonnyutah12.thaumcraftclassic.research.ResearchPageData;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,5 +93,59 @@ public record ResearchRecipeLinks(String originalKey, String researchKey, String
     /** The whole join, keyed by the original recipes-map key. */
     public static Map<String, ResearchRecipeLinks> table() {
         return BY_ORIGINAL_KEY;
+    }
+
+    /**
+     * The vanilla crafting row one page draws, or null. The page carries the
+     * original's recipes-map key (the shipped graph kept that half of the pair —
+     * {@code ConfigResearch.java:2661-2667} built the KNOWFRAG page from
+     * {@code recipes.get("KnowFrag")}) and this join is the map from that key to
+     * the port's row id.
+     *
+     * <p>Two guards, both from the ledger: the link must name <b>this</b> entry
+     * (the row's {@code research=} column is the entry it belongs to, so a page
+     * in one entry can never draw the row of another), and the page must be the
+     * crafting kind the join covers — the port's own recipe types carry a
+     * {@code research} field in their JSON and are drawn by their own cards
+     * (BD-17's follow-ups), not by the vanilla-crafting path.</p>
+     *
+     * <p>This is the rule, in one place: the page pager
+     * ({@link ThaumonomiconBook#frame()}) and the book screen's detail panel
+     * (through the entry detail's {@code recipeId}) both ask it, so a page and a
+     * panel cannot disagree about which row an entry draws.</p>
+     */
+    public static String vanillaCraftingRowId(final ResearchEntryData entry, final ResearchPageData page) {
+        if (entry == null || page == null
+                || page.type() != ResearchPageData.Type.NORMAL_CRAFTING) {
+            return null;
+        }
+        final ResearchRecipeLinks link = byOriginalKey(page.recipe());
+        if (link == null || !link.researchKey().equals(entry.key())) {
+            return null;
+        }
+        return link.recipeId();
+    }
+
+    /**
+     * The row an <b>entry</b> draws as its page body: the row of the first of
+     * its pages the join links (BD-64 — the unified book screen lists entries
+     * and shows one detail panel, so the panel asks the entry, not a page index).
+     *
+     * @return the row id, or null when no page of the entry names a shipped
+     *     vanilla crafting row — which is the state of 44 of the graph's 45
+     *     {@code normal_crafting} pages, whose recipes-map keys have no ledger
+     *     row implemented yet.
+     */
+    public static String linkedRowOf(final ResearchEntryData entry) {
+        if (entry == null || entry.pages() == null) {
+            return null;
+        }
+        for (final ResearchPageData page : entry.pages()) {
+            final String row = vanillaCraftingRowId(entry, page);
+            if (row != null) {
+                return row;
+            }
+        }
+        return null;
     }
 }

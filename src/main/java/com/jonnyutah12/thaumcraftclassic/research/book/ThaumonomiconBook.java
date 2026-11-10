@@ -170,31 +170,14 @@ public final class ThaumonomiconBook {
     }
 
     /**
-     * The vanilla crafting row this page draws, or null (TC-M3-04-s-iv-b, closes
-     * BD-19). The original's {@code normal_crafting} page named a key of the
-     * {@code ConfigResearch.recipes} map and its renderer drew that object
-     * ({@code ConfigResearch.java:2661-2667} for KNOWFRAG,
-     * {@code GuiResearchRecipe.java:239-262} + {@code 755-880} for the drawing);
-     * the shipped graph kept the page's half of the pair, so the page's own
-     * {@code recipe} key is the selector here and
-     * {@link ResearchRecipeLinks} is the map from that key to the port's row id.
-     *
-     * <p>Two guards, both from the ledger: the link must name <b>this</b> entry
-     * (the row's {@code research=} column is the entry it belongs to, so a page
-     * in one entry can never draw the row of another), and the page must be the
-     * crafting kind the join covers — the port's own recipe types carry a
-     * {@code research} field in their JSON and are drawn by their own cards
-     * (BD-17's follow-ups), not by the vanilla-crafting path.</p>
+     * The vanilla crafting row this page draws, or null (TC-M3-04-s-iv-b). The
+     * rule is the join's — {@link ResearchRecipeLinks#vanillaCraftingRowId}
+     * carries the provenance and both guards — and the unified book screen's
+     * detail panel asks the same rule through the entry detail's
+     * {@code recipeId}, so the pager and the panel cannot name different rows.
      */
     private static String vanillaCraftingRowId(final ResearchEntryData entry, final ResearchPageData page) {
-        if (page.type() != ResearchPageData.Type.NORMAL_CRAFTING) {
-            return null;
-        }
-        final ResearchRecipeLinks link = ResearchRecipeLinks.byOriginalKey(page.recipe());
-        if (link == null || !link.researchKey().equals(entry.key())) {
-            return null;
-        }
-        return link.recipeId();
+        return ResearchRecipeLinks.vanillaCraftingRowId(entry, page);
     }
 
     private boolean isRevealed(final ResearchPageData page) {

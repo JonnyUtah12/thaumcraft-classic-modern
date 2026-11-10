@@ -2,6 +2,7 @@ package com.jonnyutah12.thaumcraftclassic.research;
 
 import com.jonnyutah12.thaumcraftclassic.player.PlayerKnowledgeData;
 import com.jonnyutah12.thaumcraftclassic.research.book.BookNoteRequest;
+import com.jonnyutah12.thaumcraftclassic.research.book.ResearchRecipeLinks;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -151,10 +152,22 @@ public final class ResearchDetailModel {
      * The whole detail for one entry. The lines the panel draws come from this
      * record ({@link #lines()}), so the panel's content is measurable without a
      * window.
+     *
+     * <p>{@code recipeId} is the entry's page body (TC-M3-04-s-iv-b-2, closes
+     * BD-64): the vanilla crafting row the entry's own {@code normal_crafting}
+     * page names, through the ledger's {@code research=} join
+     * ({@link ResearchRecipeLinks#linkedRowOf}). Like the page state's
+     * {@code BookPageView.recipeId}, it is the row's <b>id</b> only — this class
+     * imports no {@code net.minecraft.world.item.crafting} type — and the client
+     * resolves it against the live {@code RecipeManager} before drawing, so a
+     * row gated out of the pack draws no body and the panel keeps its text.
+     * Null is the normal case: 44 of the graph's 45 {@code normal_crafting}
+     * pages name recipes-map keys whose ledger rows are not implemented, and
+     * every other page kind has no vanilla row to draw.</p>
      */
     public record Detail(String key, String label, String category, Integer pointCost, State state,
                          boolean autoUnlock, int warp, List<AspectRequirement> aspects,
-                         List<Link> links, List<String> missingPrerequisites) {
+                         List<Link> links, List<String> missingPrerequisites, String recipeId) {
 
         public Detail {
             aspects = aspects == null ? List.of() : List.copyOf(aspects);
@@ -381,7 +394,8 @@ public final class ResearchDetailModel {
 
         return new Detail(entry.key(), display(entry.nameEnUs(), entry.key()), entry.category(),
                 entry.complexity(), state, entry.flags() != null && entry.flags().autoUnlock(),
-                entry.warp(), List.copyOf(aspects), List.copyOf(links), List.copyOf(missing));
+                entry.warp(), List.copyOf(aspects), List.copyOf(links), List.copyOf(missing),
+                ResearchRecipeLinks.linkedRowOf(entry));
     }
 
     /** The graph's own edge list for one link kind, in the JSON's order. */

@@ -10,11 +10,16 @@ import com.jonnyutah12.thaumcraftclassic.research.ResearchBrowserModel;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchCategoryData;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchDetailModel;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchManager;
+import com.jonnyutah12.thaumcraftclassic.research.book.BookDetailPanelLayout;
 import com.jonnyutah12.thaumcraftclassic.research.book.BookNoteRequest;
+import com.jonnyutah12.thaumcraftclassic.recipes.RecipePageDisplay;
+import com.jonnyutah12.thaumcraftclassic.recipes.RecipePageLayout;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -24,6 +29,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * The Thaumonomicon browser screen (BOOK-1 / t_1e6b18cc + BOOK-2 / t_10805b95;
@@ -115,6 +121,24 @@ import java.util.List;
  * merged screen: the port has ONE Thaumonomicon, opened by the containerless
  * payload of BOOK-1 and no other path.</p>
  *
+ * <p><b>What TC-M3-04-s-iv-b-2 adds (BD-64 closed).</b> The detail panel draws
+ * the recipe page body of the entry it shows: the vanilla crafting row that
+ * entry's own {@code normal_crafting} page names, joined from the
+ * content-mapping ledger's {@code research=} column by
+ * {@code ResearchRecipeLinks}. The entry detail carries the row's <b>id</b> only
+ * ({@link ResearchDetailModel.Detail#recipeId()} — that class imports no
+ * {@code net.minecraft.world.item.crafting} type); this screen resolves the id
+ * against the client's live {@code RecipeManager}
+ * ({@code RecipePageDisplay#resolve}) and draws the grid the game actually
+ * crafts with, at the original's {@code drawCraftingPage} offsets through
+ * {@code RecipePageLayout}, inside the region {@code BookDetailPanelLayout}
+ * reserves at the panel's bottom. A row the client was not sent (its conditions
+ * are not met) draws no body, and neither does an entry with no linked row —
+ * which is 44 of the graph's 45 {@code normal_crafting} pages: the panel keeps
+ * its text body in every one of those cases. The page pager of the node-browser
+ * screen, where an earlier slice first drew this body, stays deleted — the port
+ * has one screen and this is it.</p>
+ *
  * <p><b>Close path.</b> The original overrides no key handler and no
  * {@code doesGuiPauseGame}, so vanilla governs it: ESC closes the screen and
  * the screen is a pause screen in singleplayer. This class keeps both vanilla
@@ -187,6 +211,23 @@ public class ThaumonomiconScreen extends Screen {
     static final int LINK_TEXT = 0xFF9AB4D8;
     /** The band behind a link row under the cursor. */
     static final int LINK_HOVER = 0xFF33405C;
+
+    /**
+     * The vanilla 18x18 dark slot square: the framing of every cell of the
+     * recipe body. The original framed its grid with the 52x52
+     * {@code gui_researchbook_overlay.png} region and a 32x32 result plate
+     * ({@code GuiResearchRecipe.java:783-789}), an All Rights Reserved file this
+     * repo never commits (D-004), so the cells use the vanilla sprite the book
+     * already uses for its page panel — recorded as BD-17's art delta.
+     */
+    static final ResourceLocation SLOT_SPRITE =
+            ResourceLocation.withDefaultNamespace("container/slot");
+
+    /** The code-drawn outline of the recipe body block (BD-17: no ARR backdrop). */
+    static final int BODY_FRAME = 0xFF555555;
+
+    /** The station label over the grid — the original's centred header line. */
+    static final int BODY_LABEL = DIM_TEXT;
 
     /**
      * The original's static category memory ({@code GuiResearchBrowser.java:63}
@@ -538,6 +579,16 @@ public class ThaumonomiconScreen extends Screen {
             return;
         }
 
+        // The page body this entry's normal_crafting page names, read out of the
+        // live manager before the text is laid out: when there is no body — no
+        // linked row, no world, or a row the pack gated out — the text keeps the
+        // whole panel, which is the degradation the card asks for (BD-64).
+        final BookDetailPanelLayout panel = new BookDetailPanelLayout(
+                panelLeft, panelTop, DETAIL_WIDTH, panelBottom, DETAIL_PITCH);
+        final Optional<RecipePageDisplay> pageBody = resolveBody(detail);
+        final boolean drawBody = pageBody.isPresent() && panel.bodyFits();
+        final int textBottom = drawBody ? panel.textBottomWithBody() : panel.textBottom();
+
         // The panel's text, wrapped to the column: the entry's own label, the
         // model's lines, then the graph's own text for the entry.
         final List<FlatLine> flat = new ArrayList<>();
@@ -566,7 +617,7 @@ public class ThaumonomiconScreen extends Screen {
         int y = panelTop + 3;
         int shown = 0;
         for (final FlatLine line : flat) {
-            if (y + DETAIL_PITCH > panelBottom) {
+            if (y + DETAIL_PITCH > textBottom) {
                 break;
             }
             final int lineTop = y;
@@ -588,6 +639,109 @@ public class ThaumonomiconScreen extends Screen {
             guiGraphics.drawString(this.font, Component.literal("+" + (flat.size() - shown) + " more"),
                     panelLeft, y, DIM_TEXT);
         }
+        if (drawBody) {
+            renderRecipeBody(guiGraphics, panel, pageBody.get(), mouseX, mouseY);
+        }
+    }
+
+    /**
+     * Resolve the body of the entry's recipe page out of the {@code RecipeManager}
+     * the client was sent (TC-M3-04-s-iv-b-2, closes BD-64). The page state
+     * carries the row's <b>id</b> only — {@link ResearchDetailModel.Detail#recipeId()},
+     * joined from the content-mapping ledger's {@code research=} column by
+     * {@code ResearchRecipeLinks} — so this is where a Minecraft recipe type is
+     * first touched, on the client, and where the picture can only ever be the
+     * row the game crafts with.
+     *
+     * @return the row's picture, or empty when the entry names no row, no world
+     *     is loaded, or the live manager does not carry the row (its
+     *     {@code neoforge:item_exists} conditions are not met) — in every one of
+     *     those cases the panel shows its text body and draws no grid.
+     */
+    private Optional<RecipePageDisplay> resolveBody(final ResearchDetailModel.Detail detail) {
+        if (detail == null || detail.recipeId() == null) {
+            return Optional.empty();
+        }
+        final ClientLevel level = this.minecraft == null ? null : this.minecraft.level;
+        if (level == null) {
+            return Optional.empty();
+        }
+        return RecipePageDisplay.resolve(ResourceLocation.parse(detail.recipeId()),
+                level.getRecipeManager(), level.registryAccess());
+    }
+
+    /**
+     * Draw the resolved row in the panel's body region (BD-64), at the original's
+     * offsets — the station label centred on its centre line, the ingredient grid
+     * at {@code x + 16 + col * 32} / {@code y + 76 + row * 32}, the result beside
+     * it at {@code x + 48, y + 32} ({@code GuiResearchRecipe#drawCraftingPage},
+     * {@code reference/decompiled/thaumcraft/thaumcraft/client/gui/GuiResearchRecipe.java:755-946})
+     * — scaled down, never up, to fit the region by {@link RecipePageLayout}, the
+     * book's panel being narrower than the original's 256x181 pane.
+     *
+     * <p>The items are vanilla {@link GuiGraphics#renderItem} draws and every
+     * cell is framed by the vanilla slot square: the original's parchment
+     * backdrop and result plate are All Rights Reserved and are never committed
+     * (D-004), which is BD-17's art delta, and the block's outline is code-drawn.
+     * Every cell and the result carry the original's ingredient tooltip (its
+     * {@code drawCraftingPage} mouse loops, lines 807-818 and 866-884), which is
+     * what shows a {@code neoforge:components} ingredient's per-meta name — the
+     * port's stand-in for the original's {@code getDisplayName(ItemStack)} path
+     * (lines 791-793).</p>
+     */
+    private void renderRecipeBody(final GuiGraphics guiGraphics, final BookDetailPanelLayout panel,
+                                  final RecipePageDisplay row, final int mouseX, final int mouseY) {
+        final RecipePageLayout layout = panel.bodyLayout();
+        final int slot = layout.slotSize();
+
+        // The station label, centred on the original's centre line (lines 821-823
+        // shaped, 887-890 shapeless); the keys ship verbatim in en_us.json.
+        final String label = Component.translatable(row.station().labelKey()).getString();
+        guiGraphics.drawString(this.font, label, layout.headerX(this.font.width(label)),
+                layout.y(0), BODY_LABEL, false);
+
+        // The original's ARR backdrop is not shipped: a code-drawn box (BD-17).
+        guiGraphics.renderOutline(layout.x(0), layout.y(0),
+                layout.size(RecipePageLayout.BLOCK_WIDTH),
+                layout.size(RecipePageLayout.BLOCK_HEIGHT), BODY_FRAME);
+
+        ItemStack hover = null;
+        for (int cell = 0; cell < row.grid().size(); cell++) {
+            final int col = cell % row.width();
+            final int gridRow = cell / row.width();
+            final int itemX = layout.cellX(col);
+            final int itemY = layout.cellY(gridRow);
+            guiGraphics.blitSprite(SLOT_SPRITE, layout.slotX(col), layout.slotY(gridRow), slot, slot);
+            final ItemStack stack = row.grid().get(cell);
+            if (!stack.isEmpty()) {
+                guiGraphics.renderItem(stack, itemX, itemY);
+                guiGraphics.renderItemDecorations(this.font, stack, itemX, itemY);
+                if (within(mouseX, mouseY, itemX, itemY,
+                        itemX + RecipePageLayout.ITEM, itemY + RecipePageLayout.ITEM)) {
+                    hover = stack;
+                }
+            }
+        }
+
+        // The result beside the grid (lines 798-799, tooltip 807-818).
+        final int resultX = layout.resultX();
+        final int resultY = layout.resultY();
+        guiGraphics.blitSprite(SLOT_SPRITE, layout.resultSlotX(), layout.resultSlotY(), slot, slot);
+        guiGraphics.renderItem(row.result(), resultX, resultY);
+        guiGraphics.renderItemDecorations(this.font, row.result(), resultX, resultY);
+        if (within(mouseX, mouseY, resultX, resultY,
+                resultX + RecipePageLayout.ITEM, resultY + RecipePageLayout.ITEM)) {
+            hover = row.result();
+        }
+        if (hover != null) {
+            guiGraphics.renderTooltip(this.font, hover, mouseX, mouseY);
+        }
+    }
+
+    /** The cursor inside a box, as the original's tooltip loops tested it. */
+    private static boolean within(final double mouseX, final double mouseY,
+                                  final int x1, final int y1, final int x2, final int y2) {
+        return mouseX >= x1 && mouseX <= x2 && mouseY >= y1 && mouseY <= y2;
     }
 
     /** One wrapped row of the detail panel, with its colour and click target. */

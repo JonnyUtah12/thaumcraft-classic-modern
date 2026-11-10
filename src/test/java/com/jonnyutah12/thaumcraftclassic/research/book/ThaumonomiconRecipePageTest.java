@@ -3,6 +3,7 @@ package com.jonnyutah12.thaumcraftclassic.research.book;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.jonnyutah12.thaumcraftclassic.registration.ContentMappingCsv;
+import com.jonnyutah12.thaumcraftclassic.research.ResearchDetailModel;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchEntryData;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchGraph;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchGraphLoader;
@@ -296,6 +297,75 @@ class ThaumonomiconRecipePageTest {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    // ------------------------------------------------- the panel's body (BD-64 open half)
+
+    /**
+     * <b>The DRAW's data half (TC-M3-04-s-iv-b-2, closes BD-64).</b> The unified
+     * book screen shows one entry at a time in its detail panel, so the panel asks
+     * the <b>entry</b>, not a page index. The entry detail therefore carries the
+     * row of the entry's own linked page — the same join, the same two guards —
+     * and an entry that does not own a linked page carries nothing.
+     *
+     * <p>The page pager and the panel cannot then disagree: the id on the page
+     * state and the id on the detail are the id of the same row, read out of the
+     * ledger's {@code research=} column, and the window resolves that id against
+     * the live {@code RecipeManager} (the in-game probes in
+     * {@code ThaumonomiconRecipePageGameTest} cover the resolution; the pixels are
+     * gated structurally in {@code client.ThaumonomiconDetailPanelContractTest}).</p>
+     */
+    @Test
+    void entryDetailCarriesTheRowOfTheEntryThatOwnsThePage() {
+        final ResearchGraph graph = graph();
+        final ResearchDetailModel details = new ResearchDetailModel(graph);
+
+        final ResearchDetailModel.Detail detail = details.detail("KNOWFRAG", null);
+        assertNotNull(detail, "KNOWFRAG is a shipped entry");
+        assertEquals(ROW, detail.recipeId(),
+                "the panel of the entry whose page names " + MAP_KEY + " must carry the joined row");
+
+        // Page and panel, one rule: the id the panel carries is the id the page carries.
+        final ThaumonomiconBook book = ThaumonomiconBook.open();
+        assertTrue(book.selectEntry("KNOWFRAG"), "the book must open the joined entry");
+        final BookPageView first = book.frame().page();
+        assertNull(first.recipeId(), "KNOWFRAG's text page is a text body, not a grid");
+        assertTrue(book.nextPage(), "the entry has the crafting page the original built");
+        final BookPageView page = book.frame().page();
+        assertEquals(ROW, page.recipeId(), "the page carries the joined row");
+        assertEquals(page.recipeId(), detail.recipeId(),
+                "the panel may not draw a row the entry's own page does not name");
+
+        // The join is entry-scoped: the same page in another entry is no body.
+        final ResearchPageData craftPage = pagesOf(graph.entry("KNOWFRAG")).stream()
+                .filter(data -> data.type() == ResearchPageData.Type.NORMAL_CRAFTING)
+                .findFirst()
+                .orElseThrow();
+        final ResearchEntryData other = graph.entry("BASICTHAUMATURGY");
+        assertNotNull(other, "BASICTHAUMATURGY is a shipped entry");
+        assertTrue(pagesOf(other).stream().anyMatch(data -> data.recipe() != null),
+                "the negative control must be an entry that has its own recipe page");
+        assertNull(ResearchRecipeLinks.vanillaCraftingRowId(other, craftPage),
+                "the joined page pasted into another entry may not draw the row of KNOWFRAG");
+        assertNull(ResearchRecipeLinks.linkedRowOf(other),
+                "BASICTHAUMATURGY's own page names WandBasic, a ledger row the port has not "
+                        + "implemented, so its panel has no body");
+
+        // Exactly one entry has a body today; every other panel is text-only.
+        int withBody = 0;
+        for (final ResearchEntryData entry : graph.entries()) {
+            final ResearchDetailModel.Detail each = details.detail(entry.key(), null);
+            assertNotNull(each, entry.key() + " must build a detail");
+            if (each.recipeId() != null) {
+                withBody++;
+                assertEquals("KNOWFRAG", each.key(),
+                        "only the entry the ledger's research= column names has a page body");
+                assertEquals(ResearchRecipeLinks.linkedRowOf(entry), each.recipeId(),
+                        "the detail's row is the join's row for that entry, not a copy");
+            }
+        }
+        assertEquals(1, withBody, "one ledger row carries a research= key, so exactly one entry's panel "
+                + "has a recipe body and every other panel keeps its text (BD-64)");
     }
 
     private static List<ResearchPageData> pagesOf(final ResearchEntryData entry) {
