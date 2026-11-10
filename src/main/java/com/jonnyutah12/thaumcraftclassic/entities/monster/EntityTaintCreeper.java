@@ -277,6 +277,27 @@ public class EntityTaintCreeper extends EntityTaintedAnimalBase {
         return SoundEvents.CREEPER_HURT; // "mob.creeper.say" (195-196)
     }
 
+    /** DIAG(t_bcbaaaf1): what the installed swell goal captured, for the flake sweep. */
+    public String diagSwell() {
+        final StringBuilder sb = new StringBuilder();
+        for (final net.minecraft.world.entity.ai.goal.WrappedGoal wrapped
+                : this.goalSelector.getAvailableGoals()) {
+            if (wrapped.getGoal() instanceof SwellGoal swell) {
+                sb.append("running=").append(wrapped.isRunning())
+                        .append(" captured=").append(swell.attackTarget == null ? "null"
+                                : swell.attackTarget.getClass().getSimpleName()
+                                        + "#" + swell.attackTarget.getId())
+                        .append(" alive=").append(swell.attackTarget != null && swell.attackTarget.isAlive())
+                        .append(" dist2=").append(swell.attackTarget == null ? -1.0
+                                : this.distanceToSqr(swell.attackTarget))
+                        .append(" los=").append(swell.attackTarget != null
+                                && this.getSensing().hasLineOfSight(swell.attackTarget))
+                        .append(' ');
+            }
+        }
+        return sb.toString();
+    }
+
     /** {@code AICreeperSwell} — canUse 14-18, start 20-23, update 29-38. */
     public final class SwellGoal extends Goal {
         private LivingEntity attackTarget;

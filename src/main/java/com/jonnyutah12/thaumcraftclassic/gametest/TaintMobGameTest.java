@@ -51,6 +51,23 @@ public final class TaintMobGameTest {
                 .count();
     }
 
+    /** DIAG(t_bcbaaaf1) helpers for the fuse-flake sweep; prints only. */
+    private static String diagEnt(final net.minecraft.world.entity.Entity entity) {
+        return entity == null ? "null"
+                : entity.getClass().getSimpleName() + "#" + entity.getId();
+    }
+
+    private static String diagGoals(
+            final java.util.Set<net.minecraft.world.entity.ai.goal.WrappedGoal> goals) {
+        final StringBuilder sb = new StringBuilder();
+        for (final net.minecraft.world.entity.ai.goal.WrappedGoal wrapped : goals) {
+            sb.append(wrapped.getPriority()).append(':')
+                    .append(wrapped.getGoal().getClass().getSimpleName())
+                    .append(wrapped.isRunning() ? "R" : "-").append(' ');
+        }
+        return sb.toString();
+    }
+
     @GameTest(template = "empty")
     public static void taintMobFamilyIsRegisteredWithTheOriginalBoxes(final GameTestHelper helper) {
         assertBox(helper, "taintedchicken", TaintedAnimalAiLogic.CHICKEN.width(),
@@ -207,7 +224,36 @@ public final class TaintMobGameTest {
         level.addFreshEntity(prey);
         creeper.setTarget(prey);
         creeper.setCreeperState(1);
+        // DIAG(t_bcbaaaf1) — the flake sweep: which state the swell byte holds at
+        // the fuse increment, and which selector arm moved it. Prints only.
+        final net.minecraft.world.entity.LivingEntity preTarget = creeper.getTarget();
+        System.out.println("DIAG pre id=" + creeper.getId()
+                + " parity=" + ((creeper.tickCount + creeper.getId()) % 2)
+                + " tick=" + creeper.tickCount + " gameTime=" + level.getGameTime()
+                + " state=" + creeper.getCreeperState() + " target=" + diagEnt(preTarget)
+                + " dist2=" + (preTarget == null ? -1.0 : creeper.distanceToSqr(preTarget))
+                + " los=" + (preTarget == null ? "-" : creeper.getSensing().hasLineOfSight(preTarget)));
+        System.out.println("DIAG sel goals=" + diagGoals(creeper.goalSelector.getAvailableGoals())
+                + " targets=" + diagGoals(creeper.targetSelector.getAvailableGoals()));
+        final java.util.List<net.minecraft.world.entity.player.Player> nearby = level.getEntitiesOfClass(
+                net.minecraft.world.entity.player.Player.class,
+                creeper.getBoundingBox().inflate(32.0, 4.0, 32.0));
+        final StringBuilder players = new StringBuilder();
+        for (final net.minecraft.world.entity.player.Player player : nearby) {
+            players.append(diagEnt(player)).append('@')
+                    .append(String.format(java.util.Locale.ROOT, "%.1f", creeper.distanceToSqr(player)))
+                    .append(' ');
+        }
+        System.out.println("DIAG players n=" + nearby.size() + " [" + players + "]");
         creeper.tick();
+        final net.minecraft.world.entity.LivingEntity postTarget = creeper.getTarget();
+        System.out.println("DIAG post tick=" + creeper.tickCount
+                + " state=" + creeper.getCreeperState() + " fuse=" + creeper.getTimeSinceIgnited()
+                + " target=" + diagEnt(postTarget)
+                + " dist2=" + (postTarget == null ? -1.0 : creeper.distanceToSqr(postTarget))
+                + " goals=" + diagGoals(creeper.goalSelector.getAvailableGoals())
+                + " swell=[" + creeper.diagSwell() + "]");
+        // DIAG(t_bcbaaaf1) end
         helper.assertTrue(creeper.getTimeSinceIgnited() == 1,
                 "the fuse accumulates by the swell state, got " + creeper.getTimeSinceIgnited());
         // the blast is the hand-rolled 1.5F literal, never the loaded field
