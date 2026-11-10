@@ -37,6 +37,16 @@ If a card's scope changes, update this map in the same commit.
 
 ## Shared multi-meta block map (block-class owner → meta → tile/feature owner)
 
+> Provisional registration (TC-M4-04): M6-04c and M6-04d were abandoned
+> mid-implementation, and the infusion altar is the only consumer of
+> blockStoneDevice variants 1-4, so `registration/catalog/M404Infusion`
+> currently registers blockStoneDevice + its block item and binds variants
+> 1 (tilepedestal), 2 (tileinfusionmatrix) and 3/4
+> (tileinfusionpillar). When M6-04c lands, move the block/item rows to its
+> holder; when M6-04d resumes, move the tilepedestal BE holder there. The
+> other variants stay unbound until their owners land
+> (docs/architecture/infusion.md §Registration ownership).
+
 | Block class (owner) | meta | tile / feature | feature owner |
 |---|---|---|---|
 | blockStoneDevice (M6-04c) | 0 | alchemy furnace (basic) | M6-04c |

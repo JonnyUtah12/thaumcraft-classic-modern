@@ -2,6 +2,7 @@ package com.jonnyutah12.thaumcraftclassic;
 
 import com.jonnyutah12.thaumcraftclassic.config.TcConfig;
 import com.jonnyutah12.thaumcraftclassic.gametest.ConfigParityGameTest;
+import com.jonnyutah12.thaumcraftclassic.gametest.InfusionAltarGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ModNetworkGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.ModSmokeGameTest;
 import com.jonnyutah12.thaumcraftclassic.gametest.PersistenceGameTest;
@@ -12,6 +13,7 @@ import com.jonnyutah12.thaumcraftclassic.gametest.VisCoreGameTest;
 import com.jonnyutah12.thaumcraftclassic.network.ModNetwork;
 import com.jonnyutah12.thaumcraftclassic.player.ModAttachments;
 import com.jonnyutah12.thaumcraftclassic.registration.ModRegistration;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.M404Infusion;
 import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
@@ -51,6 +53,11 @@ public final class ThaumcraftClassic {
         // docs/architecture/registration.md.
         ModRegistration.init(modEventBus);
 
+        // TC-M4-04 infusion altar: blockStoneDevice + the matrix/pillar/arcane-
+        // pedestal block entities and their variant bindings, plus the infusion
+        // recipe types/serializers (docs/architecture/infusion.md).
+        M404Infusion.register(modEventBus);
+
         // TC-M2-02 persistence substrate: player knowledge/warp data attachments
         // (copyOnDeath + S2C sync). The world-side store (WorldMagicData) is a
         // SavedData created lazily per level; chunk hooks self-register via
@@ -81,5 +88,6 @@ public final class ThaumcraftClassic {
         event.register(SoundRegistryGameTest.class);
         event.register(ResearchProgressionGameTest.class);
         event.register(VisCoreGameTest.class);
+        event.register(InfusionAltarGameTest.class);
     }
 }

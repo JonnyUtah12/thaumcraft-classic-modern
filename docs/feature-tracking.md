@@ -26,7 +26,7 @@ evidence). Task ids are Kanban ids on the board.
 | Aspects | api/aspects | TC-M4-01 (t_0cc0a0ca) | DONE (docs/aspects.md) |
 | Vis core | api/visnet, wands | TC-M4-02 (t_d7272167) | NOT STARTED |
 | Arcane workbench | RecipeArcaneWorkbench | TC-M4-03 (t_81c79f33) | NOT STARTED |
-| Infusion altar | TileInfusion* | TC-M4-04 (t_30961958) | NOT STARTED |
+| Infusion altar | TileInfusion* | TC-M4-04 (t_30961958) | DONE (docs/architecture/infusion.md) |
 | Alchemy/crucible | TileCrucible* | TC-M4-05 (t_cdece7cd) | NOT STARTED |
 | Essentia storage | TileSmelter*, jars | TC-M4-06 (t_e9d23e1c) | NOT STARTED |
 | Essentia transport | tube network | TC-M4-07 (t_2047bca5) | NOT STARTED |
