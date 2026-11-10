@@ -207,7 +207,13 @@ public final class TaintMobGameTest {
         level.addFreshEntity(prey);
         creeper.setTarget(prey);
         creeper.setCreeperState(1);
+        // t_a1670574 DIAGNOSTIC: read the axis BEFORE the probe's own tick
+        final String tcPre = tcAxisSample(helper, creeper, prey, "pre");
         creeper.tick();
+        // ... and AFTER it, at the asserted tick, printed before the assert so a RED
+        // leg carries its own sample
+        ThaumcraftClassic.LOGGER.info("[TC-A1670574] {} | {}", tcPre,
+                tcAxisSample(helper, creeper, prey, "post"));
         helper.assertTrue(creeper.getTimeSinceIgnited() == 1,
                 "the fuse accumulates by the swell state, got " + creeper.getTimeSinceIgnited());
         // the blast is the hand-rolled 1.5F literal, never the loaded field
@@ -249,5 +255,103 @@ public final class TaintMobGameTest {
                         .isPistonFamily(Blocks.STONE.defaultBlockState()),
                 "stone is not a piston");
         helper.succeed();
+    }
+
+    // ---- t_a1670574 DIAGNOSTIC (not for commit): the axis the fuse rides on ----
+
+    private static String tcAxisSample(final GameTestHelper helper, final EntityTaintCreeper creeper,
+            final EntityTaintChicken prey, final String when) {
+        final ServerLevel level = helper.getLevel();
+        final BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+        final StringBuilder sb = new StringBuilder();
+        sb.append("when=").append(when)
+                .append(" probeTick=").append(helper.getTick())
+                .append(" origin=").append(origin.getX()).append(',').append(origin.getY())
+                .append(',').append(origin.getZ())
+                .append(" align16=").append(Math.floorMod(origin.getX(), 16))
+                .append(',').append(Math.floorMod(origin.getZ(), 16))
+                .append(" id=").append(creeper.getId())
+                .append(" tickCount=").append(creeper.tickCount)
+                .append(" parity(t+id)%2=").append((creeper.tickCount + creeper.getId()) % 2)
+                .append(" state=").append(creeper.getCreeperState())
+                .append(" fuse=").append(creeper.getTimeSinceIgnited())
+                .append(" cpos=").append(tcVec(creeper.position()))
+                .append(" ceye=").append(tcVec(creeper.getEyePosition()))
+                .append(" ppos=").append(tcVec(prey.position()))
+                .append(" peye=").append(tcVec(prey.getEyePosition()))
+                .append(" targetIsPrey=").append(creeper.getTarget() == prey)
+                .append(" preyAlive=").append(prey.isAlive())
+                .append(" preyRemoved=").append(prey.isRemoved())
+                .append(" distSqr=").append(Math.round(creeper.distanceToSqr(prey) * 100) / 100.0D)
+                .append(" sensingLos=").append(creeper.getSensing().hasLineOfSight(prey))
+                .append(" rawLos=").append(creeper.hasLineOfSight(prey));
+        final net.minecraft.world.phys.HitResult hit = level.clip(
+                new net.minecraft.world.level.ClipContext(creeper.getEyePosition(),
+                        prey.getEyePosition(), net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                        net.minecraft.world.level.ClipContext.Fluid.NONE, creeper));
+        sb.append(" clip=").append(hit.getType());
+        if (hit instanceof net.minecraft.world.phys.BlockHitResult blockHit) {
+            sb.append('@').append(blockHit.getBlockPos()).append('=')
+                    .append(level.getBlockState(blockHit.getBlockPos()).getBlock());
+        }
+        final StringBuilder cells = new StringBuilder();
+        for (int dx = 0; dx <= 3; dx++) {
+            for (int dy = 0; dy <= 3; dy++) {
+                final BlockPos cell = origin.offset(dx, dy, 1);
+                cells.append(dx).append('/').append(dy).append('=')
+                        .append(level.getBlockState(cell).getBlock());
+            }
+        }
+        sb.append(" cells=").append(cells)
+                .append(" cCellTicking=").append(level.isPositionEntityTicking(origin.offset(1, 2, 1)))
+                .append(" pCellTicking=").append(level.isPositionEntityTicking(origin.offset(2, 2, 1)));
+        final StringBuilder goals = new StringBuilder();
+        for (final net.minecraft.world.entity.ai.goal.WrappedGoal wrapped
+                : creeper.goalSelector.getAvailableGoals()) {
+            goals.append(' ').append(wrapped.getGoal().getClass().getSimpleName())
+                    .append('@').append(wrapped.getPriority())
+                    .append(wrapped.isRunning() ? "*RUN" : "");
+            if (wrapped.getGoal() instanceof EntityTaintCreeper.SwellGoal swell) {
+                goals.append("(at=").append(tcAttackTarget(swell)).append(')');
+            }
+        }
+        sb.append(" goals=").append(goals);
+        int players = 0;
+        double nearestPlayer = -1.0D;
+        for (final net.minecraft.world.entity.player.Player player : level.players()) {
+            players++;
+            final double d = player.distanceToSqr(creeper);
+            if (nearestPlayer < 0.0D || d < nearestPlayer) {
+                nearestPlayer = d;
+            }
+        }
+        sb.append(" players=").append(players)
+                .append(" nearestPlayerDistSqr=").append(nearestPlayer < 0.0D ? "-1"
+                        : Math.round(nearestPlayer));
+        return sb.toString();
+    }
+
+    private static String tcVec(final net.minecraft.world.phys.Vec3 vec) {
+        return Math.round(vec.x() * 100) / 100.0D + "," + Math.round(vec.y() * 100) / 100.0D
+                + "," + Math.round(vec.z() * 100) / 100.0D;
+    }
+
+    private static String tcAttackTarget(final EntityTaintCreeper.SwellGoal swell) {
+        try {
+            final java.lang.reflect.Field field =
+                    EntityTaintCreeper.SwellGoal.class.getDeclaredField("attackTarget");
+            field.setAccessible(true);
+            final Object target = field.get(swell);
+            if (target == null) {
+                return "null";
+            }
+            if (target instanceof net.minecraft.world.entity.Entity entity) {
+                return entity.getType() + "#" + entity.getId()
+                        + (entity.isAlive() ? "" : "!dead") + (entity.isRemoved() ? "!rm" : "");
+            }
+            return target.toString();
+        } catch (ReflectiveOperationException e) {
+            return "reflectFail:" + e;
+        }
     }
 }
