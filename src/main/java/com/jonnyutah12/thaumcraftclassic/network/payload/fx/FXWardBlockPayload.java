@@ -36,12 +36,25 @@ public record FXWardBlockPayload(BlockPos pos, Direction side, Vec3 hit) impleme
     public static final Type<FXWardBlockPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "fx_ward_block"));
 
+    /** The hit face as its 3D data value, the same encoding the FX payloads use. */
+    private static final StreamCodec<ByteBuf, Direction> SIDE =
+            ByteBufCodecs.VAR_INT.map(
+                    side -> ((Direction) side).get3DDataValue(),
+                    Direction::from3DDataValue);
+
+    /**
+     * The hit point inside the block as three doubles: this mapping has no
+     * {@code Vec3.STREAM_CODEC}, and {@code blockWard} takes the triple as
+     * {@code f, f1, f2} (ClientProxy.java:980-984) — so the wire carries the
+     * triple, and the record reassembles the point the plan jitters from.
+     */
     public static final StreamCodec<ByteBuf, FXWardBlockPayload> STREAM_CODEC = StreamCodec.composite(
             BlockPos.STREAM_CODEC, FXWardBlockPayload::pos,
-            ByteBufCodecs.idMapper(Direction.BYTES_ID_MAPPER, Direction::get3DDataValue),
-            FXWardBlockPayload::side,
-            Vec3.STREAM_CODEC, FXWardBlockPayload::hit,
-            FXWardBlockPayload::new);
+            SIDE, FXWardBlockPayload::side,
+            ByteBufCodecs.DOUBLE, p -> p.hit().x,
+            ByteBufCodecs.DOUBLE, p -> p.hit().y,
+            ByteBufCodecs.DOUBLE, p -> p.hit().z,
+            (pos, side, x, y, z) -> new FXWardBlockPayload(pos, side, new Vec3(x, y, z)));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {

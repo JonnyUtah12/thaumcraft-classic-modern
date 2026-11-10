@@ -15,7 +15,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RegisterClientExtensionsEvent;
+import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 import net.neoforged.neoforge.client.extensions.common.IClientBlockExtensions;
 
 /**
@@ -75,7 +75,7 @@ public final class TcWardHitEffects {
 
     /** {@code ClientProxy.blockWard(world, pos, side, hitVec - pos)} (ClientProxy.java:980-984). */
     public static void ward(final Level level, final BlockHitResult target) {
-        final BlockPos pos = target.getBlockPosition();
+        final BlockPos pos = target.getBlockPos();
         final Vec3 hit = target.getLocation();
         TcEffects.wardBlock(level, pos, target.getDirection(),
                 hit.x - pos.getX(), hit.y - pos.getY(), hit.z - pos.getZ(),

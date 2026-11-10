@@ -201,7 +201,11 @@ public final class FxWardRules {
      */
     public static Vec3 faceOffset(final Direction side, final double rotationDegrees) {
         final double along = side.getStepZ() > 0 ? FACE_OFFSET : -FACE_OFFSET;
-        return new Vec3(0.0, 0.0, along).rotate(baseRotation(side, rotationDegrees));
+        // Vec3 has no Quaternionf overload; the joml vector is what the
+        // rotation acts on, and the port reads it back as the world offset.
+        final org.joml.Vector3f pushed = new org.joml.Vector3f(0.0F, 0.0F, (float) along);
+        pushed.rotate(baseRotation(side, rotationDegrees));
+        return new Vec3(pushed.x, pushed.y, pushed.z);
     }
 
     /**

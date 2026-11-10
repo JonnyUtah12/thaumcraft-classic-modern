@@ -1,5 +1,7 @@
 package com.jonnyutah12.thaumcraftclassic.client.fx;
 
+import net.minecraft.util.Mth;
+
 /**
  * The orbiting shield runes' measured rules — {@code FXShieldRunes.java} line
  * by line, plus its packet handler {@code PacketFXShield.onMessage}

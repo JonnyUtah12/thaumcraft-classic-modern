@@ -36,6 +36,7 @@ import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXInfusionSourcePayl
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXShieldPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXSonicPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXVisDrainPayload;
+import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXWardBlockPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXWispZapPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXZapPayload;
 import io.netty.buffer.ByteBuf;
