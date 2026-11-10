@@ -117,24 +117,26 @@ class RuneSpriteCellParityTest {
 
     @Test
     void theSlicerRowPublishesExactlyTheCellsTheMathDerives() throws IOException {
-        final Path gradle = Paths.get("build.gradle");
+        final Path gradle = repoFile("build.gradle");
         assumeTrue(Files.isRegularFile(gradle),
                 "build.gradle is not shipped to the test runtime: " + gradle.toAbsolutePath());
         final String text = Files.readString(gradle, StandardCharsets.UTF_8);
         final Matcher row = Pattern
-                .compile("'rune':\\s*\\[\\s*from:\\s*\\((\\d+)\\.\\.(\\d+)\\)\\s*,\\s*cell:\\s*(\\d+)\\s*]")
+                .compile("'rune'\\s*:\\s*\\(\\s*(\\d+)\\.\\.(\\d+)\\s*\\)\\s*\\.toList\\(\\)")
                 .matcher(text);
         assertTrue(row.find(),
-                "the slicer task must publish a 'rune' row (docs/particles.md §4.1) — the fixture "
-                        + "overlay's slicer check cannot pass without it");
+                "the slicer task must publish a 'rune' row in originalParticleCells "
+                        + "(docs/particles.md §4.1) — the fixture overlay's slicer check cannot "
+                        + "pass without it");
         assertEquals(FIRST_CELL, Integer.parseInt(row.group(1)),
                 "the rune row's first cell must be the cell the original's UV math derives "
                         + "(FXBlockRunes.java:51-54 → " + FIRST_CELL + "), got " + row.group(1));
         assertEquals(FIRST_CELL + GRID_COLUMNS - 1, Integer.parseInt(row.group(2)),
                 "the rune row must end at the last cell of the original's row, got " + row.group(2));
-        assertEquals(16, Integer.parseInt(row.group(3)),
-                "the fixture sheet is 256x256, so every particle row is 16 px "
-                        + "(ParticleSpriteSlicingTest pins the cell size)");
+        assertEquals(0.999, GRID_COLUMNS * CELL_INSET, 1e-9,
+                "the sheet grid is 16 columns BECAUSE the original's uv inset is 0.999/16 "
+                        + "(FXBlockRunes.java:52, 54) — the same 16 px cell ParticleSpriteSlicingTest "
+                        + "pins on the 256x256 fixture sheet");
     }
 
     /**
@@ -143,19 +145,32 @@ class RuneSpriteCellParityTest {
      */
     @Test
     void everySenderRoutesThroughItsRunePlan() throws IOException {
+        // The original's warding stone has three mutually exclusive branches, and
+        // each sends through the one family (BlockCosmeticSolid.java:285-344).
         assertCalls("src/main/java/com/jonnyutah12/thaumcraftclassic/blocks/BlockCosmeticSolid.java",
-                "TcFxPlans.wardingStoneRunes(", 1, "public void animateTick(");
+                "TcFxPlans.wardingStoneRunes(", 3, "public void animateTick(");
         assertCalls("src/main/java/com/jonnyutah12/thaumcraftclassic/blocks/BlockEldritch.java",
-                "TcFxPlans.eldritchRunes(", 1, "public void deviceDisplayTick(");
+                "TcFxPlans.eldritchTrapRunes(", 1, "public void animateTick(");
         assertCalls("src/main/java/com/jonnyutah12/thaumcraftclassic/tiles/TileInfusionMatrix.java",
-                "TcFxPlans.infusionMatrixRunes(", 1, "public void deviceDisplayTick(");
+                "TcFxPlans.matrixRunes(", 1, "public void deviceDisplayTick(");
+        // Two senders in the original's doScan: the entity scan (68-79) and the
+        // block scan (91-102, 132-143). The node-tile branch (88-107, tile
+        // instanceof INode) has no counterpart in the port's scan, so there is
+        // nothing there to hook (node milestone).
         assertCalls("src/main/java/com/jonnyutah12/thaumcraftclassic/items/ItemThaumometer.java",
-                "TcFxPlans.thaumometerScanRunes(", 2, "private PendingScan doScan(");
+                "TcFxPlans.scanEntityRunes(", 1, "private PendingScan doScan(");
+        assertCalls("src/main/java/com/jonnyutah12/thaumcraftclassic/items/ItemThaumometer.java",
+                "TcFxPlans.scanBlockRunes(", 1, "private PendingScan doScan(");
+        // The gates that pick the sender, from the same sources.
+        assertCalls("src/main/java/com/jonnyutah12/thaumcraftclassic/blocks/BlockEldritch.java",
+                "EldritchRealmValues.ELDRITCH_TRAP", 2, "public void animateTick(");
+        assertCalls("src/main/java/com/jonnyutah12/thaumcraftclassic/tiles/TileInfusionMatrix.java",
+                "if (this.crafting) {", 1, "public void deviceDisplayTick(");
     }
 
     private static void assertCalls(final String relative, final String call, final int expected,
                                     final String enclosingMethod) throws IOException {
-        final Path source = Paths.get(relative);
+        final Path source = repoFile(relative);
         assumeTrue(Files.isRegularFile(source),
                 "source tree is not shipped to the test runtime: " + source.toAbsolutePath());
         final String text = Files.readString(source, StandardCharsets.UTF_8);
@@ -169,6 +184,23 @@ class RuneSpriteCellParityTest {
         assertEquals(expected, seen,
                 relative + " must call " + call + " " + expected + " time(s) — every sender branch "
                         + "of the original needs its port-side call site");
+    }
+
+    /**
+     * A repo file from the test JVM's working directory. NeoGradle runs unit
+     * tests with the working dir under {@code build/minecraft-junit}, so the
+     * repo-relative candidates must also walk up — the same reason
+     * {@code ParticleSpriteSlicingTest} probes {@code ../reference}.
+     */
+    private static Path repoFile(final String relative) {
+        for (final String candidate : List.of(relative, "../../" + relative,
+                "../../../../" + relative)) {
+            final Path path = Paths.get(candidate);
+            if (Files.isRegularFile(path) || Files.isDirectory(path)) {
+                return path;
+            }
+        }
+        return Paths.get(relative);
     }
 
     private static Set<Integer> range(final int from, final int to) {
@@ -188,7 +220,7 @@ class RuneSpriteCellParityTest {
         if (wired != null) {
             return Paths.get(wired);
         }
-        final Path direct = Paths.get("src/main/resources/assets/thaumcraft/particles");
+        final Path direct = repoFile("src/main/resources/assets/thaumcraft/particles");
         return Files.isDirectory(direct) ? direct
                 : Paths.get("src/main/resources/assets/minecraft/particles");
     }

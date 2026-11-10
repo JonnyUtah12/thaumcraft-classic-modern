@@ -49,6 +49,14 @@ public final class TcParticleProviders {
         event.registerSpriteSet(ModParticles.WISP.get(), TcWispParticle.Provider::new);
         event.registerSpriteSet(ModParticles.WISP_EG.get(), TcWispEgParticle.Provider::new);
         event.registerSpriteSet(ModParticles.WISP_ARCING.get(), TcWispArcingParticle.Provider::new);
+        // TC-M7-02-c-s-f3: the rune decal. Its JSON frame list is the 16-cell
+        // row the original's uv addresses (FXBlockRunes.java:51-54: u =
+        // runeIndex % 16 / 16, v = 0.375 -> cells 96..111 of the sheet grid),
+        // sliced at build time (D-004) and proven pixel-equal by
+        // ParticleSpriteSlicingTest. The particle picks the frame itself —
+        // sprites.get(frame, 16) — because the original's runeIndex is rolled
+        // once per particle (line 33), not advanced per tick.
+        event.registerSpriteSet(ModParticles.RUNE.get(), TcRuneParticle.Provider::new);
     }
 
     private TcParticleProviders() {

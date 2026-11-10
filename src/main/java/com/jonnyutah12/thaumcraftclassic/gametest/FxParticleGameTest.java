@@ -13,7 +13,6 @@ import com.jonnyutah12.thaumcraftclassic.client.fx.TcSparkleOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispArcingOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispEgOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispOptions;
-import com.jonnyutah12.thaumcraftclassic.blocks.BlockEldritch;
 import com.jonnyutah12.thaumcraftclassic.registration.ModParticles;
 import io.netty.buffer.Unpooled;
 import java.util.List;
@@ -518,7 +517,7 @@ public final class FxParticleGameTest {
         assertAxis(helper, front.u(), 0.0, 1.0, 0.0, "yaw 0: the sprite's up axis stays world +Y");
         assertAxis(helper, front.v(), -1.0, 0.0, 0.0, "yaw 0: Rz(90) puts the sprite's right axis on -X");
         assertAxis(helper, front.normal(), 0.0, 0.0, 1.0, "yaw 0: the decal faces +Z");
-        assertAxis(helper, front.offset(), -0.2, 0.1, -0.51,
+        assertAxis(helper, front.offset(), -0.2, 0.1, -0.51, 1e-6,
                 "the ofx/ofy/-0.51 translate runs through the SAME rotation (FXBlockRunes.java:50)");
 
         final TcPlanarQuad right = TcPlanarQuad.runeQuad(90, 0.0F, 0.0F, 1.0F);
@@ -537,11 +536,11 @@ public final class FxParticleGameTest {
         // var12 = 0.3F * particleScale (FXBlockRunes.java:55) is the quad's FULL
         // edge: the four vertices sit at +/-0.5*var12 (FXBlockRunes.java:56-59), so
         // the emitted corner — not just a stored extent field — must land there.
-        helper.assertTrue(Math.abs(TcPlanarQuad.runeQuad(0, 0.0F, 0.0F, 1.0F).half() - 0.15) < 1e-9,
+        helper.assertTrue(Math.abs(TcPlanarQuad.runeQuad(0, 0.0F, 0.0F, 1.0F).half() - 0.15) < 1e-6,
                 "half-extent must be 0.15 * particleScale, got " + front.half());
         final double[] corner = front.vertex(12.5, 61.5, 12.5, -0.5, 0.5);
         helper.assertTrue(within(corner[0], 12.15 - 1e-5, 12.15 + 1e-5)
-                        && within(corner[1], 61.35 - 1e-5, 61.35 + 1e-5)
+                        && within(corner[1], 61.45 - 1e-5, 61.45 + 1e-5)
                         && within(corner[2], 11.99 - 1e-5, 11.99 + 1e-5),
                 "yaw 0, ofx 0.1, ofy 0.2, scale 1.0: the s=-0.5/t=+0.5 vertex is the offset "
                         + "(-0.2,0.1,-0.51) plus -0.15*u and +0.15*v, got "
@@ -675,95 +674,95 @@ public final class FxParticleGameTest {
     }
 
     /**
-     * TC-M7-02-c-s-f3-a: the eldritch-sender branch. The original's
-     * {@code BlockEldritch.randomDisplayTick} meta-10 (trap) branch
-     * (BlockEldritch.java:295-311) draws an integer cell inside the block
-     * (296-298), spawns ONLY where the cell is air (299), raises the rune by
-     * y + 0.6 (303), jitters x/z by a raw nextFloat (302, 304), draws the
-     * lifetime as 16 + nextInt(4) (309) and hands gravity 0.0F (310).
+     * TC-M7-02-c-s-f3-a: the Eldritch trap's sender. The original's
+     * {@code BlockEldritch.randomDisplayTick} meta-10 branch
+     * (BlockEldritch.java:295-313) rolls ONE cell at ±1 on each axis
+     * (296-298, three draws, always consumed), spawns ONLY when that cell is
+     * air ({@code isAirBlock}, line 299), puts the rune at a random point
+     * INSIDE the cell (303-305), colours it (0.5+r*0.5, r*0.3, 0.9+r*0.1)
+     * (306-308) and draws {@code dur = 16 + nextInt(4)} (309) with gravity 0.0
+     * (310). Swept, so the cell roll is a drawn set, not one stream.
      */
     @GameTest(template = "empty")
-    public static void eldritchTrapRuneCellsMatchOriginalSender(final GameTestHelper helper) {
+    public static void eldritchTrapRuneMatchesOriginalSender(final GameTestHelper helper) {
         final BlockPos pos = new BlockPos(31, 61, 31);
-        helper.setBlock(pos, ModBlocks.BLOCK_ELDRITCH.get().defaultBlockState()
-                .setValue(BlockEldritch.VARIANT, 10));
-        final int airCells = airNeighbours(helper, pos);
-        helper.assertTrue(airCells >= 1,
-                "the probe needs an air neighbour to see the isAirBlock gate, got " + airCells);
-        final List<ParticleSpawn> runes = TcFxPlans.eldritchRunes(helper.getLevel(), pos, 10,
-                FxParticleCounts.SETTING_ALL, RandomSource.create(19L));
-        helper.assertTrue(runes.size() == airCells,
-                "one rune per AIR cell only (BlockEldritch.java:299), got " + runes.size()
-                        + " runes for " + airCells + " air cells");
-        for (ParticleSpawn spawn : runes) {
+        final TreeSet<String> cells = new TreeSet<>();
+        final TreeSet<Integer> lifetimes = new TreeSet<>();
+        int landed = 0;
+        final int draws = 4000;
+        final RandomSource rand = RandomSource.create(19L);
+        for (int i = 0; i < draws; i++) {
+            // The trap block occupies its own cell, so that cell is never air.
+            final List<ParticleSpawn> runes = TcFxPlans.eldritchTrapRunes(pos, rand,
+                    cell -> !cell.equals(pos));
+            if (runes.isEmpty()) {
+                continue;
+            }
+            landed++;
+            final ParticleSpawn spawn = runes.get(0);
             final TcRuneOptions o = (TcRuneOptions) spawn.options();
-            helper.assertTrue(within(spawn.y(), pos.getY() + 0.6 + 0.5 - 1e-5,
-                            pos.getY() + 0.6 + 0.5 + 1e-5),
-                    "the trap sender raises the rune by y + 0.6 (BlockEldritch.java:303), got "
-                            + spawn.y());
-            helper.assertTrue(within(spawn.x(), pos.getX() + 0.5, pos.getX() + 1.5)
-                            && within(spawn.z(), pos.getZ() + 0.5, pos.getZ() + 1.5),
-                    "the cell roll is an in-block integer cell plus the proxy's 0.5 centring "
-                            + "(BlockEldritch.java:296-298, 302, 304), got "
-                            + spawn.x() + "," + spawn.z());
+            cells.add((long) Math.floor(spawn.x() - 0.5 - pos.getX()) + ","
+                    + (long) Math.floor(spawn.y() - 0.5 - pos.getY()) + ","
+                    + (long) Math.floor(spawn.z() - 0.5 - pos.getZ()));
+            lifetimes.add(o.lifetime());
+            helper.assertTrue(within(spawn.x(), pos.getX() - 0.5, pos.getX() + 2.5)
+                            && within(spawn.y(), pos.getY() - 0.5, pos.getY() + 2.5)
+                            && within(spawn.z(), pos.getZ() - 0.5, pos.getZ() + 2.5),
+                    "the rune goes at a random point inside the rolled cell (x+rand, y+rand, z+rand), "
+                            + "plus the proxy's 0.5 centring (BlockEldritch.java:303-305), got "
+                            + spawn.x() + "," + spawn.y() + "," + spawn.z());
             helper.assertTrue(o.gravity() == 0.0F,
                     "the trap sender's gravity is 0.0 (BlockEldritch.java:310), got " + o.gravity());
-            helper.assertTrue(o.lifetime() >= 3 * 16 && o.lifetime() <= 3 * 19,
-                    "dur = 16 + nextInt(4) (BlockEldritch.java:309) → lifetime 48..57 "
-                            + "(FXBlockRunes.java:26), got " + o.lifetime());
-            // The ctor replaces a zero RED with 1.0 (FXBlockRunes.java:16-18), so a
-            // drawn 0.0 red arrives as 1.0 — the band allows exactly that.
-            final float red = TcFxPlans.red(o.color());
-            helper.assertTrue((red <= 0.3F || red == 1.0F)
-                            && within(TcFxPlans.green(o.color()), 0.0, 0.3)
-                            && within(TcFxPlans.blue(o.color()), 0.0, 0.3),
-                    "the trap sender's colour is (rand*0.3, rand*0.3, rand*0.3) "
-                            + "(BlockEldritch.java:305-307), got 0x" + Integer.toHexString(o.color()));
+            helper.assertTrue(TcFxPlans.red(o.color()) >= 0.5F - QUANT
+                            && within(TcFxPlans.green(o.color()), 0.0 - QUANT, 0.3 + QUANT)
+                            && TcFxPlans.blue(o.color()) >= 0.9F - QUANT,
+                    "the trap colour is (0.5+r*0.5, r*0.3, 0.9+r*0.1) (BlockEldritch.java:306-308), "
+                            + "got 0x" + Integer.toHexString(o.color()));
         }
-        helper.assertTrue(TcFxPlans.eldritchRunes(helper.getLevel(), pos, 0,
-                        FxParticleCounts.SETTING_ALL, RandomSource.create(19L)).isEmpty(),
-                "only meta 10 (ELDRITCH_TRAP) runs the branch (BlockEldritch.java:295)");
-        helper.assertTrue(TcFxPlans.eldritchRunes(helper.getLevel(), pos, 10,
-                        FxParticleCounts.SETTING_MINIMAL, RandomSource.create(19L)).isEmpty(),
-                "particleCount(1) is 0 on the minimal setting, so no trap rune may spawn");
+        helper.assertTrue(landed > 0 && landed < draws,
+                "the isAirBlock gate (BlockEldritch.java:299) must suppress the rune when the rolled "
+                        + "cell is the trap block itself: " + landed + " of " + draws + " landed");
+        helper.assertTrue(cells.size() == 26 && !cells.contains("0,0,0"),
+                "the cell roll (BlockEldritch.java:296-298) must cover the 26 cells around the trap "
+                        + "and never its own cell, got " + cells.size() + " cells: " + cells);
+        helper.assertTrue(lifetimes.equals(steps(3 * 16, 3, 4)),
+                "dur = 16 + nextInt(4) (BlockEldritch.java:309) is 16..19, and the FX ctor's "
+                        + "lifetime is 3*dur (FXBlockRunes.java:26), so the drawn set is "
+                        + "{48,51,54,57}, got " + lifetimes);
         helper.succeed();
     }
 
     /**
      * TC-M7-02-c-s-f3-a: the infusion-matrix sender.
      * {@code TileInfusionMatrix.doEffects} (TileInfusionMatrix.java:812-832,
-     * called from update() behind the client-side gate at line 192) spawns one
-     * rune while a run is crafting (816): cell centre x/z (820, 822), y - 2.0
-     * (821) — two blocks below the matrix, over the central pedestal —
-     * gaussian drift (823-825), dur 25 (826), gravity -0.03 (827). The
-     * {@code infuserstart}/{@code infuser} sounds in the same method belong to
-     * the sound lane, not to this family.
+     * called from update() behind the client-side gate at line 192) adds ONE
+     * rune every client tick while a run is crafting (813): the matrix's own
+     * cell x/z (824, 826) — no 0.5 in the call, so the proxy's centring is the
+     * whole offset — y - 2 (825), colour (0.5+r*0.2, 0.1, 0.7+r*0.3)
+     * (827-829), dur 25 (830), gravity -0.03 (831). No {@code particleCount}
+     * gate and no loop, so neither here. The {@code infuserstart}/{@code
+     * infuser} sounds in the same method belong to the sound lane.
      */
     @GameTest(template = "empty")
     public static void infusionMatrixRuneMatchesOriginalSender(final GameTestHelper helper) {
-        final BlockPos pos = new BlockPos(41, 61, 41);
-        final List<ParticleSpawn> runes = TcFxPlans.infusionMatrixRunes(pos,
-                RandomSource.create(20261109L));
-        helper.assertTrue(runes.size() == 1, "one rune per display tick, got " + runes.size());
-        final ParticleSpawn spawn = runes.get(0);
+        final RandomSource rand = RandomSource.create(20261109L);
+        final ParticleSpawn spawn = TcFxPlans.matrixRunes(41, 61, 41, rand);
         final TcRuneOptions o = (TcRuneOptions) spawn.options();
-        helper.assertTrue(within(spawn.x(), 42.0 - 1e-9, 42.0 + 1e-9)
-                        && within(spawn.z(), 42.0 - 1e-9, 42.0 + 1e-9),
-                "the sender hands the cell centre (x+0.5, z+0.5) and the proxy adds its own 0.5 "
-                        + "(TileInfusionMatrix.java:820, 822), got " + spawn.x() + "," + spawn.z());
+        helper.assertTrue(spawn.x() == 41.5 && spawn.z() == 41.5,
+                "the sender passes the matrix cell itself (TileInfusionMatrix.java:824, 826) and "
+                        + "only the proxy's 0.5 centres it, got " + spawn.x() + "," + spawn.z());
         helper.assertTrue(spawn.y() == 61.0 - 2.0 + 0.5,
-                "TileInfusionMatrix.java:821 spawns at y - 2.0, got " + spawn.y());
+                "TileInfusionMatrix.java:825 spawns at y - 2, got " + spawn.y());
         helper.assertTrue(o.lifetime() == 75,
-                "dur 25 (TileInfusionMatrix.java:826) is 3*25 = 75 ticks (FXBlockRunes.java:26), got "
+                "dur 25 (TileInfusionMatrix.java:830) is 3*25 = 75 ticks (FXBlockRunes.java:26), got "
                         + o.lifetime());
         helper.assertTrue(o.gravity() == -0.03F,
-                "TileInfusionMatrix.java:827 gravity -0.03, got " + o.gravity());
-        final float red = TcFxPlans.red(o.color());
-        helper.assertTrue((red <= 0.5F || red == 1.0F)
-                        && within(TcFxPlans.green(o.color()), 0.15, 0.5)
-                        && within(TcFxPlans.blue(o.color()), 0.75, 1.0),
-                "the matrix colour is (rand*0.5, 0.15+rand*0.35, 0.75+rand*0.25) "
-                        + "(TileInfusionMatrix.java:827-829), got 0x" + Integer.toHexString(o.color()));
+                "TileInfusionMatrix.java:831 gravity -0.03 (the runes rise), got " + o.gravity());
+        helper.assertTrue(within(TcFxPlans.red(o.color()), 0.5 - QUANT, 0.7 + QUANT)
+                        && Math.abs(TcFxPlans.green(o.color()) - 0.1F) < 0.004F
+                        && within(TcFxPlans.blue(o.color()), 0.7 - QUANT, 1.0 + QUANT),
+                "the matrix colour is (0.5+r*0.2, 0.1, 0.7+r*0.3) (TileInfusionMatrix.java:827-829), "
+                        + "got 0x" + Integer.toHexString(o.color()));
         helper.succeed();
     }
 
@@ -772,75 +771,86 @@ public final class FxParticleGameTest {
      * deferred to this card ("the original's blockRunes particle effect
      * ItemThaumometer.java L68-79, L91-102, L132-143"). Two senders are ported:
      * the entity scan (68-79: x-0.5 / z-0.5 (71, 73), y + eyeHeight/2 (72),
-     * colour (0.2, 0.0, 0.1) (74, 76), dur (int)(eyeHeight*15) (77), gravity
-     * +0.03 (78)) and the block scan (91-102 and 132-143: y + 0.25 (95, 136),
-     * dur 15 (100, 141), gravity -0.02 (101, 142)). The third site, the NODE
-     * tile branch (91-102, {@code tile instanceof INode}), has no counterpart in
-     * the port's scan (node milestone), so that site has no sender to hook.
+     * colour (0.3+r*0.7, 0.0, 0.3+r*0.7) (74-76), dur (int)(bbHeight*15) (77),
+     * gravity +0.03 (78)) and the block scan (91-102 and 132-143 send the same
+     * values: y + 0.25 (95, 136), dur 15 (100, 141), gravity +0.03 (101, 142)).
+     * The third site, the NODE tile branch (88-107, {@code tile instanceof
+     * INode}), has no counterpart in the port's scan (node milestone), so that
+     * site has no sender to hook.
      */
     @GameTest(template = "empty")
     public static void thaumometerScanRunesMatchOriginalSender(final GameTestHelper helper) {
-        final BlockPos pos = new BlockPos(7, 61, 7);
-        final double height = 1.8;
-        final List<ParticleSpawn> entity = TcFxPlans.thaumometerScanRunes(pos, height, true,
-                RandomSource.create(5L));
-        helper.assertTrue(entity.size() == 1, "one rune per valid scan, got " + entity.size());
-        final ParticleSpawn e = entity.get(0);
-        final TcRuneOptions eo = (TcRuneOptions) e.options();
-        helper.assertTrue(within(e.x(), 7.5 - 1e-5, 7.5 + 1e-5)
-                        && within(e.z(), 7.5 - 1e-5, 7.5 + 1e-5),
-                "ItemThaumometer.java:71, 73 centre the rune on the block (x-0.5, z-0.5), got "
-                        + e.x() + "," + e.z());
-        helper.assertTrue(within(e.y(), 61.0 + height / 2.0 + 0.5 - 1e-5,
-                        61.0 + height / 2.0 + 0.5 + 1e-5),
-                "ItemThaumometer.java:72 rides y + eyeHeight/2, got " + e.y());
-        helper.assertTrue(eo.lifetime() == 3 * (int) (height * 15.0),
-                "ItemThaumometer.java:77 dur = (int)(eyeHeight*15), got " + eo.lifetime());
+        final RandomSource rand = RandomSource.create(5L);
+        final ParticleSpawn entity = TcFxPlans.scanEntityRunes(7.0, 61.0, 7.0, 1.8, 2.0, rand);
+        final TcRuneOptions eo = (TcRuneOptions) entity.options();
+        helper.assertTrue(entity.x() == 7.0 && entity.z() == 7.0,
+                "ItemThaumometer.java:71, 73 put the rune at posX-0.5 / posZ-0.5, which the proxy's "
+                        + "centring cancels, got " + entity.x() + "," + entity.z());
+        helper.assertTrue(within(entity.y(), 61.0 + 1.8 / 2.0 + 0.5 - 1e-5,
+                        61.0 + 1.8 / 2.0 + 0.5 + 1e-5),
+                "ItemThaumometer.java:72 rides y + eyeHeight/2, got " + entity.y());
+        helper.assertTrue(eo.lifetime() == 3 * (int) (2.0 * 15.0),
+                "ItemThaumometer.java:77 dur = (int)(entityHeight*15) → 90 ticks, got "
+                        + eo.lifetime());
         helper.assertTrue(eo.gravity() == 0.03F,
                 "ItemThaumometer.java:78 gravity +0.03, got " + eo.gravity());
-        helper.assertTrue(within(TcFxPlans.blue(eo.color()), 0.3, 0.5),
-                "ItemThaumometer.java:76 blue = 0.1 + 0.2, got " + TcFxPlans.blue(eo.color()));
+        helper.assertTrue(TcFxPlans.red(eo.color()) >= 0.3F
+                        && TcFxPlans.green(eo.color()) == 0.0F
+                        && TcFxPlans.blue(eo.color()) >= 0.3F,
+                "ItemThaumometer.java:74-76 colour is (0.3+r*0.7, 0.0, 0.3+r*0.7), got 0x"
+                        + Integer.toHexString(eo.color()));
 
-        final List<ParticleSpawn> block = TcFxPlans.thaumometerScanRunes(pos, height, false,
-                RandomSource.create(5L));
-        helper.assertTrue(block.size() == 1, "one rune per valid block scan, got " + block.size());
-        final TcRuneOptions bo = (TcRuneOptions) block.get(0).options();
-        helper.assertTrue(block.get(0).y() == 61.0 + 0.25 + 0.5,
-                "ItemThaumometer.java:95, 136 raise the block scan by y + 0.25, got "
-                        + block.get(0).y());
+        final ParticleSpawn block = TcFxPlans.scanBlockRunes(new BlockPos(7, 61, 7), rand);
+        final TcRuneOptions bo = (TcRuneOptions) block.options();
+        helper.assertTrue(block.y() == 61.0 + 0.25 + 0.5,
+                "ItemThaumometer.java:95, 136 raise the block scan by y + 0.25, got " + block.y());
+        helper.assertTrue(block.x() == 7.5 && block.z() == 7.5,
+                "the block scan sends the block's own coords (ItemThaumometer.java:94, 96), got "
+                        + block.x() + "," + block.z());
         helper.assertTrue(bo.lifetime() == 45,
                 "ItemThaumometer.java:100, 141 dur 15 is 45 ticks, got " + bo.lifetime());
-        helper.assertTrue(bo.gravity() == -0.02F,
-                "ItemThaumometer.java:101, 142 gravity -0.02, got " + bo.gravity());
-        helper.assertTrue(Math.abs(TcFxPlans.red(bo.color()) - 0.2F) < 0.004F
+        helper.assertTrue(bo.gravity() == 0.03F,
+                "ItemThaumometer.java:101, 142 gravity +0.03, got " + bo.gravity());
+        helper.assertTrue(TcFxPlans.red(bo.color()) >= 0.3F
                         && TcFxPlans.green(bo.color()) == 0.0F
-                        && Math.abs(TcFxPlans.blue(bo.color()) - 0.1F) < 0.004F,
-                "ItemThaumometer.java:74, 76 hard-code the scan colour (0.2, 0.0, 0.1) with no "
-                        + "randomness, got 0x" + Integer.toHexString(bo.color()));
+                        && TcFxPlans.blue(bo.color()) >= 0.3F,
+                "ItemThaumometer.java:97-99 colour is the same (0.3+r*0.7, 0.0, 0.3+r*0.7) roll, "
+                        + "got 0x" + Integer.toHexString(bo.color()));
         helper.succeed();
     }
 
-    private static int airNeighbours(final GameTestHelper helper, final BlockPos pos) {
-        int air = 0;
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dy = -1; dy <= 1; dy++) {
-                for (int dz = -1; dz <= 1; dz++) {
-                    if (dx == 0 && dy == 0 && dz == 0) {
-                        continue;
-                    }
-                    if (helper.getLevel().getBlockState(pos.relative(new Vec3(dx, dy, dz))).isAir()) {
-                        air++;
-                    }
-                }
-            }
+    private static TreeSet<Integer> steps(final int from, final int step, final int count) {
+        final TreeSet<Integer> values = new TreeSet<>();
+        for (int i = 0; i < count; i++) {
+            values.add(from + i * step);
         }
-        return air;
+        return values;
+    }
+
+    private static TreeSet<Integer> range(final int from, final int to) {
+        final TreeSet<Integer> values = new TreeSet<>();
+        for (int i = from; i <= to; i++) {
+            values.add(i);
+        }
+        return values;
     }
 
     private static void assertAxis(final GameTestHelper helper, final double[] axis,
             final double x, final double y, final double z, final String what) {
-        helper.assertTrue(Math.abs(axis[0] - x) < 1e-9 && Math.abs(axis[1] - y) < 1e-9
-                        && Math.abs(axis[2] - z) < 1e-9,
+        assertAxis(helper, axis, x, y, z, 1e-9, what);
+    }
+
+    /**
+     * The tolerance form: a value the original carried as a GL float (the
+     * ofx/ofy/-0.51 translate) reaches the double world as float-rounded
+     * (FXBlockRunes.java:50), so an exact-equality axis check is too strict for
+     * it — the axes the quad derives from whole-degree cosines keep 1e-9.
+     */
+    private static void assertAxis(final GameTestHelper helper, final double[] axis,
+            final double x, final double y, final double z, final double tolerance,
+            final String what) {
+        helper.assertTrue(Math.abs(axis[0] - x) < tolerance && Math.abs(axis[1] - y) < tolerance
+                        && Math.abs(axis[2] - z) < tolerance,
                 what + ": expected (" + x + "," + y + "," + z + "), got ("
                         + axis[0] + "," + axis[1] + "," + axis[2] + ")");
     }
@@ -859,6 +869,13 @@ public final class FxParticleGameTest {
             buffer.release();
         }
     }
+
+    /**
+     * The colour an {@code EntityFX} ctor carries is a float triplet; the port stores
+     * the packed RGB the particle receives, so a colour band can miss by one
+     * quantisation step (1/255). Bands are widened by exactly that, never more.
+     */
+    private static final double QUANT = 1.0 / 255.0;
 
     private static boolean within(final double value, final double min, final double max) {
         return value >= min && value <= max;
