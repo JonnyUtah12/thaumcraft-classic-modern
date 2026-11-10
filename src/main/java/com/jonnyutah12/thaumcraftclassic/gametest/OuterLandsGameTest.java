@@ -16,6 +16,7 @@ import com.jonnyutah12.thaumcraftclassic.world.outerlands.gen.GenCommon;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.RegistryOps;
@@ -117,6 +118,143 @@ public final class OuterLandsGameTest {
      * the cited reason in the class javadoc (the harness has no second live
      * dimension; the placement math is the cell's, not the plane's).
      */
+    /** The side bit of a Direction in the packed cell value (N=1, S=2, E=4, W=8). */
+    private static int sideBit(final Direction side) {
+        return switch (side) {
+            case NORTH -> 1;
+            case SOUTH -> 2;
+            case EAST -> 4;
+            case WEST -> 8;
+            default -> 0;
+        };
+    }
+
+    /**
+     * Census of a box: blockEldritch, eldritch stairs, blockEldritchNothing, non-air, air. Reading
+     * a block state loads the chunk synchronously, which is what every probe in this file already
+     * does when it asserts a block; the harness pads carry no loaded tile entities, so the read is
+     * safe (docs/testing.md).
+     */
+    private static int[] census(final ServerLevel level, final int x0, final int x1, final int y0,
+                                final int y1, final int z0, final int z1) {
+        int eldritch = 0;
+        int stairs = 0;
+        int nothing = 0;
+        int nonAir = 0;
+        int airy = 0;
+        final var cursor = new BlockPos.MutableBlockPos();
+        for (int x = x0; x <= x1; x++) {
+            for (int y = y0; y <= y1; y++) {
+                for (int z = z0; z <= z1; z++) {
+                    final BlockState state = level.getBlockState(cursor.set(x, y, z));
+                    if (state.isAir()) {
+                        airy++;
+                    } else {
+                        nonAir++;
+                    }
+                    if (state.is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())) {
+                        eldritch++;
+                    } else if (state.is(CatalogDecorativeBlocks.BLOCK_STAIRS_ELDRITCH.get())) {
+                        stairs++;
+                    } else if (state.is(CatalogEldritchRealm.BLOCK_ELDRITCH_NOTHING.get())) {
+                        nothing++;
+                    }
+                }
+            }
+        }
+        return new int[] {eldritch, stairs, nothing, nonAir, airy};
+    }
+
+    /**
+     * The 11x7 doorway plane one side of an open-sided boss-room cell lays inside the cell
+     * (GenBossRoom.java:103-114: the plane sits at the side's fixed offset, 11 cells wide from the
+     * side's own start, seven rows up from ROOM_Y+2). Census: blockEldritch, stairs, air.
+     */
+    private static int[] doorwayPlane(final ServerLevel level, final int cx, final int cz, final Direction side) {
+        final int x0 = cx * 16;
+        final int z0 = cz * 16;
+        int eldritch = 0;
+        int stairs = 0;
+        int airy = 0;
+        int nothing = 0;
+        final var cursor = new BlockPos.MutableBlockPos();
+        for (int a = 0; a <= 10; a++) {
+            for (int b = 0; b <= 6; b++) {
+                final int x = switch (side) {
+                    case NORTH -> x0 + a;
+                    case SOUTH -> x0 + 20 - a;
+                    case WEST -> x0 + 20 - a;
+                    default -> x0 + 13;
+                };
+                final int z = switch (side) {
+                    case NORTH -> z0 + 3;
+                    case SOUTH -> z0 + 13;
+                    case WEST -> z0 + 20 - a;
+                    default -> z0 + a;
+                };
+                final BlockState state = level.getBlockState(cursor.set(x, OuterLands.ROOM_Y + 2 + b, z));
+                if (state.is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())) {
+                    eldritch++;
+                } else if (state.is(CatalogDecorativeBlocks.BLOCK_STAIRS_ELDRITCH.get())) {
+                    stairs++;
+                } else if (state.is(CatalogEldritchRealm.BLOCK_ELDRITCH_NOTHING.get())) {
+                    nothing++;
+                } else if (state.isAir()) {
+                    airy++;
+                }
+            }
+        }
+        return new int[] {eldritch, stairs, airy, nothing};
+    }
+
+    /** blockEldritch in one world column, y0..y1 inclusive. */
+    private static int countEldritchColumn(final ServerLevel level, final int x, final int z,
+                                           final int y0, final int y1) {
+        int n = 0;
+        final var cursor = new BlockPos.MutableBlockPos();
+        for (int y = y0; y <= y1; y++) {
+            if (level.getBlockState(cursor.set(x, y, z)).is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    /**
+     * blockEldritch in the 1-cell ring around a cell footprint, in the doorway's y band
+     * (ROOM_Y+1 .. ROOM_Y+9 — the pattern rows are ROOM_Y+2 .. ROOM_Y+8; the room shell's own
+     * eldritch sits higher, at ROOM_Y+11, and is not the doorway).
+     */
+    private static int ringEldritch(final ServerLevel level, final int cx, final int cz) {
+        final int x0 = cx * 16;
+        final int z0 = cz * 16;
+        int n = 0;
+        final var cursor = new BlockPos.MutableBlockPos();
+        for (int y = OuterLands.ROOM_Y + 1; y <= OuterLands.ROOM_Y + 9; y++) {
+            for (int a = -1; a <= 16; a++) {
+                if (level.getBlockState(cursor.set(x0 + a, y, z0 - 1)).is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())) {
+                    n++;
+                }
+                if (level.getBlockState(cursor.set(x0 + a, y, z0 + 16)).is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())) {
+                    n++;
+                }
+                if (level.getBlockState(cursor.set(x0 - 1, y, z0 + a)).is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())) {
+                    n++;
+                }
+                if (level.getBlockState(cursor.set(x0 + 16, y, z0 + a)).is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())) {
+                    n++;
+                }
+            }
+        }
+        return n;
+    }
+
+    /** Pad facts for an assertion message: is the chunk holding this column loaded at all? */
+    private static String chunkFacts(final ServerLevel level, final int x, final int z) {
+        return "chunk " + (x >> 4) + "," + (z >> 4) + " "
+                + (level.getChunkSource().hasChunk(x >> 4, z >> 4) ? "loaded" : "NOT LOADED");
+    }
+
     private static ServerLevel build(final GameTestHelper helper) {
         return helper.getLevel();
     }
@@ -401,42 +539,169 @@ public final class OuterLandsGameTest {
     /** Feature 1 (portal room) and feature 2 (the upper-left boss quadrant), high-byte packed. */
     private static final short PORTAL_CELL = (short) (1 << 8);
     private static final short BOSS_CELL = (short) (2 << 8);
+    /** Feature 2 with every side open (N=1 | S=2 | E=4 | W=8) — the shape a doorway is built for. */
+    private static final short OPEN_SIDES_BOSS_CELL = (short) ((2 << 8) | 15);
+
+    /**
+     * The 2x2 boss-room shell over the envelope it covers, from a closed-sided feature-2 cell.
+     * Deterministic: identical in all 12 measurement legs of card t_ec250b53.
+     */
+    private static final int SHELL_ELDRITCH = 3;
+    private static final int SHELL_STAIRS = 46;
+    private static final int SHELL_NOTHING = 689;
+    private static final int SHELL_NONAIR = 1871;
+
+    /** A CLOSED-sided boss-room cell lays no doorway blockEldritch on its planes (the plane cells
+     *  of a closed-sided cell also carry the room shell, so only blockEldritch is the doorway's
+     *  own material). */
+    private static final int CLOSED_PLANE_ELDRITCH = 0;
+
+    /**
+     * One 11x7 doorway plane of an open-sided boss-room cell, per side: blockEldritch / eldritch
+     * stairs / air / blockEldritchNothing (a complete partition of the 77 cells). The four sides
+     * are NOT symmetric: GenBossRoom lays the 7x7 PAT_DOORWAY with its own axis per side, so the
+     * shape is pinned per side and measured, not argued from the pattern's symmetry.
+     */
+    private static final int[] DOOR_NORTH = {0, 4, 21, 7};
+    private static final int[] DOOR_SOUTH = {1, 2, 54, 0};
+    private static final int[] DOOR_EAST = {1, 5, 29, 7};
+    private static final int[] DOOR_WEST = {0, 0, 77, 0};
+
+    /** The closed-sided doorway's write at the absolute world column (0, ROOM_Y..ROOM_Y+12, 0). */
+    private static final int WORLD_COLUMN_LEAK = 7;
+
+    /** The four sides a boss-room cell can lay a doorway on, in the generator's own order. */
+    private static final Direction[] SIDES = {Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
+
+    /** The shipped shape of one side's doorway plane (measured, per side — the sides differ). */
+    private static int[] doorShape(final Direction side) {
+        return switch (side) {
+            case NORTH -> DOOR_NORTH;
+            case SOUTH -> DOOR_SOUTH;
+            case EAST -> DOOR_EAST;
+            default -> DOOR_WEST;
+        };
+    }
 
     @GameTest(template = "empty")
     public static void bossRoomBuildsThroughTheSeam(final GameTestHelper helper) {
         final ServerLevel outer = build(helper);
         helper.assertTrue(EldritchBossRoomHost.hasBuilder(),
                 "the shipped EldritchBossRoomHost seam has no builder (this card owns the install)");
+
+        // Two fixtures, one probe, because the doorway's target cell is a function of the cell's
+        // side bits and the old single fixture could not see the seam it is named for.
+        //
+        //   (40,40)  feature 2, NO wall bits — every side closed. That is the shape that makes
+        //            Gen2x2 lay the 2x2 boss room at all, and it is the shape whose census was
+        //            measured over 12 legs of card t_ec250b53 (identical in all of them).
+        //   (46,46)  the same feature 2 with all four sides OPEN — the shape the doorway is built
+        //            for, and the only shape whose doorway lands inside a readable envelope.
+        //
+        // The side bits are a PRECONDITION of the seam, and the shipped generator proves it:
+        // GenBossRoom sweeps its 7x7 PAT_DOORWAY per side and writes at
+        // (x + xx, ROOM_Y + 2 + b, z + zz), where a side that is CLOSED leaves its xx/zz at 0 —
+        // so with every side closed the whole doorway lands on the cell's NW corner, i.e. for
+        // cell (40,40) on the ABSOLUTE world column (0, y, 0). Measured, 12 legs: 7 blockEldritch
+        // at (0, 52..58, 0) — the seven pattern rows — and airy=0 inside the cell envelope. The
+        // "doorway" a closed-sided cell builds is outside every envelope this probe can read;
+        // that is a defect of the shipped generator (GenBossRoom.java:103-114 with
+        // GenCommon.java:462-471), reported upstream, and it is why the seam needs its own
+        // open-sided cell. The closed-side write is pinned below as a recorded deviation.
         final int cx = 40;
         final int cz = 40;
+        final int dx = 46;
+        final int dz = 46;
         MazeHandler.putToHashMap(outer, new CellLoc(cx, cz), new Cell(BOSS_CELL));
-        helper.assertTrue(MazeHandler.generateEldritch(outer, new Random(3), cx, cz),
+        MazeHandler.putToHashMap(outer, new CellLoc(dx, dz), new Cell(OPEN_SIDES_BOSS_CELL));
+        helper.assertTrue(MazeHandler.generateEldritch(outer, new Random(3), cx, cz)
+                        && MazeHandler.generateEldritch(outer, new Random(3), dx, dz),
                 "a feature-2 cell did not build its boss room");
-        // GenBossRoom sweeps the cell's 7x7 PAT_DOORWAY doorway: eldritch
-        // metas (gate/lock/nothing) and eldritch stairs land in the cell
-        // envelope — assert the doorway material is present, the boss
-        // entities are TC-M6-06.
-        final AABB box = new AABB(
-                new Vec3(cx * 16 - 8, OuterLands.ROOM_Y, cz * 16 - 8),
-                new Vec3(cx * 16 + 24, OuterLands.ROOM_Y + 16, cz * 16 + 24));
-        int eldritch = 0;
-        int stairs = 0;
-        final var cursor = new BlockPos.MutableBlockPos();
-        for (int x = (int) box.minX; x < box.maxX; x++) {
-            for (int y = (int) box.minY; y < box.maxY; y++) {
-                for (int z = (int) box.minZ; z < box.maxZ; z++) {
-                    final BlockState state = outer.getBlockState(cursor.set(x, y, z));
-                    if (state.is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())) {
-                        eldritch++;
-                    }
-                    if (state.is(CatalogDecorativeBlocks.BLOCK_STAIRS_ELDRITCH.get())) {
-                        stairs++;
-                    }
-                }
-            }
+        helper.assertTrue(MazeHandler.data(outer).isBuilt(cx, cz) && MazeHandler.data(outer).isBuilt(dx, dz),
+                "the built-gate did not mark the boss-room cells (reload would rebuild them)");
+        helper.assertTrue((BOSS_CELL & 15) == 0 && (OPEN_SIDES_BOSS_CELL & 15) == 15
+                        && (BOSS_CELL >> 8) == 2 && (OPEN_SIDES_BOSS_CELL >> 8) == 2,
+                "the two fixtures are one feature with the sides closed / open: packed " + BOSS_CELL
+                + " and " + OPEN_SIDES_BOSS_CELL + " (side bits N=1 S=2 E=4 W=8, feature in bits 8-10)");
+
+        // The 2x2 room overflows the cell it is built in (Gen2x2 places it at (x-8, y-2, z-8)), so
+        // the shell is counted over the envelope the room covers. The census is pinned EXACTLY:
+        // asking for ">= 1" of a shell that leaves 3 blockEldritch is a margin, not a contract,
+        // and a shell that lost cells is the block-support class of docs/testing.md, not a window.
+        final int[] shell = census(outer, cx * 16 - 8, cx * 16 + 23, OuterLands.ROOM_Y,
+                OuterLands.ROOM_Y + 15, cz * 16 - 8, cz * 16 + 23);
+        helper.assertTrue(shell[0] == SHELL_ELDRITCH && shell[1] == SHELL_STAIRS
+                        && shell[2] == SHELL_NOTHING && shell[3] == SHELL_NONAIR,
+                "the boss-room SHELL census in the cell envelope is " + shell[0] + " blockEldritch + "
+                        + shell[1] + " eldritch stairs + " + shell[2] + " blockEldritchNothing = "
+                        + shell[3] + " non-air blocks (the box holds " + (shell[3] + shell[4])
+                        + " cells, " + shell[4] + " of them air); the shape the shipped generator"
+                        + " leaves for a closed-sided feature-2 cell is " + SHELL_ELDRITCH + " + "
+                        + SHELL_STAIRS + " + " + SHELL_NOTHING + " = " + SHELL_NONAIR + " (a shell"
+                        + " missing cells is the block-support class of docs/testing.md: "
+                        + chunkFacts(outer, cx * 16 - 8, cz * 16 - 8) + ")");
+        // A closed-sided cell lays NOTHING on its doorway planes: the whole 7x7 pattern went to the
+        // cell's NW corner (the world-column assert below). This is the fact the old probe was
+        // missing — its "doorway" assert was reading the room shell all along.
+        for (final Direction side : SIDES) {
+            final int[] plane = doorwayPlane(outer, cx, cz, side);
+            helper.assertTrue(plane[0] == CLOSED_PLANE_ELDRITCH,
+                    "the " + side.getName() + " doorway plane of the CLOSED-sided boss-room cell ("
+                            + cx + "," + cz + ") carries " + plane[0] + " blockEldritch (+" + plane[1]
+                            + " eldritch stairs, +" + plane[2] + " air of 77 — the rest of the plane"
+                            + " cells are the room shell of the closed-sided cell); the shipped"
+                            + " closed-side doorway lays " + CLOSED_PLANE_ELDRITCH + " doorway"
+                            + " blockEldritch there because it writes the whole 7x7 pattern at the"
+                            + " cell's NW corner, outside every plane");
         }
-        helper.assertTrue(eldritch >= 1, "the boss-room doorway placed no blockEldritch in the cell envelope");
-        helper.assertTrue(stairs >= 1, "the boss-room doorway placed no eldritch stairs");
+
+        // The seam proper: each open side lays its 11x7 doorway plane INSIDE the cell (NORTH at
+        // z+3 for a in 0..10, SOUTH at z+13 for a in 10..20, WEST at x+3 for a in 10..20, EAST at
+        // x+13 for a in 0..10, seven rows from ROOM_Y+2). Pinned per side, and a short plane names
+        // the closed side that closed it.
+        final StringBuilder planes = new StringBuilder();
+        for (final Direction side : SIDES) {
+            final int[] plane = doorwayPlane(outer, dx, dz, side);
+            planes.append(' ').append(side.getName()).append('=')
+                    .append(plane[0]).append('/').append(plane[1]).append('/').append(plane[2])
+                    .append('/').append(plane[3]);
+        }
+        for (final Direction side : SIDES) {
+            final int[] plane = doorwayPlane(outer, dx, dz, side);
+            final int[] shipped = doorShape(side);
+            helper.assertTrue(plane[0] == shipped[0] && plane[1] == shipped[1]
+                            && plane[2] == shipped[2] && plane[3] == shipped[3],
+                    "the " + side.getName() + " doorway plane of the open-sided boss-room cell ("
+                    + dx + "," + dz + ") is blockEldritch/eldritchStairs/air/eldritchNothing = "
+                    + plane[0] + "/" + plane[1] + "/" + plane[2] + "/" + plane[3] + " of 77 cells;"
+                    + " the seam ships " + shipped[0] + "/" + shipped[1] + "/" + shipped[2] + "/"
+                    + shipped[3] + ". Every side of the cell under measurement is open, so a plane"
+                    + " that changed shape means the side bit (" + sideBit(Direction.NORTH) + " N, "
+                    + sideBit(Direction.SOUTH) + " S, " + sideBit(Direction.EAST) + " E, "
+                    + sideBit(Direction.WEST) + " W) stopped being set: the side bits are the"
+                    + " doorway's target-cell precondition, and a closed side moves that side's"
+                    + " whole 11x7 plane to the cell's NW corner. All four sides:" + planes);
+        }
+
+        // The leak, pinned as a deviation record so it is loud in both directions: the closed-side
+        // doorway of cell (40,40) writes the seven pattern rows at the ABSOLUTE world column
+        // (0, ROOM_Y+2..ROOM_Y+8, 0) — outside the cell, outside the envelope, at a fixed world
+        // coordinate. If the shipped generator stops writing there, this reddens and the record
+        // below must be updated with the upstream fix.
+        final int leak = countEldritchColumn(outer, 0, 0, OuterLands.ROOM_Y, OuterLands.ROOM_Y + 12);
+        helper.assertTrue(leak == WORLD_COLUMN_LEAK,
+                "the closed-sided cell's doorway wrote " + leak + " blockEldritch at the ABSOLUTE world"
+                + " column (0, y, 0); the recorded shipped behaviour (the deviation this card reported"
+                + " upstream) is " + WORLD_COLUMN_LEAK + " — the seven pattern rows of the pattern's"
+                + " code-1/code-2 placements, at ROOM_Y+2..ROOM_Y+8");
+
+        // And nothing of the open cell's doorway crosses its own footprint: the doorway of a cell
+        // whose sides are open belongs inside that cell.
+        final int ring = ringEldritch(outer, dx, dz);
+        helper.assertTrue(ring == 0,
+                "the doorway of the open-sided boss-room cell (" + dx + "," + dz + ") wrote " + ring
+                + " blockEldritch in the 1-cell ring around the cell footprint in the doorway's y band"
+                + " — the doorway belongs inside the cell whose sides are open");
 
         // The installed seam keeps the original's plane gate: a lock asking
         // for its room outside the Outer Lands builds nothing (the shipped
