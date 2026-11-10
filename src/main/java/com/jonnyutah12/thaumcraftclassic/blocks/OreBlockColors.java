@@ -15,8 +15,18 @@ import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
  * overlay per metadata via glColor3f with {@code BlockCustomOreItem.colors};
  * the port carries the same values through the model's tintindex 0 faces.
  * Cinnabar/amber models have no tinted faces, so they are unaffected.</p>
+ *
+ * <p><b>Bus fix (BD-18, t_065502ba):</b> this class shipped on FML's default
+ * bus, which is the <em>game</em> bus, while
+ * {@link RegisterColorHandlersEvent} is an {@code IModBusEvent} and fires on
+ * the <em>mod</em> bus. The handler therefore never registered and the infused
+ * ore drew untinted in game. Every other client registration in the port
+ * declares {@code bus = Bus.MOD} ({@code TcParticleProviders},
+ * {@code ModClientScreens}); this one now matches, and
+ * {@code DeviceTintParityTest} pins the bus on every colour-handler subscriber
+ * so the shape cannot come back.</p>
  */
-@EventBusSubscriber(modid = ThaumcraftClassic.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = ThaumcraftClassic.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public final class OreBlockColors {
 
     @SubscribeEvent

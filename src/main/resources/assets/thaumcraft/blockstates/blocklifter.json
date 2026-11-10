@@ -1,7 +1,10 @@
 {
-  "variants": {
-    "": {
-      "model": "thaumcraft:block/blocklifter_lifter"
+    "variants": {
+        "powered=false": {
+            "model": "thaumcraft:block/blocklifter_lifter_active"
+        },
+        "powered=true": {
+            "model": "thaumcraft:block/blocklifter_lifter"
+        }
     }
-  }
 }
