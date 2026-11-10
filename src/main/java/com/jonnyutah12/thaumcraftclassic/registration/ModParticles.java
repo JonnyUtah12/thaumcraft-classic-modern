@@ -1,6 +1,17 @@
 package com.jonnyutah12.thaumcraftclassic.registration;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcEssentiaTrailOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcBoreSparkleOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcVisSparkleOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcSonicOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcBurstOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcDropOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcVentOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcSwarmOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcSmokeTrailOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcSmokeSpiralOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcScorchOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcArcOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcBeamOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcBoltOptions;
@@ -133,6 +144,80 @@ public final class ModParticles {
             PARTICLE_TYPES.register("sparkle_glow",
                     () -> new TcParticleType<>(false, TcGlowSparkleOptions.MAP_CODEC,
                             TcGlowSparkleOptions.STREAM_CODEC));
+
+
+    // ---- TC-M7-02-c-s-f5: the shared particle families of the original's
+    // client/fx/particles + fx/other packages. Each id names the ORIGINAL class
+    // (D-017): thaumcraft:scorch is FXScorch, thaumcraft:swarm is FXSwarm, and
+    // so on. Every type is self-integrated (the first argument false): all of
+    // them move by hand in onUpdate, so the platform must not integrate them
+    // twice.
+
+    /** TC-M7-02-c-s-f5: the fireblast scorch streak (FXScorch). */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcScorchOptions>> SCORCH =
+            PARTICLE_TYPES.register("scorch",
+                    () -> new TcParticleType<>(false, TcScorchOptions.MAP_CODEC,
+                            TcScorchOptions.STREAM_CODEC));
+
+    /** TC-M7-02-c-s-f5: the boiler smoke spiral (FXSmokeSpiral). */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcSmokeSpiralOptions>> SMOKE_SPIRAL =
+            PARTICLE_TYPES.register("smoke_spiral",
+                    () -> new TcParticleType<>(false, TcSmokeSpiralOptions.MAP_CODEC,
+                            TcSmokeSpiralOptions.STREAM_CODEC));
+
+    /** TC-M7-02-c-s-f5: the entity-chasing smoke trail (FXSmokeTrail). */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcSmokeTrailOptions>> SMOKE_TRAIL =
+            PARTICLE_TYPES.register("smoke_trail",
+                    () -> new TcParticleType<>(false, TcSmokeTrailOptions.MAP_CODEC,
+                            TcSmokeTrailOptions.STREAM_CODEC));
+
+    /** TC-M7-02-c-s-f5: the vis swarm attendant (FXSwarm). */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcSwarmOptions>> SWARM =
+            PARTICLE_TYPES.register("swarm",
+                    () -> new TcParticleType<>(false, TcSwarmOptions.MAP_CODEC,
+                            TcSwarmOptions.STREAM_CODEC));
+
+    /** TC-M7-02-c-s-f5: the vent/steam puff (FXVent). */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcVentOptions>> VENT =
+            PARTICLE_TYPES.register("vent",
+                    () -> new TcParticleType<>(false, TcVentOptions.MAP_CODEC,
+                            TcVentOptions.STREAM_CODEC));
+
+    /** TC-M7-02-c-s-f5: the bore drill sparkle (FXBoreSparkle). */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcBoreSparkleOptions>> BORE_SPARKLE =
+            PARTICLE_TYPES.register("bore_sparkle",
+                    () -> new TcParticleType<>(false, TcBoreSparkleOptions.MAP_CODEC,
+                            TcBoreSparkleOptions.STREAM_CODEC));
+
+    /** TC-M7-02-c-s-f5: the generic vis sparkle (FXVisSparkle). */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcVisSparkleOptions>> VIS_SPARKLE =
+            PARTICLE_TYPES.register("vis_sparkle",
+                    () -> new TcParticleType<>(false, TcVisSparkleOptions.MAP_CODEC,
+                            TcVisSparkleOptions.STREAM_CODEC));
+
+    /** TC-M7-02-c-s-f5: the essence trail ribbon (FXEssentiaTrail). */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcEssentiaTrailOptions>> ESSENTIA_TRAIL =
+            PARTICLE_TYPES.register("essentia_trail",
+                    () -> new TcParticleType<>(false, TcEssentiaTrailOptions.MAP_CODEC,
+                            TcEssentiaTrailOptions.STREAM_CODEC));
+
+    /** TC-M7-02-c-s-f5: the sonic ripple (FXSonic). */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcSonicOptions>> SONIC =
+            PARTICLE_TYPES.register("sonic",
+                    () -> new TcParticleType<>(false, TcSonicOptions.MAP_CODEC,
+                            TcSonicOptions.STREAM_CODEC));
+
+    /** TC-M7-02-c-s-f5: the vis droplet (FXDrop). */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcDropOptions>> DROP =
+            PARTICLE_TYPES.register("drop",
+                    () -> new TcParticleType<>(false, TcDropOptions.MAP_CODEC,
+                            TcDropOptions.STREAM_CODEC));
+
+    /** TC-M7-02-c-s-f5: the node burst ring (FXBurst). */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcBurstOptions>> BURST =
+            PARTICLE_TYPES.register("burst",
+                    () -> new TcParticleType<>(false, TcBurstOptions.MAP_CODEC,
+                            TcBurstOptions.STREAM_CODEC));
 
     private ModParticles() {
     }

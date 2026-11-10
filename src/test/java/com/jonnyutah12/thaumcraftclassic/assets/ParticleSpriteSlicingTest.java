@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -62,7 +63,19 @@ class ParticleSpriteSlicingTest {
             new CellParticle("sparkle_glow", "sparkle_glow", cells(112, 115)),
             // TC-M7-02-c-s-f1b: the EG wisp steps u = age%13/16 at v = 0.1875
             // (FXWispEG.java:59-62) — row 3, columns 0..12 of the sheet grid.
-            new CellParticle("wisp_eg", "wisp_eg", cells(48, 60)));
+            new CellParticle("wisp_eg", "wisp_eg", cells(48, 60)),
+            // TC-M7-02-c-s-f5: the shared particle families. Each cell list is
+            // read off the original class's own UV lines (D-017), the way the
+            // rune family's cells 96..111 were.
+            new CellParticle("scorch", "scorch", cells(151, 159)),            // FXScorch.java:43,100-104
+            new CellParticle("smoke_spiral", "smoke_spiral", cells(1, 5)),    // FXSmokeSpiral.java:31-33
+            new CellParticle("smoke_trail", "smoke_trail", cells(1, 5)),      // FXSmokeTrail.java:52-55
+            new CellParticle("vent", "vent", cells(1, 5)),                    // FXVent.java:95-97
+            new CellParticle("swarm", "swarm", cells(71, 78)),                // FXSwarm.java:56-59 (row 4)
+            new CellParticle("bore_sparkle", "bore_sparkle", cells(64, 67)),  // FXBoreSparkle.java:56-59
+            new CellParticle("vis_sparkle", "vis_sparkle", cells(128, 143)),  // FXVisSparkle.java:49-52 (row 8)
+            new CellParticle("essentia_trail", "essentia_trail", new int[] {25}), // FXEssentiaTrail.java:69-70
+            new CellParticle("drop", "drop", cells(112, 114)));               // FXDrop.java:27,52,58,73
 
     /**
      * TC-M7-02-c-s-f1b: the wisp and the arcing wisp draw regions of the
@@ -73,7 +86,13 @@ class ParticleSpriteSlicingTest {
      */
     private static final Map<String, String> SUBSTITUTE_PARTICLES = Map.of(
             "wisp", "sparkle_0",
-            "wisp_arcing", "sparkle_0");
+            "wisp_arcing", "sparkle_0",
+            // TC-M7-02-c-s-f5 (BD-19): FXBurst's strip is the node renderer's own
+            // sheet, TileNodeRenderer.nodetex (FXBurst.java:26-31), which the
+            // reference tree does not ship. The definition stands in on the
+            // sliced glow frame; the class's 32-frame count (u = age % 32 / 32)
+            // stays pinned in TcBurstOptions.FRAMES.
+            "burst", "sparkle_glow_0");
 
     /**
      * A whole-tile particle: the committed JSON name and its sprite base names
@@ -84,7 +103,14 @@ class ParticleSpriteSlicingTest {
             "beam", List.of("beam0", "beam1", "beam2", "beam3"),
             "beam_golem_boss", List.of("beam0", "beam1", "beam2", "beam3"),
             "arc", List.of("beam0"),
-            "bolt", List.of("bolt_glow", "bolt_core"));
+            "bolt", List.of("bolt_glow", "bolt_core"),
+            // TC-M7-02-c-s-f5: the sonic boom is a whole-file strip, not cells —
+            // FXSonic.java:38-45 binds the shell to models/ripple1..15.png, so the
+            // build copies those 15 pages whole (build.gradle
+            // originalWholeFileParticleFrames). Their pixels ride the
+            // asset-mapping contract (docs/asset-mapping.csv maps all 15 pages);
+            // this probe pins that every frame the definition names exists.
+            "sonic", IntStream.rangeClosed(0, 14).mapToObj(i -> "sonic_" + i).toList());
 
     /** Sliced tile base name -> original file under textures/misc. */
     private static final Map<String, String> ORIGINAL_TILES = Map.of(
