@@ -1,5 +1,7 @@
 package com.jonnyutah12.thaumcraftclassic.registration;
 
+import com.jonnyutah12.thaumcraftclassic.casting.EffectPerformers;
+import com.jonnyutah12.thaumcraftclassic.casting.FocusSpells;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArcaneWorkbench;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArmor;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
@@ -9,6 +11,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEntities;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchRealm;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFoci;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogGolems;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
@@ -74,6 +77,9 @@ public final class ModRegistration {
         // shared ModItems holder; class-init trigger only, no new bus wiring.
         CatalogBaubles.init(); // TC-M8-02 bauble items
         CatalogWands.init(modEventBus); // TC-M6-01 wand items + thaumcraft:wand_component registry
+        CatalogFoci.init(); // TC-M6-02 focus items + the focus pouch
+        FocusSpells.registerAll(); // TC-M6-03-s: the ten per-focus spell bodies on the casting seam
+        EffectPerformers.registerAll(); // TC-M6-03-p: the effect performers behind every SpellEffects key
 
         ModDataComponents.DATA_COMPONENT_TYPES.register(modEventBus);
         ModLootNumberProviders.register(modEventBus); // SPINE-1 fortuned_uniform rolls

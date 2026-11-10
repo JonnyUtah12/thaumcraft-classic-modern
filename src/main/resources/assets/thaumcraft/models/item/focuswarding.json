@@ -1,0 +1,15 @@
+// THAUMCRAFT - GENERATED FILE CONVENTION - DO NOT EDIT BY HAND
+// Item model for thaumcraft:focuswarding (TC-M6-02-s foci / TC-M6-03-p consolidation).
+// Registered id: registration/catalog/CatalogFoci.java. The sprite is the
+// original's index-0 item icon (ItemFocusWarding.java:51,
+// func_94245_a("thaumcraft:focus_warding")), published at textures/item/focus_warding.png by
+// docs/asset-mapping.csv, whose used_by cites this model. The icon file itself
+// is not shipped (D-004).
+// SPINE-3 (ItemModelCoverageGameTest): registered id -> model -> sprite chain.
+// This file is formatted by hand; gradle checkStyle does not reformat it.
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "thaumcraft:item/focus_warding"
+  }
+}

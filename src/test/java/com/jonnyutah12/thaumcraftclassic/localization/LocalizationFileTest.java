@@ -119,6 +119,10 @@ class LocalizationFileTest {
             "item.researchnotes.unknown.1", "item.researchnotes.unknown.2",
             "tc.forbidden", "tc.forbidden.level.1", "tc.forbidden.level.2",
             "tc.forbidden.level.3", "tc.forbidden.level.4", "tc.forbidden.level.5",
+            // TC-M6-02: the per-cast / per-tick focus cost lines ItemFocus emits
+            // (the original item.Focus.cost1 / item.Focus.cost2 keys, kept in the
+            // port's one-suffix shape).
+            "item.thaumcraft.focus.cost1", "item.thaumcraft.focus.cost2",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
             "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror",
             "tc.visdiscount",

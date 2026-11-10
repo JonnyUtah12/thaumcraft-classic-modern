@@ -2,6 +2,8 @@ package com.jonnyutah12.thaumcraftclassic.registration;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.aspect.EssentiaContainer;
+import com.jonnyutah12.thaumcraftclassic.foci.FocusPouchContents;
+import com.jonnyutah12.thaumcraftclassic.foci.FocusUpgradeList;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchNoteData;
 import com.jonnyutah12.thaumcraftclassic.wands.VisPool;
 import com.mojang.serialization.Codec;
@@ -9,6 +11,8 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemContainerContents;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -134,6 +138,102 @@ public final class ModDataComponents {
                             .build());
 
     /**
+     * The focus a wand stack carries (TC-M6-02): the original wrote the whole
+     * focus {@code ItemStack} into the wand's NBT under the {@code "focus"} key
+     * ({@code ItemWandCasting.setFocus}, {@code common/items/wands/
+     * ItemWandCasting.java:471-477}) and read it back with {@code getFocusItem}
+     * (lines 462-469).
+     *
+     * <p>The port stores the focus's <em>tag</em> — the focus's registered
+     * identity — exactly as {@link #WAND_ROD}/{@link #WAND_CAP} store their
+     * component tags, and rebuilds the stack on demand. A data component cannot
+     * hold an {@code ItemStack}: vanilla validates that a component value
+     * implements {@code equals}/{@code hashCode} and {@code ItemStack} does not
+     * ("Data components must implement equals and hashCode", the reason vanilla
+     * wraps stacks in {@code ItemContainerContents}). Focus <em>upgrades</em>
+     * are the only per-stack state a focus carries, and they are TC-M6-03-s, so
+     * the tag is the whole of what this slice needs. An absent component is the
+     * original's {@code null} focus.</p>
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> WAND_FOCUS =
+            DATA_COMPONENT_TYPES.register("wand_focus",
+                    () -> DataComponentType.<String>builder()
+                            .persistent(Codec.STRING)
+                            .networkSynchronized(ByteBufCodecs.STRING_UTF8)
+                            .build());
+
+    /**
+     * The contents of a focus pouch (TC-M6-02): the original's
+     * {@code "Inventory"} {@code NBTTagList} of {@code {Slot: byte, ...item}}
+     * compounds ({@code ItemFocusPouch.getInventory}/{@code setInventory},
+     * {@code common/items/wands/ItemFocusPouch.java:63-93}), kept as a
+     * positional bounded list so slot indices survive the save path.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<FocusPouchContents>> FOCUS_POUCH_CONTENTS =
+            DATA_COMPONENT_TYPES.register("focus_pouch_contents",
+                    () -> DataComponentType.<FocusPouchContents>builder()
+                            .persistent(FocusPouchContents.CODEC)
+                            .networkSynchronized(FocusPouchContents.STREAM_CODEC)
+                            .build());
+
+    /**
+     * The upgrades applied to a focus stack (TC-M6-03-s): the original's
+     * {@code "upgrade"} {@code NBTTagList} of {@code {id: short}} compounds
+     * ({@code ItemFocusBasic.getAppliedUpgrades}/{@code setFocusUpgradeTagList},
+     * {@code reference/decompiled/…/api/wands/ItemFocusBasic.java:129-207}), kept
+     * as the original's fixed five rank slots.
+     *
+     * <p>A component does not have to be persistent to be useful, but this one is
+     * the focus's only per-stack state and the original persisted it, so it is
+     * persisted and synced (the client renders the upgrade tooltip).</p>
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<FocusUpgradeList>> FOCUS_UPGRADES =
+            DATA_COMPONENT_TYPES.register("focus_upgrades",
+                    () -> DataComponentType.<FocusUpgradeList>builder()
+                            .persistent(FocusUpgradeList.CODEC)
+                            .networkSynchronized(FocusUpgradeList.STREAM_CODEC)
+                            .build());
+
+    /**
+     * The applied upgrades of the focus a wand carries (TC-M6-03-s).
+     *
+     * <p>The original's wand stored the focus <em>stack</em> under its
+     * {@code "focus"} NBT key ({@code ItemWandCasting.setFocus},
+     * {@code ItemWandCasting.java:471-477}), so the focus's upgrade tag list
+     * travelled with it. The port's {@link #WAND_FOCUS} stores the focus's tag
+     * (a component cannot hold an {@code ItemStack}), and rebuilds the stack on
+     * demand — which would drop the upgrades. This component carries them across
+     * the rebuild, so a fitted focus keeps its upgrades exactly as the original's
+     * stored stack did.</p>
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<FocusUpgradeList>> WAND_FOCUS_UPGRADES =
+            DATA_COMPONENT_TYPES.register("wand_focus_upgrades",
+                    () -> DataComponentType.<FocusUpgradeList>builder()
+                            .persistent(FocusUpgradeList.CODEC)
+                            .networkSynchronized(FocusUpgradeList.STREAM_CODEC)
+                            .build());
+
+    /**
+     * The block the equal-trade focus a wand carries has picked (TC-M6-03-p).
+     *
+     * <p>The original's wand stored the focus stack, so the {@code "picked"}
+     * compound written by a sneak-pick ({@code ItemFocusTrade.java:93-95})
+     * lived on that stack and came back on the next cast. The port rebuilds
+     * the focus from its tag on every cast, which drops per-stack state — so
+     * the pick travels on the wand beside the upgrades snapshot above, and
+     * {@code ItemWandCasting.focusItem} restores it onto the rebuilt stack.
+     * It is persisted because the original persisted the pick over logout, and
+     * it is a one-slot {@link ItemContainerContents} for the same reason
+     * {@link #PICKED_BLOCK} is.</p>
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<ItemContainerContents>> WAND_FOCUS_PICKED =
+            DATA_COMPONENT_TYPES.register("wand_focus_picked",
+                    () -> DataComponentType.<ItemContainerContents>builder()
+                            .persistent(ItemContainerContents.CODEC)
+                            .networkSynchronized(ItemContainerContents.STREAM_CODEC)
+                            .build());
+
+    /**
      * The aspect a jar label / filled jar locks its jar to (TC-M4-06-s): the
      * original wrote the label's tag string to the {@code AspectFilter} key on
      * the stack's NBT ({@code ItemJarFilled.getFilter},
@@ -217,6 +317,39 @@ public final class ModDataComponents {
                     () -> DataComponentType.<ResearchNoteData>builder()
                             .persistent(ResearchNoteData.CODEC)
                             .networkSynchronized(ResearchNoteData.STREAM_CODEC)
+                            .build());
+
+     * The block the equal-trade focus carries (TC-M6-03-p): the original's
+     * {@code "picked"} NBT on the focus stack — {@code ItemFocusBasic
+     * .getPickedBlock}/{@code setPickedBlock}
+     * ({@code ItemFocusTrade.java:93-95} stores {@code BlockUtils
+     * .createStackedBlock(bi, md)} on a sneak-pick; {@code :97-99,116-120}
+     * reads it back for the swap). The port keeps it as the stack of the
+     * picked block's item ({@code BlockItemUtils.getBlockItemStack}), carried in
+     * a one-slot {@link ItemContainerContents}: NeoForge rejects a component
+     * whose value type does not declare {@code equals}/{@code hashCode}, and
+     * {@code ItemStack} does not (1.20.5 dropped its {@code equals}), which is
+     * why vanilla wraps stacks in {@code ItemContainerContents} too.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<ItemContainerContents>> PICKED_BLOCK =
+            DATA_COMPONENT_TYPES.register("picked_block",
+                    () -> DataComponentType.<ItemContainerContents>builder()
+                            .persistent(ItemContainerContents.CODEC)
+                            .networkSynchronized(ItemContainerContents.STREAM_CODEC)
+                            .build());
+
+    /**
+     * The excavation focus's in-flight dig (TC-M6-03-p): the original's
+     * excavate block coordinates and accumulated break progress on the
+     * player's properties ({@code ItemFocusExcavation.java:170-188}); the
+     * port tracks it on the wand stack that owns the channel. See
+     * {@code casting/DigState}.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.jonnyutah12.thaumcraftclassic.casting.DigState>> WAND_DIG_STATE =
+            DATA_COMPONENT_TYPES.register("wand_dig_state",
+                    () -> DataComponentType.<com.jonnyutah12.thaumcraftclassic.casting.DigState>builder()
+                            .persistent(com.jonnyutah12.thaumcraftclassic.casting.DigState.CODEC)
+                            .networkSynchronized(com.jonnyutah12.thaumcraftclassic.casting.DigState.STREAM_CODEC)
                             .build());
 
     private ModDataComponents() {
