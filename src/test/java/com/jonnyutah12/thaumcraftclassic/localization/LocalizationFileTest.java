@@ -93,7 +93,11 @@ class LocalizationFileTest {
             "tile.researchtable.noink.0", "tile.researchtable.noink.1", "tc.research.copy",
             // TC-M6-08-s: the original tc.adv label (ConfigItems' advanced-golem
             // tooltip line), kept verbatim.
-            "tc.adv");
+            "tc.adv",
+            // TC-M3-04-s-iv-b: the Thaumonomicon crafting-page station labels, kept in
+            // the original key shape (GuiResearchRecipe:821 / :888, the key printed centred
+            // above the ingredient grid of a crafting page).
+            "recipe.type.workbench", "recipe.type.workbenchshapeless");
 
     /**
      * Registry-derived key shape: lower-case id plus up to two optional
@@ -161,7 +165,10 @@ class LocalizationFileTest {
             "item.thaumcraft.wandcasting.wand",
             "item.thaumcraft.wandcasting.sceptre",
             "item.thaumcraft.wandcasting.staff",
-            "tc.boss.enrage");
+            "tc.boss.enrage",
+            // TC-M3-04-s-iv-b: the Thaumonomicon crafting-page station labels, read by
+            // RecipePageDisplay.station().labelKey() (original recipe.type.* keys).
+            "recipe.type.workbench", "recipe.type.workbenchshapeless");
 
     /**
      * The shipped multi-meta items and the original-metadata domain their

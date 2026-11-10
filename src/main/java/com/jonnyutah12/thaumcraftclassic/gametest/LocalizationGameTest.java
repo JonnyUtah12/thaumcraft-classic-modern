@@ -203,7 +203,16 @@ public final class LocalizationGameTest {
             Map.entry("tc.boss.enrage", "EntityTaintacleGiant enrage announcement — the key is "
                     + "TaintacleGiantAiLogic.ENRAGE_LANG_KEY, the original's "
                     + "StatCollector.translateToLocal(\"tc.boss.enrage\") at "
-                    + "EntityTaintacleGiant.java:122 (en_US.lang:761)"));
+                    + "EntityTaintacleGiant.java:122 (en_US.lang:761)"),
+            // TC-M3-04-s-iv-b (research-page recipe body): the station label the original
+            // printed centred above the ingredient grid of a crafting page, verbatim key and
+            // wording (GuiResearchRecipe.java:821-823 shaped / :887-890 shapeless). Read on
+            // this tree by recipes/RecipePageDisplay; the page-body draw into the unified book
+            // screen is the half this landing does not ship (BD-64).
+            Map.entry("recipe.type.workbench",
+                    "RecipePageDisplay.station().labelKey() (original GuiResearchRecipe.java:821-823 key)"),
+            Map.entry("recipe.type.workbenchshapeless",
+                    "RecipePageDisplay.station().labelKey() (original GuiResearchRecipe.java:887-890 key)"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always

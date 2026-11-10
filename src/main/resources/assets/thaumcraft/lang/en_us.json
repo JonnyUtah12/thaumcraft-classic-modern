@@ -315,6 +315,8 @@
   "item.thaumcraft.triplemeattreat": "Triple Meat Treat",
   "item.thaumcraft.trunkspawner": "Traveling Trunk",
   "item.thaumcraft.trunkspawner.tooltip": "This trunk holds items",
+  "recipe.type.workbench": "Workbench",
+  "recipe.type.workbenchshapeless": "Workbench (Shapeless)",
   "tc.boss.crimson": "A ruby portal opens nearby heralding the arrival of the Crimson Cult. You must close the portal quickly!",
   "tc.boss.golem": "A lone sentinel stands frozen in this room, but as energy starts crackling through its ancient frame you know it will not stay frozen for long.",
   "tc.boss.taint": "An organic rustling comes from the room beyond. The sound of something wrong... something growing...",
