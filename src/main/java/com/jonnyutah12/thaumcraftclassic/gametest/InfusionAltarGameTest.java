@@ -527,22 +527,31 @@ public final class InfusionAltarGameTest {
                 manager.getAllRecipesFor(CatalogInfusion.INFUSION_TYPE.get());
         helper.assertFalse(dataRows.isEmpty(),
                 "no thaumcraft:infusion recipe is loaded");
-        // The two rows naming the Thaumcraft enchantments (TC-M6-05) must LOAD
-        // and resolve to no holder: a row for unported content ships as data and
-        // never matches, instead of failing the data pack with a parse error the
-        // dedicated-server smoke gate counts as mod-attributable.
-        int unregistered = 0;
+        // The two rows naming the Thaumcraft enchantments must LOAD and — as of
+        // TC-M6-05-s-e1b, which registered both payloads under
+        // data/thaumcraft/enchantment/ — resolve to real holders: the rows
+        // match at load time instead of naming an id that never resolves
+        // (the match evidence itself is EnchantmentGameTest; the counter-case —
+        // a row shipping for unported content that never matches — is the
+        // documented rule this probe used to assert).
+        int thaumcraftRows = 0;
+        int resolvableRows = 0;
         for (final RecipeHolder<InfusionEnchantmentRecipe> row
                 : manager.getAllRecipesFor(CatalogInfusion.INFUSION_ENCHANTMENT_TYPE.get())) {
             if (row.value().enchantmentKey().location().getNamespace()
-                    .equals(ThaumcraftClassic.MOD_ID)
-                    && row.value().enchantment(helper.getLevel().registryAccess()) == null) {
-                unregistered++;
+                    .equals(ThaumcraftClassic.MOD_ID)) {
+                thaumcraftRows++;
+                if (row.value().enchantment(helper.getLevel().registryAccess()) != null) {
+                    resolvableRows++;
+                }
             }
         }
-        helper.assertTrue(unregistered == 2,
+        helper.assertTrue(thaumcraftRows == 2,
                 "the two rows naming thaumcraft:ench_repair/ench_haste (TC-M6-05) must be "
-                        + "loaded with no resolvable holder, found " + unregistered);
+                        + "loaded, found " + thaumcraftRows);
+        helper.assertTrue(resolvableRows == 2,
+                "the rows naming thaumcraft:ench_repair/ench_haste (TC-M6-05-s-e1b) must now "
+                        + "resolve to registered enchantment holders, found " + resolvableRows);
         assertEveryLoadableRowLoaded(helper);
         RecipeHolder<InfusionCraftingRecipe> mirrorHand = null;
         for (final RecipeHolder<InfusionCraftingRecipe> row : dataRows) {

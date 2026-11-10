@@ -111,7 +111,13 @@ public final class LocalizationGameTest {
             Map.entry("tc.handmirrorlinkedto", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorlinked", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorerror", "ItemHandMirror link message"),
-            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"));
+            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"),
+            // TC-M6-05-s-e1b: display/description keys referenced by the two
+            // enchantment payloads' translate keys (data/thaumcraft/enchantment/
+            // ench_{repair,haste}.json); the strings are verbatim from the
+            // original 4.2.3.5 en_US.lang keys enchantment.repair / enchantment.haste.
+            Map.entry("enchantment.thaumcraft.ench_haste", "Enchantment payload translate key (ench_haste.json)"),
+            Map.entry("enchantment.thaumcraft.ench_repair", "Enchantment payload translate key (ench_repair.json)"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always

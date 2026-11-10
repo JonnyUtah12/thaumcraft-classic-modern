@@ -979,8 +979,8 @@ Thaumcraft:GUI_HOVER_HARNESS,thaumcraft:gui_hover_harness,gui,GuiHoverHarness,no
 Thaumcraft:GUI_MAGIC_BOX,thaumcraft:gui_magic_box,gui,GuiMagicBox,done,tested,,gui_id=18 handler=GuiMagicBox
 Thaumcraft:GUI_SPA,thaumcraft:gui_spa,gui,GuiSpa,done,tested,,gui_id=19 handler=GuiSpa
 Thaumcraft:GUI_FOCAL_MANUPULATOR,thaumcraft:gui_focal_manupulator,gui,GuiFocalManipulator,not_started,not_tested,,gui_id=20 handler=GuiFocalManipulator
-Thaumcraft:ench_haste,thaumcraft:ench_haste,enchantment,,not_started,not_tested,,class=? config_key=ench_haste registered=yes
-Thaumcraft:ench_repair,thaumcraft:ench_repair,enchantment,,not_started,not_tested,,class=? config_key=ench_repair registered=yes
+Thaumcraft:ench_haste,thaumcraft:ench_haste,enchantment,,done,tested,,class=? config_key=ench_haste registered=yes
+Thaumcraft:ench_repair,thaumcraft:ench_repair,enchantment,,done,tested,,class=? config_key=ench_repair registered=yes
 Thaumcraft:EnchantmentFrugal,thaumcraft:enchantmentfrugal,enchantment,EnchantmentFrugal,not_started,not_tested,NOT registered in 4.2.3.5 (dead code),class exists in jar
 Thaumcraft:EnchantmentPotency,thaumcraft:enchantmentpotency,enchantment,EnchantmentPotency,not_started,not_tested,NOT registered in 4.2.3.5 (dead code),class exists in jar
 Thaumcraft:EnchantmentWandFortune,thaumcraft:enchantmentwandfortune,enchantment,EnchantmentWandFortune,not_started,not_tested,NOT registered in 4.2.3.5 (dead code),class exists in jar

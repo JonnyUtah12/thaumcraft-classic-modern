@@ -8,6 +8,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEnchantments;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
 import net.neoforged.bus.api.IEventBus;
@@ -39,8 +40,11 @@ import net.neoforged.bus.api.IEventBus;
  * they are independent of the block/item chain and must be registered exactly
  * once — do not duplicate them here.
  *
- * <p>{@link ModEnchantments} is deliberately absent: enchantments are a
- * datapack registry in 1.21.1 and are not bus-registered (see its javadoc).
+ * <p>{@link CatalogEnchantments} carries no bus registration: enchantments are
+ * a datapack registry in 1.21.1 and are not bus-registered — the two shipped
+ * payloads under data/thaumcraft/enchantment/ are the registration itself (see
+ * that class' javadoc, TC-M6-05-s-e1b). The same rule is recorded in
+ * {@code ModEnchantments} on the read-only wip-salvage branch.
  * Custom registries for aspects, research, wand components and node
  * types/modifiers are created by their feature milestones via
  * {@code NewRegistryEvent} + their own DeferredRegister, following this same
@@ -131,6 +135,13 @@ public final class ModRegistration {
         // matrix's client-side particles/runes stay on TC-M7-01 and the essentia
         // jar that feeds it on TC-M4-06.
         CatalogInfusion.init(modEventBus);
+
+        // TC-M6-05-s-e1b: the two enchantment payloads (thaumcraft:ench_repair
+        // and ench_haste) under data/thaumcraft/enchantment/ — the ids the
+        // infusion_enchantment rows 201/202 above reference. The registration
+        // itself is datapack-loaded (no bus event; see CatalogEnchantments),
+        // this call is the house-pattern anchor only.
+        CatalogEnchantments.init(modEventBus);
 
         // TC-M4-05-s: crucible (alchemy) core — the tilecrucible block entity
         // on its blockMetalDevice variant-0 host, and the recipe type +

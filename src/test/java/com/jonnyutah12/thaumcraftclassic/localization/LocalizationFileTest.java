@@ -36,10 +36,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class LocalizationFileTest {
 
-    /** 1.21.1 key conventions for the content this mod ships. */
+    /** 1.21.1 key conventions for the content this mod ships.
+     * `enchantment.thaumcraft.` is the key the game derives for an
+     * enchantment id (Util.makeDescriptionId("enchantment", id)) — the
+     * translate key the two payloads under data/thaumcraft/enchantment/
+     * carry in their `description` field (TC-M6-05-s-e1b). */
     private static final List<String> CURRENT_PREFIXES = List.of(
             "item.thaumcraft.", "block.thaumcraft.", "container.thaumcraft.",
-            "entity.thaumcraft.", "itemGroup.thaumcraft.");
+            "entity.thaumcraft.", "itemGroup.thaumcraft.", "enchantment.thaumcraft.");
 
     /**
      * Keys the shipped code uses with the original 1.7.10 key shape, kept
