@@ -87,7 +87,8 @@ import net.minecraft.world.level.chunk.PalettedContainer;
  *   blockStairsEldritch with metas from the direction's <b>ForgeDirection
  *   ordinal</b> (ref GenCommon L86-145: ordinals 2/3 → 1/0/5/4 and 4/5 →
  *   3/2/7/6), 7 = blockEldritch meta 4, 8 = blockEldritchNothing, 9 = air +
- *   de-queue, 20 = blockEldritch meta 10 (the trap, the glyphed-stone roll),
+ *   de-queue, 20 = blockEldritch meta 10 (the trapped stone, the feature-11
+ *   stone-site roll),
  *   21 = crust (the code places nothing; its whole effect is
  *   {@code GenCommon}'s tail, ref L229-251). The codes pass through verbatim;
  *   the toolbox owns the table, the {@code blockEldritchNothing} gates and the
@@ -166,8 +167,9 @@ public class GenPassage extends GenCommon {
     /**
      * The passage room: connections, the 7x7 core, the four wall planes (open
      * via {@code PAT_CONNECT} or sealed), the four mid-door pairs, the centre
-     * cross when all four sides are open, and the wall features — 12 crust,
-     * 13 taint, 14 spawner.
+     * cross when all four sides are open, and the three feature legs at the
+     * tail: 12 the crust sweep, 13 the taint sweep, 14 the cobweb box +
+     * MindSpider spawner (the original gives features 11..14 no names).
      *
      * @param level the maze level writer (original {@code World}, ref L14)
      * @param random the maze random; the passage is its heavy consumer (see the class javadoc)
@@ -175,8 +177,9 @@ public class GenPassage extends GenCommon {
      * @param cz chunk Z of the cell (ref L16)
      * @param y room floor Y (the caller's 50, MazeHandler ref L168/175)
      * @param cell the maze cell; {@code north/south/east/west} pick the wall
-     *             planes, {@code feature} the rolls and sweeps (11 glyphed,
-     *             12 crust, 13 taint, 14 spawner)
+     *             planes, {@code feature} the rolls and sweeps (11 the trapped
+     *             stone, 12 the crust sweep, 13 the taint sweep, 14 the cobweb
+     *             box + spawner)
      */
     public static void generateDefaultPassage(final LevelWriter level, final Random random, final int cx,
                                               final int cz, final int y, final Cell cell) {
@@ -425,7 +428,7 @@ public class GenPassage extends GenCommon {
             place(world, new BlockPos(x + 10, y + 7, z + 11), 6, Direction.EAST, cell);  // ref L224
         }
 
-        // Ref L227-242: feature 12, the ancient doorway — every air, cosmetic
+        // Ref L227-242: feature 12, the crust sweep — every air, cosmetic
         // solid or eldritch-stair cell in the 9x9x9 box crusts over on a coin
         // flip (the CRUST code's whole effect is GenCommon's tail, ref L237-251).
         if (cell.feature == 12) {
@@ -445,8 +448,10 @@ public class GenPassage extends GenCommon {
             }
         }
 
-        // Ref L244-258: feature 13, the ancient lock — taint fibres on the
+        // Ref L244-256: feature 13, the taint sweep — taint fibres on the
         // exposed air cells and the taint biome stamped over the column.
+        // The original names none of features 11..14; these are descriptions of
+        // what the reference legs do, keyed to their line ranges.
         if (cell.feature == 13) {
             for (int w = -4; w <= 4; w++) {
                 for (int h = -3; h <= 3; h++) {
@@ -472,7 +477,7 @@ public class GenPassage extends GenCommon {
             }
         }
 
-        // Ref L260-276: feature 14, the mob spawner — cobweb in the air cells
+        // Ref L260-276: feature 14, the cobweb box + mob spawner — cobweb in the air cells
         // of the 7x7x7 box, and the spawner at the centre. The spawner block
         // set and the tile touch sit inside the innermost loop in the
         // decompiled original (ref L268-272) and are kept there: they draw no

@@ -59,14 +59,21 @@ import java.util.Set;
  * ({@link GenKeyRoom}, feature 6), the nest room ({@link GenNestRoom},
  * feature 7), the library room ({@link GenLibraryRoom}, feature 8) and the
  * passage ({@link GenPassage}, features 9..14 and every other cell — the
- * original's fall-through, {@code MazeHandler.java:161-168}). Wall features
- * 9 (altar) / 10 (obelisk) / 11 (cap) / 12 (crusted) / 13 (glyphed) / 14
- * (spawner) are not separate rooms: the {@code MazeGenerator} marks such
- * cells and the original builds them as passages, whose decorations carry the
- * feature (the {@code GenCommon} code dispatcher's crab-spawner, crusted and
- * glyphed legs read {@code cell.feature}). Every mapped cell now builds, so a
- * cell that stays unbuilt in a probe means the builder refused it, not that
- * the sweep skipped it. The boss entities themselves (golem/warden/crimson/
+ * original's fall-through, {@code MazeHandler.java:161-168}). Features 9..14
+ * are not separate rooms: the original's switch has no case for them, so they
+ * are built as passages. The original gives features 9..14 no names — the
+ * {@code MazeGenerator} dead-end arm calls 7..9 "altar, obelisk and cap"
+ * (ref L305) and that comment is the only naming anywhere — and the only
+ * feature-dependent work sits in the passage's tail: 11 swaps one in three of
+ * its stone sites for code 20 (the trapped stone), 12 runs the crust sweep
+ * (code 21), 13 the taint sweep and 14 the cobweb box + MindSpider spawner
+ * (ref {@code GenPassage.java:187, 227, 244, 260}). Features 9 and 10 get no
+ * decoration at all, and the altar / obelisk / cap / glyphed / doorway / lock
+ * names of the card legend are {@code blockEldritch} variants placed INSIDE
+ * rooms, not cells: the only obelisk the original places is
+ * {@code GenCommon.genObelisk}, called from {@code GenPortal} (feature 1).
+ * Every mapped cell now builds, so a cell that stays unbuilt in a probe means
+ * the builder refused it, not that the sweep skipped it. The boss entities themselves (golem/warden/crimson/
  * taint), the Eldrian Guardian and the {@code EntityPermanentItem} entity are
  * TC-M6-06 (the {@link EldritchMobHost} / {@link EntitiesHost} seams).</p>
  */

@@ -126,10 +126,11 @@ import java.util.function.Predicate;
  *   <li>features 0 and 9..14 each build their passage through the fall-through
  *       leg (reference {@code MazeHandler.java:161-180}), and the features
  *       GenCommon decorates off {@code cell.feature} are pinned: 11 the
- *       interior bedrock (code 20), 12 the crusted shell (code 22), 13 the
- *       taint-biome leg (the shipped {@code BiomeAura} seam, a no-op while no
- *       taint biome is registered), 14 the mob spawner at (x+8,y+4,z+8) with
- *       its cobweb box (ref L240-276);</li>
+ *       trapped-stone walls (code 20 → {@code blockEldritch} meta 10), 12 the
+ *       crust sweep (code 21, ref {@code GenPassage.java:227-242}), 13 the
+ *       taint sweep (the shipped {@code BiomeAura} seam, a no-op while no taint
+ *       biome is registered), 14 the mob spawner at (x+8,y+4,z+8) with its
+ *       cobweb box (ref L260-276);</li>
  *   <li>the altar tile's own {@code checkForMaze} leg reaches the maze seam
  *       with the request the original draws: the altar's chunk, an odd
  *       15..29 per side ({@code 15 + random.nextInt(8) * 2}) and a seed, drawn
@@ -737,15 +738,29 @@ public final class OuterLandsGameTest {
         // clause seals it) at (14, 8, 8) has q = 0, so code 8 survives.
         helper.assertTrue(isVoid(outer.getBlockState(new BlockPos(x + 14, y + 8, z + 8))),
                 "the key room's eldritch void lining (code 8, ref L39) is missing at (x+14,y+8,z+8)");
-        // The door gaps (ref L35-38): the west door opens the 4..11 span below
-        // cxx 10 and leaves the b = 3 corner sealed. (2, 2, 8) is air: the gate
-        // clause skips it (west open, cxx < 10) and q = 0 leaves the pyramids
-        // out; (2, 5, 3) is sealed by the b <= 3 clause and sits above the
-        // (2,3) pyramid's q-1 = 4 steps.
-        helper.assertTrue(outer.isEmptyBlock(new BlockPos(x + 2, y + 2, z + 8)),
-                "the open west side leaves no door gap in the lining (ref L35)");
+        // The west door (ref L35-38) and the sealed b = 3 corner (ref L36).
+        // Measured on this tree, and the reason this probe's first shape was
+        // red: the gate clause drops the ring-2 lining across b 4..11 below
+        // cxx 10 on an open side, but it does NOT leave the door as AIR. The
+        // room's own connection leg (ref L94 → GenCommon.java:390-405, the
+        // cell.west arm) sweeps the same span from PAT_CONNECT (GenCommon.java
+        // :35-47): (x+2, y+2, z+8) is d = 2, z + 3 + w (w = 5), y + 10 - hxxx
+        // (hxxx = 8) → PAT_CONNECT[8][5] = 2, the STONE case. Code 2 places
+        // only where the cell is not the void (ref GenCommon.java:72), which is
+        // exactly what the gate bought: with the lining's void laid there the
+        // sweep's stone is refused. So the door's observable shape is the
+        // corridor stone LANDING in the opening; the sealed arm is the corner
+        // below, where the b <= 3 clause keeps the void and the sweep's
+        // PAT_CONNECT[5][0] = 1 (BEDROCK, air only, ref L63-65) leaves it.
+        final BlockState door = outer.getBlockState(new BlockPos(x + 2, y + 2, z + 8));
+        helper.assertTrue(isCorridorStone(door) && !isVoid(door),
+                "the open west door cell (x+2,y+2,z+8) reads " + door + "; the ref L35 gate drops the"
+                        + " lining's void there so the room's own connection sweep (ref L94,"
+                        + " GenCommon.java:390-405) lands its code-2 corridor stone (PAT_CONNECT[8][5] = 2)"
+                        + " in the opening");
         helper.assertTrue(isVoid(outer.getBlockState(new BlockPos(x + 2, y + 5, z + 3))),
-                "the lining's b = 3 corner is open on a west door (ref L35)");
+                "the lining's b = 3 corner is open on a west door (ref L36 seals it, and the sweep's"
+                        + " PAT_CONNECT[5][0] = 1 places bedrock on air only, so the void survives)");
         // The ring-3 lining (ref L45-59): the core window — the a/b 8 cross for
         // cxxx 4..8 — is STONE_NOSPAWN (code 19, ref L51) and the rest of the
         // ring is ROCK (code 18, ref L54). The (a==8 && b==8 && cxx==6) clause
@@ -843,14 +858,14 @@ public final class OuterLandsGameTest {
         helper.assertTrue(MazeHandler.data(outer).isBuilt(cx, cz), "the built gate did not mark the nest-room cell");
 
         // The shell starts AT the floor here (ref L20-23: c runs 0..10), and the
-        // floor is the eldritch void (code 8) with the crusted shell (code 22)
+        // floor is the eldritch void (code 8) with the crusted shell (code 21)
         // above it — the room's signature is the crust.
         helper.assertTrue(outer.getBlockState(new BlockPos(x + 1, y, z + 1)).is(Blocks.BEDROCK),
                 "the nest room's bedrock shell is missing at the floor corner");
         helper.assertTrue(isVoid(outer.getBlockState(new BlockPos(x + 8, y, z + 8))),
                 "the nest room's void floor (code 8) is missing");
         helper.assertTrue(isCrust(outer.getBlockState(new BlockPos(x + 8, y + 1, z + 8))),
-                "the nest room's crusted floor (code 22) is missing");
+                "the nest room's crusted floor (code 21) is missing");
         // The spawner platform: ref L41-47 stacks the crust up the room's
         // centre column, and ref L48-56 the upper platform at y+8.
         for (int c = 2; c <= 4; c++) {
@@ -994,7 +1009,7 @@ public final class OuterLandsGameTest {
                         "feature 11 (the trapped passage, code 20) left no trapped stone (meta 10)");
             }
             if (feature == 12) {
-                // Ref L246-250: feature 12 crusts the room (code 22).
+                // Ref L227-242 + GenCommon.java:229-251: feature 12 crusts (code 21).
                 helper.assertTrue(countInCell(outer, cx, cz, y, y + 10, OuterLandsGameTest::isCrust) >= 1,
                         "feature 12 (the crusted passage) left no crusted stone");
             }
@@ -1095,6 +1110,19 @@ public final class OuterLandsGameTest {
                 && state.getValue(BlockCosmeticSolid.VARIANT) == BlockCosmeticSolid.VARIANT_ANCIENT_STONE_2;
     }
 
+    /**
+     * The corridor's stone plate — maze code 2 (the STONE case, reference
+     * {@code GenCommon.java:66-84}): {@code blockCosmeticSolid} meta 11, or, on
+     * the case's 1-in-25 roll, the decoration the queue left in its place
+     * ({@code blockEldritch}'s crusted/glyphed/trap/crab-spawner variants, ref
+     * L279-318). Air and the eldritch void are the two answers that mean the
+     * code-2 placement never landed.
+     */
+    private static boolean isCorridorStone(final BlockState state) {
+        return state.is(CatalogDecorativeBlocks.BLOCK_COSMETIC_SOLID.get())
+                || state.is(CatalogEldritchRealm.BLOCK_ELDRITCH.get());
+    }
+
     /** The trapped stone (blockEldritch meta 10, maze code 20 / STONE_TRAPPED). */
     private static boolean isTrap(final BlockState state) {
         return state.is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())
@@ -1107,7 +1135,7 @@ public final class OuterLandsGameTest {
                 && state.getValue(BlockEldritch.VARIANT) == EldritchRealmValues.ELDRITCH_GLYPHED;
     }
 
-    /** The crusted shell (blockCosmeticSolid meta 14) and its code-22 eldritch twin. */
+    /** The crusted shell (blockCosmeticSolid meta 14) and its code-21 eldritch twin. */
     private static boolean isCrust(final BlockState state) {
         if (state.is(CatalogDecorativeBlocks.BLOCK_COSMETIC_SOLID.get())
                 && state.getValue(BlockCosmeticSolid.VARIANT) == BlockCosmeticSolid.VARIANT_CRUSTED_STONE) {
