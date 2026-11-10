@@ -490,16 +490,19 @@ public final class GolemInteractAiGameTest {
     }
 
     /**
-     * Keep a game-test failure message inside the writable_book page cap. The
-     * framework writes a probe's failure message into a writable book on a lectern,
-     * and a {@code minecraft:writable_book} page is a string of range [0-1024]: a
-     * longer message throws in {@code ItemStack#save} at chunk save — {@code Util:
+     * Keep a game-test failure message inside the writable_book page budget.
+     * {@code ReportGameListener#createBook} joins the test name, a 20-char page
+     * separator and the failure message into ONE {@code minecraft:writable_book}
+     * page, and that page's codec is
+     * {@code WritableBookContent.PAGE_CODEC = Filterable.codec(Codec.string(0, 1024))}.
+     * A longer page throws in {@code ItemStack#save} at chunk save — {@code Util:
      * Error saving [1 minecraft:writable_book]} plus a {@code LecternBlockEntity}
-     * "exception trying to write state" — and the diagnosis is buried under a
-     * serialization stack (measured t_67f61f59: a 2785-char message).
+     * "exception trying to write state" — and buries the diagnosis under a
+     * serialization stack (measured t_67f61f59: this probe's 58-char name plus a
+     * 2734-char page). 900 leaves room for the prefix.
      */
     private static String cap(final String message) {
-        return message.length() <= 1000 ? message : message.substring(0, 997) + "...";
+        return message.length() <= 900 ? message : message.substring(0, 897) + "...";
     }
 
     private static int countLogs(final GameTestHelper helper, final int xFrom, final int xTo) {

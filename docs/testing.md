@@ -105,6 +105,47 @@ without the evidence for its stages.
   (x, z) (`ZombieMobGameTest.MOB_CELL = (0,3,0)`), and assert the cell is entity-ticking BEFORE
   reading a per-tick counter, so a harness/layout change reports the precondition by name instead of
   arriving as a rate that cannot be measured.
+- **A mob probe owns the footing its contract rests on; terrain the harness can fill is not a start cell.**
+  `GameTestServer#startTests` draws the grid origin from `Level#getRandom`, so the natural ground under a
+  probe's mob moves with the batch, and a mob spawned **inside** a solid cube does not merely look odd: it
+  takes a damage per tick and trips the mob's own in-wall teleport. `EntityGolemBase#tick` runs
+  `if (!level.isClientSide && isInWall())` → `teleportToHome()` → `findSafePosition(...)`, whose 3×3×3
+  scan is ordered **dy +1 first, then 0** and dx/dz from −1, and stops at the **first** non-suffocating
+  cell. With the spawn cell solid and the surface at y+1, that scan's first hit is the cell **adjacent to
+  the probe's target** — the only free cell of the scan — and a goal whose click site is its `tick()` dies
+  there: `AIUseItem#tick` right-clicks only at `distanceToSqr(target) <= 4.0`, and `tick()` runs only
+  while `canContinueToUse()` holds, which ends on `!navigation.isDone()`; 1.21.1's `Path#isDone()` is
+  `nextNodeIndex >= nodeCount`, so a walker spawned next to its target gets a **one-node path** that
+  `PathNavigation` marks done on the first navigation tick — 2 of them per probe tick — and the click
+  never happens. Measured (t_67f61f59): the red leg on `f18e71f` carries the fingerprint in its **own**
+  message (`keep/t752/after_c_3.log`:984) — the golem's **feet at (6,0,4)**, one cell from the probe's marked
+  cell `(7,0,4)`, with `home=(5,0,4)` (the spawn cell it was teleported out of), `navDone=true`,
+  `tickCount=344`. The probe carves air at exactly `(6,0,4)` and `(7,0,4)`, so on a draw where the pad's
+  natural ground fills that row at y=0, the in-wall scan's only free cell **is** the marker's neighbour. On
+  `8bcb3d3` the same probe drew AIR at the feet cell in 25/25 sampled legs and went red **0/30** — a terrain
+  draw, not a race. Fix the CELL, not the assertion: fill the row the mob walks on
+  (`setBlock(x, -1, 4, STONE)` plus AIR at y=0 and y=1), **assert those cells where you set them**, and
+  latch the goal's own precondition — the mob starts **outside** its click sphere, the original's literal,
+  not a probe-chosen radius — and report it in the poll's first assert. Proven by four mutations, each of
+  which goes red naming its own gate: a solid cube at the mob's feet → the footing assert; a spawn at the
+  adjacent cell → "activated with the golem INSIDE its own click sphere (`feet=6,0,4 … d2=1.25`)"; the
+  product's own `dist <= 4.0` → `dist <= 0.0` → "activated at the marked cell … **never placed** the carried
+  block (`starts=106 ticks=4 stops=106`)"; the marked face `UP` → `NORTH` → "**never activated**". The fixed
+  probe then passes **12/12** with-Curios and **12/12** no-Curios legs (one of those 24 batches was red on
+  an unrelated probe, `combat_butchercullstheoldestanimalonlyinaherdofthree`, whose golem was 12 blocks from
+  the cell its probe pins — same family, flagged for its own card).
+- **Keep a game test's failure message inside the writable_book page budget.** On a red probe,
+  `ReportGameListener#createBook` joins the test name, `-------------------\n` and the failure message into
+  **one** `minecraft:writable_book` page placed on a lectern, and that page's codec is
+  `WritableBookContent.PAGE_CODEC = Filterable.codec(Codec.string(0, 1024))`. A longer page throws in
+  `ItemStack#save` at **chunk save** — `Util: Error saving [1 minecraft:writable_book]` plus a
+  `LecternBlockEntity` "exception trying to write state" — so the run reports a serialization stack and the
+  diagnosis is gone. Measured (t_67f61f59): the red leg's page was **2734 chars** (`after_c_3.log`:984-997),
+  and the payload starts with the probe's own name, which reads like a product encoding bug and is not — it
+  is the diagnosis overflowing. A 58-char probe name plus the 20-char separator leaves ~945 chars, so
+  `cap(…)` long probe messages at **900** and put the mechanism in the **short** asserts that fire first:
+  5 legs built red on purpose with a capped message produced **0** `Error saving [1
+  minecraft:writable_book]` lines, against 1 in the uncapped red leg.
 - **A probe asserts an OUTCOME, never a tick budget.** `helper.runAtTickTime(getTick() + N, …)` puts the
   harness's scheduler inside the port's contract: the assert fires on the **probe's** clock, while the
   fact it reads is produced by the **LEVEL** — an entity's AI tick, a chunk's block-tick pass — and
