@@ -8,6 +8,7 @@ import com.jonnyutah12.thaumcraftclassic.menus.HandMirrorMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.MagicBoxMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.ResearchTableMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.SpaMenu;
+import com.jonnyutah12.thaumcraftclassic.menus.ThaumatoriumMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.TrunkMenu;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -80,8 +81,13 @@ class MenuTypeScreenCoverageTest {
                 SpaMenu.class, "gui_spa"));
         SCREENS.put(ArcaneWorkbenchScreen.class, new ScreenUnderTest("CatalogArcaneWorkbench",
                 "MENU_ARCANE_WORKBENCH", ArcaneWorkbenchMenu.class, "gui_arcane_workbench"));
+<<<<<<< HEAD
         SCREENS.put(ResearchTableScreen.class, new ScreenUnderTest("CatalogFurniture",
                 "MENU_RESEARCH_TABLE", ResearchTableMenu.class, "gui_research_table"));
+=======
+        SCREENS.put(ThaumatoriumScreen.class, new ScreenUnderTest("CatalogThaumatorium",
+                "MENU_THAUMATORIUM", ThaumatoriumMenu.class, "gui_thaumatorium"));
+>>>>>>> daf10b9
 
         EXPECTED_HOLDERS.put("CatalogTrinketsLoot.GUI_TRUNK", "gui_trunk");
         EXPECTED_HOLDERS.put("CatalogTrinketsLoot.GUI_HAND_MIRROR", "gui_hand_mirror");
@@ -89,7 +95,11 @@ class MenuTypeScreenCoverageTest {
         EXPECTED_HOLDERS.put("CatalogFurniture.MENU_MAGIC_BOX", "gui_magic_box");
         EXPECTED_HOLDERS.put("CatalogFurniture.MENU_SPA", "gui_spa");
         EXPECTED_HOLDERS.put("CatalogArcaneWorkbench.MENU_ARCANE_WORKBENCH", "gui_arcane_workbench");
+<<<<<<< HEAD
         EXPECTED_HOLDERS.put("CatalogFurniture.MENU_RESEARCH_TABLE", "gui_research_table");
+=======
+        EXPECTED_HOLDERS.put("CatalogThaumatorium.MENU_THAUMATORIUM", "gui_thaumatorium");
+>>>>>>> daf10b9
     }
 
     private record ScreenUnderTest(String catalog, String holder, Class<?> menu, String id) {
@@ -166,6 +176,8 @@ class MenuTypeScreenCoverageTest {
                 "CatalogFurniture", declared);
         collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogArcaneWorkbench.java",
                 "CatalogArcaneWorkbench", declared);
+        collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogThaumatorium.java",
+                "CatalogThaumatorium", declared);
         assertEquals(EXPECTED_HOLDERS, declared,
                 "the catalogs' MenuType declarations and this test's expectations must agree; a new menu type "
                         + "needs a screen and an entry here");
