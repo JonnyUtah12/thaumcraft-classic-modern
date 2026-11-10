@@ -84,6 +84,36 @@ public final class ModDataComponents {
                             .networkSynchronized(ByteBufCodecs.VAR_INT)
                             .build());
 
+    /**
+     * Fortress helm mask variant (TC-M6-07): the original
+     * {@code ItemFortressArmor} NBT int "mask" (0 none, 1 angry ghost,
+     * 2 sipping fiend — {@code common/items/armor/ItemFortressArmor.java},
+     * set by the MASK1/MASK2 infusion recipes, {@code ConfigRecipes.java}).
+     * The combat effects are read by {@code runic/RunicShielding}
+     * (EventHandlerRunic.entityHurt parity); mask 0 (grinning devil,
+     * warp-event mitigation) is consumed by the warp-event card (TC-M6-05).
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> MASK =
+            DATA_COMPONENT_TYPES.register("mask",
+                    () -> DataComponentType.<Integer>builder()
+                            .persistent(Codec.intRange(0, 2))
+                            .networkSynchronized(ByteBufCodecs.VAR_INT)
+                            .build());
+
+    /**
+     * Fortress helm goggle attachment (TC-M6-07): the original
+     * {@code ItemFortressArmor}/{@code ItemVoidRobeArmor} NBT boolean
+     * "goggles" (set by the HELMGOGGLES infusion recipe,
+     * {@code ConfigRecipes.java:3629}). Drives node reveal through
+     * nodes/NodeReveal (IRevealer parity) and the tooltip line.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Boolean>> GOGGLES =
+            DATA_COMPONENT_TYPES.register("goggles",
+                    () -> DataComponentType.<Boolean>builder()
+                            .persistent(Codec.BOOL)
+                            .networkSynchronized(ByteBufCodecs.BOOL)
+                            .build());
+
     private ModDataComponents() {
     }
 }

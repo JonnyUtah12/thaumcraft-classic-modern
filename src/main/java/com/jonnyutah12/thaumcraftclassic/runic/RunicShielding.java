@@ -10,16 +10,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.accessory.AccessoryService;
 import com.jonnyutah12.thaumcraftclassic.api.IRunicArmor;
+import com.jonnyutah12.thaumcraftclassic.api.IWarpingGear;
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.aspect.AspectList;
 import com.jonnyutah12.thaumcraftclassic.config.TcConfig;
 import com.jonnyutah12.thaumcraftclassic.config.TcConfigCatalog;
+import com.jonnyutah12.thaumcraftclassic.items.armor.ItemFortressArmor;
 import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
 import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
 import com.jonnyutah12.thaumcraftclassic.wands.WandVis;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -27,6 +32,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -68,8 +74,10 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
  *
  * <p>Deferred to their milestones, cited at the call sites: the
  * {@code PacketRunicCharge} HUD sync and {@code PacketFXShield} hit effect
- * (client work, TC-M7-04/M2-03) and the fortress-helm mask effects
- * (TC-M6-07 armor).</p>
+ * (client work, TC-M7-04/M2-03). The fortress-helm mask effects
+ * (EventHandlerRunic.entityHurt lines 142-172) landed with the TC-M6-07
+ * armor card, and the {@code tooltipEvent} charge/warp lines
+ * (lines 328-339) are emitted here.</p>
  */
 @EventBusSubscriber(modid = ThaumcraftClassic.MOD_ID)
 public final class RunicShielding {
@@ -343,10 +351,49 @@ public final class RunicShielding {
 
     @SubscribeEvent
     public static void onIncomingDamage(final LivingIncomingDamageEvent event) {
+        // TC4 entityHurt order (EventHandlerRunic.java:142-172): the
+        // sipping-fiend leech runs first and reads the pre-absorption
+        // damage, then the wearer-side mask retaliation, then the shield.
+        if (event.getSource().getEntity() instanceof Player leecher) {
+            fortressMaskLeech(leecher, event.getAmount());
+        }
         if (!(event.getEntity() instanceof Player player) || player.level().isClientSide) {
             return;
         }
+        fortressMaskRetaliate(player, event.getSource(), event.getAmount());
         event.setAmount(hurt(player, event.getSource(), event.getAmount(), System.currentTimeMillis()));
+    }
+
+    /**
+     * TC4 mask 2 "sipping fiend" ({@code EventHandlerRunic.java:142-155}):
+     * a player attacking with a mask-2 fortress helm heals 1 with chance
+     * {@code damage / 12}.
+     */
+    private static void fortressMaskLeech(final Player leecher, final float damage) {
+        final ItemStack helm = leecher.getItemBySlot(EquipmentSlot.HEAD);
+        if (helm.getItem() instanceof ItemFortressArmor
+                && ItemFortressArmor.getMask(helm) == 2
+                && leecher.getRandom().nextFloat() < damage / 12.0f) {
+            leecher.heal(1.0f);
+        }
+    }
+
+    /**
+     * TC4 mask 1 "angry ghost" ({@code EventHandlerRunic.java:160-172}): a
+     * player wearing a mask-1 fortress helm being attacked by a living
+     * entity withers the attacker for 80 ticks with chance
+     * {@code damage / 10} (the original's {@code Potion.field_82731_v} =
+     * wither, reference/mcp-mappings/fields_1.7.10_mcp_stable_11.csv:4576).
+     */
+    private static void fortressMaskRetaliate(final Player player, final DamageSource source,
+                                              final float damage) {
+        final ItemStack helm = player.getItemBySlot(EquipmentSlot.HEAD);
+        if (helm.getItem() instanceof ItemFortressArmor
+                && ItemFortressArmor.getMask(helm) == 1
+                && source.getEntity() instanceof LivingEntity attacker
+                && player.getRandom().nextFloat() < damage / 10.0f) {
+            attacker.addEffect(new MobEffectInstance(MobEffects.WITHER, 80));
+        }
     }
 
     /**
@@ -410,6 +457,44 @@ public final class RunicShielding {
 
     private static boolean cooldownReady(final ShieldState state, final int key, final long nowMs) {
         return !state.upgradeCooldown.containsKey(key) || state.upgradeCooldown.get(key) < nowMs;
+    }
+
+    /**
+     * TC4 {@code EventHandlerRunic.getFinalWarp} (lines 356-363): the
+     * {@code IWarpingGear} value of a stack, 0 for anything else. The
+     * per-player sum is the warp-event card's own port
+     * ({@code common/lib/WarpEvents.java:353}, TC-M6-05).
+     */
+    public static int finalWarp(final ItemStack stack, final Player player) {
+        if (!stack.isEmpty() && stack.getItem() instanceof IWarpingGear gear) {
+            return gear.getWarp(stack, player);
+        }
+        return 0;
+    }
+
+    /**
+     * TC4 {@code EventHandlerRunic.tooltipEvent} (lines 328-339): gold
+     * runic-charge line for any stack with final charge &gt; 0, dark-purple
+     * warp line for any {@code IWarpingGear} stack. Covers the TC-M8-02
+     * runic baubles and the TC-M6-07 armor alike.
+     */
+    @SubscribeEvent
+    public static void onItemTooltip(final ItemTooltipEvent event) {
+        final ItemStack stack = event.getItemStack();
+        if (stack.getItem() instanceof IRunicArmor armor) {
+            final int charge = finalChargeOf(armor, stack);
+            if (charge > 0) {
+                event.getToolTip().add(Component.translatable("item.runic.charge")
+                        .append(Component.literal(" +" + charge))
+                        .withStyle(ChatFormatting.GOLD));
+            }
+        }
+        final int warp = finalWarp(stack, event.getEntity());
+        if (warp > 0) {
+            event.getToolTip().add(Component.translatable("item.warping")
+                    .append(Component.literal(" " + warp))
+                    .withStyle(ChatFormatting.DARK_PURPLE));
+        }
     }
 
     @SubscribeEvent
