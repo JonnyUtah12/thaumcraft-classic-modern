@@ -1,6 +1,6 @@
 {
   "type": "minecraft:block",
-  "_comment": "The original blockarcanefurnace dropped itself (its metadata 0 base plate and metadata 10 nozzle both drop the block, with the metadata preserved by BlockStem-like damage on the stack). 1.21.1 has no implicit self-drop, so this table carries both variants: the block_state component keeps the variant so a re-placed nozzle is still a nozzle.",
+  "_comment": "The original blockarcanefurnace dropped itself: all eleven metadata (the base plate, the nozzle, and the shell cells of the 3x3x3, which carry metadata 1-9 around the plate) drop the block with the metadata preserved on the stack. 1.21.1 has no implicit self-drop, so this table carries every variant: the block_state component keeps the variant so a re-placed nozzle is still a nozzle and a broken shell cell keeps its grid position (TC-M4-06-m).",
   "pools": [
     {
       "rolls": 1.0,
@@ -24,6 +24,123 @@
         {
           "function": "minecraft:set_components",
           "components": { "minecraft:block_state": { "variant": "1" } }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockarcanefurnace" } ]
+    },
+    {
+      "rolls": 1.0,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockarcanefurnace", "properties": { "variant": "2" } }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "minecraft:block_state": { "variant": "2" } }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockarcanefurnace" } ]
+    },
+    {
+      "rolls": 1.0,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockarcanefurnace", "properties": { "variant": "3" } }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "minecraft:block_state": { "variant": "3" } }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockarcanefurnace" } ]
+    },
+    {
+      "rolls": 1.0,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockarcanefurnace", "properties": { "variant": "4" } }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "minecraft:block_state": { "variant": "4" } }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockarcanefurnace" } ]
+    },
+    {
+      "rolls": 1.0,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockarcanefurnace", "properties": { "variant": "5" } }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "minecraft:block_state": { "variant": "5" } }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockarcanefurnace" } ]
+    },
+    {
+      "rolls": 1.0,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockarcanefurnace", "properties": { "variant": "6" } }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "minecraft:block_state": { "variant": "6" } }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockarcanefurnace" } ]
+    },
+    {
+      "rolls": 1.0,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockarcanefurnace", "properties": { "variant": "7" } }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "minecraft:block_state": { "variant": "7" } }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockarcanefurnace" } ]
+    },
+    {
+      "rolls": 1.0,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockarcanefurnace", "properties": { "variant": "8" } }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "minecraft:block_state": { "variant": "8" } }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockarcanefurnace" } ]
+    },
+    {
+      "rolls": 1.0,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockarcanefurnace", "properties": { "variant": "9" } }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "minecraft:block_state": { "variant": "9" } }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockarcanefurnace" } ]
+    },
+    {
+      "rolls": 1.0,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "thaumcraft:blockarcanefurnace", "properties": { "variant": "10" } }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "minecraft:block_state": { "variant": "10" } }
         }
       ],
       "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blockarcanefurnace" } ]
