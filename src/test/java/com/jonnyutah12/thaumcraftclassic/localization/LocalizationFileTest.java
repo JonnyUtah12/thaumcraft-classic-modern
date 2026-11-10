@@ -43,7 +43,10 @@ class LocalizationFileTest {
             // 1.21.1 enchantments are datapack entries labelled by their own
             // key shape (TC-M6-05-s-e1c: ench_repair, ench_haste).
             "enchantment.thaumcraft.",
-            "death.attack.thaumcraft.", "fluid.thaumcraft.");
+            "death.attack.thaumcraft.", "fluid.thaumcraft.",
+            // TC-M6-04f-m: the vanilla biome description id shape
+            // "biome.<namespace>.<path>" (the Eldritch biome).
+            "biome.thaumcraft.");
 
     /**
      * Keys the shipped code uses with the original 1.7.10 key shape, kept

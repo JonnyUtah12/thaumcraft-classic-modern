@@ -8,6 +8,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEntities;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchRealm;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogOuterLands;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogGolems;
@@ -223,6 +224,11 @@ public final class ModRegistration {
         // data/thaumcraft/recipe/ name. The rows themselves ride the
         // CatalogArcaneWorkbench type/serializer pair above.
         CatalogWandRecipes.init(modEventBus);
+        // TC-M6-04f-m: the Outer Lands dimension family — the eldritch portal
+        // block/tile (thaumcraft:blockPortalEldritch), the maze build sweep
+        // (MazeHandler) and the teleporter. The dimension itself is the
+        // dimension_type/dimension datapack pair under data/thaumcraft/.
+        CatalogOuterLands.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

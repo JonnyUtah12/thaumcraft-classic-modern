@@ -201,8 +201,13 @@ public final class EldritchRealmGameTest {
                 "the lock's fuse runs to the boss spawn (the original's count > 100)");
         helper.assertTrue(EldritchBossRoomHost.bossCount(level) >= 1,
                 "the boss spawn advanced the per-level boss counter");
-        helper.assertTrue(!EldritchBossRoomHost.hasBuilder(),
-                "the boss-room builder is a seam owned by the follow-up card (TC-M6-04f-m / TC-M6-06)");
+        // TC-M6-04f-m filled that seam: the maze handler installs a room
+        // builder at mod start, so the lock's call now reaches a real builder.
+        // The seam's contract is unchanged — a card that installs a builder
+        // gets the rooms, and the counter/rotation/announcement above still
+        // belong to the lock.
+        helper.assertTrue(EldritchBossRoomHost.hasBuilder(),
+                "the boss-room seam is filled by TC-M6-04f-m (MazeHandler.install)");
 
         // Crab spawner: counts down from 150 (the refill and vent cadence is
         // covered by the unit parity tests; the in-world path must tick).
