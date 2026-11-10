@@ -38,3 +38,5 @@ origin/wt/m7-gui-research-table,5a7726e527dcfbab953dcdb80b6f153f8042c337,BD-19,B
 origin/wt/t_fee89bb7,6131705670d32f9eff72b393a84a3f1826c3789b,BD-19,BD-63,t_e4e67fd6,yes,"Research table window (TC-M7-04-m2b / t_5caddd7d, `thaumcraft:gui_research_table`, gui_id 10)"
 origin/wt/knowfrag-recipe,05f64952384fbdc4be2b5c2216e11b458cadf1cb,BD-19,BD-64,t_9eefdde6,no,KnowFrag recipe / research-page recipe display (TC-M3-04-s-iv + TC-M3-04-s-iv-b)
 origin/wt/thaumonomicon-recipe-page,96b247a7789350efa90d1b7ded81c5cfdb203601,BD-19,BD-64,t_9eefdde6,yes,KnowFrag recipe / research-page recipe display (TC-M3-04-s-iv + TC-M3-04-s-iv-b)
+origin/wt/inkwell-recipe,d0ed7164b6eaa2c0b00452381f74607233ead443,BD-20,BD-66,t_28fe696f,yes,Scribing Tools acquisition (TC-M3-04-s-vi)
+origin/wt/inkwell-recipe,d0ed7164b6eaa2c0b00452381f74607233ead443,BD-20,BD-66,t_28fe696f,yes,Scribing Tools acquisition (TC-M3-04-s-vi)

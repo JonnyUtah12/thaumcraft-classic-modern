@@ -216,6 +216,45 @@ Rules the code pins:
   `tc.research.shortprim` / `tc.research.short` (14423100), and the
   `tc.research.popup` line (khaki, wrapped at 150 px) for 3000 ms after a note.
 
+## Scribing Tools acquisition (TC-M3-04-s-vi)
+
+BD-19 left the inkwell survival-unobtainable (BD-20), so the card ports the
+original's acquisition rows: `ConfigRecipes.java:3971-3982` registers three
+`shapelessOreDictRecipe` rows for `itemInkwell` at mod load - Scribe1 = empty
+phial (`itemEssence` meta 0) + feather (`Items.field_151008_G`, MCP fields
+CSV :1610) + `dyeBlack`, Scribe2 = glass bottle (`Items.field_151069_bo`,
+:1671) + feather + `dyeBlack`, Scribe3 = inkwell (meta 32767 wildcard) +
+`dyeBlack` recolor. The helper (`ConfigRecipes.java:4091-4095`) drops every
+row straight into the CraftingManager: never research-gated, so the shipped
+rows are plain `minecraft:crafting_shapeless` JSON, not arcane/infusion rows.
+
+- **The phial ingredient is component-pinned.** 1.21.1 has no meta-item
+  subtypes; the port keeps metas on `thaumcraft:item_meta` (BD-04 / D-001).
+  The Scribe1 ingredient is the registered `neoforge:components` Ingredient
+  (the `type` key is mandatory, D-015) pinning `item_meta` 0 - the
+  jar-drain return `ItemPhial.stack(0)` matches, and a filled (meta 1)
+  phial never does: the original's meta-0 `ShapelessOreRecipe` ate only
+  empty phials, and a bare-id ingredient would eat essentia the original
+  kept (BD-20 alternative (a)). The creative-tab phial carries no component
+  and crafts nothing - same as a 1.7.10 creative phial (meta 0 as a
+  damage value, matching) with the port's component model, supply arrives
+  by draining jars.
+- **`dyeBlack` reads the port's oredict tag family.** The 1.7.10 `dyeBlack`
+  entry was dye meta 0 - the item named Ink Sac (the squid path). 1.21.1
+  splits that identity, so `thaumcraft:oredict.dyeblack` carries
+  `minecraft:ink_sac` (the original's item) + `minecraft:black_dye` (the
+  modern dye), matching the `oredict.dyeblue` family precedent.
+- **Scribe3 ships as NOTHING.** Its ingredient is the inkwell itself with
+  the 32767 wildcard, which acts on the 16-colour meta family; the port's
+  `ItemInkwell` declares no subtypes, so there is nothing to recolor, and
+  a dye-consuming no-op row would invent a cost (BD-20). The recolor row
+  lands with the colour family on the item models card (D-004).
+- **Gate discipline:** every item each row names carries a
+  `neoforge:item_exists` condition (the `neoforge:components` item is in
+  its `items` list), so an unported ingredient SKIPS the row instead of
+  failing the data pack; both rows and every shipped `.crafting_` row
+  decode, are live, and craft on the server (see Testing).
+
 ## Testing
 
 - Unit (`src/test/.../research/`): `ResearchProgressionRulesTest` — starting
@@ -270,3 +309,18 @@ Rules the code pins:
   arm's 7-9 fragments counted as `ItemEntity` drops, the success arm's stamped
   meta-0 note, the tooltip keys with the warp clamp, and the note surviving its
   NBT (byte-width `hexgrid` rows), wire and stack-save round trips.
+- Scribing Tools acquisition (`recipes/InkwellRecipeDataTest` 6, game
+  `gametest/InkwellRecipeGameTest` 4): the data test reads the decompiled
+  Scribe1/2/3 rows out of `ConfigRecipes.java` field-for-field, resolves
+  `field_151008_G`/`field_151069_bo` through the MCP fields CSV, pins the
+  shipped shapeless shape, the component-pinned meta-0 phial, the
+  glass-bottle/feather/dyeBlack ids, the `dyeBlack` tag contents
+  (`ink_sac` + `black_dye`), the `neoforge:item_exists` gate on every named
+  item, the no-inkwell-as-ingredient rule (Scribe3 deferred), the
+  content-mapping row, and the whole shipped `.crafting_` family decoding.
+  The game probes prove on the server that every shipped `.crafting_` row
+  (this family included) parses and is live in the `RecipeManager`, that
+  the phial and glass-bottle grids each assemble a fresh inkwell at full
+  100 durability through the vanilla match, that the ink-sac grid crafts
+  (the squid path), and that filled-phial, un-component-phial, blue-dye and
+  feather-less grids refuse.
