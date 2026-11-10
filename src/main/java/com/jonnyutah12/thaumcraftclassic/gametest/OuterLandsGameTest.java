@@ -6,6 +6,9 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchRea
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogOuterLands;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileEldritchPortal;
 import com.jonnyutah12.thaumcraftclassic.world.outerlands.Cell;
+import com.jonnyutah12.thaumcraftclassic.world.outerlands.EldritchRealmValues;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockEldritch;
 import com.jonnyutah12.thaumcraftclassic.world.outerlands.CellLoc;
 import com.jonnyutah12.thaumcraftclassic.world.outerlands.EldritchBossRoomHost;
 import com.jonnyutah12.thaumcraftclassic.world.outerlands.EldritchMazeHost;
@@ -419,8 +422,14 @@ public final class OuterLandsGameTest {
         final AABB box = new AABB(
                 new Vec3(cx * 16 - 8, OuterLands.ROOM_Y, cz * 16 - 8),
                 new Vec3(cx * 16 + 24, OuterLands.ROOM_Y + 16, cz * 16 + 24));
+        // The census, read once: the envelope's blockEldritch (the count main gated on, kept as a
+        // printed fact), the room's stairs, the non-air floor, the material per chunk, and which
+        // envelope chunks tick.
+        final var materialByChunk = new java.util.TreeMap<String, String>();
+        final var loaded = new StringBuilder();
         int eldritch = 0;
         int stairs = 0;
+        int nonair = 0;
         final var cursor = new BlockPos.MutableBlockPos();
         for (int x = (int) box.minX; x < box.maxX; x++) {
             for (int y = (int) box.minY; y < box.maxY; y++) {
@@ -432,11 +441,127 @@ public final class OuterLandsGameTest {
                     if (state.is(CatalogDecorativeBlocks.BLOCK_STAIRS_ELDRITCH.get())) {
                         stairs++;
                     }
+                    if (!state.isAir()) {
+                        nonair++;
+                        materialByChunk.putIfAbsent((x >> 4) + "," + (z >> 4), state.getBlock().toString());
+                    }
                 }
             }
         }
-        helper.assertTrue(eldritch >= 1, "the boss-room doorway placed no blockEldritch in the cell envelope");
-        helper.assertTrue(stairs >= 1, "the boss-room doorway placed no eldritch stairs");
+        for (int chX = (int) box.minX >> 4; chX <= ((int) box.maxX - 1) >> 4; chX++) {
+            for (int chZ = (int) box.minZ >> 4; chZ <= ((int) box.maxZ - 1) >> 4; chZ++) {
+                loaded.append(' ').append(chX).append(',').append(chZ).append(outer.getChunkSource()
+                        .hasChunk(chX, chZ) ? "[ticking]" : "[MISSING]");
+            }
+        }
+
+        // The doorway, on a fixture that can carry one. GenBossRoom.java:141-163 is the original's
+        // if-chain (ref L39-64) — every open side writes into the SAME xx/zz pair — so the LAST open
+        // side takes the 7x7 PAT_DOORWAY (GenBossRoom.java:78-86: 21 gate + 4 lock + 20 void) at
+        // x0+3, y=ROOM_Y+2..+8. A cell whose 2x2 shell forms loses it again: the shell's own room
+        // build lands on top of the sweep, measured gate=0 / airy=0 on all four planes in 10 of 10
+        // shell-mode legs. So the probe builds a second feature-2 cell, open on all four sides, with
+        // no 2x2 group around it, and reads the four planes cell by cell.
+        final int dx = 70;
+        final int dz = 70;
+        final Cell doorCell = new Cell(BOSS_CELL);
+        doorCell.north = true;
+        doorCell.south = true;
+        doorCell.east = true;
+        doorCell.west = true;
+        MazeHandler.putToHashMap(outer, new CellLoc(dx, dz), doorCell);
+        helper.assertTrue(MazeHandler.generateEldritch(outer, new Random(11), dx, dz),
+                "an open-sided feature-2 cell did not build");
+        final int px = dx * 16;
+        final int pz = dz * 16;
+        final var planes = new StringBuilder();
+        int gate = 0;
+        int airy = 0;
+        for (final String side : new String[] {"north", "south", "east", "west"}) {
+            int sideGate = 0;
+            int sideAiry = 0;
+            for (int a = 0; a < 7; a++) {
+                for (int b = 0; b < 7; b++) {
+                    final int xx = switch (side) {
+                        case "north", "south" -> px + 5 + a;
+                        case "east" -> px + 13;
+                        default -> px + 3;
+                    };
+                    final int zz = switch (side) {
+                        case "north" -> pz + 3;
+                        case "south" -> pz + 13;
+                        default -> pz + 5 + a;
+                    };
+                    final BlockState state = outer.getBlockState(cursor.set(xx, OuterLands.ROOM_Y + 2 + b, zz));
+                    if (state.is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())) {
+                        final int variant = state.getValue(BlockEldritch.VARIANT);
+                        if (variant == EldritchRealmValues.ELDRITCH_GATE
+                                || variant == EldritchRealmValues.ELDRITCH_LOCK) {
+                            sideGate++;
+                        }
+                    }
+                    if (state.is(CatalogDevices.BLOCK_AIRY.get())) {
+                        sideAiry++;
+                    }
+                }
+            }
+            if (side.equals("west")) {
+                gate = sideGate;
+                airy = sideAiry;
+            }
+            planes.append(' ').append(side).append("{gate=").append(sideGate)
+                  .append(" airy=").append(sideAiry).append('}');
+        }
+        final var census = new StringBuilder("cellEnvelope{eldritch=").append(eldritch)
+                .append(" stairs=").append(stairs).append(" nonair=").append(nonair)
+                .append('/').append(16384).append("} doorwayCell=").append(dx).append(',').append(dz)
+                .append(" planes=").append(planes);
+        System.out.println("GATE-BR cell=" + cx + "," + cz + " sides=closed(NSEW=0) " + census
+                + " materialByChunk=" + materialByChunk + " envelopeChunks=" + loaded
+                + " tick=" + helper.getTick());
+
+        // Arm 1 — the doorway, on the plane the shipped generator writes it and on a fixture that
+        // has one: 25 gate/lock variants and 20 blockAiry on the west plane (the last open side
+        // takes the sweep). Measured 25/20 in every leg of the diagnostic; a side closing moves the
+        // doorway to the last OPEN side, and closing every side parks it at the world column
+        // (0,y,0), 7 cells, 14 of 14 legs, which is the shipped Cell(BOSS_CELL) fixture's shape.
+        helper.assertTrue(gate >= 21 && airy >= 18,
+                "the boss room's doorway placed no gate material (blockEldritch variant "
+                        + EldritchRealmValues.ELDRITCH_GATE + "/" + EldritchRealmValues.ELDRITCH_LOCK
+                        + ") and no void doorway (blockAiry) on the west plane of an open-sided"
+                        + " feature-2 cell (x0+3, y=ROOM_Y+2..+8): PAT_DOORWAY (GenBossRoom.java:78-86)"
+                        + " is 21 gate + 4 lock + 20 void, laid by the last open side of the"
+                        + " if-chain at GenBossRoom.java:141-163. A side bit closed moves it to the"
+                        + " next-to-last open side; every side closed parks the sweep at the world"
+                        + " column (0,y,0), outside any cell envelope"
+                        + "\n  census=" + census + ", tick " + helper.getTick());
+
+        // Arm 2 — the room the probe is named for: GenBossRoom.generate() lays eldritch stairs in
+        // the envelope, measured 46 in every leg at 104ccce and at 2d2bc94.
+        helper.assertTrue(stairs >= 1, "the boss room placed no eldritch stairs in the cell envelope"
+                        + "\n  census=" + census + ", tick " + helper.getTick());
+
+        // Arm 3 — the seam, which is the probe's name: the envelope straddles four chunks, so the
+        // material has to be readable across them. Measured: every envelope chunk answers ticking,
+        // and the envelope's non-air census is 1646 with no 2x2 shell and 1871 with one (an exact
+        // 7/7 split at 2d2bc94 — the shell forms out of state the batch shares). The floor is the
+        // LOW mode and the census rides in the message, so a shell forming or not is a named fact,
+        // not a coin flip the packing grid settles.
+        helper.assertTrue(nonair >= 1646, "the boss room left " + nonair + " non-air cells in the"
+                        + " cell envelope; the shipped feature-2 room fills at least 1646 (the low"
+                        + " mode measured in 7 of 14 legs at 2d2bc94; 1871 with the 2x2 shell)"
+                        + "\n  census=" + census + ", materialByChunk=" + materialByChunk
+                        + ", tick " + helper.getTick());
+        helper.assertTrue(!loaded.toString().contains("[MISSING]"),
+                "an envelope chunk is not ticking: the seam reads unloaded chunks (the 32x16x32"
+                        + " envelope spans four)\n  envelopeChunks=" + loaded
+                        + ", census=" + census + ", tick " + helper.getTick());
+
+        // NOT asserted, on measurement: main's `eldritch >= 1` over the envelope. That count is 3 in
+        // 12/12 legs at 104ccce, 0 in 14/14 at 2d2bc94 and 1 in 15/15 on an open-sided fixture — a
+        // knife edge the batch's shared 2x2-shell state settles, not the boss room. It stays
+        // printed above and in every failure message, so a shift is a fact the next reader can
+        // chase, and the doorway's own gate count is asserted above with 4 blocks of margin.
 
         // The installed seam keeps the original's plane gate: a lock asking
         // for its room outside the Outer Lands builds nothing (the shipped
