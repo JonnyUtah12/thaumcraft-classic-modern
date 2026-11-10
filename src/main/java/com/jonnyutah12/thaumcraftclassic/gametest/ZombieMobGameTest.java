@@ -26,6 +26,7 @@ import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -596,32 +597,160 @@ public final class ZombieMobGameTest {
 
     // ------------------------------------------------------------- drops
 
-    /** Kill {@code kills} fresh mobs and count the items their deaths leave
-     *  inside the pad. A mob built from the registry carries no equipment and
-     *  has no entity loot table, so the only drops are the ones the original's
-     *  {@code func_70628_a} body produces. */
-    private static int countDeathDrops(final GameTestHelper helper, final String path,
-            final Item expected, final int kills) {
+    /** How long the drop probes wait after the kills before they read the pad.
+     *  The scan is the point where the neighbourhood matters (see DeathDrops), so
+     *  it runs a few ticks AFTER the kills: by then every probe in the batch has
+     *  had its own tick 0 and its foreign stacks are in the box, exactly as they
+     *  are in a real run. The verdicts themselves read the owned subset captured
+     *  at the kill, so the delay cannot move a count. */
+    private static final int SCAN_DELAY_TICKS = 5;
+
+    /** The stacks this probe's own kills left in the pad — the owned subset.
+     *
+     *  <p>Ownership is captured <b>at the kill</b>. The server thread is
+     *  single-threaded and a {@code mob.hurt} call is not re-entered, so the item
+     *  entities that enter the pad between the two scans wrapped around one kill
+     *  are exactly that death's drops: no neighbouring probe, no block break, no
+     *  loot roll can run inside the call.</p>
+     *
+     *  <p><b>Item identity cannot carry ownership here.</b> The mutation surface of
+     *  this probe IS the drop table, so the stack a defect produces — a replaced
+     *  {@code dropAllLoot} arm, a flipped 6-flip loop — is the probe's OWN stack,
+     *  and a filter keyed on the legal items is blind to precisely that. (The house
+     *  pattern in {@code OreDropGameTest.ownedBy} filters by item because there the
+     *  contract names one item; here the contract IS the item set.)</p>
+     *
+     *  <p><b>Position cannot carry it either.</b> The batch packs structures on a
+     *  walk ({@code StructureGridSpawner} advances {@code xsize + 5} in x and
+     *  {@code zsize + 6} in z per placed structure; {@code TestGenerator} restarts
+     *  the walk every 40 tests — measured numbers in
+     *  {@link #aForeignStackInAPadIsNamedAndNotCounted}), so a 1×1×1 {@code empty}
+     *  neighbour sits 6 away in x <b>and</b> z from this pad while {@link #mobBox}
+     *  spans ±12, and a 24³ neighbour's cell edge reaches to 5 blocks from it: a
+     *  neighbour's ejected stack lands on this probe's own kill column. Measured on
+     *  CI run 42573819914 (attempt 1, sha 1430745):
+     *  {@code furiouszombiedeathdropsdoubletherollsandthestack} failed at grid
+     *  origin 12969321, -60, -6539840 with {@code a furious zombie dropped
+     *  minecraft:stone_button}. No drop body of the pair can produce a stone
+     *  button ({@code grep -rn stone_button src/main/java} → 1 hit, in
+     *  {@code data/thaumcraft/essentia/tags.json}; no vanilla structure NBT and no
+     *  vanilla loot table contains one, so it is not terrain loot — the project's
+     *  only {@code stone_button} is the ported essentia entry {@code itemTags[195]},
+     *  {@code machina 1}, which a neighbouring machine probe can eject), so the scan
+     *  was reading the neighbourhood. {@code GameTestServer#startTests} draws the
+     *  grid origin from the level RNG, which is why the arm was green in run
+     *  42573817477 and red in 42573819914 at the identical sha.</p>
+     *
+     *  <p>Foreign stacks therefore stay in the report — the failure message names
+     *  them — and are never counted into the verdict. Every kill in the pair puts a
+     *  stone button through the shipped block-break route inside the pad on the kill
+     *  tick ({@link #breakForeignBlockInPad}), and
+     *  {@link #aForeignStackInAPadIsNamedAndNotCounted} keeps that shape as a standing
+     *  probe with a self-check, so the coupling is exercised on every run instead of
+     *  on the draws that happen to collide.</p> */
+    private static final class DeathDrops {
+
+        private final java.util.List<ItemStack> owned = new java.util.ArrayList<>();
+        private final java.util.Set<java.util.UUID> ownedIds = new java.util.HashSet<>();
+
+        /** The total items in the owned stacks carrying this item. */
+        private int countOf(final Item item) {
+            int total = 0;
+            for (final ItemStack stack : this.owned) {
+                if (stack.is(item)) {
+                    total += stack.getCount();
+                }
+            }
+            return total;
+        }
+    }
+
+    /** Kill {@code kills} fresh mobs and collect what their deaths left, attributed
+     *  to this probe by the scans wrapped around each kill — see {@link DeathDrops}.
+     *  A mob built from the registry carries no equipment and has no entity loot
+     *  table, so the only drops are the ones the original's bodies produce. */
+    private static DeathDrops killAndCollectDeathDrops(final GameTestHelper helper,
+            final String path, final int kills) {
         final ServerLevel level = helper.getLevel();
         final Player killer = helper.makeMockPlayer(GameType.SURVIVAL);
         final BlockPos at = helper.absolutePos(new BlockPos(1, 3, 1));
         killer.setPos(at.getX() + 2.5, at.getY(), at.getZ() + 0.5);
-        int items = 0;
+        final DeathDrops drops = new DeathDrops();
         for (int i = 0; i < kills; i++) {
             final Mob mob = (Mob) registered(helper, path).create(level);
             mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0.0F, 0.0F);
             level.addFreshEntity(mob);
+            final java.util.Set<java.util.UUID> ambient = padDropIds(helper);
             mob.hurt(level.damageSources().playerAttack(killer), 1000.0F);
             helper.assertTrue(mob.isDeadOrDying(), "the probe's kill of thaumcraft:" + path
                     + " (death " + i + ") did not kill the mob, so the drop roll never ran");
+            for (final ItemEntity drop : level.getEntitiesOfClass(ItemEntity.class, mobBox(helper))) {
+                if (!ambient.contains(drop.getUUID())) {
+                    drops.ownedIds.add(drop.getUUID());
+                    drops.owned.add(drop.getItem().copy());
+                }
+            }
+            // Foreign stack in the pad, on the kill tick, after the capture: the
+            // arm's foreign-stack fixture (see breakForeignBlockInPad).
+            breakForeignBlockInPad(helper, i);
         }
         killer.discard();
-        for (final ItemEntity drop : level.getEntitiesOfClass(ItemEntity.class, mobBox(helper))) {
-            if (drop.getItem().is(expected)) {
-                items += drop.getItem().getCount();
+        return drops;
+    }
+
+    /** The identity arm, run on the owned subset. Foreign stacks in the pad are
+     *  NAMED in the failure message and never counted — see {@link DeathDrops}. */
+    private static void assertOwnedDeathDropsAre(final GameTestHelper helper,
+            final DeathDrops drops, final java.util.function.Predicate<ItemStack> legal,
+            final String who, final String bodies) {
+        final java.util.List<ItemStack> outside = new java.util.ArrayList<>();
+        for (final ItemStack stack : drops.owned) {
+            if (!legal.test(stack)) {
+                outside.add(stack);
             }
         }
-        return items;
+        final java.util.List<ItemStack> foreign = new java.util.ArrayList<>();
+        for (final ItemEntity drop : helper.getLevel().getEntitiesOfClass(ItemEntity.class, mobBox(helper))) {
+            if (!drops.ownedIds.contains(drop.getUUID())) {
+                foreign.add(drop.getItem());
+            }
+        }
+        helper.assertTrue(!drops.owned.isEmpty(),
+                who + "'s kills left no drop in the pad at all, so the drop contract (" + bodies
+                        + ") was never exercised");
+        helper.assertTrue(outside.isEmpty(),
+                who + " dropped " + describeStacks(outside) + ", outside the pair's drop bodies: "
+                        + bodies + " — the pad also held " + describeStacks(foreign)
+                        + " from neighbours (the batch walks structures 6 apart in x and z for a"
+                        + " 1x1x1 template, 29 for a 24^3 one, and mobBox spans +-12, so their"
+                        + " stacks reach this kill column): named, not counted");
+    }
+
+    /** "2x minecraft:rotten_flesh, 1x thaumcraft:itemresource" — grouped by
+     *  registered id, so a pad full of a neighbour's 240 drops fits one line. */
+    private static String describeStacks(final java.util.List<ItemStack> stacks) {
+        final java.util.Map<String, int[]> counts = new java.util.LinkedHashMap<>();
+        for (final ItemStack stack : stacks) {
+            final String key = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+            counts.computeIfAbsent(key, k -> new int[1])[0] += stack.getCount();
+        }
+        final StringBuilder out = new StringBuilder();
+        for (final java.util.Map.Entry<String, int[]> entry : counts.entrySet()) {
+            if (out.length() > 0) {
+                out.append(", ");
+            }
+            out.append(entry.getValue()[0]).append("x ").append(entry.getKey());
+        }
+        return "[" + out + "]";
+    }
+
+    /** The item entities standing in the pad right now, by identity. */
+    private static java.util.Set<java.util.UUID> padDropIds(final GameTestHelper helper) {
+        final java.util.Set<java.util.UUID> ids = new java.util.HashSet<>();
+        for (final ItemEntity drop : helper.getLevel().getEntitiesOfClass(ItemEntity.class, mobBox(helper))) {
+            ids.add(drop.getUUID());
+        }
+        return ids;
     }
 
     private static net.minecraft.world.phys.AABB mobBox(final GameTestHelper helper) {
@@ -629,63 +758,148 @@ public final class ZombieMobGameTest {
         return new net.minecraft.world.phys.AABB(at).inflate(12, 12, 12);
     }
 
+    /** A stone button placed in the pad and broken through the shipped block-break
+     *  route, on the kill tick, AFTER that kill's drops were captured.
+     *
+     *  <p>It reproduces in the probe's own box the one shape that reddened CI: a
+     *  foreign stack produced by the block-break/loot path, standing in the scan box
+     *  when the pad is read. It goes in the kill column's own box because that is
+     *  where the coupling lives and because the batch order fixes every position:
+     *  a probe cannot be packed "next to" the drop probes at a chosen distance, so
+     *  the same-tick foreign stack is produced where the verdict is made. The
+     *  measured layout is in {@link #aForeignStackInAPadIsNamedAndNotCounted}.</p> */
+    private static void breakForeignBlockInPad(final GameTestHelper helper, final int index) {
+        final BlockPos rel = new BlockPos(3 + index, 6 + index, 4);
+        helper.setBlock(rel.getX(), rel.getY(), rel.getZ(),
+                net.minecraft.world.level.block.Blocks.STONE_BUTTON.defaultBlockState());
+        helper.assertTrue(helper.getLevel().destroyBlock(helper.absolutePos(rel), true, null),
+                "the fixture's stone button at " + rel.toShortString() + " did not break, so the"
+                        + " pad has no foreign stack on the kill tick and the foreign-stack arm"
+                        + " is untested");
+    }
+
+    /** The standing exercise of the pad contract, in one box: a kill, the shipped
+     *  block-break route's foreign stack, and the scan over both.
+     *
+     *  <p>It is the CI shape (run 42573819914: {@code a furious zombie dropped
+     *  minecraft:stone_button}) with the verdict on the owned subset. The self-check
+     *  keeps it honest: if the fixture's break stops leaving a stack in the box — the
+     *  block-break API, the floor, the scan box — this probe says so by name instead
+     *  of rotting into a no-op.</p>
+     *
+     *  <p>Why the foreign stack is broken in the pad rather than arranged in a
+     *  neighbouring cell: the batch order fixes positions, and the measured layout of
+     *  this batch (run 09Nov2026 02:32, 283 tests, grid origin 6015265, -59, -1188336;
+     *  the same shape measured at 2011583, -60, -4860956) is a walk —
+     *  {@code StructureGridSpawner} advances the next slot by {@code xsize + 5} in x
+     *  AND {@code zsize + 6} in z per placed structure, and {@code TestGenerator}
+     *  restarts the walk at the batch corner every {@code maxPerBatch = 40} tests. The
+     *  templates are {@code thaumcraft:empty} 1×1×1, {@code empty_24} 24³ and
+     *  {@code gametest_pad_32} 32×1×32, so consecutive probes in the batch order sat
+     *  (+29, +68) and (0, +249) from one another — out of reach of a 25³ box, while a
+     *  1×1×1 neighbour is 6 away in both axes (inside it) and a 24³ neighbour's cell
+     *  edge reaches to 5 blocks from the pad. The reach that reddened CI is the wide
+     *  templates'; the arrangement that reproduces it on every draw is the one in the
+     *  pad. The layout is not stable across runs, so nothing here keys on a
+     *  position.</p> */
+    @GameTest(template = "empty")
+    public static void aForeignStackInAPadIsNamedAndNotCounted(final GameTestHelper helper) {
+        final ServerLevel level = helper.getLevel();
+        final DeathDrops drops = killAndCollectDeathDrops(helper, "giantbrainyzombie", 1);
+        helper.runAfterDelay(SCAN_DELAY_TICKS, () -> {
+            long buttons = 0;
+            for (final ItemEntity drop : level.getEntitiesOfClass(ItemEntity.class, mobBox(helper))) {
+                if (drop.getItem().is(Items.STONE_BUTTON)) {
+                    buttons++;
+                }
+            }
+            helper.assertTrue(buttons >= 1,
+                    "the pad held " + buttons + " stone buttons; the fixture's shipped-route break"
+                            + " left no foreign stack in mobBox, so the foreign-stack arm of the"
+                            + " drop probes is no longer exercised (check destroyBlock's drop flag"
+                            + " and that the pad's floor still catches drops)");
+            // The verdict the drop probes make, made here over the same box: the owned
+            // subset names the kill's drops, the stone button is not counted into any
+            // total, and the count arm reads the kill alone.
+            helper.assertTrue(drops.countOf(Items.STONE_BUTTON) == 0,
+                    "a foreign stone button was counted into this probe's drop totals — the"
+                            + " owned-subset attribution (DeathDrops) leaked it");
+            final int flesh = drops.countOf(Items.ROTTEN_FLESH);
+            helper.assertTrue(flesh <= 24,
+                    "one furious-zombie death left " + flesh + " rotten flesh; the original rolls 12"
+                            + " coin flips of 2 each (:58-66), so 24 is the cap of that support — a"
+                            + " higher total is a doubled loop or a doubled stack");
+            assertOwnedDeathDropsAre(helper, drops,
+                    stack -> stack.is(Items.ROTTEN_FLESH)
+                            || stack.is(Items.CARROT)
+                            || stack.is(Items.POTATO)
+                            || ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "itemresource")
+                                    .equals(BuiltInRegistries.ITEM.getKey(stack.getItem())),
+                    "this probe",
+                    "rotten flesh (:58-66) and the 4-way dropAllLoot replacement "
+                            + "thaumium / carrot / potato / amber (:76-88)");
+            helper.succeed();
+        });
+    }
+
     @GameTest(template = "empty", timeoutTicks = 400)
     public static void angryZombieDeathDropsFollowTheOriginalRolls(final GameTestHelper helper) {
         // :44-46 — three rolls, each coin flip drops 1 rotten flesh
-        // (Items.field_151078_bh = rotten_flesh, fields CSV), so 5 kills
-        // average 5 * 3 * 0.5 = 7.5 flesh with sd 1.5: 7.5 +- 3 sd is [3, 12].
+        // (Items.field_151078_bh = rotten_flesh, fields CSV), so 10 kills
+        // sum 30 flips: mean 15, sd 2.74, and the arm takes 4 sd, [4, 26]. The
+        // band is a rate guard (the identity arm is the contract's teeth), so it is
+        // set wide enough that no honest draw trips it.
         // The brain branch (:50-51) names thaumcraft:itemzombiebrain, which this
         // port has not registered, so it must never appear (the gate).
-        final int flesh = countDeathDrops(helper, "brainyzombie", Items.ROTTEN_FLESH, 10);
-        helper.assertTrue(flesh >= 9 && flesh <= 21,
-                "10 angry-zombie deaths left " + flesh + " rotten flesh; the original rolls 3 coin "
-                        + "flips of 1 each per death (:44-46), so the rate must sit near 15 "
-                        + "(3sd of the binomial is 9-21)");
-        final ServerLevel level = helper.getLevel();
-        for (final ItemEntity drop : level.getEntitiesOfClass(ItemEntity.class, mobBox(helper))) {
-            final Item item = drop.getItem().getItem();
-            helper.assertTrue(item == Items.ROTTEN_FLESH,
-                    "an angry zombie dropped " + BuiltInRegistries.ITEM.getKey(item)
-                            + "; the original's func_70628_a body drops only rotten flesh and the "
-                            + "(unregistered) zombie brain (:43-53)");
-        }
-        helper.assertTrue(!BuiltInRegistries.ITEM.containsKey(
-                        ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "itemzombiebrain")),
-                "thaumcraft:itemzombiebrain is registered; the brain drop branch is c-card work, "
-                        + "and the ledger row (content-mapping line 260) is still not_started");
-        helper.succeed();
+        final DeathDrops drops = killAndCollectDeathDrops(helper, "brainyzombie", 10);
+        helper.runAfterDelay(SCAN_DELAY_TICKS, () -> {
+            final int flesh = drops.countOf(Items.ROTTEN_FLESH);
+            helper.assertTrue(flesh >= 4 && flesh <= 26,
+                    "10 angry-zombie deaths left " + flesh + " rotten flesh; the original rolls 3 coin "
+                            + "flips of 1 each per death (:44-46), so the rate must sit near 15 "
+                            + "(4sd of the 30-flip sum is 4-26; doubling the rolls lands on 30)");
+            assertOwnedDeathDropsAre(helper, drops,
+                    stack -> stack.is(Items.ROTTEN_FLESH),
+                    "an angry zombie",
+                    "rotten flesh (:44-46) and the (unregistered) zombie brain (:50-51)");
+            helper.assertTrue(!BuiltInRegistries.ITEM.containsKey(
+                            ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "itemzombiebrain")),
+                    "thaumcraft:itemzombiebrain is registered; the brain drop branch is c-card work, "
+                            + "and the ledger row (content-mapping line 260) is still not_started");
+            helper.succeed();
+        });
     }
 
     @GameTest(template = "empty", timeoutTicks = 400)
     public static void furiousZombieDeathDropsDoubleTheRollsAndTheStack(final GameTestHelper helper) {
         // :58-66 — TWO loops of SIX coin flips, each true drop leaving 2 rotten
-        // flesh: 12 flips x 2 = 24 per death, so 5 deaths average 60 (sd 7.7):
-        // 60 +- 3 sd is [37, 83]. The brain branch (:70-71) is velocity 2.0 and
-        // the same unregistered item, so it is gated out exactly as for the
-        // angry zombie.
-        final int flesh = countDeathDrops(helper, "giantbrainyzombie", Items.ROTTEN_FLESH, 10);
-        helper.assertTrue(flesh >= 87 && flesh <= 153,
-                "10 furious-zombie deaths left " + flesh + " rotten flesh; the original rolls 2 loops "
-                        + "of 6 coin flips dropping 2 each (:58-66), so the rate must sit near 120 "
-                        + "(3sd of the binomial is 87-153)");
-        final ServerLevel level = helper.getLevel();
-        final net.minecraft.resources.ResourceLocation ItemResourceId =
-                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
-                        ThaumcraftClassic.MOD_ID, "itemresource");
-        // The furious zombie has TWO drop bodies: func_70628_a (:57-73) and the
-        // func_70600_l (:75-89) replacement of vanilla dropAllLoot, which picks
-        // one of thaumium / carrot / potato / amber per death on the entity RNG.
-        for (final ItemEntity drop : level.getEntitiesOfClass(ItemEntity.class, mobBox(helper))) {
-            final ResourceLocation key = BuiltInRegistries.ITEM.getKey(drop.getItem().getItem());
-            helper.assertTrue(drop.getItem().is(Items.ROTTEN_FLESH)
-                            || drop.getItem().is(Items.CARROT)
-                            || drop.getItem().is(Items.POTATO)
-                            || ItemResourceId.equals(key),
-                    "a furious zombie dropped " + key + ", outside the pair's two drop bodies: "
-                            + "rotten flesh (:58-66) and the 4-way dropAllLoot replacement "
+        // flesh: 12 flips x 2 = 24 per death, so 10 deaths sum 120 flips of 2:
+        // mean 120, sd 10.95, and the arm takes 4 sd, [76, 164]. Halving the loops
+        // (1 loop) or the stack (1 per flip) lands on 60, well outside. The brain
+        // branch (:70-71) is velocity 2.0 and the same unregistered item, so it is
+        // gated out exactly as for the angry zombie.
+        final DeathDrops drops = killAndCollectDeathDrops(helper, "giantbrainyzombie", 10);
+        helper.runAfterDelay(SCAN_DELAY_TICKS, () -> {
+            final int flesh = drops.countOf(Items.ROTTEN_FLESH);
+            helper.assertTrue(flesh >= 76 && flesh <= 164,
+                    "10 furious-zombie deaths left " + flesh + " rotten flesh; the original rolls 2 loops "
+                            + "of 6 coin flips dropping 2 each (:58-66), so the rate must sit near 120 "
+                            + "(4sd of the sum is 76-164; dropping one loop, or one per flip, lands on 60)");
+            final ResourceLocation itemResource =
+                    ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "itemresource");
+            // The furious zombie has TWO drop bodies: func_70628_a (:57-73) and the
+            // func_70600_l (:75-89) replacement of vanilla dropAllLoot, which picks
+            // one of thaumium / carrot / potato / amber per death on the entity RNG.
+            assertOwnedDeathDropsAre(helper, drops,
+                    stack -> stack.is(Items.ROTTEN_FLESH)
+                            || stack.is(Items.CARROT)
+                            || stack.is(Items.POTATO)
+                            || itemResource.equals(BuiltInRegistries.ITEM.getKey(stack.getItem())),
+                    "a furious zombie",
+                    "rotten flesh (:58-66) and the 4-way dropAllLoot replacement "
                             + "thaumium / carrot / potato / amber (:76-88)");
-        }
-        helper.succeed();
+            helper.succeed();
+        });
     }
 
     // ----------------------------------------------------- zombie parent
