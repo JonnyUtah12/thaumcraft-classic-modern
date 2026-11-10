@@ -232,6 +232,31 @@ public final class GolemInteractAiGameTest {
         return golem;
     }
 
+    /** TEMP DIAGNOSTIC (t_67f61f59) — one line per sampled tick, greps as ^DIAG. */
+    private static void diag(final String tag, final GameTestHelper helper, final BlockPos probeCell,
+            final EntityGolemBase golem, final BlockPos target, final boolean running, final boolean gate,
+            final int starts, final int ticks, final int stops, final boolean placed) {
+        final BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+        final BlockPos feet = golem.blockPosition();
+        final BlockPos rel = feet.subtract(origin);
+        final net.minecraft.world.level.pathfinder.Path path = golem.getNavigation().getPath();
+        final double d2 = golem.distanceToSqr(target.getX() + 0.5, target.getY() + 0.5, target.getZ() + 0.5);
+        System.out.println(tag + " use pt=" + helper.getTick()
+                + " tc=" + golem.tickCount
+                + " feet=" + rel.getX() + "," + rel.getY() + "," + rel.getZ()
+                + " feetBlk=" + helper.getBlockState(rel).getBlock()
+                + " inwall=" + golem.isInWall()
+                + " hp=" + golem.getHealth()
+                + " d2=" + Math.round(d2 * 100.0) / 100.0
+                + " tgt=" + helper.getBlockState(probeCell).getBlock()
+                + " run=" + running
+                + " gate=" + gate
+                + " nav=" + golem.getNavigation().isDone()
+                + " path=" + (path == null ? "null"
+                        : path.getNodeCount() + "/" + path.getNextNodeIndex() + "/" + path.canReach())
+                + " s=" + starts + "/t=" + ticks + "/st=" + stops + "/p=" + placed);
+    }
+
     // ------------------------------------------------------------------
     // 1. Harvest: a core-3 golem reaps ripe wheat and replants it
     // (blockTestedGolem.java:178-186)
@@ -562,6 +587,14 @@ public final class GolemInteractAiGameTest {
             goal[0] = new AIUseItem(golem);
         });
 
+        helper.onEachTick(() -> {
+            final int pt = helper.getTick();
+            if (pt < 6 || pt > 46 || golems[0] == null) {
+                return;
+            }
+            diag("DIAGPRE", helper, new BlockPos(7, 0, 4), golems[0], target, false, false,
+                    0, 0, 0, false);
+        });
         final AtomicBoolean activated = new AtomicBoolean(false);
         final AtomicBoolean placed = new AtomicBoolean(false);
         // GoalSelector keeps the running bit outside the goal (1.21.1's Goal has
@@ -583,6 +616,8 @@ public final class GolemInteractAiGameTest {
                 placed.set(true);
             }
             final boolean gate = running[0] ? goal[0].canContinueToUse() : goal[0].canUse();
+            diag("DIAG", helper, new BlockPos(7, 0, 4), golem, target, running[0], gate,
+                    starts[0], ticks[0], stops2[0], placed.get());
             if (placed.get() && !running[0] && starts[0] > 0) {
                 return;
             }
@@ -624,6 +659,15 @@ public final class GolemInteractAiGameTest {
         helper.runAfterDelay(SETTLE + 160, () -> {
             clearGolemCaches();
             assertAlive(golems[0]);
+            final BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+            final BlockPos endFeet = golems[0].blockPosition().subtract(origin);
+            System.out.println("DIAGEND use placed=" + placed.get() + " activated=" + activated.get()
+                    + " starts=" + starts[0] + " ticks=" + ticks[0] + " stops=" + stops2[0]
+                    + " feet=" + endFeet.getX() + "," + endFeet.getY() + "," + endFeet.getZ()
+                    + " d2=" + Math.round(golems[0].distanceToSqr(target.getX() + 0.5,
+                            target.getY() + 0.5, target.getZ() + 0.5) * 100.0) / 100.0
+                    + " hp=" + golems[0].getHealth() + " inwall=" + golems[0].isInWall()
+                    + " tgt=" + helper.getBlockState(new BlockPos(7, 0, 4)).getBlock());
             helper.assertTrue(activated.get(),
                     "the Use goal never activated on the marked target (" + state(golems[0]) + ")");
             helper.assertTrue(placed.get(),
