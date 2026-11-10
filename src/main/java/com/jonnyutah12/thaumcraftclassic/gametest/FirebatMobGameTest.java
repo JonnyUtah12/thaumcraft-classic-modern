@@ -189,6 +189,50 @@ public final class FirebatMobGameTest {
         // attributes once at spawn, so the port re-applies that figure at the top
         // of customServerAiStep: it lands on the bat's next AI tick, which is what
         // the deferred block below waits for.
+        // T5EB3D-DIAG (diagnostic only, never committed): census the bat's tick
+        // accounting and the structure's world position so the AI-tick latency and
+        // the harness origin are measurable per run.
+        final BlockPos diagOrigin = helper.absolutePos(BlockPos.ZERO);
+        System.out.println("T5EB3D-DIAG start origin=" + diagOrigin.toShortString()
+                + " chunk=" + new net.minecraft.world.level.ChunkPos(diagOrigin)
+                + " helperTick=" + helper.getTick()
+                + " gameTime=" + level.getGameTime()
+                + " tickingAtOrigin=" + level.isPositionEntityTicking(diagOrigin)
+                + " tickingAtBat=" + level.isPositionEntityTicking(bat.blockPosition())
+                + " batY=" + bat.getY()
+                + " players=" + level.players().stream()
+                        .map(p -> p.getName().getString() + p.blockPosition().toShortString())
+                        .toList());
+        // Which chunks around the structure are entity-ticking right now? The grid
+        // origin is a fresh random position every run, so this mask is the answer to
+        // "is the bat inside the ticking region, or one chunk outside it".
+        final net.minecraft.world.level.ChunkPos diagChunk =
+                new net.minecraft.world.level.ChunkPos(diagOrigin);
+        final StringBuilder diagMask = new StringBuilder();
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                final BlockPos centre = new BlockPos((diagChunk.x + dx) << 4,
+                        diagOrigin.getY(), (diagChunk.z + dz) << 4);
+                diagMask.append(dx).append(',').append(dz).append('=')
+                        .append(level.isPositionEntityTicking(centre) ? 'T' : 'f').append(' ');
+            }
+        }
+        System.out.println("T5EB3D-DIAG mask originChunk=" + diagChunk
+                + " originLocal=" + (diagOrigin.getX() & 15) + "," + (diagOrigin.getZ() & 15)
+                + " batLocal=" + (bat.blockPosition().getX() & 15) + ","
+                + (bat.blockPosition().getZ() & 15)
+                + " batChunk=" + new net.minecraft.world.level.ChunkPos(bat.blockPosition())
+                + " tickingOrigin=" + level.isPositionEntityTicking(diagOrigin)
+                + " tickingBat=" + level.isPositionEntityTicking(bat.blockPosition())
+                + " neighbourhood=" + diagMask);
+        helper.onEachTick(() -> System.out.println("T5EB3D-DIAG t=" + helper.getTick()
+                + " gameTime=" + level.getGameTime()
+                + " batTickCount=" + bat.tickCount
+                + " base=" + bat.getAttributeBaseValue(Attributes.MAX_HEALTH)
+                + " devil=" + bat.getIsDevil()
+                + " alive=" + bat.isAlive() + " removed=" + bat.isRemoved()
+                + " tickingAtBat=" + level.isPositionEntityTicking(bat.blockPosition())
+                + " players=" + level.players().size()));
         helper.runAtTickTime(helper.getTick() + 4L, () -> {
             helper.assertTrue(bat.getAttributeBaseValue(Attributes.MAX_HEALTH) == 15.0,
                     "a devil firebat is not at the original 15.0 health but "
