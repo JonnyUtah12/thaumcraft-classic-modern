@@ -268,3 +268,38 @@ without the evidence for its stages.
 - **A modded block drops nothing unless it has a block loot table.** 1.21.1 has no implicit self-drop (vanilla's 'drops itself' is a generated table), so a `getDrops` override that defers to `super.getDrops` — the original's 'the block drops itself' case — yields zero items. Ship `data/<ns>/loot_table/blocks/<path>.json` with one pool per variant and a `minecraft:block_state` component so the variant survives the drop (`blockjar.json`, `blockcosmeticslabstone.json`). Give every pool a `block_state_property` condition: an unconditional pool fires for every variant and duplicates the drop.
 - **Re-placing identical state does not rebuild the block entity.** `setBlock` with the state that is already there keeps the old tile (its inventory, its fields), so a probe that wants a fresh machine uses a fresh cell, not the cell a previous leg broke. Same reason a probe must not read a tile it placed in an earlier leg of the same test.
 - **Never hand a null `Entity` to 1.21.1's `ClipContext`.** The `(Vec3, Vec3, Block, Fluid, Entity)` constructor routes through `CollisionContext.of(entity)` into `EntityCollisionContext`, whose constructor calls `entity.isDescending()` — a guaranteed NPE with null, and inside a world driver that NPE kills the game-test batch that shares the level. A ray with no entity shape wants `CollisionContext.empty()`.
+
+- **A probe must not gate on a one-block-of-margin count that the batch produces.**
+  `bossroombuildsthroughtheseam` asserted `eldritch >= 1` over the cell envelope. Measured, swept
+  inside the probe so the packing grid did not move: **3** in **12/12** legs at `104ccce`, **0** in
+  **14/14** legs at `2d2bc94`, **1** in **8/8** legs on an open-sided fixture — and the same
+  envelope's non-air census is bimodal **1646 / 1871**, an exact **7/7** split at one tree. The
+  225-cell step is the 2x2 shell forming, and what forms it is state the batch shares:
+  `GenCommon.DECORATED_BLOCKS` is a static queue (main's own probes assert it empty), so the
+  boss-room probe's outcome is set by its neighbours, not by the boss room — identical probe text,
+  0 % red at one tree and 100 % at the next, and 2 red CI draws in 5. Assert a floor with margin
+  (the LOW mode, 1646) or a fact the probe's own fixture produces, and keep the knife-edge census
+  in the gate print and the failure message, where a shift is a fact and not a coin flip.
+- **The boss room's doorway lands on ONE plane, and it is the last open side that gets it.**
+  `GenBossRoom.java:141-163` is the original's if-chain (ref L39-64): `if (cell.north) …`
+  `if (cell.south) …` `if (cell.east) …` `if (cell.west) …` all write into the SAME `xx`/`zz` pair,
+  so a cell open on all four sides lays its single 7x7 `PAT_DOORWAY` on the **west** face
+  (`x0+3`, `y=ROOM_Y+2..+8`) and the other three planes carry only the room's own
+  `blockcosmeticsolid`/`blockstairseldritch`. Measured on a probe-printed cell (cell 70,70): west
+  **49/49** non-air with `blockEldritch v7` (gate) and `blockAiry` (the void doorway), north 28,
+  south 24, east 24; envelope gate/lock variants **25**, every one at `x0+3` — `PAT_DOORWAY`'s
+  21 gate + 4 lock + 20 void, exactly. With every side closed (the `Cell` constructor's default,
+  i.e. shipped `Cell(BOSS_CELL)`) the chain leaves `xx=zz=0` and the sweep parks at the **world
+  column (0,y,0)** — 7 cells, 14 of 14 legs — while the cell's own envelope reads 16 air cells at
+  its edge column: that fixture has no doorway in its own envelope at all. Assert the doorway on
+  the plane the generator writes it, on a fixture whose sides are open, and name the chain in the
+  message.
+- **A probe's pad is its own: clear it, and print what it cleared.** The golem-combat pads are
+  packed in a grid, the harness runs one probe at a time, and a probe's mobs are never cleaned up,
+  so a sibling probe's mob stands in the pad on the producing tick — measured: a brainy zombie in
+  the butcher probe's box in **11 of 12** legs, and in **1 of the 10** legs at `8b4953b` the oldest
+  pig was found at the settle tick `alive=false removed=true` at full health. It is not the cull
+  (`AINearestButcherTarget` refuses under a pen of 3, and the pen is 1 for the whole staging
+  window), and it is not a window. Clear every mob in the template's box that is not the probe's
+  own golem and herd, at spawn and at settle, and print them; the animal the probe measures then
+  dies only to the probe's own fixture.

@@ -475,6 +475,123 @@ public final class GolemCombatAiGameTest {
     }
 
     /** {@code GameTestHelper.getEntities} translates its position, so pass the template-relative cell. */
+    /**
+     * The pad vouch (docs/testing.md, the pad / block-support coupling class): every cell the
+     * probe measures is an air cell with a solid floor, the chunk that holds it is LOADED, and
+     * every animal of the herd is standing in the cell the probe put it in. A mob whose chunk
+     * gets unloaded is removed by the engine with it (the chunk-unload path discards the mobs in
+     * the chunk), so a NoAI prop that never moved and is "removed" at full health is a pad that
+     * lost its chunks — not a cull, and not a window. The message says which one it is.
+     */
+    private static void vouchPad(final GameTestHelper helper, final EntityGolemBase golem, final String who,
+                                 final int x, final int y, final int z, final Pig... herd) {
+        final ServerLevel level = helper.getLevel();
+        final BlockPos cell = at(helper, x, y, z);
+        helper.assertTrue(!level.getBlockState(cell).isSuffocating(level, cell)
+                        && level.getBlockState(cell.below()).isSolidRender(level, cell.below()),
+                who + "'s pad: cell " + cell.toShortString() + " is air with a solid floor under "
+                + cell.below().toShortString() + ", got cell=" + level.getBlockState(cell).getBlock()
+                + " floor=" + level.getBlockState(cell.below()).getBlock() + " (tick " + helper.getTick()
+                + ") — a blocked cell is the block-support precondition closing under the pad");
+        for (final Pig pig : herd) {
+            final BlockPos pen = pig.blockPosition();
+            final boolean loaded = level.getChunkSource().hasChunk(pen.getX() >> 4, pen.getZ() >> 4);
+            helper.assertTrue(loaded,
+                    "the pad of " + who + ": the chunk holding " + pen.toShortString() + " is NOT LOADED at"
+                    + " tick " + helper.getTick() + " — the engine discards every mob in a chunk it unloads,"
+                    + " so an animal that leaves the pad is pad loss (docs/testing.md), not a cull");
+        }
+    }
+
+    /**
+     * A liveness vouch that names the class of the removal: a cull kills through the melee
+     * goal's damage (health drops), a pad loss removes at full health. The bare
+     * "alive=false removed=true" is the shape this card's red came in; the message below says
+     * which precondition closed.
+     */
+    private static void vouchAlive(final GameTestHelper helper, final EntityGolemBase golem, final Pig animal,
+                                   final String who) {
+        helper.assertTrue(animal.isAlive() && !animal.isRemoved(),
+                who + " is gone at tick " + helper.getTick() + " (alive=" + animal.isAlive()
+                + " removed=" + animal.isRemoved() + " health " + animal.getHealth() + "/"
+                + animal.getMaxHealth() + " at " + animal.blockPosition().toShortString() + "): "
+                + (animal.getHealth() > 0f
+                        ? "it was removed at full health with the golem's target " + golem.getTarget()
+                          + " — the cull's damage path never touched it, so this is the pad/coupling"
+                          + " class (the animal left the pad), not the cull"
+                        : "the cull's damage path killed it: the golem's target is " + golem.getTarget()
+                          + " and the melee goal at priority " + MELEE_PRIORITY + " deals the damage"));
+    }
+
+    /**
+     * The cull's own selection precondition, named. {@code AINearestButcherTarget} counts the
+     * candidate's class in {@code golem.getBoundingBox().inflate(getRange(), 4, getRange())} —
+     * the golem's box, not the probe's herd box — and refuses at two. So the probe's herd has to
+     * be the only thing in that box: a foreign animal in it is the herd>2 arm firing, and every
+     * animal in it has to pass the golem's own filter for the cull to be measurable at all.
+     */
+    private static void vouchSelection(final GameTestHelper helper, final EntityGolemBase golem, final String what,
+                                       final Pig... herd) {
+        final float range = golem.getRange();
+        final var box = golem.getBoundingBox().inflate(range, 4.0, range);
+        final var inBox = golem.level().getEntitiesOfClass(Pig.class, box);
+        final StringBuilder pen = new StringBuilder();
+        for (final Pig pig : inBox) {
+            pen.append(' ').append(pig.blockPosition().toShortString()).append(pig.isAlive() ? "" : "(dead)");
+        }
+        helper.assertTrue(inBox.size() == herd.length,
+                what + " is the whole pen of the butcher goal: its own box (golem box inflated by "
+                + "getRange()=" + range + ", 4, " + range + ") holds exactly " + herd.length + " pigs, got "
+                + inBox.size() + ":" + pen + " — a FOREIGN animal in that box is the herd-above-two arm"
+                + " that arms the cull on the animal under measurement (AINearestButcherTarget.java:34-73)");
+        for (final Pig pig : herd) {
+            helper.assertTrue(golem.getCore() == BUTCHER_CORE && !pig.isInLove() && !pig.isRemoved()
+                            && golem.isWithinRange(pig.blockPosition()),
+                    "the cull's own filter is open for " + pig.blockPosition().toShortString()
+                    + ": core " + golem.getCore() + " (the butcher core is " + BUTCHER_CORE + "), in love="
+                    + pig.isInLove() + ", removed=" + pig.isRemoved() + ", inside the golem's range="
+                    + golem.isWithinRange(pig.blockPosition()) + " (range " + range + ", GolemTargeting: "
+                    + "animal, not tamed, not a golem, not in love, inside func_110176_b)");
+        }
+    }
+
+    /**
+     * The pad, vouched as this probe's own (docs/testing.md, the pad / coupling class): the
+     * golem-combat pads are packed in a grid, the harness runs one probe at a time, and a probe's
+     * mobs are never cleaned up, so a sibling probe's mob can be standing in this pad on the
+     * producing tick — measured: a brainy zombie in this probe's box in 11 of 12 legs. Every mob
+     * in the template's box that is NOT this probe's golem and NOT this probe's herd is removed as
+     * DISCARDED and printed, so the pad the herd stands in is the herd's own and an animal that
+     * dies in it is this probe's business, not a neighbour's.
+     */
+    private static void vouchPadIsMine(final GameTestHelper helper, final EntityGolemBase golem,
+                                        final String stage, final Pig... herd) {
+        final var from = at(helper, -1, -2, -1);
+        final var to = at(helper, 25, 7, 25);
+        final var box = new AABB(from.getX(), from.getY(), from.getZ(), to.getX(), to.getY(), to.getZ());
+        final StringBuilder cleared = new StringBuilder();
+        for (final Mob mob : helper.getLevel().getEntitiesOfClass(Mob.class, box)) {
+            if (mob == golem) {
+                continue;
+            }
+            boolean own = false;
+            for (final Pig pig : herd) {
+                if (pig == mob) {
+                    own = true;
+                }
+            }
+            if (own) {
+                continue;
+            }
+            cleared.append(' ').append(mob.getType()).append('@')
+                   .append(mob.blockPosition().toShortString())
+                   .append("{alive=").append(mob.isAlive()).append('}');
+            mob.remove(Entity.RemovalReason.DISCARDED);
+        }
+        System.out.println("GATE-BT-PAD stage=" + stage + " tick=" + helper.getTick()
+                + " box=" + box + " foreignCleared=" + (cleared.length() == 0 ? "none" : cleared));
+    }
+
     private static int herdSize(final GameTestHelper helper) {
         return (int) helper.getEntities(EntityType.PIG, new BlockPos(12, 0, 12), 12).size();
     }
@@ -623,6 +740,7 @@ public final class GolemCombatAiGameTest {
         // The goal sorts by the entity's own tickCount, so the pig alive longest is the oldest.
         // Spawn it alone now; the rest of the herd joins in the settled phase.
         final Pig oldest = spawnProp(helper, EntityType.PIG, 14, 0, 12);
+        vouchPadIsMine(helper, golem, "spawn", oldest);
 
         final AINearestButcherTarget butcher = new AINearestButcherTarget(golem, NO_INTERVAL, true);
         final AIGolemAttackOnCollide melee = new AIGolemAttackOnCollide(golem);
@@ -632,7 +750,28 @@ public final class GolemCombatAiGameTest {
         assertPriority(helper, golem.goalSelector, melee, MELEE_PRIORITY, "the melee goal");
 
         helper.runAfterDelay(SETTLE, () -> {
+            // The settle window runs with both goals OFF the live selectors. A goal left on a
+            // live selector is armed by the ENGINE (docs/testing.md): Mob.serverAiStep
+            // (:736-751) gives the target selector a full tick() on the parity tick, so over 120
+            // ticks the butcher goal re-counts the pen on the engine's clock and the melee goal
+            // can cull the animal this probe is about to measure. Every acquisition below is
+            // measured on a goal the probe puts on the selector and drives itself.
+            golem.targetSelector.removeGoal(butcher);
+            golem.goalSelector.removeGoal(melee);
+            helper.assertTrue(!goalRunning(golem.goalSelector, melee)
+                            && goalPriorities(golem.goalSelector).isEmpty()
+                            && goalPriorities(golem.targetSelector).isEmpty(),
+                    "both goals are off the live selectors for the 120-tick settle window, goalSelector"
+                    + " (" + goalSummary(golem.goalSelector) + ") targetSelector ("
+                    + goalSummary(golem.targetSelector) + ")");
+
+            // Pad first: the block-support precondition the herd stands on, and the animals' own
+            // cells and chunks. A pad that lost support reddens HERE, naming the pad, instead of
+            // showing up as an animal that "left the pad".
+            vouchPad(helper, golem, "the golem", 12, 0, 12, oldest);
+            vouchPadIsMine(helper, golem, "settle", oldest);
             standingInAirCellOnFloor(helper, golem, 12, 0, 12, "the golem");
+            vouchAlive(helper, golem, oldest, "the oldest pig");
             standingInAirCellOnFloor(helper, oldest, 14, 0, 12, "the oldest pig");
             final Pig mid = spawnProp(helper, EntityType.PIG, 15, 0, 12);
             final Pig youngest = spawnProp(helper, EntityType.PIG, 16, 0, 12);
@@ -643,6 +782,19 @@ public final class GolemCombatAiGameTest {
                     + mid.tickCount + ", tick " + helper.getTick());
 
             helper.assertTrue(herdSize(helper) == 3, "the herd is three animals, got " + herdSize(helper));
+            // The cull's OWN selection precondition: the goal counts the candidate's class in
+            // golem.getBoundingBox().inflate(getRange(), 4, getRange()) and refuses at two
+            // (AINearestButcherTarget.java:34-73). That box is the world's, not the probe's
+            // radius-12 herd box, so a foreign animal in it is the herd>2 arm firing on the
+            // probe's own oldest pig — and the animals have to pass the golem's own filter
+            // (GolemTargeting: core 9 takes an animal that is not tamed, not a golem, not in
+            // love, and inside the golem's range), each arm named.
+            vouchSelection(helper, golem, "the herd", oldest, mid, youngest);
+            helper.assertTrue(golem.getTarget() == null,
+                    "the settle window ended with a target already acquired (" + golem.getTarget()
+                    + ") — a goal left on a live selector is armed by the ENGINE, so the cull ran on"
+                    + " the engine's clock and not on this probe's drive");
+            reloadTargetGoal(golem, butcher, HURT_PRIORITY, new AINearestButcherTarget(golem, NO_INTERVAL, true));
             golem.setTarget(null);
             driveTargets(golem);
             helper.assertTrue(golem.getTarget() == oldest,
@@ -661,6 +813,15 @@ public final class GolemCombatAiGameTest {
             helper.assertTrue(golem.getTarget() == null,
                     "a herd under the cap of three is not butchered at all (:34-73, \"more than two\"), tick "
                     + helper.getTick() + ", herd " + herdSize(helper) + ", target " + golem.getTarget());
+            // The acquired animal is still standing: the probe measured an acquisition, not a cull.
+            golem.targetSelector.removeGoal(butcher);
+            vouchAlive(helper, golem, oldest, "the oldest pig");
+            vouchPad(helper, golem, "the golem", 12, 0, 12, oldest);
+            helper.assertTrue(oldest.blockPosition().equals(at(helper, 14, 0, 12)),
+                    "the oldest pig is still in its cell " + at(helper, 14, 0, 12).toShortString()
+                    + ", at " + oldest.blockPosition().toShortString() + ", tick " + helper.getTick());
+            helper.assertTrue(golem.getTarget() == null,
+                    "no cull fired on the pad: the golem holds no target at tick " + helper.getTick());
             helper.succeed();
         });
     }
