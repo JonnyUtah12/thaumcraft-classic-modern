@@ -50,7 +50,10 @@ class LocalizationFileTest {
      * verbatim so the original strings apply unchanged
      * (ItemAmuletVis:206/209, ItemBaubleBlanks:142, ItemResonator:66-72,
      * ItemHandMirror:142-158, ResearchManager:460, ItemEldritchObject:81-92,
-     * TileEldritchLock:136/220/300/340).
+     * TileEldritchLock:136/220/300/340,
+     * ItemHandMirror:142-158, ResearchManager:460,
+     * EntityTaintacleGiant:122 — {@code StatCollector.translateToLocal(
+     * "tc.boss.enrage")} in the enrage announcement, en_US.lang:761).
      */
     private static final List<String> LEGACY_KEYS = List.of(
             "item.ItemAmuletVis.text", "item.capacity.text",
@@ -64,6 +67,10 @@ class LocalizationFileTest {
             "item.ItemEldritchObject.text.3", "item.ItemEldritchObject.text.4",
             "item.ItemEldritchObject.text.5", "item.ItemEldritchObject.text.6",
             "tc.boss.crimson", "tc.boss.golem", "tc.boss.taint", "tc.boss.warden",
+            // TC-M6-06-s-e: the giant taintacle's enrage announcement, the original's
+            // own key (EntityTaintacleGiant.java:122 via
+            // StatCollector.translateToLocal("tc.boss.enrage"), en_US.lang:761).
+            "tc.boss.enrage",
             // TC-M3-04-s-ii: the research note's blank-note tooltip lines and
             // its warp block, kept in the original 1.7.10 key shape.
             "item.researchnotes.unknown.1", "item.researchnotes.unknown.2",
@@ -150,7 +157,8 @@ class LocalizationFileTest {
             "item.thaumcraft.wandcasting.primal",
             "item.thaumcraft.wandcasting.wand",
             "item.thaumcraft.wandcasting.sceptre",
-            "item.thaumcraft.wandcasting.staff");
+            "item.thaumcraft.wandcasting.staff",
+            "tc.boss.enrage");
 
     /**
      * The shipped multi-meta items and the original-metadata domain their

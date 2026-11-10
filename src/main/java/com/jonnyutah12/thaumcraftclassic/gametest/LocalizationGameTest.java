@@ -199,7 +199,11 @@ public final class LocalizationGameTest {
             Map.entry("item.thaumcraft.wandcasting.primal", "ItemWandCasting.getName fragment (original item.Wand.primal.cap/.rod/.obj), TC-M6-01"),
             Map.entry("item.thaumcraft.wandcasting.wand", "ItemWandCasting.getName fragment (original item.Wand.wand.cap/.rod/.obj), TC-M6-01"),
             Map.entry("item.thaumcraft.wandcasting.sceptre", "ItemWandCasting.getName fragment (original item.Wand.sceptre.cap/.rod/.obj), TC-M6-01"),
-            Map.entry("item.thaumcraft.wandcasting.staff", "ItemWandCasting.getName fragment (original item.Wand.staff.cap/.rod/.obj), TC-M6-01"));
+            Map.entry("item.thaumcraft.wandcasting.staff", "ItemWandCasting.getName fragment (original item.Wand.staff.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("tc.boss.enrage", "EntityTaintacleGiant enrage announcement — the key is "
+                    + "TaintacleGiantAiLogic.ENRAGE_LANG_KEY, the original's "
+                    + "StatCollector.translateToLocal(\"tc.boss.enrage\") at "
+                    + "EntityTaintacleGiant.java:122 (en_US.lang:761)"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always
