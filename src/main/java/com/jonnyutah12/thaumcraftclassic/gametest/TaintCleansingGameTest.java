@@ -614,7 +614,7 @@ public final class TaintCleansingGameTest {
         // bloom path. Raw writes only, so the conversion never ran, nothing was
         // recorded, and the palette answer IS the taint biome — the case the
         // original's `if (biome == biomeTaint) biome = Plains` line covers.
-        final BlockPos bloomB = helper.absolutePos(new BlockPos(24, 8, 8));
+        final BlockPos bloomB = helper.absolutePos(new BlockPos(24 + 96, 8, 8)); // 4 chunks off every other leg: the BD-16 record is keyed by (chunk, palette cell), so a nearby leg can answer for this column
         paintBiome(level, bloomB, PAINT_RADIUS, taint, false);
         int firedB = 0;
         int toPlains = 0;
