@@ -691,8 +691,12 @@ public final class ZombieMobGameTest {
                 }
             }
             // Foreign stack in the pad, on the kill tick, after the capture: the
-            // arm's foreign-stack fixture (see breakForeignBlockInPad).
-            breakForeignBlockInPad(helper, i);
+            // arm's foreign-stack fixture (see breakForeignBlockInPad). The index is
+            // taken mod the pad's own span so a 30-kill probe keeps EVERY break
+            // inside mobBox: the fixture cell is rel (3+i, 6+i, 4) and mobBox spans
+            // +-12, so an unclamped index walks out of the pad into the neighbourhood
+            // — writing there is the coupling docs/testing.md forbids.
+            breakForeignBlockInPad(helper, i % 10);
         }
         killer.discard();
         return drops;
@@ -842,22 +846,66 @@ public final class ZombieMobGameTest {
         });
     }
 
+    /** The RATE arm. A stochastic band is mean +- 4 sd of the binomial SUM, the
+     *  span widened OUTWARD to the drop's own quantum (a stack of 2 can only
+     *  leave an even total, so a band edge that is not a multiple of the quantum
+     *  bites on legal draws). A band built from a multiple of the PER-DEATH sd is
+     *  the defect this replaces: the tree at {@code f18e71f} carried 15 +- 6 on a
+     *  {@code Binom(30, 1/2)} sum — sd 2.74, so +-2.19 sd, an exact 1.61 % trip on
+     *  an honest stream (it went red at 8 flesh). The derivation — flips, quantum,
+     *  mean, sd, band, whole support — is printed IN the failure message so the
+     *  next reader computes the trip rate instead of re-measuring it. The band is
+     *  never the only arm: see the two deterministic arms in each probe.
+     *  docs/testing.md. */
+    private static void assertRollBand(final GameTestHelper helper, final int total,
+            final int flips, final int perFlip, final String who) {
+        final double mean = flips * perFlip * 0.5;
+        final double sd = Math.sqrt(flips * 0.25) * perFlip;
+        final int lo = (int) Math.floor((mean - 4 * sd) / perFlip) * perFlip;
+        final int hi = (int) Math.ceil((mean + 4 * sd) / perFlip) * perFlip;
+        helper.assertTrue(total >= lo && total <= hi,
+                who + " deaths left " + total + " rotten flesh: " + flips + " coin flips of "
+                        + perFlip + " per death is a binomial with mean " + (int) mean + " and sd "
+                        + (Math.round(sd * 100.0) / 100.0) + ", so the arm is mean +- 4 sd = ["
+                        + lo + ", " + hi + "] over the whole support [0, " + flips * perFlip
+                        + "]. A total that far out is a dropped, added or rescaled roll body, "
+                        + "not a draw.");
+    }
+
     @GameTest(template = "empty", timeoutTicks = 400)
     public static void angryZombieDeathDropsFollowTheOriginalRolls(final GameTestHelper helper) {
-        // :44-46 — three rolls, each coin flip drops 1 rotten flesh
-        // (Items.field_151078_bh = rotten_flesh, fields CSV), so 10 kills
-        // sum 30 flips: mean 15, sd 2.74, and the arm takes 4 sd, [4, 26]. The
-        // band is a rate guard (the identity arm is the contract's teeth), so it is
-        // set wide enough that no honest draw trips it.
+        // :44-46 — three rolls, each coin flip dropping 1 rotten flesh
+        // (Items.field_151078_bh = rotten_flesh, fields CSV): a death averages
+        // 1.5 flesh over the support [0, 3], and 30 deaths sum 90 flips of 1, so
+        // the rate arm is 45 +- 4 sd (sd 4.74) = [26, 64] — an exact 2.97e-5 trip
+        // on an honest stream. The kill count is 30 and not 10 for POWER: a
+        // doubled rolls body (mean 90) reddens THIS band on 99.993 % of legs,
+        // against 81.7 % for the 10-death band [4, 26] — that band hides the same
+        // defect on 18.3 % of legs. The two deterministic arms below are the ones
+        // a rescaled body cannot hide from at all; the exact roll count is pinned
+        // world-free by BrainyZombieAiLogicTest.
         // The brain branch (:50-51) names thaumcraft:itemzombiebrain, which this
         // port has not registered, so it must never appear (the gate).
-        final DeathDrops drops = killAndCollectDeathDrops(helper, "brainyzombie", 10);
+        final DeathDrops drops = killAndCollectDeathDrops(helper, "brainyzombie", 30);
         helper.runAfterDelay(SCAN_DELAY_TICKS, () -> {
-            final int flesh = drops.countOf(Items.ROTTEN_FLESH);
-            helper.assertTrue(flesh >= 4 && flesh <= 26,
-                    "10 angry-zombie deaths left " + flesh + " rotten flesh; the original rolls 3 coin "
-                            + "flips of 1 each per death (:44-46), so the rate must sit near 15 "
-                            + "(4sd of the 30-flip sum is 4-26; doubling the rolls lands on 30)");
+            assertRollBand(helper, drops.countOf(Items.ROTTEN_FLESH), 3 * 30, 1,
+                    "30 angry-zombie");
+            // Support cap, deterministic: the body is 3 flips, so a death leaves at
+            // most 3 stacks and 30 deaths at most 90. A rate band cannot see a
+            // tripled loop (it moves the mean AND the sd); the cap can.
+            helper.assertTrue(drops.owned.size() <= 3 * 30,
+                    "30 angry-zombie deaths left " + drops.owned.size() + " item stacks; the body is 3"
+                            + " coin flips of 1 (:44-46), so a death leaves at most 3 stacks and 30"
+                            + " deaths at most 90 — a band cannot see an added loop, the cap can");
+            // Quantum, deterministic: :46 is func_145779_a(rotten_flesh, 1), one per
+            // true flip, so the count ON the stack is the contract, not the total.
+            for (final ItemStack stack : drops.owned) {
+                helper.assertTrue(stack.is(Items.ROTTEN_FLESH) && stack.getCount() == 1,
+                        "an angry zombie left a stack of " + stack.getCount() + " "
+                                + BuiltInRegistries.ITEM.getKey(stack.getItem()) + "; :46 is"
+                                + " func_145779_a(rotten_flesh, 1) — the quantum of the stack is the"
+                                + " assertion, and a doubled stack is invisible to a rate band");
+            }
             assertOwnedDeathDropsAre(helper, drops,
                     stack -> stack.is(Items.ROTTEN_FLESH),
                     "an angry zombie",
@@ -872,19 +920,26 @@ public final class ZombieMobGameTest {
 
     @GameTest(template = "empty", timeoutTicks = 400)
     public static void furiousZombieDeathDropsDoubleTheRollsAndTheStack(final GameTestHelper helper) {
-        // :58-66 — TWO loops of SIX coin flips, each true drop leaving 2 rotten
-        // flesh: 12 flips x 2 = 24 per death, so 10 deaths sum 120 flips of 2:
-        // mean 120, sd 10.95, and the arm takes 4 sd, [76, 164]. Halving the loops
+        // :58-66 — TWO loops of SIX coin flips, each true flip leaving 2 rotten
+        // flesh: 12 flips of 2 per death, so 10 deaths sum 120 flips of 2 — mean
+        // 120, sd 10.95, and the arm is 120 +- 4 sd widened to the stack of 2 =
+        // [76, 164], an exact 3.24e-5 trip on an honest stream (the arm at
+        // f18e71f, 120 +- 33, was +-3.01 sd: a 0.245 % trip). Halving the loops
         // (1 loop) or the stack (1 per flip) lands on 60, well outside. The brain
         // branch (:70-71) is velocity 2.0 and the same unregistered item, so it is
         // gated out exactly as for the angry zombie.
         final DeathDrops drops = killAndCollectDeathDrops(helper, "giantbrainyzombie", 10);
         helper.runAfterDelay(SCAN_DELAY_TICKS, () -> {
-            final int flesh = drops.countOf(Items.ROTTEN_FLESH);
-            helper.assertTrue(flesh >= 76 && flesh <= 164,
-                    "10 furious-zombie deaths left " + flesh + " rotten flesh; the original rolls 2 loops "
-                            + "of 6 coin flips dropping 2 each (:58-66), so the rate must sit near 120 "
-                            + "(4sd of the sum is 76-164; dropping one loop, or one per flip, lands on 60)");
+            assertRollBand(helper, drops.countOf(Items.ROTTEN_FLESH), 2 * 6 * 10, 2,
+                    "10 furious-zombie");
+            // Support cap, deterministic: two drop bodies — 2 loops of 6 flips
+            // (:58-66, at most 12 stacks a death) plus the 4-way dropAllLoot pick
+            // (:75-89, at most 1) — so 10 deaths leave at most 130 stacks.
+            helper.assertTrue(drops.owned.size() <= (2 * 6 + 1) * 10,
+                    "10 furious-zombie deaths left " + drops.owned.size() + " item stacks; the pair has"
+                            + " two drop bodies — 2 loops of 6 coin flips (:58-66, at most 12 stacks a"
+                            + " death) and the 4-way dropAllLoot pick (:75-89, at most 1) — so 10 deaths"
+                            + " leave at most 130; an added loop reddens here, not only in the band");
             final ResourceLocation itemResource =
                     ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "itemresource");
             // The furious zombie has TWO drop bodies: func_70628_a (:57-73) and the
@@ -898,6 +953,19 @@ public final class ZombieMobGameTest {
                     "a furious zombie",
                     "rotten flesh (:58-66) and the 4-way dropAllLoot replacement "
                             + "thaumium / carrot / potato / amber (:76-88)");
+            // Quantum, deterministic: :60 and :66 are func_145779_a(rotten_flesh, 2)
+            // — the giant doubles the angry zombie's stack, and the count ON the
+            // stack is the contract. A rate band cannot see a rescaled stack (it
+            // moves the mean AND the sd together), so this arm is the one that
+            // reddens it, on 100 % of legs.
+            for (final ItemStack stack : drops.owned) {
+                if (stack.is(Items.ROTTEN_FLESH)) {
+                    helper.assertTrue(stack.getCount() == 2,
+                            "a furious zombie left a stack of " + stack.getCount() + " rotten flesh;"
+                                    + " :60 and :66 are func_145779_a(rotten_flesh, 2) — the quantum"
+                                    + " asserted here, not the total");
+                }
+            }
             helper.succeed();
         });
     }
