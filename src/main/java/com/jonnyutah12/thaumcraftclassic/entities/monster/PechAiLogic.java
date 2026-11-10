@@ -101,15 +101,17 @@ public final class PechAiLogic {
     }
 
     /** {@code :170} — {@code mainhand.getItem() == ConfigItems.itemWandCasting}.
-     *  ItemWandCasting is content-mapping row 170 ({@code Thaumcraft:WandCasting},
-     *  {@code not_started}), so the
-     *  lookup resolves to no item today; the shape is kept so the wand lane
-     *  closes it without touching this class. */
+     *  ItemWandCasting is content-mapping row 190 ({@code
+     *  Thaumcraft:WandCasting}), registered by the wand family
+     *  ({@code CatalogWands.java:70}), so this id resolves to a live item and
+     *  the {@code :172} gate is live; the shape is kept as the original's
+     *  instance-equality test. */
     public static final ResourceLocation WAND_ITEM =
             ResourceLocation.fromNamespaceAndPath("thaumcraft", "wandcasting");
     /** {@code :166-168} — the focus that rides the wand
-     *  ({@code ConfigItems.itemFocusPech}, row 181 {@code Thaumcraft:FocusPech},
-     *  {@code not_started}). */
+     *  ({@code ConfigItems.itemFocusPech}, ledger row 201 {@code
+     *  Thaumcraft:FocusPech}, {@code not_started}). It is what keeps the wand
+     *  equip roll inert — see {@code EntityPech#addRandomEquipment()} and BD-47. */
     public static final ResourceLocation FOCUS_PECH_ITEM =
             ResourceLocation.fromNamespaceAndPath("thaumcraft", "focuspech");
     /** {@code :175} — {@code Items.field_151031_f} = {@code bow} (ported). */
@@ -326,7 +328,8 @@ public final class PechAiLogic {
     /** {@code :122-163} — {@code nextInt(20)}: 0 and 12 want the wand (+focus),
      *  1 a stone sword, 2/4/10/11/13 a bow, 3 a stone axe, 5 an iron sword,
      *  6 an iron axe, 7 a fishing rod, 8 a stone pickaxe, 9 an iron pickaxe.
-     *  {@code null} = the unported wand branch (see BD-47). */
+     *  {@code null} = the wand rolls 0/12, inert until the Pech focus and the
+     *  wand's {@code setFocus} seam land (BD-47). */
     public static ResourceLocation equipmentFor(final int roll) {
         switch (roll) {
             case 0:

@@ -670,7 +670,10 @@ public final class PechMobGameTest {
         int magical = 0;
         final StringBuilder named = new StringBuilder();
         for (final ResourceLocation id : biomes.keySet()) {
-            if (biomes.getHolderOrThrow(biomes.wrapAsKey(id))
+            // 21.1.259's Registry has no wrapAsKey: the holder's key is built
+            // from the registry key + the id (the shape every other probe here uses).
+            if (biomes.getHolderOrThrow(net.minecraft.resources.ResourceKey
+                        .create(net.minecraft.core.registries.Registries.BIOME, id))
                     .is(net.neoforged.neoforge.common.Tags.Biomes.IS_MAGICAL)) {
                 magical++;
                 named.append(' ').append(id);
@@ -756,36 +759,55 @@ public final class PechMobGameTest {
     /**
      * :170-178 — the pech's type is read BACK from the mainhand item id. The
      * probe drives {@code finalizeSpawn} (the pass that equips, :168, then reads
-     * the mainhand back, :170-178) over draws and asserts the derived type: the
-     * bow rolls land type 2, and nothing lands type 1, because the wand branch is
-     * gated on the unregistered {@code thaumcraft:wandcasting} (BD-47).
+     * the mainhand back, :170-178) over draws and asserts the derived type from
+     * the stack it actually holds: bow rolls land type 2, everything else type 0.
+     *
+     * <p>The measured state of the wand half: {@code thaumcraft:wandcasting} IS
+     * registered (row 190, {@code CatalogWands.java:70}), so the :172 gate
+     * {@code EntityPech#wandRegistered()} reads TRUE — the gate is live, not the
+     * blocker. What blocks type 1 is the EQUIP roll: the original's :123-135
+     * builds the wand AND sets its focus to {@code itemFocusPech}
+     * ({@code thaumcraft:focuspech}, row 201, {@code not_started}) through a
+     * seam the port has no twin of, so {@link PechAiLogic#equipmentFor} returns
+     * {@code null} at rolls 0 and 12 and no pech is ever handed a wand
+     * (BD-47). The wand-count assert below is the tripwire: the day the roll is
+     * wired, this probe names it.</p>
      */
     @GameTest(template = "empty")
     public static void pechTypeTracksTheMainhandItemIdThroughTheSpawnPass(
             final GameTestHelper helper) {
         int bows = 0;
+        int wands = 0;
         for (int i = 0; i < 12; i++) {
             final EntityPech pech = pech(helper);
-            final BlockPos at = pad(helper, 1, 3, 1);
             pech.finalizeSpawn(helper.getLevel(), new net.minecraft.world.DifficultyInstance(
-                            helper.getLevel().getDifficulty(), helper.getLevel().getDayTime(), 0.0F),
+                            helper.getLevel().getDifficulty(), helper.getLevel().getDayTime(),
+                            helper.getLevel().getDayTime(), 0.0F),                 // 21.1.259: (Difficulty, long, long, float)
                     MobSpawnType.NATURAL, null);                                               // :167-178
             final ItemStack mainhand = pech.getItemBySlot(
                     net.minecraft.world.entity.EquipmentSlot.MAINHAND);
             final ResourceLocation id = mainhand.isEmpty() ? null
                     : BuiltInRegistries.ITEM.getKey(mainhand.getItem());
             final int type = pech.getPechType();
+            final boolean wand = PechAiLogic.WAND_ITEM.equals(id);
             final boolean bow = PechAiLogic.BOW_ITEM.equals(id);
-            helper.assertTrue((bow ? type == PechAiLogic.TYPE_BOW : type == PechAiLogic.TYPE_NORMAL)
-                            && type != PechAiLogic.TYPE_WAND,
-                    "mainhand " + id + " derived pechType " + type + " — :172-178 derives 2 from the"
-                            + " bow, 1 only from a REGISTERED thaumcraft:wandcasting (BD-47), 0"
-                            + " otherwise");
+            helper.assertTrue(type == PechAiLogic.pechTypeFor(wand, bow),
+                    "mainhand " + id + " derived pechType " + type + " — :172-178 derives 1 from a"
+                            + " REGISTERED thaumcraft:wandcasting (live since the wand family), 2"
+                            + " from the vanilla bow, 0 otherwise; measured: " + PechAiLogic.pechTypeFor(wand, bow));
             if (bow) {
                 bows++;
             }
+            if (wand) {
+                wands++;
+            }
             pech.discard();
         }
+        helper.assertTrue(wands == 0,
+                "the spawn pass equipped thaumcraft:wandcasting on " + wands + " of 12 draws — the"
+                        + " mage form (type 1) is now reachable from a NATURAL spawn, so BD-47's and"
+                        + " the row's plain statement (the mage never appears in a world) are stale"
+                        + " and must be re-measured and re-written");
         helper.assertTrue(bows >= 1,
                 "none of the 12 spawn passes equipped a bow (rolls 1-3 of :122-146), so the"
                         + " mainhand-to-type link is unmeasured");

@@ -107,7 +107,12 @@ import net.neoforged.neoforge.common.Tags;
  * card's {@code left_out_of_scope}): the trade GUI ({@code :701} opens
  * {@code openGui(Thaumcraft, 1, ...)} — the container/menu lane; the goal, the
  * flags and the rules ship, the window does not); the wand equipment branch
- * (ledger row 170 {@code Thaumcraft:WandCasting} unregistered, behind a live registry check, BD-47); the boss
+ * ({@code thaumcraft:wandcasting} IS registered — ledger row 190 {@code
+ * Thaumcraft:WandCasting}, {@code done,tested} — but the roll that equips it
+ * also builds the Pech's focus, {@code thaumcraft:focuspech} ledger row 201
+ * {@code not_started}, through a {@code setFocus} seam the port has no twin of,
+ * so the roll ships inert and the mage form (type 1) is unreachable from a
+ * natural spawn, BD-47); the boss
  * bar (1.21.1 has no {@code Mob#isBoss()}, BD-48); the 1.7.10 {@code EntityMob}
  * random-armour super call (1.21.1 moved it to difficulty-scaled item tags on
  * {@code Zombie}; {@code Monster} has no hook); the village branch of the spawn
@@ -400,8 +405,14 @@ public class EntityPech extends Monster implements RangedAttackMob {
         }
     }
 
-    /** {@code :172-174} — the wand branch's live gate: {@code ItemWandCasting}
-     *  is content-mapping row 170 ({@code Thaumcraft:WandCasting}), {@code not_started} (BD-47). */
+    /** {@code :172-174} — the wand branch's live gate: 1.7.10's item-instance
+     *  equality is a registry-id test here. {@code thaumcraft:wandcasting} is
+     *  REGISTERED (content-mapping row 190 {@code Thaumcraft:WandCasting},
+     *  {@code done,tested}, registered by the wand family at
+     *  {@code registration/catalog/CatalogWands.java:70}), so this check reads
+     *  TRUE at runtime and the type-derivation gate of {@code :172} is live.
+     *  What keeps the mage out of a world today is the EQUIP roll, not this
+     *  gate — see {@link #addRandomEquipment()} and BD-47. */
     private static boolean wandRegistered() {
         return BuiltInRegistries.ITEM.getHolder(PechAiLogic.WAND_ITEM).isPresent();
     }
@@ -411,8 +422,16 @@ public class EntityPech extends Monster implements RangedAttackMob {
      * {@code nextInt(20)} mainhand roll, resolved through
      * {@link PechAiLogic#equipmentFor} (stone sword; bows; stone axe; iron
      * sword; iron axe; fishing rod; stone pickaxe; iron pickaxe). Rolls 0 and 12
-     * want the wand plus ItemFocusPech — unregistered, so that branch is behind
-     * {@link #wandRegistered()} and the pech stays melee.
+     * (the decompiled {@code :123-135}) build ONE wand stack and set its focus to
+     * {@code ConfigItems.itemFocusPech} before equipping:
+     * {@code setFocus(wand, focus)} then six {@code addVis} calls (EARTH / ENTROPY
+     * / WATER at {@code 2 + nextInt(6)}, AIR / FIRE / ORDER at {@code nextInt(4)}).
+     * The port ships {@code ItemWandCasting.addVis} (the same 4-arg shape) but NO
+     * focus seam, and {@code thaumcraft:focuspech} (ledger row 201) is
+     * {@code not_started}, so the roll ships as {@code null} and the pech stays
+     * melee — the one deviation the wand lane's registration does NOT close
+     * (BD-47). {@link #wandRegistered()} stays as the {@code :172} gate the
+     * original has; it now reads true.
      *
      * <p>The original opens with {@code super.func_82164_bB()} — the 1.7.10
      * {@code EntityMob} random-armour roll, which 1.21.1 moved to
@@ -447,8 +466,8 @@ public class EntityPech extends Monster implements RangedAttackMob {
      * ({@code func_98053_h}) are vanilla hooks whose MCP names are unresolvable
      * from the vendored mappings (fields CSV only), so they ship as documented
      * no-ops; the wand's magical-biome vis charges ({@code :126-143},
-     * {@link PechAiLogic#WAND_VIS_BASE} and friends) belong to that same
-     * unregistered-wand branch.</p>
+     * {@link PechAiLogic#WAND_VIS_BASE} and friends) belong to that same inert
+     * wand-roll branch (BD-47).</p>
      */
     @Override
     @Nullable
