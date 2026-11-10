@@ -169,6 +169,25 @@ without the evidence for its stages.
   at the END of a tick, so a `setDeltaMovement` applied in the same tick as the probe's draws is
   invisible to those draws — an airborne mutation has to be established one tick early to be seen.
 - **A route-OUTCOME gate goes red as a rate, on the leg that loads more.** Measured on this tree: the   scribing-ink family landing (`2fefa9b`, over main `104ccce`) ran `runGameTestServer` red ONCE in 4   legs on `combat_golemopensarealdoorandclosesitbehindit` — "the route reaches the far side with doors   openable: `path[1,reached=false]`" — with `All 328 required tests passed :)` on the `-Ptc.noCurios`   leg (rc 0) and on both re-runs of the with-Curios leg (rc 0, rc 0). `GolemCombatAiGameTest.java` is   byte-identical to main's tip (`b3bc00a6`), the landing's 27 paths contain zero golem/door/entity   files, and the red leg printed the landing's own probes passing (`[TC-M3-04-s-vi] Scribe2 craft:`,   `[TC-M3-04-s-iv] KnowFrag craft:`). `reached=false` over a node list that EXISTS is the ground /   tick-order wall above, not the change under test: read the failing probe's NAME before diagnosing,   then re-run the leg before touching code.
+- **A hand-driven `tick()` runs the FULL goal selector, and the goal's gate reads the world.**
+  `Entity#tick` → `LivingEntity#tick` → `Mob#serverAiStep` → `goalSelector.tick()`. The
+  `(tickCount + id) % 2` parity gate does NOT shelter a hand-driven tick: `tickCount` is advanced
+  by the LEVEL (`ServerLevel#tickNonPassenger`), never by `Entity#tick()`, so a probe entity sits
+  at `tickCount=0`, the `tickCount > 1` guard is false, and the engine arms a goal on the live
+  selector inside the probe's own tick on EVERY draw (measured: 40 ids of both parities in one leg,
+  all armed). `GoalSelector#tick` then ticks the goal it has just started in the same call, so the
+  goal's `update` writes the state the probe goes on to read — and what closes that state is world
+  state: `SwellGoal#tick` feeds `swellUpdateState(target alive, distSqr,
+  getSensing().hasLineOfSight(target))`, and the LOS arm is a block clip (`Sensing#hasLineOfSight` →
+  `LivingEntity#hasLineOfSight`), so a grid draw that lands the cell in generated terrain writes
+  `-1` and the fuse reads 0. Measured on `104ccce` (56 legs, per-leg sampler at the asserted tick):
+  `sensingLos=true` 55 legs / 0 reds, `sensingLos=false` (cobblestone in the mob's own eye cell)
+  1 leg / 1 red; parity 1 29 legs / 0 reds, parity 0 26 legs / 1 red — **the entity-id parity
+  hypothesis measured FALSE**, so a rate is not proof of parity. Fix the PRECONDITION the same way
+  as above (measure the priority, `removeGoal`), and stand the world arm in the pad
+  (`setBlock` in the eye cell) so both arms of the gate are asserted, not drawn; clear the per-id
+  `Sensing` cache (`getSensing().tick()`) when the pad changes, because `Mob#serverAiStep` clears it
+  at the top of every AI tick and a stale `unseen` entry reads a block that is no longer there.
 - **A probe asserts an OUTCOME, never a tick budget.** `helper.runAtTickTime(getTick() + N, …)` puts the
   harness's scheduler inside the port's contract: the assert fires on the **probe's** clock, while the
   fact it reads is produced by the **LEVEL** — an entity's AI tick, a chunk's block-tick pass — and

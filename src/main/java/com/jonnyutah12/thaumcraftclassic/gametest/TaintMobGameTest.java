@@ -22,6 +22,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -185,15 +186,58 @@ public final class TaintMobGameTest {
         helper.succeed();
     }
 
+    /**
+     * The fuse accumulates by the swell state, so the probe drives a real target — and takes
+     * the swell goal OFF the live goal selector first, because a goal left on it is armed by
+     * the ENGINE inside the probe's own {@code creeper.tick()}: {@code Entity#tick} →
+     * {@code LivingEntity#tick} → {@code Mob#serverAiStep} → {@code goalSelector.tick()}, and
+     * {@code GoalSelector#tick} (goalCleanup → goalUpdate starts eligible goals →
+     * {@code tickRunningGoals(true)}) ticks the goal it has just started in the SAME call, so
+     * {@code SwellGoal.tick()} writes the swell state the fuse is about to read. The
+     * {@code (tickCount + id) % 2} gate at {@code Mob.java:779} shelters nothing here:
+     * {@code tickCount} is advanced by the LEVEL ({@code ServerLevel#tickNonPassenger}), never
+     * by {@code Entity#tick()}, so a hand-ticked probe entity sits at {@code tickCount=0}, the
+     * {@code tickCount > 1} guard is false, and the FULL selector tick runs on every draw.
+     *
+     * Measured on 104ccce with a per-leg sampler at the asserted tick (56 legs, 26 with-Curios
+     * / 30 -Ptc.noCurios): the axis that closed the fuse is the third input of the gate —
+     * {@code getSensing().hasLineOfSight(attackTarget)} is a block clip, and the game-test grid
+     * lands this probe's cell in generated terrain on some draws. sensingLos=true → 55 legs, 0
+     * reds; sensingLos=false (clip=BLOCK cobblestone in the creeper's own eye cell) → 1 leg, 1
+     * red, state=-1, fuse=0: "the fuse accumulates by the swell state, got 0". The parity
+     * hypothesis this card inherited measured FALSE — 29 legs at parity 1 and 26 at parity 0,
+     * 0 reds at parity 1, and the red leg sat at parity 0. Both arms draw terrain, which is why
+     * the red showed in the with-Curios arm (1/26 here, the filer's 1/4) and in
+     * -Ptc.noCurios (the reviewer's after_nc_3) alike.
+     */
     @GameTest(template = "empty")
     public static void taintCreeperKeepsItsHandRolledFuseAndBlast(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
+        // (1,2,1) feet + 1.53 eye height = the creeper's eye cell (1,3,1) — the cell the red
+        // leg's clip hit: clip=BLOCK@6616291,-57,6353823 cobblestone, origin 6616290,-60,6353822
+        final BlockPos eyeCell = helper.absolutePos(new BlockPos(1, 3, 1));
         final EntityTaintCreeper creeper = new EntityTaintCreeper(
                 CatalogTaintMobs.TAINTED_CREEPER.get(), level);
         creeper.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         level.addFreshEntity(creeper);
         helper.assertTrue(creeper.getCreeperState() == -1,
                 "the swell data byte starts at -1 (field_70713_aJ)");
+
+        // MEASURE the swell row on the LIVE selector, then take it OFF the selector: left on
+        // it, the engine arms it inside the probe's own tick (see the javadoc) and the goal's
+        // update writes the state the fuse reads — on the draw, at a rate.
+        final EntityTaintCreeper.SwellGoal swell = swellGoalOf(creeper);
+        helper.assertTrue(swell != null,
+                "the swell goal is on the live goal selector, rows:" + goalRows(creeper));
+        helper.assertTrue(swellPriorityOf(creeper) == 2,
+                "the swell goal is registered at priority 2 (the decompiled table), got "
+                        + swellPriorityOf(creeper) + ", rows:" + goalRows(creeper));
+        creeper.goalSelector.removeGoal(swell);
+        // Goal has no isRunning() — the live flag is on WrappedGoal, so the rows string is the
+        // witness: no swell row means no wrapper, and nothing can arm it.
+        helper.assertTrue(swellGoalOf(creeper) == null,
+                "the swell goal is OFF the live selector before the probe drives a tick (no row,"
+                        + " so no wrapper to arm), rows:" + goalRows(creeper));
 
         // the original accumulates the fuse AFTER the goal selector has run
         // (func_70071_h_ calls super.tick first, lines 120-131), and
@@ -206,10 +250,75 @@ public final class TaintMobGameTest {
         prey.moveTo(helper.absolutePos(new BlockPos(2, 2, 1)), 0.0F, 0.0F);
         level.addFreshEntity(prey);
         creeper.setTarget(prey);
+        helper.assertTrue(creeper.getTarget() == prey && prey.isAlive()
+                        && creeper.distanceToSqr(prey) < 49.0D,
+                "the swell gate's target arm is open at the asserted tick, targetIsPrey="
+                        + (creeper.getTarget() == prey) + " preyAlive=" + prey.isAlive()
+                        + " health=" + prey.getHealth() + " distSqr="
+                        + creeper.distanceToSqr(prey));
+
+        // The draw that reddened the probe, stood in the pad as a constant: a solid block in
+        // the creeper's own eye cell closes getSensing().hasLineOfSight(prey) — the same clip
+        // that measured clip=BLOCK cobblestone on the red leg — so the LOS arm of the gate is
+        // asserted here and never drawn by the grid.
+        // GameTestHelper#setBlock applies absolutePos itself, so the pad cell goes in RELATIVE
+        // (1,3,1); eyeCell above is the absolute witness for the messages and the reads.
+        helper.setBlock(new BlockPos(1, 3, 1), Blocks.COBBLESTONE.defaultBlockState());
+        helper.assertTrue(!creeper.getSensing().hasLineOfSight(prey),
+                "the pad occludes the creeper's eye cell so the swell gate's LOS arm is a"
+                        + " constant and not a grid draw, eye=" + eyeCell + " block="
+                        + level.getBlockState(eyeCell) + " los="
+                        + creeper.getSensing().hasLineOfSight(prey) + " align16="
+                        + Math.floorMod(eyeCell.getX(), 16) + ","
+                        + Math.floorMod(eyeCell.getZ(), 16));
+
         creeper.setCreeperState(1);
         creeper.tick();
         helper.assertTrue(creeper.getTimeSinceIgnited() == 1,
-                "the fuse accumulates by the swell state, got " + creeper.getTimeSinceIgnited());
+                "the fuse accumulates by the swell state, got " + creeper.getTimeSinceIgnited()
+                        + " with state=" + creeper.getCreeperState() + " targetIsPrey="
+                        + (creeper.getTarget() == prey) + " preyAlive=" + prey.isAlive()
+                        + " los=" + creeper.getSensing().hasLineOfSight(prey)
+                        + " swellOnSelector=" + (swellGoalOf(creeper) != null)
+                        + " eye=" + eyeCell + " block="
+                        + level.getBlockState(eyeCell) + " tickCount=" + creeper.tickCount + " rows:"
+                        + goalRows(creeper));
+
+        // Off the live selector the probe drives the gate's two arms itself. WrappedGoal#start
+        // and WrappedGoal#tick (GoalSelector#goalUpdate / tickRunningGoals) call exactly these,
+        // so this is the same call the engine makes — it is only the engine's ARMING that the
+        // probe has taken out of the draw.
+        swell.start();                                       // start 20-23
+        swell.tick();                                        // update 29-38
+        helper.assertTrue(creeper.getCreeperState() == -1,
+                "with the LOS arm closed the swell goal resets the state to -1 in the SAME tick"
+                        + " (update 29-38), got " + creeper.getCreeperState() + " los="
+                        + creeper.getSensing().hasLineOfSight(prey) + " preyAlive="
+                        + prey.isAlive() + " health=" + prey.getHealth() + " distSqr="
+                        + creeper.distanceToSqr(prey));
+        helper.assertTrue(TaintCreeperAiLogic.nextFuse(0, creeper.getCreeperState(), 30) == 0,
+                "a closed swell state decays a fresh fuse to 0 (the red leg's got 0), got "
+                        + TaintCreeperAiLogic.nextFuse(0, creeper.getCreeperState(), 30));
+
+        // the open arm. Mob#serverAiStep clears the per-id seen/unseen cache at the top of
+        // every AI tick (Sensing#tick), so a pad change has to clear it the same way — a stale
+        // "unseen" entry reads the block that is no longer there.
+        helper.setBlock(new BlockPos(1, 3, 1), Blocks.AIR.defaultBlockState());
+        creeper.getSensing().tick();
+        helper.assertTrue(creeper.getSensing().hasLineOfSight(prey),
+                "with the pad cleared the LOS arm is open at " + eyeCell + ", block="
+                        + level.getBlockState(eyeCell) + " preyAlive=" + prey.isAlive());
+        swell.tick();
+        helper.assertTrue(creeper.getCreeperState() == 1,
+                "with the target alive, in range and visible the swell goal keeps the state at 1"
+                        + " (update 29-38), got " + creeper.getCreeperState() + " preyAlive="
+                        + prey.isAlive() + " health=" + prey.getHealth() + " distSqr="
+                        + creeper.distanceToSqr(prey) + " los="
+                        + creeper.getSensing().hasLineOfSight(prey));
+        swell.stop();                                        // stop 25-28: target released
+        helper.assertTrue(creeper.getCreeperState() == 1,
+                "stop() releases the captured target and does not write the state, got "
+                        + creeper.getCreeperState());
         // the blast is the hand-rolled 1.5F literal, never the loaded field
         helper.assertTrue(TaintCreeperAiLogic.EXPLOSION_RADIUS == 1.5F
                         && TaintCreeperAiLogic.LOADED_RADIUS_FIELD == 3.0F,
@@ -249,5 +358,38 @@ public final class TaintMobGameTest {
                         .isPistonFamily(Blocks.STONE.defaultBlockState()),
                 "stone is not a piston");
         helper.succeed();
+    }
+
+    /** The swell goal row of a live creeper's goal selector, or null when it has been removed. */
+    private static EntityTaintCreeper.SwellGoal swellGoalOf(final EntityTaintCreeper creeper) {
+        for (final WrappedGoal wrapped : creeper.goalSelector.getAvailableGoals()) {
+            if (wrapped.getGoal() instanceof EntityTaintCreeper.SwellGoal goal) {
+                return goal;
+            }
+        }
+        return null;
+    }
+
+    /** The priority the swell row is registered at on the live selector, -1 when it is absent. */
+    private static int swellPriorityOf(final EntityTaintCreeper creeper) {
+        for (final WrappedGoal wrapped : creeper.goalSelector.getAvailableGoals()) {
+            if (wrapped.getGoal() instanceof EntityTaintCreeper.SwellGoal) {
+                return wrapped.getPriority();
+            }
+        }
+        return -1;
+    }
+
+    /** The live goal selector as "priority=Goal*RUN" rows, for a failure that names its axis. */
+    private static String goalRows(final EntityTaintCreeper creeper) {
+        final StringBuilder rows = new StringBuilder();
+        for (final WrappedGoal wrapped : creeper.goalSelector.getAvailableGoals()) {
+            rows.append(' ').append(wrapped.getPriority()).append('=')
+                    .append(wrapped.getGoal().getClass().getSimpleName());
+            if (wrapped.isRunning()) {
+                rows.append("*RUN");
+            }
+        }
+        return rows.toString();
     }
 }
