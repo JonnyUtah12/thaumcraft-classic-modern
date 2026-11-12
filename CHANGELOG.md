@@ -87,6 +87,27 @@ commenting the rename map out (`'blocks': 'block'` in `build.gradle`) makes
 `OriginalTextureOverlayTest` FAIL (exit 1); restoring it byte-identically returns
 the suite to green (exit 0).
 
+**TC-M9-01-s turns “the mod is playable” into a gate that fails: `PlayableAcceptanceGameTest` composes the
+intake's three asks into one verdict.** All 8 `blockcustomore` variants are placed and broken through the
+shipped dispatch only — `level.destroyBlock` with no tool and the `Block.playerDestroy` tool lane with real
+enchanted pickaxes — at the original drop formulas (variant 0 self-drop with the variant preserved, variants
+1–6 one size-1 `itemshard` stack per unit at `item_meta` = variant − 1 in `1 + rand(2 + fortune)`, variant 7
+`itemresource` meta 6 Amber in `1 + rand(fortune + 1)`, the `match_tool` silk-touch branch returning the block
+with its variant). The creative tab's contents are compared against a set **derived from the live item
+registry at test time** — never a hardcoded list, which is the trap this project keeps hitting — with the
+converse asserted too (the `test_probe` / `test_aspect_source` fixtures appear in no public tab), and every
+production item must resolve a `Component.translatable` name to text that is not its own key plus a model
+JSON on the classpath. `theplayableintakecomposesintooneverdict` runs all of it in one fresh world and reports
+**one** verdict: 135/135 required tests, green in both the Curios and `-Ptc.noCurios` configurations and
+`./gradlew build` exit 0 (379 unit tests / 0 failures / 1 skipped). The gate is **mutation-proven red
+twice** — hide `data/thaumcraft/loot_table/blocks/blockcustomore.json` → exit 1, “8 required tests failed”
+with the ore legs red; empty the tab builder's `displayItems` → exit 1, “4 required tests failed” with the tab
+legs red — and both files restore byte-identical (`diff -q` silent). The three per-card probes were green
+while the intake was unmet; this is the standing gate that closes that gap. JEI needs no code for item
+listing, so this is the machine-checkable form of “items are in JEI”; custom recipe categories (SPINE-4) stay
+deferred.
+
+
 **SPINE-3 Item model coverage closes the “items are not visible/searchable” repro: 51
   port-authored `models/item/<id>.json` (52 total) so every registered item renders a
   real icon in inventory, hand, the hotbar, the container grid, the recipe book and the
