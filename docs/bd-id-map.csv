@@ -39,3 +39,7 @@ origin/wt/t_fee89bb7,6131705670d32f9eff72b393a84a3f1826c3789b,BD-19,BD-63,t_e4e6
 origin/wt/knowfrag-recipe,05f64952384fbdc4be2b5c2216e11b458cadf1cb,BD-19,BD-64,t_9eefdde6,no,KnowFrag recipe / research-page recipe display (TC-M3-04-s-iv + TC-M3-04-s-iv-b)
 origin/wt/thaumonomicon-recipe-page,96b247a7789350efa90d1b7ded81c5cfdb203601,BD-19,BD-64,t_9eefdde6,yes,KnowFrag recipe / research-page recipe display (TC-M3-04-s-iv + TC-M3-04-s-iv-b)
 origin/wt/inkwell-recipe,d0ed7164b6eaa2c0b00452381f74607233ead443,BD-20,BD-66,t_28fe696f,yes,Scribing Tools acquisition (TC-M3-04-s-vi)
+origin/salvage/t_3cb64300-delta,d4f48a46bbaec476d3cd54950f2e61202e7150d2,BD-46,BD-67,t_3cb64300,yes,"Pech trade window (TC-M6-06-s-c3-a / t_3cb64300)"
+origin/salvage/t_3cb64300-delta,d4f48a46bbaec476d3cd54950f2e61202e7150d2,BD-47,BD-68,t_3cb64300,yes,"Pech wand branch gated on an unregistered item (TC-M6-06-s-c3-a / t_3cb64300)"
+origin/salvage/t_3cb64300-delta,d4f48a46bbaec476d3cd54950f2e61202e7150d2,BD-48,BD-69,t_3cb64300,yes,"Pech boss status (TC-M6-06-s-c3-a / t_3cb64300)"
+origin/salvage/t_3cb64300-delta,d4f48a46bbaec476d3cd54950f2e61202e7150d2,BD-49,BD-70,t_3cb64300,yes,"Pech village gate and wander factor (TC-M6-06-s-c3-a / t_3cb64300)"
