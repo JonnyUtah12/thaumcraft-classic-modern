@@ -253,6 +253,32 @@ without the evidence for its stages.
   **98-142** / **100-130** (giant), against binomial means 15 and 120 — so no vanilla zombie loot table rides a modded id — and every stack in the
   25-block box was owned, **16/16** legs, foreign = 0 (8 legs per tree, the two sweeps above; both ran 10 kills, so the angry mean there is 15,
   not the shipped probe's 45).
+  **The band's literals are the ORIGINAL's roll body x the probe's own kill loop, and re-centring means re-deriving that product on the branch
+  that ships the band, not trusting the branch it was written on.** Recomputed at `de3b988c` (main tip at this card's rebase). Three landings moved
+  main since the band was written (`6a7f99da` Pech, `10db0007` PLAYABLE, `de3b988c` tube/machine — 38 files, +7117 lines) and **none of them touches
+  a zombie file**: `git log 6a7f99da..de3b988c -- .../entities/monster .../gametest/ZombieMobGameTest.java .../monster/BrainyZombieAiLogicTest.java`
+  is empty, `EntityBrainyZombie`/`EntityGiantBrainyZombie`/`BrainyZombieAiLogic` carry a single commit `b767568` apiece, and the probes' own last
+  touch is the band fix `f759b4d6` — so main's support loop IS the loop the band was authored against, and the arithmetic below is the proof, not an
+  assumption. Read off main at that tip: the support loop is `killAndCollectDeathDrops(helper, "brainyzombie", 30)` feeding the band `3 * 30` and
+  `killAndCollectDeathDrops(helper, "giantbrainyzombie", 10)` feeding it `2 * 6 * 10` — kill literal and flip literal agree, which is exactly the
+  property a rebase has to re-check, because a moved kill loop moves the mean AND the sd:
+  `reference/decompiled/.../EntityBrainyZombie.java:44-46` is `for (a = 0; a < 3; a++) if (world.nextBoolean()) drop(rotten_flesh, 1)` x the probe's
+  **30** deaths (`killAndCollectDeathDrops(helper, "brainyzombie", 30)`) → flips **90**, quantum **1** → mean `90 · ½ = 45`, sd `√(90 · ¼) · 1 =
+  4.7434`, `45 ± 4 sd = [26.03, 63.97]`, widened outward to the quantum → **[26, 64]**, exact trip `P(Binom(90,½) ≤ 25) + P(Binom(90,½) ≥ 65) =
+  2.9665e-5` (the probe's shipped `2.97e-5`). `EntityGiantBrainyZombie.java:58-66` is TWO `for (a < 6)` loops of `drop(rotten_flesh, 2)` x **10**
+  deaths → flips **120**, quantum **2** → mean **120**, sd `√(120 · ¼) · 2 = 10.9545`, `120 ± 4 sd = [76.18, 163.82]`, widened to the stack of 2 →
+  **[76, 164]**, exact trip `P(2·Binom(120,½) ≤ 74) + P(2·Binom(120,½) ≥ 166) = 3.2432e-5` (shipped `3.24e-5`); the pair is **6.2096e-5** a leg =
+  1 red in **16 104** legs. The expectations stay the ORIGINAL's literals; `BrainyZombieAiLogic`'s constants are the mutation surface, never the
+  expectation (`BrainyZombieAiLogicTest` pins 3 / 1 / 6 / 2 as numbers, and the game probes hard-code `3 * 30` and `2 * 6 * 10`).
+  **Predicted rates for the band-regression mutations on this tree** (exact binomial sums, so a leg that survives them is luck, not design):
+  halving the angry probe's support (`killAndCollectDeathDrops(helper, "brainyzombie", 30 → 15)`) makes the true body `Binom(45, ½)` — mean **22.5**,
+  sd **3.3541** — against the shipped `[26, 64]`, and since 15 deaths can leave at most 45 flesh the HIGH side is unreachable, so the arm reddens on
+  `P(Binom(45,½) ≤ 25)` = **81.44 %** of mutated legs, and the cap arm (`≤ 90` stacks) and the quantum arm (every stack `== 1`) stay green on
+  **100 %** of them. Halving the furious support product-side (`BrainyZombieAiLogic.FURIOUS_ROLLS_PER_LOOP 6 → 3`) makes the true body
+  `2·Binom(60, ½)` — mean **60**, sd **7.746** — against the shipped `[76, 164]`, reddening on `P(2·Binom(60,½) ≤ 74)` = **97.41 %** of legs (which
+  is the same number the fury probe's comment calls "lands on 60, well outside"). The band is the FIRST assert in each probe's poll body, so the only
+  arms that can mask it are the two inside `killAndCollectDeathDrops` (`… did not kill the mob, so the drop roll never ran` and `the fixture's stone
+  button at … did not break`); those must show **0** occurrences in a mutated log for the red to be attributed to the band.
 
 - A `@GameTest` body that touches a block entity must not park the server
   thread. The game test server shuts down by unloading chunks
