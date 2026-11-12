@@ -10,6 +10,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchRealm;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogOuterLands;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaTransport;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogGolems;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
@@ -237,6 +238,16 @@ public final class ModRegistration {
         // Renderer + spawn egg stay on TC-M7-03-s / TC-M6-06-s-c6; the trade
         // GUI has no menu surface in the port (BD row).
         CatalogPech.init(modEventBus);
+        // TC-M4-07-i (t_765fab90, consolidating TC-M4-07-s t_62ddfe14 + TC-M4-07-m t_bd264b62 +
+        // TC-M4-07-f t_0d3b1b2a): the essentia transport network — the tube block
+        // (thaumcraft:blocktube, the original's metadata 0..7 on a variant property) with the six
+        // conduit tiles it hosts (tube, valve, filter, buffer, restricted, directional) and their
+        // suction/flow rules. The two machines the original also hosted on this block (metadata 2
+        // centrifuge, metadata 7 crystallizer) and the wand/resonator face toggling (the
+        // IWandable seam over the tiles' sub-hit cuboids) landed in the same consolidation.
+        // The pipe/machine renderers, particles and sounds stay on TC-M7-01/TC-M7-05 and the
+        // per-variant item labels on TC-M7-01b.
+        CatalogEssentiaTransport.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-
