@@ -780,10 +780,17 @@ public final class OuterLandsGameTest {
         // The two pyramids off q = min(|8-a|, |8-b|): the floor rises q-1 steps
         // (ref L69-75) and the ceiling drops q (ref L77-83), so (8,8) stays
         // open and the cap under the tablet is not buried.
-        helper.assertTrue(isFloor(outer.getBlockState(new BlockPos(x + 5, y + 3, z + 5))),
-                "the floor pyramid stops short of q-1 = 2 steps (ref L73)");
-        helper.assertTrue(outer.isEmptyBlock(new BlockPos(x + 5, y + 4, z + 5)),
-                "the floor pyramid rises past q-1 (ref L72: g < q - 1)");
+        // Measured shape at (5,5): q = 3, the loop places code 2 at y + 1 + g
+        // for g < q - 1 (ref L71-73) — two placements, y+1 (the floor itself)
+        // and y+2 — so the pyramid TOP is y + q - 1 = y+2 and y+3 is the first
+        // empty cell. The WIP asserted y+3 floor / y+4 empty, one step above
+        // what the original's bound can ever reach; the RED leg named it
+        // ("stops short of q-1 = 2 steps") while the builder was verbatim-faithful.
+        helper.assertTrue(isFloor(outer.getBlockState(new BlockPos(x + 5, y + 2, z + 5))),
+                "the floor pyramid stops short of its top step (ref L71-73: g < q - 1 places y+1..y+q-1,"
+                        + " q = 3 at (5,5) → top at y+2)");
+        helper.assertTrue(outer.isEmptyBlock(new BlockPos(x + 5, y + 3, z + 5)),
+                "the floor pyramid rises past its top step (ref L72: g < q - 1 → top y + q - 1 = y+2 for q = 3)");
         helper.assertTrue(outer.isEmptyBlock(new BlockPos(x + 8, y + 4, z + 8)),
                 "the (8,8) column is not open, so the cap and the tablet are buried (q = 0, ref L69-83)");
         // The four directional stair runs at y+2 (ref L87-92).

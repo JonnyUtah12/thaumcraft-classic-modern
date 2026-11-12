@@ -185,7 +185,11 @@ public final class GenKeyRoom {
 
         // Ref L95: the pedestal — blockEldritch meta 3 (the cap) at the room
         // centre, y+2, on top of the code-2 floor at y+1. Direct set, no
-        // decoration queue.
+        // decoration queue. Restored on t_fb5cc21f: the WIP left this comment
+        // with no statement behind it, and the RED probe named the air cell
+        // ("the eldritch cap (meta 3) is not on the pedestal ... got air").
+        setBlockAndUpdate(new BlockPos(x + 8, y + 2, z + 8), CatalogEldritchRealm.BLOCK_ELDRITCH.get(), world,
+                EldritchRealmValues.ELDRITCH_CAP); // ref L95: world.func_147465_d(x+8, y+2, z+8, blockEldritch, 3, 3)
 
         // Ref L96-100: the Runed Tablet (itemEldritchObject meta 2) on the
         // pedestal, motion zeroed and never despawning. The original's
