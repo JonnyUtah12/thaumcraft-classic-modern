@@ -253,6 +253,19 @@ without the evidence for its stages.
   **98-142** / **100-130** (giant), against binomial means 15 and 120 — so no vanilla zombie loot table rides a modded id — and every stack in the
   25-block box was owned, **16/16** legs, foreign = 0 (8 legs per tree, the two sweeps above; both ran 10 kills, so the angry mean there is 15,
   not the shipped probe's 45).
+  The literals are a function of the loop the probe runs TODAY, so **re-derive them from the loop on the branch you are shipping on**.
+  Recomputed at `f25c4953` (main) off main's own loops and the port's own bodies: angry = `killAndCollectDeathDrops(helper, "brainyzombie", 30)`
+  x the body at `EntityBrainyZombie.java:183-190` (`BRAINY_FLESH_ROLLS = 3`, `BRAINY_FLESH_STACK = 1`, = the ORIGINAL's
+  `EntityBrainyZombie.java:44-46`) -> **90 flips of 1**: mean = 90 x 1 x 1/2 = **45**, sd = sqrt(90 x 1/4) x 1 = **4.7434**, so
+  `[45 - 4sd, 45 + 4sd] = [26.0263, 63.9737]`, widened outward to the quantum 1 -> **`[26, 64]`**, exact trip **2.9665e-5** (each tail
+  1.4832e-5). furious = 10 kills x 2 loops x 6 flips x stack 2 (the port's `FURIOUS_ROLLS_PER_LOOP = 6`, `FURIOUS_FLESH_STACK = 2`, = the
+  ORIGINAL's `EntityGiantBrainyZombie.java:58-66`) -> **120 flips of 2**: mean = **120**, sd = sqrt(120 x 1/4) x 2 = **10.9545**, so
+  `[76.1822, 163.8178]`, widened outward to the quantum 2 -> **`[76, 164]`**, exact trip **3.2432e-5** (P(2X <= 74) = P(2X >= 166) =
+  1.6216e-5 each). Pair **6.2096e-5** a leg = 1 red in **16 104**. The shipped literals and the three deterministic caps (3 x 30 = **90**
+  stacks; (2 x 6 + 1) x 10 = **130**; one death's whole support 12 x 2 = **24**) reproduce THAT arithmetic, so main needed no re-centre: the
+  band arm's runtime band, printed in its own failure message, is `[26, 64]` off main's 30-kill loop, measured in the leg cited below.
+  A band derived on a branch the loop has since moved off is the defect this line exists to catch; it is not the defect this tree had, and
+  the check costs 2 minutes — read the loop, do the arithmetic, and let the probe's own message be the witness.
 
 - A `@GameTest` body that touches a block entity must not park the server
   thread. The game test server shuts down by unloading chunks
