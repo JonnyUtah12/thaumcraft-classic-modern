@@ -267,6 +267,30 @@ without the evidence for its stages.
   A band derived on a branch the loop has since moved off is the defect this line exists to catch; it is not the defect this tree had, and
   the check costs 2 minutes — read the loop, do the arithmetic, and let the probe's own message be the witness.
 
+- **Prove a band CAN fail: halve the support and the band arm must go RED, with the predicted per-arm red rate of the
+  mutated body quoted next to the observed one.** The mutation is the support count —
+  `killAndCollectDeathDrops(helper, "brainyzombie", 30)` -> `15` — one int, so it COMPILES (`Task :compileJava` runs and
+  the leg reaches the tests; a type-incompatible mutation reddens `:compileTestJava` and evidences nothing), it moves the
+  true body to `Binom(45, 1/2)` (mean 22.5, sd 3.3541), and the band stays `[26, 64]` because `assertRollBand`'s `flips`
+  argument is the probe's own literal, not a read of the loop. Predicted per-arm red rate ON THE MUTATED BODY: band =
+  P(X <= 25) = **81.44 %** of legs; the support cap (3 stacks x 15 deaths = at most 45 against the shipped 90) = **0 %**;
+  the stack quantum = **0 %**; the kill arm inside the loop = **0 %**. Observed at `da681298`: **1 red in 2 mutated legs**
+  (50 %) — the exact-binomial split P(exactly 1 of 2) = 30.2 % and P(1+ red in 2 legs) = 97.5 %, so the 1-of-2 draw is
+  sampling, not a weak mutation — with the sweep stopped at the leg that NAMES the band. Leg 1 green: `All 331 required
+  tests passed` (the band survived a 15-kill draw, which is the 18.6 % the prediction allows). Leg 2 red: `1 required
+  tests failed`, `angryzombiedeathdropsfollowtheoriginalrolls` (the harness lowercases names, so every probe-name grep is
+  `grep -i`) — "30 angry-zombie deaths left 19 rotten flesh: 90 coin flips of 1 per death is a binomial with mean 45 and
+  sd 4.74, so the arm is mean +- 4 sd = [26, 64] over the whole support [0, 90]". That message is the witness on both
+  halves at once: the runtime band is `[26, 64]` off the shipped literals, read against a body that only 15 kills can
+  leave. Asserts run in ORDER, so the arms ahead of the one under test are proven by their failure strings, not by
+  silence: in the red leg `did not kill the mob` (the ONLY arm that runs before the band, inside the kill loop) = **0**
+  occurrences, and the arms behind it are masked by the band firing — `item stacks; the body is 3` (cap) = **0**,
+  `left a stack of` (quantum) = **0**, `outside the pair's drop bodies` and `left no drop in the pad at all` (identity) =
+  **0** — with `1 required tests failed` as the suite total, so no other probe moved either. Then `git checkout --` the
+  mutated file and prove the tree: `sha256sum` of the file equals `sha256sum` of `git show HEAD:<file>` (`9e3ab417…` for
+  `ZombieMobGameTest` at `da681298`) and `git status` prints nothing. Commit the fix BEFORE the sweep — the sweep's
+  revert is a `git checkout --`, so an uncommitted fix in that file is destroyed by the mutation that targets it.
+
 - A `@GameTest` body that touches a block entity must not park the server
   thread. The game test server shuts down by unloading chunks
   (`LevelChunk.clearAllBlockEntities` → `BlockEntity.setRemoved`), and a
