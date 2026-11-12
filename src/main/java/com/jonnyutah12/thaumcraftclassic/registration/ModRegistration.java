@@ -3,6 +3,7 @@ package com.jonnyutah12.thaumcraftclassic.registration;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArcaneWorkbench;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArmor;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogThaumatorium;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEntities;
@@ -229,6 +230,13 @@ public final class ModRegistration {
         // (MazeHandler) and the teleporter. The dimension itself is the
         // dimension_type/dimension datapack pair under data/thaumcraft/.
         CatalogOuterLands.init(modEventBus);
+        // TC-M7-04-m2c: the thaumatorium window — the TileThaumatorium /
+        // TileThaumatoriumTop block entities for blockMetalDevice metas 10/11
+        // (the original's createTileEntity), their (block, variant) -> tile
+        // bindings through DeviceTileFactory, and the gui_thaumatorium menu
+        // type. The machine tick loop / essentia transport stay on the
+        // thaumatorium machine card (BD-19).
+        CatalogThaumatorium.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

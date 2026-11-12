@@ -59,12 +59,17 @@ import java.util.List;
  * six wand charges and the "Insufficient vis" flag arrive as this menu's data slots
  * (see {@link ArcaneWorkbenchMenu}), computed where the truth lives — the recipe
  * lookup and the wand's vis component — and the pulse's formula is the original's,
- * kept world-free in {@link ContainerLayout#aspectAlpha}. The original drew each
- * cost with {@code UtilsFX.drawTag} (a 16x16 aspect tag from
- * {@code thaumcraft:textures/items/gear.png} plus an amount glyph); the port ships
- * no such atlas, so each cost is its aspect's colour block, pulsing at the
- * original's alpha, with the vis amount as text: the same information, no invented
- * art.</p>
+ * kept world-free in {@link ContainerLayout#aspectAlpha}.</p>
+ *
+ * <p><b>Each cost is the original's tag.</b> The original drew
+ * {@code UtilsFX.drawTag} at each hexagon point (a 16x16 quad of the aspect's own
+ * texture, tinted by the aspect colour at the pulse alpha, with the amount as a
+ * 0.5-scale glyph inside the box); the port draws the same quad through
+ * {@link AspectTagRenderer} (TC-M7-04-m2d). The aspect sheets are ARR-overlay
+ * (D-004), so with the overlay applied the real sprite is tinted and drawn, and in
+ * the code-only jar the same box carries the aspect's own colour at the same alpha
+ * — the geometry and the animation are the original's in both builds, and no art
+ * is invented. BD-18 keeps the two gaps that are not closed here.</p>
  */
 @OnlyIn(Dist.CLIENT)
 public class ArcaneWorkbenchScreen extends AbstractContainerScreen<ArcaneWorkbenchMenu> {
@@ -162,22 +167,30 @@ public class ArcaneWorkbenchScreen extends AbstractContainerScreen<ArcaneWorkben
             }
             final Aspect aspect = primals.get(i);
             final boolean affordable = this.menu.getWandCharge(i) >= cost;
-            final int alpha = ContainerLayout.withAlpha(aspect.getColor(),
-                    ContainerLayout.aspectAlpha(pulseTime(), i, affordable));
-            ScreenPanel.fillArea(guiGraphics, this.leftPos, this.topPos,
-                    ContainerLayout.aspectBoxX(i), ContainerLayout.aspectBoxY(i),
-                    ContainerLayout.WB_ASPECT_BOX, ContainerLayout.WB_ASPECT_BOX, alpha);
-            ScreenPanel.frameArea(guiGraphics, this.leftPos, this.topPos,
-                    ContainerLayout.aspectBoxX(i), ContainerLayout.aspectBoxY(i),
-                    ContainerLayout.WB_ASPECT_BOX, ContainerLayout.WB_ASPECT_BOX);
-            // The amount the original's tag glyph carried, as text: real vis, the
-            // original's /100 of the centi-vis the menu syncs.
-            final String amount = Integer.toString(ContainerLayout.displayVis(cost));
-            final int textX = this.leftPos + ContainerLayout.aspectBoxX(i)
-                    + (ContainerLayout.WB_ASPECT_BOX - this.font.width(amount)) / 2;
-            guiGraphics.drawString(this.font, amount, textX,
-                    this.topPos + ContainerLayout.aspectBoxY(i) + ContainerLayout.WB_ASPECT_BOX + 1,
-                    alpha, false);
+            final float alpha = ContainerLayout.aspectAlpha(pulseTime(), i, affordable);
+            /*
+             * The tag itself — the original's UtilsFX.drawTag at
+             * GuiArcaneWorkbench.java:65:
+             *   drawTag(var5 + aspectLocs[count][0] - 8, var6 + aspectLocs[count][1] - 8,
+             *           primal, (float) cost.getAmount(primal), 0, zLevel, 771, alpha)
+             * The -8 shift is already inside ContainerLayout.aspectBoxX/Y, and the port's
+             * price travels in centi-vis, so the amount is divided back out
+             * (ContainerLayout.displayVisFloat). The alpha is the original's own
+             * pulse (GuiArcaneWorkbench.java:57) — 0.1..0.5 while the wand is short of
+             * that aspect, steady 1.0 when it can pay.
+             *
+             * This replaces TC-M7-04-m2's stand-ins (a flat colour block, a frame and the
+             * amount as a 1.0-scale label under the box): the box is now the original's
+             * 16x16 tag quad tinted by the aspect, with the amount glyph inside it at
+             * 0.5 scale, right-aligned on the tag's right edge. What BD-18 still names:
+             * the aspect sprite is ARR-overlay (D-004), so the code-only jar fills that
+             * same box with the aspect's own colour at the same alpha, and the greyed
+             * output preview needs a result-slot item this menu does not sync.
+             */
+            AspectTagRenderer.drawTag(guiGraphics, this.font,
+                    this.leftPos + ContainerLayout.aspectBoxX(i),
+                    this.topPos + ContainerLayout.aspectBoxY(i),
+                    aspect, ContainerLayout.displayVisFloat(cost), 0, alpha, false, pulseTime());
         }
 
         if (this.menu.isInsufficientVis()) {

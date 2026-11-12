@@ -451,6 +451,379 @@ public final class ContainerLayout {
     public static int displayVis(final int centiVis) {
         return centiVis / CENTI_VIS_PER_VIS;
     }
+
+    /** The 1.7.10 {@code GuiContainer} default panel the original never overrode. */
+    public static final int TAU_PANEL_HEIGHT = 166;
+    /** {@code ContainerThaumatorium}: the catalyst slot at {@code (48,16)}. */
+    public static final int TAU_CATALYST_X = 48;
+    public static final int TAU_CATALYST_Y = 16;
+    /** The original player grid at {@code (8,84)} and hotbar at {@code (8,142)}. */
+    public static final int TAU_PLAYER_X = 8;
+    /**
+     * The recipe output box: {@code drawOutput} renders the item at
+     * {@code (x+112, y+16)}, its tooltip hitbox is that same 16x16, and
+     * {@code func_73864_a} queues the recipe from it.
+     */
+    public static final int TAU_OUTPUT_X = 112;
+    public static final int TAU_OUTPUT_Y = 16;
+    public static final int TAU_OUTPUT_SIZE = 16;
+    /** The prev/next page arrows: 16x8 at {@code (128,16)} and {@code (128,24)}. */
+    public static final int TAU_PAGE_X = 128;
+    public static final int TAU_PAGE_PREV_Y = 16;
+    public static final int TAU_PAGE_NEXT_Y = 24;
+    public static final int TAU_PAGE_W = 16;
+    public static final int TAU_PAGE_H = 8;
+    /**
+     * The aspect-window pager, drawn and clicked only while the current recipe
+     * has more than {@link #TAU_VISIBLE_ASPECTS} aspects: 8x16 boxes at
+     * {@code (32,40)} and {@code (136,40)}.
+     */
+    public static final int TAU_ASPECT_LEFT_X = 32;
+    public static final int TAU_ASPECT_RIGHT_X = 136;
+    public static final int TAU_ASPECT_PAGER_Y = 40;
+    public static final int TAU_ASPECT_PAGER_W = 8;
+    public static final int TAU_ASPECT_PAGER_H = 16;
+    /**
+     * The 48x48 knowledge-highlight overlay at {@code (104,8)}, drawn when the
+     * queue is non-empty and the output is hovered or the current recipe is
+     * queued; and the 24x24 white box at {@code (88,16)} that pulses whenever
+     * the queue is non-empty ({@code GuiThaumatorium.java:102-120}).
+     */
+    public static final int TAU_HIGHLIGHT_X = 104;
+    public static final int TAU_HIGHLIGHT_Y = 8;
+    public static final int TAU_HIGHLIGHT_SIZE = 48;
+    public static final int TAU_PULSE_X = 88;
+    public static final int TAU_PULSE_Y = 16;
+    public static final int TAU_PULSE_SIZE = 24;
+    /**
+     * The aspect row: a 16x16 {@code UtilsFX.drawTag} per aspect at
+     * {@code (40 + 16*pos, 40)}, and — only while the current recipe is queued —
+     * the essentia bar behind it: a 14x6 background at {@code (41 + 16*pos, 57)}
+     * with an {@code i1}x4 coloured fill at {@code (42 + 16*pos, 58)},
+     * {@code i1 = essentia.getAmount / recipe amount * 12.0F}. Six aspects are
+     * visible per page.
+     */
+    public static final int TAU_TAG_X = 40;
+    public static final int TAU_TAG_Y = 40;
+    public static final int TAU_TAG_PITCH = 16;
+    public static final int TAU_TAG_SIZE = 16;
+    public static final int TAU_BAR_X = 41;
+    public static final int TAU_BAR_Y = 57;
+    public static final int TAU_BAR_W = 14;
+    public static final int TAU_BAR_H = 6;
+    public static final int TAU_BAR_FILL_X = 42;
+    public static final int TAU_BAR_FILL_Y = 58;
+    public static final int TAU_BAR_FILL_H = 4;
+    public static final int TAU_BAR_FILL_SCALE = 12;
+    /**
+     * The bar fill <b>cell</b> in {@code gui_thaumatorium.png}: measured on the
+     * shipped sheet, the alpha-opaque run at {@code (176,0)} is exactly
+     * <b>12x4</b> (and the background cell at {@code (176,8)} is exactly 14x6),
+     * so the fill scale is the cell's own width.
+     */
+    public static final int TAU_BAR_FILL_CELL = TAU_BAR_FILL_SCALE;
+    public static final int TAU_VISIBLE_ASPECTS = 6;
+    /**
+     * The queue counter: {@code recipeHash.size() + "/" + maxRecipes} translated
+     * to {@code (136,33)}, scaled 0.5, centred, white — drawn only when
+     * {@code maxRecipes > 1} ({@code GuiThaumatorium.java:124-133}).
+     */
+    public static final int TAU_COUNT_X = 136;
+    public static final int TAU_COUNT_Y = 33;
+    public static final float TAU_COUNT_SCALE = 0.5F;
+    public static final int TAU_COUNT_COLOUR = 0xFFFFFFFF;
+    /**
+     * The window's own sheet. Every element below is a rectangle inside it, so
+     * one probe of this path decides the whole window: with the asset overlay
+     * applied the original texels are drawn, and in the code-only jar this
+     * build is gated on the screen keeps its flat stand-ins (D-004 — the
+     * original bytes are All Rights Reserved, never committed).
+     *
+     * <p>The path is not a guess: {@code docs/asset-mapping.csv} row 487 maps
+     * {@code textures/gui/gui_thaumatorium.png} to <b>itself</b> as
+     * {@code ARR-overlay}, and {@code OriginalTextureOverlayTest.KEPT_DIRS}
+     * lists {@code gui} among the directories the overlay copies unrenamed — so
+     * the runtime path the probe asks for is exactly the path the overlay
+     * installs. The reference copy measures 256x256, the size every original
+     * GUI sheet is (class javadoc), and the gate reads the edge off the PNG
+     * rather than trusting that.</p>
+     */
+    public static final ResourceLocation TAU_SHEET =
+            ResourceLocation.fromNamespaceAndPath("thaumcraft", "textures/gui/gui_thaumatorium.png");
+    /**
+     * The panel rect inside that sheet:
+     * {@code drawTexturedModalRect(k, l, 0, 0, xSize, ySize)}
+     * ({@code GuiThaumatorium.java:57}) — the sheet's top-left 176x166, i.e. the
+     * same size the panel is, so the sheet is blitted one-for-one with no UV
+     * offset.
+     */
+    public static final int TAU_SHEET_U = 0;
+    public static final int TAU_SHEET_V = 0;
+    public static final int TAU_SHEET_W = PANEL_WIDTH;
+    public static final int TAU_SHEET_H = TAU_PANEL_HEIGHT;
+    /**
+     * The prev/next arrows' sheet cells: {@code (176,16)} disabled and
+     * {@code (192,16)} enabled for prev, {@code (176,24)} / {@code (192,24)} for
+     * next, each 16x8 ({@code GuiThaumatorium.java:73-84}). The enabled cell is
+     * 16 texels right of the disabled one, exactly as the aspect pager's pair is
+     * ({@code 184 -> 200}), so one shift constant covers all four buttons.
+     */
+    public static final int TAU_UV_ARROW_DISABLED = 176;
+    public static final int TAU_UV_PREV_V = 16;
+    public static final int TAU_UV_NEXT_V = 24;
+    public static final int TAU_UV_ENABLED_SHIFT = 16;
+    /**
+     * The aspect pager's cells at sheet {@code v = 32}, 8x16: left
+     * {@code 176} disabled / {@code 192} enabled, right {@code 184} disabled /
+     * {@code 200} enabled ({@code GuiThaumatorium.java:86-97}).
+     */
+    public static final int TAU_UV_ASPECT_LEFT_DISABLED = 176;
+    public static final int TAU_UV_ASPECT_RIGHT_DISABLED = 184;
+    public static final int TAU_UV_ASPECT_PAGER_V = 32;
+    /**
+     * The essentia bar's cells: the 14x6 background at {@code (176,8)} and the
+     * coloured fill strip at {@code (176,0)} — the fill is blitted
+     * {@code i1} texels wide, 4 tall, in the aspect's own colour
+     * ({@code GuiThaumatorium.java:147-151}).
+     */
+    public static final int TAU_UV_BAR_BACKGROUND_U = 176;
+    public static final int TAU_UV_BAR_BACKGROUND_V = 8;
+    public static final int TAU_UV_BAR_FILL_U = 176;
+    public static final int TAU_UV_BAR_FILL_V = 0;
+    /** The 24x24 queue box cell {@code (176,56)} and the 48x48 highlight {@code (176,96)}. */
+    public static final int TAU_UV_PULSE_U = 176;
+    public static final int TAU_UV_PULSE_V = 56;
+    public static final int TAU_UV_HIGHLIGHT_U = 176;
+    public static final int TAU_UV_HIGHLIGHT_V = 96;
+    /**
+     * The alpha this window's tags draw at: <b>1.0, with no pulse</b>. The card
+     * that opened this work asked for the workbench's pulse
+     * ({@code 0.5 + sin((ticks + i*10)/2)*0.2 - 0.2}, pinned to 1.0 when the
+     * buffer covers the price), but that formula is
+     * {@code GuiArcaneWorkbench.java:57}, and
+     * {@code GuiThaumatorium.java:167} calls the SIX-argument
+     * {@code UtilsFX.drawTag(x, y, aspect, amount, bonus, z)} — the overload at
+     * {@code UtilsFX.java:802-804} that forwards {@code blend = 771, alpha =
+     * 1.0F, bw = false}. The thaumatorium's own two pulses are the 24x24 queue
+     * box ({@link #thaumatoriumQueuePulse}) and the grey output tint
+     * ({@link #thaumatoriumDullPulse}); its tags never pulsed, so the port does
+     * not pulse them (BD-19 records the measured call).
+     */
+    public static final float TAU_TAG_ALPHA = 1.0F;
+    /** The prev/next arrow's sheet u for this enabled state. */
+    public static int thaumatoriumArrowU(final boolean enabled) {
+        return enabled ? TAU_UV_ARROW_DISABLED + TAU_UV_ENABLED_SHIFT : TAU_UV_ARROW_DISABLED;
+    }
+    /**
+     * The aspect pager's sheet u. {@code side} is the original's own order: 0 =
+     * the left box at {@code (32,40)}, 1 = the right box at {@code (136,40)} —
+     * the two cells are 8 texels apart while the arrows' pair is 16 apart, so
+     * the pair is stated per side, not derived from one base.
+     */
+    public static int thaumatoriumAspectPagerU(final int side, final boolean enabled) {
+        final int disabled = side == 0 ? TAU_UV_ASPECT_LEFT_DISABLED : TAU_UV_ASPECT_RIGHT_DISABLED;
+        return enabled ? disabled + TAU_UV_ENABLED_SHIFT : disabled;
+    }
+    /**
+     * The white pulse of the 24x24 queue box:
+     * {@code 0.6F + sin(gameTime / 5.0F) * 0.4F + 0.4F} (the client player's
+     * {@code ticksExisted}; the port's screens run their pulse clock the same way
+     * {@code ArcaneWorkbenchScreen} does).
+     */
+    public static float thaumatoriumQueuePulse(final int gameTime) {
+        return 0.6F + Mth.sin(gameTime / 5.0F) * 0.4F + 0.4F;
+    }
+    /**
+     * The grey tint pulse over the queueable output:
+     * {@code 0.3F + sin(gameTime / 4.0F) * 0.3F + 0.3F} under
+     * {@code glColor4f(0.5F, 0.5F, 0.5F, alpha)} ({@code GuiThaumatorium.java:182-183}).
+     */
+    public static float thaumatoriumDullPulse(final int gameTime) {
+        return 0.3F + Mth.sin(gameTime / 4.0F) * 0.3F + 0.3F;
+    }
+    /** The grey of the original's dull tint — {@code glColor4f(0.5F, 0.5F, 0.5F, a)}. */
+    public static final int TAU_DULL_GREY = 0x808080;
+    /**
+     * The original's bar fill width:
+     * {@code (int)((float)essentia.getAmount(aspect) / recipeAmount * 12.0F)} —
+     * verbatim, uncapped: when the tile holds more than the recipe needs the
+     * original's fill runs past its 14 px background, and the port reproduces
+     * that rather than tidying it.
+     */
+    /**
+     * The fill width <b>as it is drawn</b>: the original's uncapped arithmetic,
+     * saturated at the 12-texel fill cell. The 1.7.10 blit
+     * ({@code GuiThaumatorium.java:150-152}) has no clamp and no zero guard, so
+     * an overfull bar (5 of a needed 4 → 15) sampled the sheet's pixels
+     * <i>right of</i> the fill cell — a 1.7.10 {@code drawTexturedModalRect}
+     * reads raw texture coordinates. A 1.21.1 {@code GuiGraphics#blit} samples a
+     * sprite's region, so asking for 15 texels from a 12-texel cell is not the
+     * same read and a 0-wide blit is degenerate; the port saturates at the cell
+     * and skips the empty bar. The arithmetic itself stays uncapped and pinned
+     * by {@link #thaumatoriumBarFill} (BD-18's render-state list).
+     */
+    public static int thaumatoriumBarFillDrawn(final int have, final int need) {
+        return Math.min(thaumatoriumBarFill(have, need), TAU_BAR_FILL_CELL);
+    }
+    /**
+     * The fill width <b>as the source computes it</b>, uncapped:
+     * {@code (int)(have / need * 12.0F)} — 5 of a needed 4 is 15.
+     */
+    public static int thaumatoriumBarFill(final int have, final int need) {
+        if (need <= 0) {
+            return 0;
+        }
+        return (int) ((float) have / (float) need * (float) TAU_BAR_FILL_SCALE);
+    }
+    /** The tag/bar slot for one visible aspect column. */
+    public static int thaumatoriumTagX(final int position) {
+        return TAU_TAG_X + position * TAU_TAG_PITCH;
+    }
+    public static int thaumatoriumBarX(final int position) {
+        return TAU_BAR_X + position * TAU_TAG_PITCH;
+    }
+    public static int thaumatoriumBarFillX(final int position) {
+        return TAU_BAR_FILL_X + position * TAU_TAG_PITCH;
+    }
+    /** The same price as the {@code float} the original's tag glyph printed. */
+    public static float displayVisFloat(final int centiVis) {
+        return centiVis / (float) CENTI_VIS_PER_VIS;
+    }
+    /**
+     * {@code UtilsFX.drawTag} blits the tag as one quad from
+     * {@code (x, y)} to {@code (x + 16, y + 16)} with UV {@code 0..1}
+     * (UtilsFX.java:839-842) — a 16 px box, always.
+     */
+    public static final int TAG_SIZE = 16;
+    /**
+     * The original's GUIs pass the point the tag sits ON and shift the box half
+     * its size up-left — {@code GuiArcaneWorkbench.java:65} calls
+     * {@code drawTag(var5 + aspectLocs[count][0] - 8, var6 + aspectLocs[count][1] - 8, ...)}
+     * — so the box top-left is the point minus 8.
+     */
+    public static final int TAG_CENTER_OFFSET = -8;
+    /**
+     * The aspect images are square and the original's quad maps the WHOLE texture
+     * onto the 16 px box (UV {@code 0..1}, not a 16-texel window): the shipped
+     * art is 32x32 ({@code reference/assets/thaumcraft/textures/aspects/ignis.png},
+     * measured), so the renderer reads the real edge from the bytes
+     * (the original's own {@code getTextureSize} reads the
+     * {@code BufferedImage} width the same way, UtilsFX.java:739-758) and falls
+     * back to 16 when there are no bytes to read.
+     */
+    public static final int TAG_TEXTURE_FALLBACK = 16;
+    /** The original's amount glyph is drawn inside a {@code glScalef(0.5F, ...)} (UtilsFX.java:847). */
+    public static final float TAG_AMOUNT_SCALE = 0.5F;
+    /**
+     * In the original's 0.5-scaled space the tag is 32 wide, which is the
+     * {@code 32} in both of its glyph literals
+     * ({@code 32 - sw + (int)x * 2} / {@code 32 - font.FONT_HEIGHT + (int)y * 2},
+     * UtilsFX.java:861).
+     */
+    public static final int TAG_AMOUNT_ORIGIN = 2 * TAG_SIZE;
+    /** The original's glyph colour is {@code 16777215} = white (UtilsFX.java:861). */
+    public static final int TAG_AMOUNT_COLOUR = 0xFFFFFFFF;
+    /**
+     * The {@code bw} (black-and-white) tag — the 3-argument overload's variant,
+     * {@code drawTag(x, y, aspect)} (UtilsFX.java:806-808), used by the in-world
+     * tile renderers for a jar's / alembic's filter aspect
+     * ({@code TileAlembicRenderer.java}, {@code TileJarRenderer.java}) — tints the
+     * sprite {@code (0.1F, 0.1F, 0.1F)} at {@code alpha * 0.8F}
+     * (UtilsFX.java:828, 836). The GUI tags, including the deconstruction table's,
+     * are the NON-{@code bw} form: the aspect's own colour.
+     */
+    public static final float TAG_BW_TONE = 0.1F;
+    /** The {@code bw} alpha factor (UtilsFX.java:828). */
+    public static final float TAG_BW_ALPHA = 0.8F;
+    /**
+     * The bonus sparkle: a 16x16 quad of the particle sheet 4 px up-left of the
+     * tag box, frame {@code 16 * (player.ticksExisted % 16)} at sheet v = 80
+     * (UtilsFX.java:867-870 → {@code drawTexturedQuad(x - 4, y - 4, px, 80, 16, 16)},
+     * whose UVs are {@code texel * 0.00390625F} = a 256-wide sheet).
+     */
+    public static final int TAG_SPARKLE_OFFSET = -4;
+    public static final int TAG_SPARKLE_FRAMES = 16;
+    public static final int TAG_SPARKLE_V = 80;
+    public static final int TAG_SPARKLE_SHEET = 256;
+    /** The sheet the bonus sparkle is cut from — {@code ParticleEngine.particleTexture}. */
+    public static final ResourceLocation PARTICLE_SHEET =
+            ResourceLocation.fromNamespaceAndPath("thaumcraft", "textures/misc/particles.png");
+    /** The tag box for a point the original passed to {@code drawTag}. */
+    public static int tagBoxX(final int pointX) {
+        return pointX + TAG_CENTER_OFFSET;
+    }
+    public static int tagBoxY(final int pointY) {
+        return pointY + TAG_CENTER_OFFSET;
+    }
+    /**
+     * The amount string the original's glyph printed:
+     * {@code new DecimalFormat("#######.##").format(amount)}
+     * ({@code UtilsFX.myFormatter}, UtilsFX.java:311 and 849) — so 200 centi-vis
+     * of aer prints as {@code "2"} and 250 as {@code "2.5"}.
+     */
+    public static String tagAmountText(final float amount) {
+        return TAG_AMOUNT_FORMAT.format(amount);
+    }
+    private static final java.text.DecimalFormat TAG_AMOUNT_FORMAT =
+            new java.text.DecimalFormat("#######.##");
+    /**
+     * The glyph's x in the 0.5-scaled space: the original's
+     * {@code 32 - sw + (int)x * 2} — right-aligned on the tag's right edge,
+     * i.e. on screen at {@code boxX + 16 - width/2}.
+     */
+    public static int tagAmountScaledX(final int boxX, final int textWidth) {
+        return TAG_AMOUNT_ORIGIN - textWidth + boxX * 2;
+    }
+    /**
+     * The glyph's y in the 0.5-scaled space: the original's
+     * {@code 32 - font.FONT_HEIGHT + (int)y * 2} — the font's own height, which
+     * is 8 in 1.7.10 and 9 in 1.21.1, so the port passes the live font and the
+     * glyph sits half a pixel lower on screen.
+     */
+    public static int tagAmountScaledY(final int boxY, final int fontHeight) {
+        return TAG_AMOUNT_ORIGIN - fontHeight + boxY * 2;
+    }
+    /** The bonus sparkle's frame index for an age in client ticks (UtilsFX.java:869). */
+    public static int tagSparkleFrame(final int ageTicks) {
+        return TAG_SPARKLE_FRAMES * Math.floorMod(ageTicks, TAG_SPARKLE_FRAMES);
+    }
+    /**
+     * The tag's size in the 0.5-scaled space — the original's local
+     * {@code bx = 16 * 0.5F} (UtilsFX.java:845), which is 8.
+     */
+    public static final int TAG_AMOUNT_BOX = (int) (TAG_SIZE * TAG_AMOUNT_SCALE);
+    /**
+     * The bonus count glyph's literals, verbatim from UtilsFX.java:875-884:
+     * {@code 8 - font.getStringWidth(text) / 2 + (int)a * 2} for x and
+     * {@code 15 - font.FONT_HEIGHT + (int)y * 2} for y — centred on the tag's left
+     * edge, near its top. (The {@code bx} in that method's outline loop is the
+     * decompiler's shadowed ±1 loop variable, not the box size; only the outline
+     * pass adds it.)
+     */
+    public static final int TAG_BONUS_TEXT_X_ORIGIN = 8;
+    public static final int TAG_BONUS_TEXT_Y_ORIGIN = 15;
+    public static int tagBonusScaledX(final int boxX, final int textWidth) {
+        return TAG_BONUS_TEXT_X_ORIGIN - textWidth / 2 + boxX * 2;
+    }
+    public static int tagBonusScaledY(final int boxY, final int fontHeight) {
+        return TAG_BONUS_TEXT_Y_ORIGIN - fontHeight + boxY * 2;
+    }
+    /** The alpha the tag is drawn at: the caller's, cut to 0.8 in {@code bw} mode. */
+    public static float tagAlphaOf(final float alpha, final boolean bw) {
+        return bw ? alpha * TAG_BW_ALPHA : alpha;
+    }
+    /**
+     * The tag's flat tint — the same colour arithmetic the original put into
+     * {@code glColor4f} (UtilsFX.java:826-836) and what the code-only build
+     * fills its 16 px box with, since the sprite is not in the jar (D-004).
+     */
+    public static int tagTint(final int rgb, final float alpha, final boolean bw) {
+        if (bw) {
+            final int tone = Math.round(TAG_BW_TONE * 255.0F);
+            return withAlpha((tone << 16) | (tone << 8) | tone, tagAlphaOf(alpha, true));
+        }
+        return withAlpha(rgb, alpha);
+    }
     private ContainerLayout() {
     }
 }
