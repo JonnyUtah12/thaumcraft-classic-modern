@@ -760,11 +760,21 @@ public class EntityPech extends Monster implements RangedAttackMob {
             // 1.21.1's Arrow has no (level, shooter, velocity, inaccuracy) ctor:
             // the shape is (level, owner, pickupStack, firedFromWeapon)
             // (Arrow.java:34) and the motion is set by shoot(...) below. The
-            // pickup stack is EMPTY — 1.7.10's mob-arrow pickup mode lives in
-            // the vanilla EntityArrow ctor, which is not vendored under
-            // reference/, so no pickup behaviour is invented (recorded).
-            final Arrow arrow = new Arrow(this.level(), this, ItemStack.EMPTY,
-                    this.getMainHandItem());                                    // :466 + the 1.21.1 firedFromWeapon seam
+            // The pickup stack is ONE VANILLA ARROW, not ItemStack.EMPTY. The ctor copies the argument
+            // straight over AbstractArrow's field initializer (AbstractArrow.java:71
+            // `pickupItemStack = this.getDefaultPickupItem()`, :89 `this.pickupItemStack =
+            // pickupItemStack.copy()`) and addAdditionalSaveData serializes it UNCONDITIONALLY
+            // (AbstractArrow.java:544 `compound.put("item", this.pickupItemStack.save(...))`), so an
+            // EMPTY stack throws IllegalStateException("Cannot encode empty ItemStack") at
+            // ItemStack.java:409 the moment a chunk saves the arrow - which is what CI's game-test leg
+            // hit on this card's first run (ServerLevel.save -> EntityStorage.storeEntities ->
+            // AbstractArrow.addAdditionalSaveData). Vanilla's own mob path passes that ctor a real
+            // arrow stack (AbstractSkeleton.java:189 `getProjectile(weapon)`), which is what this mirrors.
+            // Pickup stays at 1.21.1's default Pickup.DISALLOWED (AbstractArrow.java:62), so nothing is
+            // pickable: 1.7.10's mob-arrow canBePickedUp = 1 (creative players only) is NOT invented
+            // here - 1.21.1 mob arrows grant no pickup (BD-68).
+            final Arrow arrow = new Arrow(this.level(), this, new ItemStack(Items.ARROW),
+                    this.getMainHandItem());
             arrow.setBaseDamage(PechAiLogic.arrowDamage(distanceFactor,
                     this.level().random.nextGaussian(), difficulty));                           // :467-471
             arrow.setPos(this.getX(), this.getY() + this.getEyeHeight(), this.getZ());

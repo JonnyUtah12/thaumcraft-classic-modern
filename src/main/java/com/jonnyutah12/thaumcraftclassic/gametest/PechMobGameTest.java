@@ -742,10 +742,28 @@ public final class PechMobGameTest {
         helper.assertTrue(helper.getLevel().getEntitiesOfClass(EntityPechBlast.class,
                         pech.getBoundingBox().inflate(24.0)).size() == 1,
                 "a bow pech (type 2) must loose an arrow (:466-476), never a blast");
-        helper.assertTrue(!helper.getLevel().getEntitiesOfClass(
-                        net.minecraft.world.entity.projectile.Arrow.class,
-                        pech.getBoundingBox().inflate(24.0)).isEmpty(),
-                "the :466 arrow is missing — the bow branch never fired");
+        final java.util.List<net.minecraft.world.entity.projectile.Arrow> arrows =
+                helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.projectile.Arrow.class,
+                        pech.getBoundingBox().inflate(24.0));
+        helper.assertTrue(!arrows.isEmpty(), "the :466 arrow is missing - the bow branch never fired");
+        // The regression this leg carries. AbstractArrow.addAdditionalSaveData (AbstractArrow.java:544)
+        // serializes the pickup stack UNCONDITIONALLY, and ItemStack.save throws
+        // IllegalStateException("Cannot encode empty ItemStack") (ItemStack.java:409) on an empty one, so
+        // an arrow built with an EMPTY pickup stack crashes the CHUNK SAVE
+        // (ServerLevel.save -> EntityStorage.storeEntities -> AbstractArrow.addAdditionalSaveData) -
+        // measured in CI on this card's first game leg. Encode the shipped arrow here, then discard it so
+        // the probe leaves nothing alive for the shutdown save to serialize.
+        for (net.minecraft.world.entity.projectile.Arrow arrow : arrows) {
+            final net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
+            try {
+                arrow.saveWithoutId(tag);
+            } catch (RuntimeException e) {
+                helper.fail("the :466 arrow cannot be serialized - the chunk save that reaches it throws "
+                        + e.getClass().getSimpleName() + ": " + e.getMessage());
+            }
+            helper.assertTrue(tag.contains("item"), "the arrow's NBT carries no `item` pickup entry");
+            arrow.discard();
+        }
         pech.discard();
         victim.discard();
         helper.succeed();
