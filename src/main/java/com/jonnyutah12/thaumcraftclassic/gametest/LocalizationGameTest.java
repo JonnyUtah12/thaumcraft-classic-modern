@@ -212,7 +212,15 @@ public final class LocalizationGameTest {
             Map.entry("recipe.type.workbench",
                     "RecipePageDisplay.station().labelKey() (original GuiResearchRecipe.java:821-823 key)"),
             Map.entry("recipe.type.workbenchshapeless",
-                    "RecipePageDisplay.station().labelKey() (original GuiResearchRecipe.java:887-890 key)"));
+                    "RecipePageDisplay.station().labelKey() (original GuiResearchRecipe.java:887-890 key)"),
+            // TC-M6-06-s-c3-a: the pech names itself by type (the original's
+            // func_70005_c_, EntityPech.java:70-80) — the wand pech is the
+            // Mage, the bow pech the Stalker. Only type 0 is the registry
+            // key, so these two ride the override.
+            Map.entry("entity.thaumcraft.pech.1",
+                    "EntityPech.getDisplayName, type 1 (original entity.Thaumcraft.Pech.1.name, :72)"),
+            Map.entry("entity.thaumcraft.pech.2",
+                    "EntityPech.getDisplayName, type 2 (original entity.Thaumcraft.Pech.2.name, :74)"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always
