@@ -90,6 +90,8 @@ public final class ModClientScreens {
         event.register(CatalogArcaneWorkbench.MENU_ARCANE_WORKBENCH.get(), ArcaneWorkbenchScreen::new);
         // TC-M7-04-m2c: the thaumatorium queue window, gui_thaumatorium.
         event.register(CatalogThaumatorium.MENU_THAUMATORIUM.get(), ThaumatoriumScreen::new);
+        // TC-M7-04-m2b: the research table, gui_research_table (original gui_id 10).
+        event.register(CatalogFurniture.MENU_RESEARCH_TABLE.get(), ResearchTableScreen::new);
     }
 
     private ModClientScreens() {

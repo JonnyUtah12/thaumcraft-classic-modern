@@ -824,6 +824,183 @@ public final class ContainerLayout {
         }
         return withAlpha(rgb, alpha);
     }
+
+    /**
+     * {@code GuiResearchTable} sets {@code field_146999_f = 255} (xSize) and
+     * {@code field_147000_g = 255} (ySize) in its constructor, and its background
+     * is a 255x167 top piece at (0,0) plus an 184x88 player piece at (40,167) —
+     * so the original's window is a <b>255 x 255</b> rect. The port derives its
+     * height from the original's 175 px player-grid origin through
+     * {@link #panelHeight(int)} and lands on 162 + 96 = <b>258</b>: vanilla's
+     * player piece is 96 px tall, the original's own sheet piece 88 px, so the
+     * port's panel is the original's 255 px wide and 3 px taller. Both halves are
+     * asserted in {@code ContainerLayoutTest}, and BD-19 names the 3 px.
+     */
+    public static final int RT_PANEL_WIDTH = 255;
+    public static final int RT_PANEL_HEIGHT = 255;
+    /**
+     * The 184x88 player piece sat at x = 40 in the original; vanilla's 176 px
+     * {@code generic_54.png} piece goes at the same x, because the original's
+     * player slots start at x = 48 — vanilla's 8 px inset inside the piece.
+     */
+    public static final int RT_PLAYER_PIECE_X = 40;
+    /** {@code ContainerResearchTable}: player grid (48 + col*18, 175 + row*18), hotbar (48 + i*18, 233). */
+    public static final int RT_PLAYER_GRID_X = 48;
+    public static final int RT_PLAYER_GRID_TOP = 175;
+    public static final int RT_HOTBAR_TOP = 233;
+    /** The two machine slots: scribing tools at (14,10), research notes at (70,10). */
+    public static final int RT_INK_X = 14;
+    public static final int RT_INK_Y = 10;
+    public static final int RT_NOTES_X = 70;
+    public static final int RT_NOTES_Y = 10;
+    /**
+     * The discovered-aspect grid: origin {@code (10,40)}, 16 px cells, five per
+     * row ({@code xx = drawn / 5 * 16}, {@code yy = drawn % 5 * 16}) and 25 drawn
+     * per page — an 80x80 area. The page moves the start index by
+     * {@code page * 5}, not by the page size, so pages overlap by twenty entries;
+     * that is the original's own arithmetic ({@code ++count - 1 >= page * 5 &&
+     * drawn < 25}), reproduced term for term.
+     */
+    public static final int RT_ASPECT_X = 10;
+    public static final int RT_ASPECT_Y = 40;
+    public static final int RT_ASPECT_CELL = 16;
+    public static final int RT_ASPECT_COLS = 5;
+    public static final int RT_PAGE_STRIDE = 5;
+    public static final int RT_ASPECTS_PER_PAGE = 25;
+    public static final int RT_ASPECT_AREA = 80;
+    /**
+     * The page rails: a 24x8 arrow at {@code (27,121)} steps back (only drawn and
+     * clickable while {@code page > 0}) and one at {@code (51,121)} steps forward
+     * (only while {@code page < lastPage}, {@code lastPage = (count - 20) / 5}).
+     */
+    public static final int RT_PAGE_Y = 121;
+    public static final int RT_PAGE_PREV_X = 27;
+    public static final int RT_PAGE_NEXT_X = 51;
+    public static final int RT_PAGE_WIDTH = 24;
+    public static final int RT_PAGE_HEIGHT = 8;
+    /**
+     * The combine button: a 32x16 plate at {@code (35,139)}, drawn only while both
+     * selects are set, and the same rect is its hitbox. The original armed a
+     * 200&nbsp;ms cooldown on press ({@code butcount2 = nanoTime() + 200000000L})
+     * and drew a second, greyed plate over it while the cooldown ran.
+     */
+    public static final int RT_COMBINE_X = 35;
+    public static final int RT_COMBINE_Y = 139;
+    public static final int RT_COMBINE_WIDTH = 32;
+    public static final int RT_COMBINE_HEIGHT = 16;
+    public static final long RT_BUTTON_COOLDOWN_NANOS = 200_000_000L;
+    /**
+     * The two select wells, drawn as 16x16 tags at {@code (13,139)} and
+     * {@code (71,139)} — that is {@code (x + 3, y + 99)} and {@code (x + 61,
+     * y + 99)} from the aspect grid origin. Clicking a filled well clears it; the
+     * original's clear hitboxes are {@code (11,137)} and {@code (71,137)}, two
+     * pixels up-left of the first and flush with the second, and they are kept
+     * exactly as the original numbers them.
+     */
+    public static final int RT_SELECT1_X = 13;
+    public static final int RT_SELECT2_X = 71;
+    public static final int RT_SELECT_Y = 139;
+    public static final int RT_SELECT_SIZE = 16;
+    public static final int RT_CLEAR1_X = 11;
+    public static final int RT_CLEAR2_X = 71;
+    public static final int RT_CLEAR_Y = 137;
+    /** Both clear hitboxes are 16x16 (GuiResearchTable.java:654-671: {@code < 16}). */
+    public static final int RT_CLEAR_SIZE = 16;
+    /**
+     * The drop targets of the original's aspect drag: a 32x32 box centred on
+     * {@code (20,146)} for the first well and {@code (79,146)} for the second
+     * ({@code mouseX = mx - (gx + 20); ... >= -16 && < 16}).
+     */
+    public static final int RT_DROP1_X = 20;
+    public static final int RT_DROP2_X = 79;
+    public static final int RT_DROP_Y = 146;
+    public static final int RT_DROP_RADIUS = 16;
+    /**
+     * The duplicate (camera) plate: 24x24 at {@code (37,5)}, drawn and clickable
+     * only while {@code RESEARCHDUPE} is researched, a note is in the notes slot
+     * and that note is complete; pressing it sends menu button 5.
+     */
+    public static final int RT_DUPE_X = 37;
+    public static final int RT_DUPE_Y = 5;
+    public static final int RT_DUPE_SIZE = 24;
+    /**
+     * The out-of-ink notice: the original centred its two-line tooltip on
+     * {@code gx + 157 - max(line0, line1)/2, gy + 84} whenever the scribing slot
+     * was empty or its tool was fully used ({@code GuiResearchTable.java:213-228}).
+     */
+    public static final int RT_NOINK_X = 157;
+    public static final int RT_NOINK_Y = 84;
+    /** The alpha the original gave a faded tag: {@code faded ? 0.33F : 1.0F}. */
+    public static final float RT_FADED_ALPHA = 0.33F;
+    /**
+     * Authored stand-ins for art the original took from
+     * {@code gui/guiresearchtable2.png}, which ships only in the asset-overlay
+     * build (D-004): the tone of its plates (the combine button, the two page
+     * rails, the camera plate and the two clear boxes) and the dark wash it drew
+     * over the combine button during its 200&nbsp;ms cooldown. No pixel of the
+     * original is claimed; the original's own shadowed text is white
+     * ({@code drawStringWithShadow(..., 0xFFFFFF)}) with its two notice lines ten
+     * pixels apart at {@code y = 84} and {@code y = 94}.
+     */
+    public static final int RT_PLATE_FILL = 0xFF9C7A52;
+    public static final int RT_PLATE_COOLDOWN_TINT = 0xA8404040;
+    public static final int RT_NOTICE_COLOUR = 0xFFFFFFFF;
+    public static final int RT_NOTICE_LINE_GAP = 10;
+    /** Cell x of the original's aspect walk: {@code (drawn / 5) * 16} from {@code (10,40)}. */
+    public static int researchTableGridX(final int drawn) {
+        return RT_ASPECT_X + drawn / RT_ASPECT_COLS * RT_ASPECT_CELL;
+    }
+    /** Cell y of the original's aspect walk: {@code (drawn % 5) * 16} from {@code (10,40)}. */
+    public static int researchTableGridY(final int drawn) {
+        return RT_ASPECT_Y + drawn % RT_ASPECT_COLS * RT_ASPECT_CELL;
+    }
+    /** The entry the walk reads on page {@code page} at position {@code drawn}. */
+    public static int researchTableIndexAt(final int drawn, final int page) {
+        return page * RT_PAGE_STRIDE + drawn;
+    }
+    /**
+     * The last page index for a discovered-aspect count, verbatim from
+     * {@code GuiResearchTable.java:739}: {@code (discoveredAspects.size() - 20) / 5}.
+     * The forward arrow is drawn and clickable only while {@code page < lastPage},
+     * so a 49-aspect pool gives {@code (49 - 20) / 5 = 5} — pages 0..5.
+     */
+    public static int researchTableLastPage(final int discoveredCount) {
+        return (discoveredCount - 20) / RT_PAGE_STRIDE;
+    }
+    /** Player-grid slot x: the original's {@code 48 + col * 18}, unclamped. */
+    public static int researchTablePlayerX(final int col) {
+        return RT_PLAYER_GRID_X + SLOT_FRAME * col;
+    }
+    /** Player-grid slot y: the original's {@code 175 + row * 18}, unclamped. */
+    public static int researchTablePlayerY(final int row) {
+        return RT_PLAYER_GRID_TOP + SLOT_FRAME * row;
+    }
+    /** Hotbar slot x: the original's {@code 48 + i * 18}, at {@code y = 233}. */
+    public static int researchTableHotbarX(final int index) {
+        return RT_PLAYER_GRID_X + SLOT_FRAME * index;
+    }
+    /**
+     * The x the original centred the out-of-ink notice on: {@code 157 - width/2},
+     * {@code width} being the wider of its two lines.
+     */
+    public static int researchTableNoInkX(final int widestLine) {
+        return RT_NOINK_X - widestLine / 2;
+    }
+    /** The original's click test: {@code mx >= x && mx < x+w && my >= y && my < y+h}. */
+    public static boolean inRect(final double mx, final double my, final int x, final int y,
+                                 final int width, final int height) {
+        return mx >= x && mx < x + width && my >= y && my < y + height;
+    }
+    /**
+     * The original's aspect-drag target: a 32x32 box centred on {@code (cx,cy)} —
+     * each axis {@code d >= -16 && d < 16}.
+     */
+    public static boolean inDragTarget(final double mx, final double my, final int cx, final int cy) {
+        final double dx = mx - cx;
+        final double dy = my - cy;
+        return dx >= -RT_DROP_RADIUS && dx < RT_DROP_RADIUS
+                && dy >= -RT_DROP_RADIUS && dy < RT_DROP_RADIUS;
+    }
     private ContainerLayout() {
     }
 }

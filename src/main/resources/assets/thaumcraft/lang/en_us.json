@@ -177,12 +177,14 @@
   "container.thaumcraft.gui_hand_mirror": "Magic Hand Mirror",
   "container.thaumcraft.gui_magic_box": "Magic Box",
   "container.thaumcraft.gui_research_note": "Research Table",
+  "container.thaumcraft.gui_research_table": "Research Table",
   "container.thaumcraft.gui_spa": "Arcane Spa",
   "container.thaumcraft.thaumonomicon": "Thaumonomicon",
   "container.thaumcraft.gui_thaumatorium": "Thaumatorium",
   "container.thaumcraft.gui_trunk": "Traveling Trunk",
   "container.thaumcraft.insufficient_vis": "Insufficient vis",
   "container.thaumcraft.magicbox": "Magic Box",
+  "container.thaumcraft.research_table_from_table": "From the table: %s",
   "container.thaumcraft.spa": "Arcane Spa",
   "death.attack.thaumcraft.dissolve": "%1$s was dissolved",
   "death.attack.thaumcraft.dissolve.item": "%1$s was dissolved using %3$s",
@@ -468,4 +470,6 @@
   "entity.thaumcraft.taintspore": "Taint Spore",
   "entity.thaumcraft.taintswarmer": "Taint Spore Swarmer",
   "entity.thaumcraft.taintswarm": "Taint Swarm"
+  "tile.researchtable.noink.0": "You have run out of ink!",
+  "tile.researchtable.noink.1": "Refill your scribing tools."
 }

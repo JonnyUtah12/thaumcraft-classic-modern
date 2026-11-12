@@ -162,6 +162,18 @@ final class ScreenPanel {
         return drawSheet(guiGraphics, sheet, left, top, x, y, u, v, width, height, 0xFFFFFFFF);
     }
 
+    /**
+     * A filled plate with a vanilla outline: the shared primitive for a drawn
+     * button, which is what the research table's combine plate, its two page
+     * rails, its camera plate and its two clear boxes all are (TC-M7-04-m2b).
+     * Composed from the two calls above, so no screen restates the recipe.
+     */
+    static void fillPlate(final GuiGraphics guiGraphics, final int left, final int top,
+                          final int x, final int y, final int width, final int height, final int colour) {
+        fillArea(guiGraphics, left, top, x, y, width, height, colour);
+        frameArea(guiGraphics, left, top, x, y, width, height);
+    }
+
     private ScreenPanel() {
     }
 }
