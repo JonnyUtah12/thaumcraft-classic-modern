@@ -110,6 +110,9 @@ class LocalizationFileTest {
 
     /** Every translation key the shipped code passes to Component.translatable that is not registry-derived. */
     private static final List<String> CODE_AUTHORED_KEYS = List.of(
+            // TC-M7-04-m2b: a UI-only line in the research table window (the slot under
+            // the combine plate names its source); no content id, so it is authored here.
+            "container.thaumcraft.research_table_from_table",
             "container.thaumcraft.chesthungry", "container.thaumcraft.deconstructiontable",
             "container.thaumcraft.magicbox", "container.thaumcraft.spa",
             // BOOK-1 (t_1e6b18cc): the Thaumonomicon browser is containerless

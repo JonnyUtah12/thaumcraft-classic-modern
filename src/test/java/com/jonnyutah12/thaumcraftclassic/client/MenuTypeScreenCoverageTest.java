@@ -158,7 +158,7 @@ class MenuTypeScreenCoverageTest {
                     "a registered menu type with no screen registration: "
                             + expected.catalog() + "." + expected.holder());
         }
-        assertEquals(7, SCREENS.size(), "the seven gui rows whose menus exist today");
+        assertEquals(8, SCREENS.size(), "the eight gui rows whose menus exist today: main\n                // takes seven; TC-M7-04-m2b-ii (t_e4e67fd6) lands the research table\n                // window, so the research-table row joins the wired set.");
     }
 
     @Test

@@ -178,8 +178,6 @@ public final class LocalizationGameTest {
             // from en_US.lang) and the copy-cost header the RESEARCHDUPE plate
             // draws. All three are read by the note GUI, not by a registry id,
             // so they are code-authored like the container titles.
-            Map.entry("tile.researchtable.noink.0", "ResearchNoteMenu ink gate (GuiResearchTable tooltip)"),
-            Map.entry("tile.researchtable.noink.1", "ResearchNoteMenu ink gate (GuiResearchTable tooltip)"),
             Map.entry("tc.research.copy", "ResearchNoteMenu copy-cost header (GuiResearchTable)"),
             Map.entry("item.thaumcraft.wandcasting.iron", "ItemWandCasting.getName fragment (original item.Wand.iron.cap/.rod/.obj), TC-M6-01"),
             Map.entry("item.thaumcraft.wandcasting.gold", "ItemWandCasting.getName fragment (original item.Wand.gold.cap/.rod/.obj), TC-M6-01"),
@@ -219,6 +217,9 @@ public final class LocalizationGameTest {
             // unlabelled slot.
             Map.entry("container.thaumcraft.gui_arcane_workbench",
                     "TileArcaneWorkbench.getDisplayName — the open menu's title (TC-M7-04-m2)"),
+            Map.entry("container.thaumcraft.research_table_from_table",
+                    "TC-M7-04-m2b UI-only research-table line: the slot under the combine "
+                            + "plate names its source (no content id)"),
             Map.entry("container.thaumcraft.insufficient_vis",
                     "GuiArcaneWorkbench insufficient-vis notice"),
             Map.entry("container.thaumcraft.wand_slot_hint",
@@ -230,8 +231,6 @@ public final class LocalizationGameTest {
             // original's key shape (GuiResearchTable.java:213-228).
             Map.entry("container.thaumcraft.gui_research_table",
                     "TileResearchTable.getDisplayName — the open menu's title (TC-M7-04-m2b)"),
-            Map.entry("container.thaumcraft.research_table_from_table",
-                    "ResearchTableScreen bonus-pool tooltip line"),
             Map.entry("tile.researchtable.noink.0",
                     "ResearchTableScreen out-of-ink notice (original key shape kept)"),
             Map.entry("tile.researchtable.noink.1",

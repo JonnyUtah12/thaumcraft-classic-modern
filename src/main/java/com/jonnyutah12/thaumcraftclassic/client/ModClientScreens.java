@@ -54,10 +54,11 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
  * (TC-M7-04-s); {@code gui_arcane_workbench} (TC-M7-04-m2, the first
  * crafting-table GUI); and {@code gui_thaumatorium} (TC-M7-04-m2c, the
  * thaumatorium queue window). The remaining GUI ids in
- * {@code docs/content-mapping.csv} have no menu type yet (the crucible,
- * research table, alchemy furnace, arcane bore, golem, pech, focus pouch,
- * hover harness, focal manipulator) or are the Thaumonomicon (t_547e7ad8), so
- * they cannot be wired here; they are separate cards. A new menu type added
+ * {@code docs/content-mapping.csv} have no menu type yet (the crucible, alchemy
+ * furnace, arcane bore, golem, pech, focus pouch, hover harness, focal
+ * manipulator), and one — the book's containerless browser (t_547e7ad8) — is
+ * opened by a payload and must not be paired with a menu factory here, so they
+ * cannot be wired here; they are separate cards. A new menu type added
  * without a screen fails {@code MenuTypeScreenCoverageTest}.</p>
  */
 @EventBusSubscriber(modid = ThaumcraftClassic.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
