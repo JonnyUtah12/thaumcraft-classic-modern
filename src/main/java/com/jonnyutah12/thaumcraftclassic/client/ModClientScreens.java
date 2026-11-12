@@ -1,6 +1,7 @@
 package com.jonnyutah12.thaumcraftclassic.client;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArcaneWorkbench;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogGolems;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
@@ -31,21 +32,22 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
  * hazard.</p>
  *
  * <p><b>Coverage.</b> As of this commit every {@code MenuType} the mod
- * registers has a screen here — the seven gui rows whose menus landed with
+ * registers has a screen here — the eight gui rows whose menus landed with
  * their content: {@code gui_trunk} (TC-M7-04-s-cr1), {@code gui_hand_mirror},
  * {@code gui_decon_table}, {@code gui_magic_box} and {@code gui_spa}
  * (TC-M7-04-s, carried into main by the golem-visual lane, t_17686882),
- * {@code gui_golem} (TC-M7-04-m3-a, over the golem-content branch) and
+ * {@code gui_golem} (TC-M7-04-m3-a, over the golem-content branch),
  * {@code gui_research_note} — the hex-grid research-note window
  * (TC-M3-04-s-iii: menu contract BD-44, hex-grid presentation BD-45,
- * NOTE-SCREEN-2 t_32a29c93). The remaining GUI ids in
- * {@code docs/content-mapping.csv} have
- * no menu type yet (the crucible, arcane workbench, alchemy furnace, arcane
- * bore, thaumatorium, pech, focus pouch, hover harness, focal
- * manipulator, research table) or are the book browser (t_547e7ad8), which is
- * payload-opened and containerless (BD-22) and so has no {@code MenuType} to
- * pair; they are separate cards. A new menu type added without
- * a screen fails {@code MenuTypeScreenCoverageTest}.</p>
+ * NOTE-SCREEN-2 t_32a29c93) — and {@code gui_arcane_workbench} (TC-M7-04-m2,
+ * the first crafting-table GUI, landing on the GUI fleet's shared base
+ * {@code d6d50e3}). The remaining GUI ids in {@code docs/content-mapping.csv}
+ * have no menu type yet (the crucible, alchemy furnace, arcane bore,
+ * thaumatorium, pech, focus pouch, hover harness, focal manipulator, research
+ * table) or are the book browser (t_547e7ad8), which is payload-opened and
+ * containerless (BD-22) and so has no {@code MenuType} to pair; they are
+ * separate cards. A new menu type added without a screen fails
+ * {@code MenuTypeScreenCoverageTest}.</p>
  */
 @EventBusSubscriber(modid = ThaumcraftClassic.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ModClientScreens {
@@ -73,6 +75,8 @@ public final class ModClientScreens {
         event.register(CatalogFurniture.MENU_SPA.get(), SpaScreen::new);
         // TC-M7-04-m3-a: the golem (gui_id 0, GuiGolem) over the golem-content branch.
         event.register(CatalogGolems.GUI_GOLEM.get(), GolemScreen::new);
+        // TC-M7-04-m2: the first crafting-table GUI, gui_arcane_workbench.
+        event.register(CatalogArcaneWorkbench.MENU_ARCANE_WORKBENCH.get(), ArcaneWorkbenchScreen::new);
     }
 
     private ModClientScreens() {

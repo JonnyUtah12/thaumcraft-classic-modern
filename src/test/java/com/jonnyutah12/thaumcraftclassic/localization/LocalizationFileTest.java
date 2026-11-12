@@ -168,7 +168,13 @@ class LocalizationFileTest {
             "tc.boss.enrage",
             // TC-M3-04-s-iv-b: the Thaumonomicon crafting-page station labels, read by
             // RecipePageDisplay.station().labelKey() (original recipe.type.* keys).
-            "recipe.type.workbench", "recipe.type.workbenchshapeless");
+            "recipe.type.workbench", "recipe.type.workbenchshapeless",
+            // The arcane workbench window's own labels (TC-M7-04-m2): the vis
+            // notice the original hardcoded as "Insufficient vis"
+            // (GuiArcaneWorkbench.java:105) and the wand-slot tooltip the port
+            // added where the original drew an unlabelled slot. Neither names a
+            // content id, so they are code-authored, not registry keys.
+            "container.thaumcraft.insufficient_vis", "container.thaumcraft.wand_slot_hint");
 
     /**
      * The shipped multi-meta items and the original-metadata domain their

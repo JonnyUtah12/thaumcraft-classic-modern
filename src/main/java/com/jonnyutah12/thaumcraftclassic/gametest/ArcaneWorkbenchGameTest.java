@@ -2,6 +2,8 @@ package com.jonnyutah12.thaumcraftclassic.gametest;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
+import com.jonnyutah12.thaumcraftclassic.client.ContainerLayout;
+import com.jonnyutah12.thaumcraftclassic.menus.ArcaneWorkbenchMenu;
 import com.jonnyutah12.thaumcraftclassic.player.ModAttachments;
 import com.jonnyutah12.thaumcraftclassic.player.PlayerKnowledgeData;
 import com.jonnyutah12.thaumcraftclassic.recipes.ArcaneWorkbenchRecipe;
@@ -21,6 +23,8 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -485,6 +489,327 @@ public final class ArcaneWorkbenchGameTest {
             "the 16 recipe.112.arcane_shaped.<0..15> banner rows must each carry the port's "
                     + "thaumcraft:banner_color component, got " + bannerRowsLoaded);
         helper.succeed();
+    }
+
+    /**
+     * The menu's slot grid is the original's, in the original's order and at the
+     * original's coordinates: result, wand, 3x3 on a 24 px pitch, then the player
+     * grid at (16,151) and the hotbar at (16,209) — and every anchor is the same
+     * constant {@code client/ContainerLayout} hands the screen, which is what keeps
+     * a drawn slot square over the slot the menu actually owns.
+     */
+    @GameTest(template = "empty")
+    public static void menuSlotsAreTheOriginalsOrderAndAnchors(final GameTestHelper helper) {
+        final TileArcaneWorkbench bench = benchAt(helper);
+        final Player player = playerWithResearch(helper, List.of("WARDEDARCANA"));
+        final ArcaneWorkbenchMenu menu =
+                new ArcaneWorkbenchMenu(1, player.getInventory(), bench);
+
+        helper.assertTrue(menu.slots.size() == ArcaneWorkbenchMenu.SLOT_COUNT,
+                "the original's menu has 2 machine slots + the 3x3 grid + 36 player slots = "
+                        + ArcaneWorkbenchMenu.SLOT_COUNT + ", got " + menu.slots.size());
+        assertAnchor(helper, menu, ArcaneWorkbenchMenu.SLOT_RESULT,
+                ContainerLayout.WB_RESULT_X, ContainerLayout.WB_RESULT_Y, "result");
+        assertAnchor(helper, menu, ArcaneWorkbenchMenu.SLOT_WAND,
+                ContainerLayout.WB_WAND_X, ContainerLayout.WB_WAND_Y, "wand");
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 3; col++) {
+                // The original adds slots as `var7 + var6*3` (column + row*3).
+                assertAnchor(helper, menu, ArcaneWorkbenchMenu.GRID_FIRST + col + row * 3,
+                        ContainerLayout.workbenchGridX(col), ContainerLayout.workbenchGridY(row),
+                        "grid " + row + "," + col);
+            }
+        }
+        assertAnchor(helper, menu, ArcaneWorkbenchMenu.PLAYER_FIRST,
+                ContainerLayout.workbenchPlayerX(0), ContainerLayout.WB_PLAYER_GRID_TOP, "player grid");
+        assertAnchor(helper, menu, ArcaneWorkbenchMenu.PLAYER_FIRST + 26,
+                ContainerLayout.workbenchPlayerX(8), ContainerLayout.workbenchPlayerY(2), "player grid end");
+        assertAnchor(helper, menu, ArcaneWorkbenchMenu.HOTBAR_FIRST,
+                ContainerLayout.workbenchPlayerX(0), ContainerLayout.WB_HOTBAR_TOP, "hotbar");
+        assertAnchor(helper, menu, ArcaneWorkbenchMenu.SLOT_COUNT - 1,
+                ContainerLayout.workbenchPlayerX(8), ContainerLayout.WB_HOTBAR_TOP, "hotbar end");
+
+        helper.assertTrue(menu.slots.get(ArcaneWorkbenchMenu.SLOT_RESULT).container == bench,
+                "the result slot must be the tile's slot 9");
+        helper.assertTrue(menu.slots.get(ArcaneWorkbenchMenu.SLOT_WAND).container == bench,
+                "the wand slot must be the tile's slot 10");
+        helper.assertTrue(menu.slots.get(ArcaneWorkbenchMenu.GRID_FIRST).container == bench,
+                "the 3x3 slots must be the tile's slots 0..8");
+        helper.assertTrue(menu.slots.get(ArcaneWorkbenchMenu.PLAYER_FIRST).container
+                        == player.getInventory(),
+                "the player slots must be the player's inventory, as in the original");
+        helper.succeed();
+    }
+
+    private static void assertAnchor(final GameTestHelper helper, final ArcaneWorkbenchMenu menu,
+                                     final int index, final int x, final int y, final String what) {
+        final Slot slot = menu.slots.get(index);
+        helper.assertTrue(slot.x == x && slot.y == y,
+                what + " slot anchor: the menu says (" + slot.x + "," + slot.y + "), the original's "
+                        + "ContainerArcaneWorkbench and client/ContainerLayout both say (" + x + "," + y + ")");
+    }
+
+    /**
+     * The container tick is the original's: opening the menu runs
+     * {@code updateContainer} — the match, the wand payment, the result — and the
+     * vis display the screen draws is the menu's data slots, not a client-side
+     * guess. Prices and charges travel in centi-vis (the original's {@code * 100}).
+     */
+    @GameTest(template = "empty")
+    public static void menuCycleFillsTheResultAndSyncsTheVisDisplay(final GameTestHelper helper) {
+        final TileArcaneWorkbench bench = benchAt(helper);
+        final Player player = playerWithResearch(helper, List.of("WARDEDARCANA"));
+        setGrid(bench, grid(new ItemStack(Items.GOLD_NUGGET), new ItemStack(Items.GOLD_NUGGET),
+                new ItemStack(Items.GOLD_INGOT), new ItemStack(Items.GOLD_NUGGET)));
+        final ItemStack wand = wandWith("aqua", 600, "ordo", 600);
+        bench.setItem(10, wand);
+
+        final ArcaneWorkbenchMenu menu =
+                new ArcaneWorkbenchMenu(1, player.getInventory(), bench);
+        // The server calls broadcastChanges() every tick for the open menu; that is
+        // where ArcaneWorkbenchMenu put the original's updateContainer step.
+        menu.broadcastChanges();
+
+        assertResult(helper, menu.slots.get(ArcaneWorkbenchMenu.SLOT_RESULT).getItem());
+        helper.assertTrue(menu.hasMatch(), "recipe 118 matched, so the menu must report a match");
+        final int aqua = primalIndex("aqua");
+        final int ordo = primalIndex("ordo");
+        helper.assertTrue(menu.getCost(aqua) == 500 && menu.getCost(ordo) == 500,
+                "the synced price must be the recipe's 5+5 real vis in centi-vis (the original's * 100), got "
+                        + menu.getCost(aqua) + "/" + menu.getCost(ordo));
+        helper.assertTrue(menu.getWandCharge(aqua) == 100 && menu.getWandCharge(ordo) == 100,
+                "the synced charge must be what the wand has left after paying, got "
+                        + menu.getWandCharge(aqua) + "/" + menu.getWandCharge(ordo));
+        helper.assertTrue(charge(wand, "aqua") == 100 && charge(wand, "ordo") == 100,
+                "the payment the display reports must be the payment the tile took");
+        // The original's flag is its GUI's draw-time check (GuiArcaneWorkbench.java:93):
+        // "can this wand pay the price NOW", measured AFTER the reveal already spent 500 of
+        // 600 — so the original pulsed its tags at low alpha and drew "Insufficient vis"
+        // right after a successful craft on a nearly drained wand. The port's flag is the
+        // same check on the same beat, so the honest expectation here is TRUE.
+        helper.assertTrue(menu.isInsufficientVis(),
+                "the pool left after paying (100) is under the price (500) — the original's "
+                        + "draw-time check was true in exactly this state");
+        helper.assertTrue(primalIndex("aer") == 0 && primalIndex("perditio") == 5,
+                "the display's slot order is the original's Aspect.getPrimalAspects() order");
+
+        // The cycle must not run away: the original filled slot 9 only while it was
+        // empty, so a second tick with a full result slot spends nothing more.
+        menu.broadcastChanges();
+        helper.assertTrue(charge(wand, "aqua") == 100,
+                "an open menu must not drain the wand once the result is there");
+        helper.succeed();
+    }
+
+    /**
+     * The "Insufficient vis" state, measured where the original measured it — a
+     * simulate-only payment attempt — and synced as a flag so the screen never has
+     * to read a wand. The all-or-nothing rule keeps the short pool untouched.
+     */
+    @GameTest(template = "empty")
+    public static void menuShortPoolReportsInsufficientVis(final GameTestHelper helper) {
+        final TileArcaneWorkbench bench = benchAt(helper);
+        final Player player = playerWithResearch(helper, List.of("WARDEDARCANA"));
+        setGrid(bench, grid(new ItemStack(Items.GOLD_NUGGET), new ItemStack(Items.GOLD_NUGGET),
+                new ItemStack(Items.GOLD_INGOT), new ItemStack(Items.GOLD_NUGGET)));
+        final ItemStack wand = wandWith("aqua", 400, "ordo", 400);
+        bench.setItem(10, wand);
+
+        final ArcaneWorkbenchMenu menu =
+                new ArcaneWorkbenchMenu(1, player.getInventory(), bench);
+        menu.broadcastChanges();
+
+        helper.assertTrue(menu.slots.get(ArcaneWorkbenchMenu.SLOT_RESULT).getItem().isEmpty(),
+                "a pool one-fifth short must not produce a result");
+        helper.assertTrue(menu.hasMatch(), "the recipe still matched; only the price is unpayable");
+        helper.assertTrue(menu.isInsufficientVis(),
+                "the original's flag: consumeAllVisCrafting(..., false) returns false here");
+        helper.assertTrue(menu.getCost(primalIndex("aqua")) == 500
+                        && menu.getWandCharge(primalIndex("aqua")) == 400,
+                "the screen must be able to show the price next to the charge it is short of");
+        helper.assertTrue(charge(wand, "aqua") == 400 && charge(wand, "ordo") == 400,
+                "the refused payment must spend nothing");
+
+        // The original's notice gate is `wand != null && cost != null && !canPay`
+        // (GuiArcaneWorkbench.java:93): with the wand pulled the GUI drew NO notice,
+        // so the synced flag must clear while the price stays live for the tags.
+        bench.removeItem(TileArcaneWorkbench.SLOT_WAND, 1);
+        menu.broadcastChanges();
+        helper.assertTrue(!menu.isInsufficientVis(),
+                "no wand in slot 10 means the original showed no \"Insufficient vis\" at all");
+        helper.assertTrue(menu.hasMatch() && menu.getCost(primalIndex("aqua")) == 500,
+                "the price tags stay live without a wand — the shortage flag is the wand's business");
+        bench.setItem(TileArcaneWorkbench.SLOT_WAND, wand);
+        menu.broadcastChanges();
+        helper.assertTrue(menu.isInsufficientVis(), "putting the short wand back re-arms the flag");
+
+        // No match at all: the flag is clear and the price slots are zero, so the
+        // screen draws no tags (the original's `if (amount > 0)` rule).
+        bench.clearContent();
+        menu.broadcastChanges();
+        helper.assertTrue(!menu.hasMatch() && !menu.isInsufficientVis(),
+                "an empty grid is not a shortage");
+        helper.assertTrue(menu.getCost(primalIndex("aqua")) == 0,
+                "no match must sync a zero price, not a stale one");
+        helper.succeed();
+    }
+
+    /**
+     * Lifting the result is {@code SlotCraftingArcaneWorkbench.onCraft}: one item
+     * out of every grid cell, and the original's <i>second</i> vis charge. The 1.7.10
+     * workbench charged the wand twice — once to reveal the result, once to take it
+     * — and the port reproduces that rather than tidying it.
+     */
+    @GameTest(template = "empty")
+    public static void takingTheResultSpendsTheGridAndPaysAgain(final GameTestHelper helper) {
+        final TileArcaneWorkbench bench = benchAt(helper);
+        final Player player = playerWithResearch(helper, List.of("WARDEDARCANA"));
+        final ItemStack twoNuggets = new ItemStack(Items.GOLD_NUGGET, 2);
+        final ItemStack twoIngots = new ItemStack(Items.GOLD_INGOT, 2);
+        setGrid(bench, grid(twoNuggets, twoNuggets, twoIngots, twoNuggets));
+        final ItemStack wand = wandWith("aqua", 1500, "ordo", 1500);
+        bench.setItem(10, wand);
+
+        final ArcaneWorkbenchMenu menu =
+                new ArcaneWorkbenchMenu(1, player.getInventory(), bench);
+        menu.broadcastChanges();
+        helper.assertTrue(charge(wand, "aqua") == 1000, "the reveal must have paid 500");
+
+        final Slot result = menu.slots.get(ArcaneWorkbenchMenu.SLOT_RESULT);
+        assertResult(helper, result.getItem());
+        result.onTake(player, result.getItem().copy());
+
+        helper.assertTrue(bench.getItem(0).getCount() == 1 && bench.getItem(2).getCount() == 1,
+                "the original's onCraft loop took exactly one of every grid cell");
+        helper.assertTrue(charge(wand, "aqua") == 500 && charge(wand, "ordo") == 500,
+                "the take must charge the vis a second time, as the original did");
+        helper.succeed();
+    }
+
+    /**
+     * The two machine slots' rules and the original's shift-click routing, branch
+     * for branch. The wand slot's rule is the port's seam for
+     * {@code SlotLimitedByWand} (a vis-carrying stack, never a staff), and the 3x3
+     * grid stays unreachable by shift-click from the player side — the original's
+     * rule, kept.
+     */
+    @GameTest(template = "empty")
+    public static void menuGuardsItsSlotsAndRoutesShiftClicks(final GameTestHelper helper) {
+        final TileArcaneWorkbench bench = benchAt(helper);
+        final Player player = playerWithResearch(helper, List.of("WARDEDARCANA"));
+        // The harness's mock player hands out its inventory by value, so every read and
+        // write in this probe goes through ONE captured reference — the same one the menu
+        // was built on. Repeated player.getInventory() calls make the probe depend on
+        // which copy a line happened to touch.
+        final Inventory inv = player.getInventory();
+        final ArcaneWorkbenchMenu menu = new ArcaneWorkbenchMenu(1, inv, bench);
+
+        final Slot wandSlot = menu.slots.get(ArcaneWorkbenchMenu.SLOT_WAND);
+        helper.assertTrue(!wandSlot.mayPlace(new ItemStack(Items.STONE)),
+                "the original's SlotLimitedByWand rejected anything that is not a wand");
+        helper.assertTrue(wandSlot.mayPlace(wandWith("aqua", 100, "ordo", 100)),
+                "a vis-carrying stack (the port's seam for ItemWandCasting) is accepted");
+        helper.assertTrue(wandSlot.getMaxStackSize() == 64,
+                "the original's slot declared a 64 stack limit");
+        helper.assertTrue(!menu.slots.get(ArcaneWorkbenchMenu.SLOT_RESULT).mayPlace(new ItemStack(Items.GOLD_INGOT)),
+                "the result slot is output-only, as SlotCraftingArcaneWorkbench was");
+
+        // Shift-click is the original's ContainerArcaneWorkbench.transferStackInSlot, kept
+        // branch for branch at 1.21.1's menu-level seam (Menu#quickMoveStack): a
+        // vis-carrying stack in the player's grid goes to the WAND slot — the original's
+        // `stack.func_75214_d() instanceof ItemWandCasting` branch — the hotbar shifts to
+        // the player grid, the result and the grid shift to the player, and the 3x3 stays
+        // unreachable from the player side. The harness player ships with a kit, so the
+        // captured inventory is emptied first: this probe is about the routing, not about
+        // where the kit happened to sit.
+        for (int kitSlot = 0; kitSlot < inv.getContainerSize(); kitSlot++) {
+            inv.setItem(kitSlot, ItemStack.EMPTY);
+        }
+
+        final ItemStack wand = wandWith("aqua", 100, "ordo", 100);
+        inv.setItem(9, wand);
+        menu.quickMoveStack(player, ArcaneWorkbenchMenu.PLAYER_FIRST);
+        // The shift MOVES the stack, and `wand` is the source slot's object — the move
+        // empties it, so the assertion has to read the destination. Measured: the tile's
+        // slot 10 and the menu's slot 1 hold the stack, inv slot 9 is air.
+        helper.assertTrue(charge(wandSlot.getItem(), "aqua") == 100
+                        && charge(wandSlot.getItem(), "ordo") == 100,
+                "the player grid's wand shifts into the wand slot with its vis pool intact — "
+                        + "the original's `stack.func_75214_d() instanceof ItemWandCasting` branch");
+        helper.assertTrue(inv.getItem(9).isEmpty(), "and the grid slot is left empty");
+
+        // A plain item in the hotbar shifts to the player grid.
+        inv.setItem(0, new ItemStack(Items.COBBLESTONE));
+        menu.quickMoveStack(player, ArcaneWorkbenchMenu.HOTBAR_FIRST);
+        helper.assertTrue(inv.getItem(9).is(Items.COBBLESTONE),
+                "the hotbar's shift-click must land in the player grid, as the original routed it");
+
+        // The result shifts to the player inventory, scanning back from the hotbar.
+        inv.setItem(9, ItemStack.EMPTY);
+        inv.setItem(0, ItemStack.EMPTY);
+        inv.setItem(18, ItemStack.EMPTY);
+        bench.setItem(TileArcaneWorkbench.SLOT_RESULT, new ItemStack(Items.GOLD_INGOT));
+        menu.quickMoveStack(player, ArcaneWorkbenchMenu.SLOT_RESULT);
+        helper.assertTrue(bench.getItem(TileArcaneWorkbench.SLOT_RESULT).isEmpty(),
+                "the result must have left the machine slot");
+        boolean goldInPlayer = false;
+        for (int playerSlot = 0; playerSlot < inv.getContainerSize(); playerSlot++) {
+            if (inv.getItem(playerSlot).is(Items.GOLD_INGOT)) {
+                goldInPlayer = true;
+            }
+        }
+        helper.assertTrue(goldInPlayer,
+                "and it landed in the player's rows — the original's result branch scans the player "
+                        + "inventory backwards from the hotbar, so the exact slot is vanilla's to pick");
+
+        // A grid item shifts to the player: the original's final else-branch.
+        bench.setItem(0, new ItemStack(Items.GOLD_NUGGET));
+        menu.quickMoveStack(player, ArcaneWorkbenchMenu.GRID_FIRST);
+        helper.assertTrue(bench.getItem(0).isEmpty(),
+                "the machine-to-player branch is the original's last else");
+
+        helper.succeed();
+    }
+
+    /**
+     * The block's use interaction is the original's {@code onBlockActivated}: it
+     * hands the tile over as a {@link net.minecraft.world.MenuProvider} whose title
+     * is the lang key the menu type ships. The open-screen packet itself needs a
+     * real {@code ServerPlayer} — the game-test harness's mock player is a plain
+     * {@code Player}, so the wire half of this seam is not exercised here; that is
+     * the same honest limit the screens carry, stated in docs.
+     */
+    @GameTest(template = "empty")
+    public static void theBenchIsTheMenuProviderTheBlockOpens(final GameTestHelper helper) {
+        final TileArcaneWorkbench bench = benchAt(helper);
+        final Player player = playerWithResearch(helper, List.of("WARDEDARCANA"));
+
+        helper.assertTrue(bench instanceof net.minecraft.world.MenuProvider,
+                "TC-M7-04-m2: the tile must be the MenuProvider BlockArcaneWorkbench opens");
+        final var title = bench.getDisplayName().getContents();
+        helper.assertTrue(title instanceof net.minecraft.network.chat.contents.TranslatableContents contents
+                        && "container.thaumcraft.gui_arcane_workbench".equals(contents.getKey()),
+                "the menu title must be the translatable key the gui row ships, got " + title);
+        helper.assertTrue(bench.createMenu(7, player.getInventory(), player)
+                        instanceof ArcaneWorkbenchMenu,
+                "the provider must build the workbench menu the registered MenuType names");
+        helper.assertTrue(CatalogArcaneWorkbench.MENU_ARCANE_WORKBENCH.getId().getPath()
+                        .equals("gui_arcane_workbench"),
+                "the menu type is registered under the content-mapping.csv gui row id");
+        helper.succeed();
+    }
+
+    /** The index of a primal in {@link Aspect#getPrimalAspects()} — the menu's cost-slot order. */
+    private static int primalIndex(final String tag) {
+        final List<Aspect> primals = Aspect.getPrimalAspects();
+        for (int i = 0; i < primals.size(); i++) {
+            // The registry stores the primal names upper-case ({@code "AQUA"}); the
+            // probes name them the way the JSON aspect tags do, lower-case.
+            if (primals.get(i).getName().equalsIgnoreCase(tag)) {
+                return i;
+            }
+        }
+        throw new IllegalArgumentException(tag + " is not a primal aspect");
     }
 
     private static void assertResult(final GameTestHelper helper, final ItemStack result) {

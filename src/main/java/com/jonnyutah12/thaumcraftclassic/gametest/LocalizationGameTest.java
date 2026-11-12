@@ -212,7 +212,17 @@ public final class LocalizationGameTest {
             Map.entry("recipe.type.workbench",
                     "RecipePageDisplay.station().labelKey() (original GuiResearchRecipe.java:821-823 key)"),
             Map.entry("recipe.type.workbenchshapeless",
-                    "RecipePageDisplay.station().labelKey() (original GuiResearchRecipe.java:887-890 key)"));
+                    "RecipePageDisplay.station().labelKey() (original GuiResearchRecipe.java:887-890 key)"),
+            // Arcane workbench GUI (TC-M7-04-m2): the vis notice the original
+            // hardcoded as "Insufficient vis" (GuiArcaneWorkbench.java:105) and
+            // the wand-slot hint the port added where the original drew an
+            // unlabelled slot.
+            Map.entry("container.thaumcraft.gui_arcane_workbench",
+                    "TileArcaneWorkbench.getDisplayName — the open menu's title (TC-M7-04-m2)"),
+            Map.entry("container.thaumcraft.insufficient_vis",
+                    "GuiArcaneWorkbench insufficient-vis notice"),
+            Map.entry("container.thaumcraft.wand_slot_hint",
+                    "ArcaneWorkbenchScreen wand-slot tooltip"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always

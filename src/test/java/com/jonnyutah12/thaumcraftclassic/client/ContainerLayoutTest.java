@@ -1,7 +1,9 @@
 package com.jonnyutah12.thaumcraftclassic.client;
 
+import net.minecraft.util.Mth;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -148,6 +150,142 @@ class ContainerLayoutTest {
         assertEquals(89, SpaScreen.MIX_X);
         assertEquals(35, SpaScreen.MIX_Y);
         assertEquals(8, SpaScreen.MIX_SIZE);
+    }
+
+    // -------------------------------- arcane workbench (TC-M7-04-m2, gui_id 13)
+
+    @Test
+    void workbenchPanelIsTheOriginals190By234() {
+        // field_146999_f is xSize and field_147000_g is ySize
+        // (reference/mcp-mappings/fields_1.7.10_mcp_stable_11.csv:648-649), and
+        // GuiArcaneWorkbench's constructor assigns 190 to the first, 234 to the
+        // second. Read the pair backwards and the panel comes out 234 wide — which
+        // is how this slice's first pass drew it, and why the assertion names the CSV.
+        assertEquals(190, ContainerLayout.WB_PANEL_WIDTH,
+                "xSize — vanilla's 176 plus a 14 px strip");
+        assertEquals(234, ContainerLayout.WB_PANEL_HEIGHT, "ySize — the height the original blits");
+        assertEquals(234, ContainerLayout.panelHeight(ContainerLayout.WB_PLAYER_GRID_TOP),
+                "the port derives its height from the original's 151 px player grid: 138 + 96");
+        assertEquals(ContainerLayout.WB_PANEL_HEIGHT, ContainerLayout.panelHeight(ContainerLayout.WB_PLAYER_GRID_TOP),
+                "the derived height lands on the original's own ySize, so the port draws the original's rect");
+        assertEquals(0, ContainerLayout.WB_PLAYER_PIECE_X,
+                "the vanilla 176 px player piece sits at x=0 so the slots at x=16 keep vanilla's inset");
+        assertTrue(ContainerLayout.WB_PANEL_WIDTH - ContainerLayout.PANEL_WIDTH == 14,
+                "the strip ScreenPanel fills beside the player piece is 190 - 176 = 14 px");
+    }
+
+    @Test
+    void theOriginalsOwnBlitCoversItsHotbarRow() {
+        // The original blits (xSize, ySize) = (190, 234); its hotbar sits at
+        // y = 209 and is 18 tall, so 227 <= 234: the original's art covers its own
+        // hotbar, and the port's 234-derived height puts every row on screen too.
+        assertTrue(ContainerLayout.WB_HOTBAR_TOP + ContainerLayout.SLOT_FRAME <= ContainerLayout.WB_PANEL_HEIGHT,
+                "hotbar bottom 227 must sit inside the original's 234 px ySize");
+        assertTrue(ContainerLayout.WB_PLAYER_GRID_X + 9 * ContainerLayout.SLOT_FRAME <= ContainerLayout.WB_PANEL_WIDTH,
+                "the 176 px player row must sit inside the original's 190 px xSize");
+    }
+
+    @Test
+    void workbenchSlotsUseTheOriginalsAnchorsAndPitch() {
+        assertEquals(40, ContainerLayout.workbenchGridX(0));
+        assertEquals(64, ContainerLayout.workbenchGridX(1), "the original's grid pitch is 24, not vanilla's 18");
+        assertEquals(88, ContainerLayout.workbenchGridX(2));
+        assertEquals(40, ContainerLayout.workbenchGridY(0));
+        assertEquals(64, ContainerLayout.workbenchGridY(1));
+        assertEquals(88, ContainerLayout.workbenchGridY(2));
+        assertEquals(160, ContainerLayout.WB_RESULT_X);
+        assertEquals(64, ContainerLayout.WB_RESULT_Y);
+        assertEquals(160, ContainerLayout.WB_WAND_X);
+        assertEquals(24, ContainerLayout.WB_WAND_Y);
+        assertEquals(16, ContainerLayout.workbenchPlayerX(0));
+        assertEquals(160, ContainerLayout.workbenchPlayerX(8));
+        assertEquals(151, ContainerLayout.workbenchPlayerY(0));
+        assertEquals(187, ContainerLayout.workbenchPlayerY(2), "151 + 2*18: the original's pitch here is vanilla's");
+        assertEquals(209, ContainerLayout.WB_HOTBAR_TOP, "the original's hotbar row, 4 px below the player grid");
+    }
+
+    @Test
+    void everyWorkbenchSlotAnchorFitsThePanelItDraws() {
+        final int panelHeight = ContainerLayout.panelHeight(ContainerLayout.WB_PLAYER_GRID_TOP);
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 3; col++) {
+                assertTrue(ContainerLayout.workbenchGridX(col) + ContainerLayout.SLOT_FRAME
+                                <= ContainerLayout.WB_PANEL_WIDTH,
+                        "grid slot (" + row + "," + col + ") inside the 190 px panel");
+                assertTrue(ContainerLayout.workbenchGridY(row) + ContainerLayout.SLOT_FRAME <= panelHeight,
+                        "grid slot (" + row + "," + col + ") inside the panel height");
+            }
+        }
+        for (int col = 0; col < 9; col++) {
+            assertTrue(ContainerLayout.workbenchPlayerX(col) + ContainerLayout.SLOT_FRAME
+                    <= ContainerLayout.WB_PANEL_WIDTH);
+        }
+        assertTrue(ContainerLayout.WB_RESULT_Y + ContainerLayout.SLOT_FRAME <= panelHeight);
+        assertTrue(ContainerLayout.WB_WAND_Y + ContainerLayout.SLOT_FRAME <= panelHeight);
+        assertTrue(ContainerLayout.WB_HOTBAR_TOP + ContainerLayout.SLOT_FRAME <= panelHeight,
+                "the hotbar row is inside the panel the port draws, exactly as the original's own "
+                        + "(xSize, ySize) = (190, 234) blit covers it");
+    }
+
+    @Test
+    void workbenchAspectHexagonIsTheOriginalsSixPoints() {
+        assertArrayEquals(new int[] {72, 24, 24, 72, 120, 120}, ContainerLayout.WB_ASPECT_CENTER_X,
+                "aer, terra, ignis, aqua, ordo, perditio — the order Aspect.getPrimalAspects() walks");
+        assertArrayEquals(new int[] {21, 43, 102, 124, 102, 43}, ContainerLayout.WB_ASPECT_CENTER_Y);
+        assertEquals(16, ContainerLayout.WB_ASPECT_BOX, "UtilsFX.drawTag draws a 16x16 tag at its point");
+        assertEquals(64, ContainerLayout.aspectBoxX(0), "the box is 8 px up-left of the point");
+        assertEquals(13, ContainerLayout.aspectBoxY(0));
+        assertEquals(16, ContainerLayout.aspectBoxX(1));
+        assertEquals(35, ContainerLayout.aspectBoxY(1));
+        assertTrue(ContainerLayout.WB_ASPECT_CENTER_X[5] + ContainerLayout.WB_ASPECT_BOX / 2
+                <= ContainerLayout.WB_PANEL_WIDTH);
+    }
+
+    @Test
+    void workbenchAspectAlphaIsTheOriginalsPulse() {
+        assertEquals(1.0F, ContainerLayout.aspectAlpha(0, 0, true),
+                "an affordable aspect drew at full alpha");
+        assertEquals(0.3F, ContainerLayout.aspectAlpha(0, 0, false), 1e-6,
+                "0.5 + (sin(0/2)*0.2 - 0.2) = 0.3");
+        assertEquals(0.5F + (Mth.sin(11 / 2.0F) * 0.2F - 0.2F),
+                ContainerLayout.aspectAlpha(1, 1, false), 1e-6,
+                "the original's phase is (gameTime + index*10) / 2.0F");
+        for (int time = 0; time < 400; time++) {
+            for (int index = 0; index < 6; index++) {
+                final float alpha = ContainerLayout.aspectAlpha(time, index, false);
+                assertTrue(alpha >= 0.1F - 1e-5F && alpha <= 0.5F + 1e-5F,
+                        "the pulse lives between 0.1 and 0.5, exactly as the original's formula allows");
+            }
+        }
+    }
+
+    @Test
+    void workbenchColourCarriesAlphaAndCostsDivideByTheOriginalsHundred() {
+        assertEquals(0xFFFFFFFF, ContainerLayout.withAlpha(0xFFFFFF, 1.0F));
+        assertEquals(0x00FFFFFF, ContainerLayout.withAlpha(0xFFFFFF, 0.0F));
+        assertEquals(0x80FF0000, ContainerLayout.withAlpha(0xFF0000, 0.5F));
+        assertEquals(0xFF123456, ContainerLayout.withAlpha(0x123456, 2.0F), "alpha is clamped, not wrapped");
+        assertEquals(0x00123456, ContainerLayout.withAlpha(0x123456, -1.0F));
+        assertEquals(100, ContainerLayout.CENTI_VIS_PER_VIS,
+                "the original's * 100 (ItemWandCasting.java:314) — the unit the cost slots travel in");
+        assertEquals(3, ContainerLayout.displayVis(300));
+        assertEquals(0, ContainerLayout.displayVis(99), "the original's integer division");
+    }
+
+    @Test
+    void workbenchNoticeIsTheOriginalsTransformTextAndColour() {
+        assertEquals(168, ContainerLayout.WB_INSUFFICIENT_X);
+        assertEquals(46, ContainerLayout.WB_INSUFFICIENT_Y);
+        assertEquals(0.5F, ContainerLayout.WB_INSUFFICIENT_SCALE, 0.0F, "the original's glScalef(0.5F, 0.5F, 0)");
+        assertEquals(0xFFEE000E, ContainerLayout.WB_INSUFFICIENT_COLOUR,
+                "the original's colour int 15625838, with full alpha for 1.21.1");
+        assertEquals(0xEE000E, ContainerLayout.WB_INSUFFICIENT_COLOUR & 0xFFFFFF);
+        assertEquals(0xA8555555, ContainerLayout.WB_BLOCKED_TINT,
+                "the original's glColor4f(0.33, 0.33, 0.33, 0.66) over the blocked result — 0.66 alpha is 0xA8");
+        assertEquals(0x555555, ContainerLayout.WB_BLOCKED_TINT & 0xFFFFFF, "the grey itself");
+        assertTrue(ContainerLayout.WB_INSUFFICIENT_X < ContainerLayout.WB_PANEL_WIDTH,
+                "the notice is centred on x=168 (the original draws at -width/2 after the translate), "
+                        + "so the anchor itself must sit inside the 190 px panel");
     }
 
     // ------------------------------------------------------- resources
