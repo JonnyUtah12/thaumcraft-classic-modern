@@ -3,9 +3,11 @@ package com.jonnyutah12.thaumcraftclassic.tiles;
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.aspect.IEssentiaTransport;
 import net.minecraft.core.Direction;
+import net.minecraft.world.phys.AABB;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.function.IntPredicate;
 
 /**
  * The essentia tube network's suction and flow rules (TC-M4-07), as pure
@@ -20,6 +22,14 @@ import java.util.List;
  * {@code calculateSuction} overrides) and {@code TileTubeBuffer} (its own
  * {@code getSuctionAmount} / {@code takeEssentia} / {@code fillBuffer}
  * rules). The tiles are the thin world-facing shells that apply the results.</p>
+ *
+ * <p>TC-M4-07-f added the wand configuration's numbers to the same place: the
+ * sub-hit box set of {@code TileTube}/{@code TileTubeBuffer.addTraceableCuboids}
+ * ({@link #subHitSideBox(int)} / {@link #subHitCentreBox(boolean)}), the
+ * centre-box face walk ({@link #nextFacing(int, IntPredicate)}) and the
+ * buffer's choke cycle ({@link #nextChoke(int)}), so the click's geometry and
+ * the figures it drives are pinned by the same unit test. The ray clipping
+ * itself is {@link com.jonnyutah12.thaumcraftclassic.wands.WandRayTracer}.</p>
  *
  * <h2>Side indexing</h2>
  * <p>1.7.10's {@code ForgeDirection.getOrientation(i)} and 1.21.1's
@@ -83,6 +93,122 @@ public final class TubeTransportLogic {
 
     /** One unit per transfer: the original moved essentia one at a time. */
     public static final int TRANSFER_PER_PASS = 1;
+
+    // --- the wand sub-hit geometry (TC-M4-07-f) ---------------------------
+
+    /** The sub-hit index of a tile's centre box: the original's {@code subHit == 6}. */
+    public static final int SUBHIT_CENTRE = 6;
+
+    /** Original {@code TileTube.addTraceableCuboids}: {@code float min = 0.42F}. */
+    public static final double SUBHIT_SIDE_MIN = 0.42D;
+
+    /** Original {@code TileTube.addTraceableCuboids}: {@code float max = 0.58F}. */
+    public static final double SUBHIT_SIDE_MAX = 0.58D;
+
+    /** Original {@code TileTube.addTraceableCuboids}: the centre box is {@code 0.34375 .. 0.65625}. */
+    public static final double SUBHIT_TUBE_CENTRE_MIN = 0.34375D;
+
+    /** Original {@code TileTube.addTraceableCuboids}: the centre box is {@code 0.34375 .. 0.65625}. */
+    public static final double SUBHIT_TUBE_CENTRE_MAX = 0.65625D;
+
+    /** Original {@code TileTubeBuffer.addTraceableCuboids}: the centre box is {@code 0.25 .. 0.75}. */
+    public static final double SUBHIT_BUFFER_CENTRE_MIN = 0.25D;
+
+    /** Original {@code TileTubeBuffer.addTraceableCuboids}: the centre box is {@code 0.25 .. 0.75}. */
+    public static final double SUBHIT_BUFFER_CENTRE_MAX = 0.75D;
+
+    /** Original {@code TileTube.onWandRightClick}: the tool click is 0.5 loud, 0.9 + rand·0.2. */
+    public static final float SUBHIT_TOOL_VOLUME = 0.5F;
+
+    /** Original {@code TileTube.onWandRightClick}: the tool click's pitch. */
+    public static final float SUBHIT_TOOL_PITCH_BASE = 0.9F;
+
+    /** Original {@code TileTubeBuffer.onWandRightClick}: the choke squeak is 0.6 loud, 1.1 + rand·0.2. */
+    public static final float SUBHIT_SQUEAK_VOLUME = 0.6F;
+
+    /** Original {@code TileTubeBuffer.onWandRightClick}: the choke squeak's pitch. */
+    public static final float SUBHIT_SQUEAK_PITCH_BASE = 1.1F;
+
+    /**
+     * The original's per-side wand box, in <em>block-local</em> coordinates
+     * (the tiles offset it by their own position when building the ray-trace
+     * list, exactly as the original's {@code xTile + min} did). The index is a
+     * face ordinal — 0 DOWN, 1 UP, 2 NORTH, 3 SOUTH, 4 WEST, 5 EAST — and each
+     * box runs from the stub ({@code 0.42..0.58} across the other two axes) out
+     * to the block edge on its own axis, so the ray can be aimed at the part of
+     * the pipe that touches the neighbour.
+     *
+     * <p>Only the faces whose {@code canConnectSide} passed got a box in the
+     * original, which is what makes the centre box reachable: aim at a face with
+     * no transport neighbour and the ray has nothing to hit before the centre.</p>
+     */
+    public static AABB subHitSideBox(final int side) {
+        final double min = SUBHIT_SIDE_MIN;
+        final double max = SUBHIT_SIDE_MAX;
+        return switch (side) {
+            case 0 -> new AABB(min, 0.0D, min, max, 0.5D, max);
+            case 1 -> new AABB(min, 0.5D, min, max, 1.0D, max);
+            case 2 -> new AABB(min, min, 0.0D, max, max, 0.5D);
+            case 3 -> new AABB(min, min, 0.5D, max, max, 1.0D);
+            case 4 -> new AABB(0.0D, min, min, 0.5D, max, max);
+            case 5 -> new AABB(0.5D, min, min, 1.0D, max, max);
+            default -> throw new IllegalArgumentException("not a face ordinal: " + side);
+        };
+    }
+
+    /**
+     * The centre box every tube and buffer carries: the original's
+     * {@code 0.34375 .. 0.65625} for a tube, {@code 0.25 .. 0.75} for a buffer.
+     * Hitting it is sub-hit 6, which aims a directional tube / valve.
+     */
+    public static AABB subHitCentreBox(final boolean buffer) {
+        final double min = buffer ? SUBHIT_BUFFER_CENTRE_MIN : SUBHIT_TUBE_CENTRE_MIN;
+        final double max = buffer ? SUBHIT_BUFFER_CENTRE_MAX : SUBHIT_TUBE_CENTRE_MAX;
+        return new AABB(min, min, min, max, max, max);
+    }
+
+    /**
+     * Original {@code TileTube.onWandRightClick}'s centre-box walk, verbatim:
+     *
+     * <pre>
+     * int a = this.facing.ordinal();
+     * while (++a &lt; 20) {
+     *    if (&lt;gate on ForgeDirection.getOrientation(a % 6)&gt;) { a %= 6; this.facing = ...; break; }
+     * }
+     * </pre>
+     *
+     * <p>The gate differs per tile — the base tube asks
+     * {@code canConnectSide(candidate.getOpposite()) && isConnectable(candidate.getOpposite())},
+     * the valve asks {@code !canConnectSide(candidate)} (its own override, with
+     * no {@code getOpposite()} at all) — so the predicate is passed in and the
+     * walk's shape stays in one place. The 20 bound is the original's: the walk
+     * runs the ordinals past 5 (wrapping with {@code % 6}) and stops at 20, so
+     * it inspects each face at most three times.</p>
+     *
+     * @param accept receives the <em>candidate</em> face ordinal (already
+     *               {@code % 6}); the caller applies its own gate
+     * @return the face to aim at, or {@code -1} when the walk found none (the
+     *         original leaves {@code facing} alone in that case)
+     */
+    public static int nextFacing(final int fromOrdinal, final IntPredicate accept) {
+        int a = fromOrdinal;
+        while (++a < 20) {
+            if (accept.test(a % 6)) {
+                return a % 6;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Original {@code TileTubeBuffer.onWandRightClick}'s choke cycle on a
+     * sneak-use: {@code chokedSides[hit]++; if (chokedSides[hit] > 2)
+     * chokedSides[hit] = 0;} — open (0) → bellows-ignored (1) → closed (2) → open.
+     */
+    public static int nextChoke(final int choke) {
+        final int next = choke + 1;
+        return next > CHOKE_OFF ? 0 : next;
+    }
 
     /** A neighbour across one face: the transport there, or null when not connectable. */
     public record Neighbour(Direction side, @Nullable IEssentiaTransport transport) {

@@ -403,4 +403,86 @@ class TubeTransportLogicTest {
                 "half full: floor(4 / 8 * 14) + 1 = 8");
         assertEquals(15, TubeTransportLogic.bufferSignalStrength(8), "full: floor(14) + 1");
     }
+
+    // --- sub-hit geometry (TC-M4-07-f) ------------------------------------
+
+    @Test
+    void theSubHitBoxesAreTheOnesTheOriginalRegistered() {
+        // TileTube.addTraceableCuboids / TileTubeBuffer.addTraceableCuboids — the
+        // boxes the wand's ray is clipped against, so the click geometry is pinned
+        // here and the probes only have to prove the aim lands on them.
+        assertEquals(6, TubeTransportLogic.SUBHIT_CENTRE, "the centre box is sub-hit 6, above the six faces");
+        final net.minecraft.world.phys.AABB up = TubeTransportLogic.subHitSideBox(1);
+        assertEquals(0.42D, up.minX, "the side boxes are 0.42..0.58 across the two axes they do not point along");
+        assertEquals(0.58D, up.maxX, "0.42..0.58 in x");
+        assertEquals(0.42D, up.minZ, "0.42..0.58 in z");
+        assertEquals(0.58D, up.maxZ, "0.42..0.58 in z");
+        assertEquals(1.0D, up.maxY, "the UP stub (ForgeDirection.UP = 1) runs to the top face");
+        assertEquals(0.5D, up.minY, "and starts at the centre");
+        final net.minecraft.world.phys.AABB down = TubeTransportLogic.subHitSideBox(0);
+        assertEquals(0.0D, down.minY, "the DOWN stub (index 0) starts at the bottom face");
+        assertEquals(0.5D, down.maxY, "and stops at the centre");
+        assertEquals(0.0D, TubeTransportLogic.subHitSideBox(2).minZ, "the NORTH stub (index 2) sits on the -Z edge");
+        assertEquals(0.5D, TubeTransportLogic.subHitSideBox(2).maxZ, "and reaches the centre");
+        assertEquals(0.5D, TubeTransportLogic.subHitSideBox(3).minZ, "the SOUTH stub (index 3) starts at the centre");
+        assertEquals(1.0D, TubeTransportLogic.subHitSideBox(3).maxZ, "and reaches the +Z edge");
+        assertEquals(0.0D, TubeTransportLogic.subHitSideBox(4).minX, "the WEST stub (index 4) sits on the -X edge");
+        assertEquals(0.5D, TubeTransportLogic.subHitSideBox(4).maxX, "and reaches the centre");
+        assertEquals(0.5D, TubeTransportLogic.subHitSideBox(5).minX, "the EAST stub (index 5) starts at the centre");
+        assertEquals(1.0D, TubeTransportLogic.subHitSideBox(5).maxX, "and reaches the +X edge");
+        assertEquals(0.34375D, TubeTransportLogic.subHitCentreBox(false).minX, "the tube's centre box is 9/32..21/32");
+        assertEquals(0.65625D, TubeTransportLogic.subHitCentreBox(false).maxY, "the tube's centre box is 9/32..21/32");
+        assertEquals(0.25D, TubeTransportLogic.subHitCentreBox(true).minX, "the buffer's centre box is 0.25..0.75");
+        assertEquals(0.75D, TubeTransportLogic.subHitCentreBox(true).maxZ, "the buffer's centre box is 0.25..0.75");
+    }
+
+    @Test
+    void theCentreBoxIsWiderThanTheStubBandSoTheNearSideRaceIsPredictable() {
+        // The probes aim the centre box from a corner (where the centre must win
+        // a race against the stubs) and from a mid-band side (where the stub must
+        // win), so this pins the two orderings they rely on.
+        assertTrue(TubeTransportLogic.SUBHIT_TUBE_CENTRE_MIN < TubeTransportLogic.SUBHIT_SIDE_MIN,
+                "the centre box reaches further out than the stub band, which is why a diagonal "
+                        + "aim on a live face lands on the centre and a mid-band aim lands on the stub");
+    }
+
+    @Test
+    void theAimWalkTakesTheNextSideUnderItsOwnGate() {
+        // TileTube.onWandRightClick: while (++a < 20) if (gate(a % 6)) { facing = a % 6; break; }
+        // Every side accepted, from facing NORTH (2): the walk is SOUTH (3).
+        assertEquals(3, TubeTransportLogic.nextFacing(2, side -> true),
+                "the walk starts at facing + 1, not facing itself");
+        // Accepting only DOWN (0): the ordinals run 3,4,5,6(->0), so the first
+        // accepted side is 0 — the walk wraps modulo 6 past the ordinal bound.
+        assertEquals(0, TubeTransportLogic.nextFacing(2, side -> side == 0),
+                "the walk wraps modulo 6 and takes the first side its gate accepts");
+        // A gate that accepts nothing walks its full 20 steps and reports nothing.
+        assertEquals(-1, TubeTransportLogic.nextFacing(2, side -> false),
+                "no accepted side: facing stays where it was (-1 = no change)");
+        // The valve's inverse gate (its own override, no getOpposite()): from
+        // NORTH in a cage that is live through WEST, the first bare face is EAST.
+        assertEquals(5, TubeTransportLogic.nextFacing(2, side -> side == 5),
+                "the valve walk skips the live faces and lands on the bare one");
+        // The 20 bound is the original's, not "one lap": from facing 5 the walk
+        // inspects 6..19, i.e. ordinals 0..5 twice and 0..1 a third time.
+        assertEquals(1, TubeTransportLogic.nextFacing(5, side -> side == 1),
+                "a side accepted on the second lap is still found (the bound is 20, not 6)");
+        assertEquals(4, TubeTransportLogic.nextFacing(5, side -> side == 4),
+                "the walk wraps past 5 twice before the bound: ordinal 4 is reached at a = 10, so a "
+                        + "side on the far side of the wrap is still aimed (this is the original's "
+                        + "20, not a single lap)");
+        // From facing 5, a gate that accepts only side 5 is met at a = 12: the
+        // walk can therefore land back on the face it started from.
+        assertEquals(5, TubeTransportLogic.nextFacing(5, side -> side == 5),
+                "the walk is allowed to return to the facing it started from");
+    }
+
+    @Test
+    void theChokeCycleIsZeroOneTwoAndWraps() {
+        // TileTubeBuffer.onWandRightClick: chokedSides[subHit]++; if (chokedSides[subHit] > 2) = 0
+        assertEquals(1, TubeTransportLogic.nextChoke(0), "open -> bellows-ignored");
+        assertEquals(2, TubeTransportLogic.nextChoke(1), "bellows-ignored -> closed");
+        assertEquals(0, TubeTransportLogic.nextChoke(2), "closed wraps to open (the > 2 reset)");
+        assertEquals(0, TubeTransportLogic.nextChoke(3), "the reset also catches any value above 2");
+    }
 }

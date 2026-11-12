@@ -5,10 +5,16 @@ import com.jonnyutah12.thaumcraftclassic.aspect.AspectList;
 import com.jonnyutah12.thaumcraftclassic.aspect.EssentiaTransportHelper;
 import com.jonnyutah12.thaumcraftclassic.aspect.IEssentiaTransport;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaTransport;
+import com.jonnyutah12.thaumcraftclassic.wands.IWandable;
+import com.jonnyutah12.thaumcraftclassic.wands.WandInteractionFeedback;
+import com.jonnyutah12.thaumcraftclassic.wands.WandRayTracer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -38,11 +44,20 @@ import java.util.List;
  * the faces, applies the results and persists the pool under the original NBT
  * keys ({@code Aspects} through {@link AspectList}, {@code open}, {@code choke}).</p>
  *
- * <p>The original's {@code addTraceableCuboids} (the wand ray-trace sub-hits
- * that toggle a face) rides on the wand/resonator interaction card, like the
- * base tube's. The client renderer and its aspect-coloured fill are TC-M7-01.</p>
+ * <p>The wand/resonator interaction is ported here (TC-M4-07-f):
+ * {@link #addTraceableCuboids} is the original's box set (the six face stubs at
+ * {@code 0.42..0.58}, only for faces with a transport neighbour, plus the
+ * buffer's own centre box at {@code 0.25..0.75}), and
+ * {@link #onWandRightClick} retraces the click into a sub-hit — a plain
+ * right-click flips that face and hands the new value to the neighbouring
+ * {@link TileTube} <em>or</em> {@link TileTubeBuffer} across it, a sneak-use
+ * cycles the face's choke through {@link TubeTransportLogic#nextChoke(int)}.
+ * The buffer has no aim walk: the original's sub-hit 6 branch is the tube's,
+ * not the buffer's, and its centre box is there so a ray aimed at a bare face
+ * lands on something. The client renderer and its aspect-coloured fill are
+ * TC-M7-01.</p>
  */
-public class TileTubeBuffer extends BlockEntity implements IEssentiaTransport {
+public class TileTubeBuffer extends BlockEntity implements IEssentiaTransport, IWandable, WandRayTracer.Traceable {
 
     /** Original {@code MAXAMOUNT}. */
     public static final int MAX_AMOUNT = TubeTransportLogic.BUFFER_MAX_AMOUNT;
@@ -273,6 +288,127 @@ public class TileTubeBuffer extends BlockEntity implements IEssentiaTransport {
     /** The choke value of a face; an absent face reads as open (the original indexed directly). */
     private int choke(final Direction face) {
         return face == null ? 0 : this.chokedSides[face.ordinal()];
+    }
+
+    // --- the wand configuration (original onWandRightClick, TC-M4-07-f) ---
+
+    /**
+     * Original {@code TileTubeBuffer.canConnectSide(int)} (private there): a
+     * transport tile sits across {@code side}. It decides which faces carry a
+     * ray-trace box in {@link #addTraceableCuboids}, so a ray aimed at a bare
+     * face has no side box to stop it and reaches the centre box (sub-hit 6),
+     * which the buffer does nothing with.
+     */
+    public boolean canConnectSide(final int side) {
+        if (level == null || side < 0 || side > 5) {
+            return false;
+        }
+        final BlockEntity te = level.getBlockEntity(worldPosition.relative(Direction.values()[side]));
+        return te instanceof IEssentiaTransport;
+    }
+
+    /**
+     * Original {@code TileTubeBuffer.addTraceableCuboids}: the six face stubs
+     * ({@link TubeTransportLogic#SUBHIT_SIDE_MIN}..{@link
+     * TubeTransportLogic#SUBHIT_SIDE_MAX}) in face-ordinal order, each only when
+     * {@link #canConnectSide(int)} passes, then the buffer's centre box at
+     * {@link TubeTransportLogic#SUBHIT_BUFFER_CENTRE_MIN}..{@link
+     * TubeTransportLogic#SUBHIT_BUFFER_CENTRE_MAX} — {@code 0.25..0.75}, wider
+     * than the tube's, indexed {@link TubeTransportLogic#SUBHIT_CENTRE}.
+     * World-space, like the original's {@code xTile + min} boxes.
+     */
+    @Override
+    public void addTraceableCuboids(final List<WandRayTracer.IndexedBox> cuboids) {
+        for (final Direction side : Direction.values()) {
+            if (canConnectSide(side.ordinal())) {
+                cuboids.add(new WandRayTracer.IndexedBox(side.ordinal(),
+                        TubeTransportLogic.subHitSideBox(side.ordinal()).move(
+                                worldPosition.getX(), worldPosition.getY(), worldPosition.getZ())));
+            }
+        }
+        cuboids.add(new WandRayTracer.IndexedBox(TubeTransportLogic.SUBHIT_CENTRE,
+                TubeTransportLogic.subHitCentreBox(true).move(
+                        worldPosition.getX(), worldPosition.getY(), worldPosition.getZ())));
+    }
+
+    /**
+     * Original {@code TileTubeBuffer.onWandRightClick}: retrace the click into
+     * a sub-hit and, for a face (0..5),
+     *
+     * <ul>
+     *   <li><b>sneak-use</b> — the {@code thaumcraft:squeek} click and
+     *       {@link TubeTransportLogic#nextChoke(int)} on that face: open →
+     *       bellows-ignored → closed → open, which is the buffer's per-face
+     *       <em>choke</em>. Nothing crosses a choked face
+     *       ({@link TubeTransportLogic#bufferSuction} reads 0 for a closed one),
+     *       so this is the pipe-clog the network obeys.</li>
+     *   <li><b>plain use</b> — the {@code thaumcraft:tool} click, flip
+     *       {@code openSides[hit]}, and <b>assign</b> that value to the
+     *       neighbouring {@link TileTube} <em>and</em> — as the original's second
+     *       branch, which a buffer needs because it is not a {@code TileTube} —
+     *       the neighbouring {@code TileTubeBuffer}'s side pointing back.</li>
+     * </ul>
+     *
+     * <p>No sub-hit 6 branch: the original's buffer has no {@code facing} to
+     * aim. 1.21.1 splits the two sides — the state moves on the server only and
+     * {@link #touch()} syncs it.</p>
+     */
+    @Override
+    public int onWandRightClick(final Level level, final ItemStack wandStack, final Player player,
+                                final BlockPos pos, final Direction side, final int md) {
+        final int hit = WandRayTracer.retraceBlock(level, player, worldPosition);
+        if (hit < 0) {
+            // The original's `if (hit == null) return 0;` — answered, changed nothing.
+            return 0;
+        }
+        if (hit < TubeTransportLogic.SUBHIT_CENTRE) {
+            if (player.isCrouching()) {
+                // The original cues the player on BOTH branches; the cue lands
+                // in WandInteractionFeedback (squeak/toolClick), as BlockTube's
+                // valve toggle does with SQUEEK + swing.
+                WandInteractionFeedback.squeak(level, worldPosition, player);
+                if (!level.isClientSide) {
+                    chokedSides[hit] = (byte) TubeTransportLogic.nextChoke(chokedSides[hit]);
+                    touch();
+                }
+            } else {
+                WandInteractionFeedback.toolClick(level, worldPosition, player);
+                if (!level.isClientSide) {
+                    openSides[hit] = !openSides[hit];
+                }
+                final Direction dir = Direction.values()[hit];
+                final int back = dir.getOpposite().ordinal();
+                final BlockEntity te = level.getBlockEntity(worldPosition.relative(dir));
+                if (te instanceof TileTube neighbour && !level.isClientSide) {
+                    neighbour.openSides[back] = openSides[hit];
+                    neighbour.touch();
+                }
+                if (te instanceof TileTubeBuffer neighbour && !level.isClientSide) {
+                    neighbour.openSides[back] = openSides[hit];
+                    neighbour.touch();
+                }
+                touch();
+            }
+        }
+        return 0;
+    }
+
+    @Override
+    @Nullable
+    public ItemStack onWandRightClick(final Level level, final ItemStack wandStack, final Player player) {
+        // The original's drawing-the-wand hook: the buffer never replaces the wand.
+        return null;
+    }
+
+    @Override
+    public void onUsingWandTick(final ItemStack wandStack, final Player player, final int count) {
+        // Original empty.
+    }
+
+    @Override
+    public void onWandStoppedUsing(final ItemStack wandStack, final Level level, final Player player,
+                                   final int count) {
+        // Original empty.
     }
 
     // --- persistence (the original NBT keys) ------------------------------
