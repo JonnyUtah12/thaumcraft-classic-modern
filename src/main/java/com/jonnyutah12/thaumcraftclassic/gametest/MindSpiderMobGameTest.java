@@ -46,7 +46,7 @@ import java.util.List;
 
 /**
  * World probes for the Mind Spider (TC-M6-06-s-c3-b, content-mapping
- * {@code Thaumcraft:MindSpider} — line 288 of docs/content-mapping.csv,
+ * {@code Thaumcraft:MindSpider} — line 322 of docs/content-mapping.csv,
  * mod_index 24). The Pech / PechBlast probes are the sibling card
  * TC-M6-06-s-c3-a's and live in {@code PechMobGameTest}.
  *

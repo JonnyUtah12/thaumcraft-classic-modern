@@ -808,7 +808,16 @@ public final class PechMobGameTest {
     public static void pechTypeTracksTheMainhandItemIdThroughTheSpawnPass(
             final GameTestHelper helper) {
         int bows = 0;
-        for (int i = 0; i < 12; i++) {
+        // The spawn pass arms the mainhand from `random.nextInt(20)` and the bow
+        // occupies 5 of the 20 rolls (PechAiLogic.equipmentFor cases 2/4/10/11/13,
+        // :150), so one pass equips a bow with p = 0.25. At 12 passes the
+        // "at least one bow" gate is a 0.75^12 = 3.2 % cliff on the level RNG, and
+        // the RNG draw order moves every time a probe is added to the batch - the
+        // 12-pass version went red on the c3-b merge purely because Mind Spider's
+        // 11 probes shifted the batch (t_f2184302). 60 passes put the cliff at
+        // 0.75^60 = 3e-8 while keeping the gate: if the bow ever leaves the roll
+        // table the probe fails loudly instead of measuring nothing.
+        for (int i = 0; i < 60; i++) {
             final EntityPech pech = pech(helper);
             final BlockPos at = pad(helper, 1, 3, 1);
             // :167-178 — 21.1.259's DifficultyInstance is (Difficulty, dayTime,
@@ -835,8 +844,9 @@ public final class PechMobGameTest {
             pech.discard();
         }
         helper.assertTrue(bows >= 1,
-                "none of the 12 spawn passes equipped a bow (rolls 1-3 of :122-146), so the"
-                        + " mainhand-to-type link is unmeasured");
+                "none of the 60 spawn passes equipped a bow (the bow is 5 of the 20 rolls of "
+                        + ":122-146), so the mainhand-to-type link is unmeasured — 0.75^60 "
+                        + "= 3e-8, so this is a real roll-table change, not an RNG draw");
         helper.succeed();
     }
 }

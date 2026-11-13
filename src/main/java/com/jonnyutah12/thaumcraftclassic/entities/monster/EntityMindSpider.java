@@ -17,7 +17,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 
 /**
- * The Mind Spider — {@code thaumcraft:mindspider} (content-mapping line 288,
+ * The Mind Spider — {@code thaumcraft:mindspider} (content-mapping line 322,
  * mod_index 24). Original:
  * {@code thaumcraft.common.entities.monster.EntityMindSpider}, 115 lines,
  * {@code extends EntitySpider}.

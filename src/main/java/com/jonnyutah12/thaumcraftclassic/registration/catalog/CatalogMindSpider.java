@@ -20,7 +20,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  *
  * <p>Registered here: {@code thaumcraft:mindspider} — original
  * {@code EntityMindSpider} (content-mapping {@code Thaumcraft:MindSpider},
- * line 288, mod_index 24, {@code ConfigEntities.java:105-106}): tracking 64
+ * line 322, mod_index 24, {@code ConfigEntities.java:105-106}): tracking 64
  * blocks (= 4 chunks), update interval 3, velocity updates ON. The 0.3 x 0.3
  * box is the class's own {@code func_70105_a(0.3F, 0.3F)}
  * ({@code EntityMindSpider.java:18}) and the experience value 1 is
@@ -46,7 +46,7 @@ public final class CatalogMindSpider {
             DeferredRegister.create(Registries.ENTITY_TYPE, ThaumcraftClassic.MOD_ID);
 
     /** {@code thaumcraft:mindspider} — original {@code EntityMindSpider}
-     *  (content-mapping {@code Thaumcraft:MindSpider}, line 288, mod_index 24). */
+     *  (content-mapping {@code Thaumcraft:MindSpider}, line 322, mod_index 24). */
     public static final DeferredHolder<EntityType<?>, EntityType<EntityMindSpider>> MIND_SPIDER =
             ENTITY_TYPES.register("mindspider",
                     () -> EntityMindSpider.buildType(MobCategory.MONSTER));

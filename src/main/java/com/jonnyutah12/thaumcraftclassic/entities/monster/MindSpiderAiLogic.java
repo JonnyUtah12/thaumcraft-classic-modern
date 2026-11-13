@@ -7,7 +7,7 @@ package com.jonnyutah12.thaumcraftclassic.entities.monster;
  * <p>Original: {@code thaumcraft.common.entities.monster.EntityMindSpider}, 115
  * lines (read whole, {@code reference/decompiled/thaumcraft/thaumcraft/common/
  * entities/monster/EntityMindSpider.java}), {@code extends EntitySpider}. Ledger
- * row {@code docs/content-mapping.csv} line 288 ({@code Thaumcraft:MindSpider} →
+ * row {@code docs/content-mapping.csv} line 322 ({@code Thaumcraft:MindSpider} →
  * {@code thaumcraft:mindspider}); the line number is the current one on
  * {@code origin/main}, the ledger id is the contract.</p>
  *
