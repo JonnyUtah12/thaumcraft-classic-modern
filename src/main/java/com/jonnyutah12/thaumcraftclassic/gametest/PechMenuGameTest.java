@@ -32,13 +32,13 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
  * rule, the dice predicate from {@code GuiPech.java:38-39} synced over a
  * data slot, the original's shift-click ranges, the close-drop stamped with the
  * {@code "PechDrop"} owner, the tamed-only open gate and validity, and — for the
- * unported loot-table trade roll — silence: no invented contents (BD-71).
+ * unported loot-table trade roll — silence: no invented contents (BD-73).
  *
  * <p>What these probes do <b>not</b> claim: rendered pixels (the game-test
  * server is a dedicated server and never fires {@code RegisterMenuScreensEvent}
  * — the 175x232 window, the (67,24) 25x25 dice rect and the geometry are pinned
  * by {@code PechLayoutTest} + {@code PechGuiParityTest}), and no trade roll
- * (the {@code ChestGenHooks} engine is D-007 / BD-71).</p>
+ * (the {@code ChestGenHooks} engine is D-007 / BD-73).</p>
  */
 @GameTestHolder(ThaumcraftClassic.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -192,7 +192,7 @@ public final class PechMenuGameTest {
         helper.assertTrue(!pech.openTradeGui(player), "a sneaking player opens no window (:695)");
         player.setShiftKeyDown(false);
         player.getInventory().setItem(0, new ItemStack(Items.NAME_TAG));
-        helper.assertTrue(!pech.openTradeGui(player), "the name-tag stand-in opens no window (:695, BD-71)");
+        helper.assertTrue(!pech.openTradeGui(player), "the name-tag stand-in opens no window (:695, BD-73)");
         player.getInventory().setItem(0, ItemStack.EMPTY);
         helper.assertTrue(pech.openTradeGui(player), "a tamed pech opens the window (:697)");
         // NOT asserted: the opened container on the mock player. The golem lane measured this
@@ -214,7 +214,7 @@ public final class PechMenuGameTest {
         helper.succeed();
     }
 
-    /** BD-71 — the dice click invents nothing: no roll, no contents, no consumption. */
+    /** BD-73 — the dice click invents nothing: no roll, no contents, no consumption. */
     @GameTest(template = "empty")
     public static void pechDiceClickInventsNothing(final GameTestHelper helper) {
         final EntityPech pech = tamedPech(helper);
@@ -222,7 +222,7 @@ public final class PechMenuGameTest {
         final PechMenu menu = new PechMenu(0, player.getInventory(), pech);
         menu.slots.get(0).set(new ItemStack(Items.DIAMOND, 4));
         helper.assertTrue(!menu.clickMenuButton(player, PechMenu.DICE_BUTTON),
-                "the roll is the unported ChestGenHooks engine — no button is accepted (BD-71)");
+                "the roll is the unported ChestGenHooks engine — no button is accepted (BD-73)");
         helper.assertTrue(menu.getItems().get(0).getCount() == 4, "the offer is not consumed");
         for (int a = 1; a < 5; a++) {
             helper.assertTrue(menu.getItems().get(a).isEmpty(), "no contents are invented into the output grid");

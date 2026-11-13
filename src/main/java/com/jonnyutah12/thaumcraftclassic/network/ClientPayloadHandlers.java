@@ -29,6 +29,7 @@ import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXInfusionSourcePayl
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXShieldPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXSonicPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXVisDrainPayload;
+import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXWardBlockPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXWispZapPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXZapPayload;
 
@@ -177,6 +178,10 @@ final class ClientPayloadHandlers {
 
     static void handleFxShield(final FXShieldPayload payload) {
         ClientEffectHooks.fxShield(payload.sourceEntityId(), payload.targetEntityId());
+    }
+
+    static void handleWardBlock(final FXWardBlockPayload payload) {
+        ClientEffectHooks.wardBlock(payload);
     }
 
     static void handleFxSonic(final FXSonicPayload payload) {

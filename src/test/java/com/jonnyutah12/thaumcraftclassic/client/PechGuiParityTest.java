@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@code GolemLayoutTest}/{@code GolemGuiParityTest} precedent). No rendered
  * pixels are claimed; the original's {@code gui_pech.png} (176,0) dice sprite
  * ships only in the asset-overlay build (D-004 / BD-37), so the shipped screen
- * draws the rect as a framed well (BD-71).</p>
+ * draws the rect as a framed well (BD-73).</p>
  */
 class PechGuiParityTest {
 

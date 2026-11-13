@@ -42,6 +42,39 @@ public final class TcEffects {
         return spawn(level, TcFxPlans.blockBubble(pos, color, rand, particleSetting));
     }
 
+    /**
+     * The original's ward-flash senders: the ward blocks' hit effects call
+     * {@code ClientProxy.blockWard} (ClientProxy.java:980-984) with the block,
+     * the hit face and the {@code (hitVec - pos)} triple, which spawns exactly
+     * one hexagram on the block centre (TC-M7-02-c-s-f4). The 1.21.1 sender is
+     * the client block extension {@link TcWardHitEffects}.
+     *
+     * @return the number of particles requested (always one; the plan has no
+     *         particle-setting gate — the original has none either)
+     */
+    public static int wardBlock(final Level level, final BlockPos pos,
+            final net.minecraft.core.Direction side, final double f, final double f1,
+            final double f2, final RandomSource rand) {
+        return spawn(level, TcFxPlans.wardBlock(pos, side, f, f1, f2, rand));
+    }
+
+    /**
+     * The original's {@code PacketFXShield} client handler: the shield runes
+     * riding the source entity, aimed at the target, with the
+     * {@code -1 / -2 / -3} sentinel branches (PacketFXShield.java:38-79,
+     * TC-M7-02-c-s-f4).
+     *
+     * @param cultist the original's {@code instanceof EntityCultist} exclusion
+     *                of the mob branch (FXShieldRunes.java:61); no cultist
+     *                entity is landed, so senders pass false
+     * @return the number of runes the handler asked for (0 - 2)
+     */
+    public static int shieldRunes(final Level level, final int sourceEntityId,
+            final int targetEntityId, final boolean cultist, final RandomSource rand) {
+        return spawn(level, TcFxPlans.shieldRunes(level, sourceEntityId, targetEntityId,
+                cultist, rand));
+    }
+
     /** Spawns every planned particle and returns how many were requested. */
     public static int spawn(final Level level, final List<ParticleSpawn> plan) {
         for (final ParticleSpawn spawn : plan) {

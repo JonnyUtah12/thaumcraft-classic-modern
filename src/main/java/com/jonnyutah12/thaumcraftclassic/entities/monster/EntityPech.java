@@ -1096,7 +1096,7 @@ public class EntityPech extends Monster implements RangedAttackMob {
         // || !(mainhand instanceof ItemNameTag))`; 1.7.10's ItemNameTag is not ported,
         // so vanilla's NAME_TAG stands in — the same stand-in the trading branch below
         // uses, and the same shape the golem lane records for its unported
-        // ItemWandCasting exclusion (BD-38). Recorded as BD-71.
+        // ItemWandCasting exclusion (BD-38). Recorded as BD-73.
         if (openTradeGui(player)) {
             return InteractionResult.SUCCESS;                                                // :697
         }

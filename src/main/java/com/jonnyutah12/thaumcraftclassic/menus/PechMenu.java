@@ -60,7 +60,7 @@ import net.minecraft.world.item.component.CustomData;
  * the live entity. The port therefore computes the predicate on the server and
  * mirrors it as a 1-int {@link ContainerData} slot: the client's copy is the
  * server's answer, the screen never touches the entity, and a dedicated-server
- * probe can measure the same bit (BD-71).</p>
+ * probe can measure the same bit (BD-73).</p>
  *
  * <p><b>The trade roll itself is not implemented, and no stand-in is
  * invented.</b> The original's dice click ({@code ContainerPech.java:64-70} →
@@ -71,7 +71,7 @@ import net.minecraft.world.item.component.CustomData;
  * ({@code :73-81} reads it), the scam roll that untames the pech
  * ({@code :92-96}) and {@code EntityPech.payToChest}. None of that is ported, so
  * {@link #clickMenuButton} accepts no button and the output grid stays manual
- * (BD-71). The 25x25 dice overlay ships as a framed vanilla-toned well — the
+ * (BD-73). The 25x25 dice overlay ships as a framed vanilla-toned well — the
  * original's {@code gui_pech.png} (176,0) sprite is an asset-overlay-only sheet
  * (D-004 / BD-37).</p>
  */
@@ -194,7 +194,7 @@ public class PechMenu extends AbstractContainerMenu {
      * over {@code EntityPech.tradeInventory} ({@code EntityPech.java:746-830}),
      * pays out of the pech's loot pack and can untame the pech on the scam roll.
      * None of that is ported, so no button is accepted and no roll is invented
-     * (BD-71). The client screen still plays the pech_dice cue the original plays
+     * (BD-73). The client screen still plays the pech_dice cue the original plays
      * client-side ({@code GuiPech.java:63,67-80}).
      */
     @Override
@@ -259,7 +259,7 @@ public class PechMenu extends AbstractContainerMenu {
             final ItemEntity dropped = playerLeaving.drop(stack, false);
             if (dropped != null) {
                 final CompoundTag owner = new CompoundTag();
-                owner.putString("PechDropOwner", DROP_OWNER);                              // :211, BD-71 key
+                owner.putString("PechDropOwner", DROP_OWNER);                              // :211, BD-73 key
                 dropped.getItem().set(DataComponents.ENTITY_DATA, CustomData.of(owner));
             }
         }

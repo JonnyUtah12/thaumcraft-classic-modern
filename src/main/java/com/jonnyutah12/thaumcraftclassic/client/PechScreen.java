@@ -24,7 +24,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * 142 hotbar ({@code ContainerPech.java:48}) and the ~76 px below them carried
  * only the original's sheet art. 1.21.1 draws the vanilla panel at the original
  * coordinates (D-004 / BD-37), so the port's panel is the vanilla height derived
- * from the 84 px player grid, and the sheet-only art region is BD-71.</p>
+ * from the 84 px player grid, and the sheet-only art region is BD-73.</p>
  *
  * <p>The 25x25 dice overlay sits at (67, 24) ({@code GuiPech.java:40}), blitted
  * in the original from {@code textures/gui/gui_pech.png} at sheet coordinate
@@ -39,7 +39,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * {@code 0.95 + rand*0.1} pitch) and sends the original's button id 0
  * ({@code GuiPech.java:62} → {@code ContainerPech.java:64-70}). The server side
  * of that click is the unported loot-table roll ({@code ContainerPech.java:83-159},
- * D-007), so nothing is consumed and no contents appear (BD-71).</p>
+ * D-007), so nothing is consumed and no contents appear (BD-73).</p>
  *
  * <p>{@code GuiPech.java:24-25} — {@code drawScreen}'s foreground layer is empty:
  * the original draws <b>no</b> title and no "Inventory" label, because both are
@@ -93,7 +93,7 @@ public class PechScreen extends AbstractContainerScreen<PechMenu> {
         // GuiPech.java:34-40 — the 25x25 dice well at (67, 24). The original blits
         // gui_pech.png (176, 0), an overlay-only sheet (D-004 / BD-37), and only while
         // the predicate holds; the landed frame is the vanilla-toned well, lit by the
-        // synced predicate bit (BD-71).
+        // synced predicate bit (BD-73).
         ScreenPanel.frameArea(guiGraphics, left, top, ContainerLayout.PECH_DICE_X, ContainerLayout.PECH_DICE_Y,
                 ContainerLayout.PECH_DICE_SIZE, ContainerLayout.PECH_DICE_SIZE);
         if (this.menu.diceActive()) {
@@ -110,7 +110,7 @@ public class PechScreen extends AbstractContainerScreen<PechMenu> {
      * 0.5 volume, {@code 0.95 + rand*0.1} pitch). The landed screen gates on the
      * synced predicate bit (the server's copy of the same predicate) and sends the
      * same button id; the server accepts no roll, so the sound and the lit well
-     * are the shipped half of the original's click (BD-71).
+     * are the shipped half of the original's click (BD-73).
      */
     @Override
     public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {

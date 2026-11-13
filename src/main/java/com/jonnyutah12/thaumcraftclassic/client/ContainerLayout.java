@@ -329,7 +329,7 @@ public final class ContainerLayout {
     // window is the one authored panel that is NOT the 176-wide vanilla width; the
     // 232 height is the window height (the art region below the hotbar carries no
     // slots), and 1.21.1 draws it with the vanilla panel at these coordinates
-    // (D-004 / BD-37; the pech-specific substitutions are BD-71).
+    // (D-004 / BD-37; the pech-specific substitutions are BD-73).
     // ---------------------------------------------------------------------------
 
     /** {@code GuiPech.java:19} — {@code field_146999_f = 175}. */
@@ -350,7 +350,7 @@ public final class ContainerLayout {
      * {@code GuiPech.java:40} — the 25x25 dice overlay at {@code (67, 24)}, blitted
      * from sheet coordinate {@code (176, 0)} of {@code textures/gui/gui_pech.png}.
      * The sheet ships only in the asset-overlay build (D-004), so the landed screen
-     * draws the same rect as a framed vanilla-toned box (BD-71); the click rect and
+     * draws the same rect as a framed vanilla-toned box (BD-73); the click rect and
      * the predicate are the original's, at these coordinates.
      */
     public static final int PECH_DICE_X = 67;

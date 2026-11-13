@@ -75,7 +75,7 @@ public final class ModClientScreens {
         // TC-M7-04-m3-a: the golem (gui_id 0, GuiGolem) over the golem-content branch.
         event.register(CatalogGolems.GUI_GOLEM.get(), GolemScreen::new);
         // TC-M7-04-m3-b: the pech trade window (gui_id 1, GuiPech) — the 175x232
-        // panel, the 2x2 output grid and the conditional dice overlay (BD-71).
+        // panel, the 2x2 output grid and the conditional dice overlay (BD-73).
         event.register(CatalogPech.GUI_PECH.get(), PechScreen::new);
     }
 

@@ -55,7 +55,7 @@ public class AIPechItemEntityGoto extends Goal {
     // 1.21.1 reserves the entity-level "Owner" key for a UUID and rejects a string there
     //    at ItemEntity save (IllegalStateException "Missing id for entity", measured on the
     //    first pech-drop gate). The literal rides a non-reserved key; value semantics are
-    //    unchanged (BD-71).
+    //    unchanged (BD-73).
     static final String OWNER_KEY = "PechDropOwner";
 
     private final EntityPech pech;
