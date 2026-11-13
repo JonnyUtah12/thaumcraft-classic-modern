@@ -1214,6 +1214,51 @@ public final class ContainerLayout {
     public static boolean borePickaxeNearBroken(final int damage, final int maxDamage) {
         return damage + 1 >= maxDamage;
     }
+
+    // ---------------------------------------------------------------------------
+    // Pech window (TC-M7-04-m3-b, gui_id 1 / thaumcraft:gui_pech).
+    //
+    // Every figure is `client/gui/GuiPech.java` + `common/entities/ContainerPech.java`
+    // (the decompiled originals, 81 and 283 lines). The panel is 175x232 —
+    // GuiPech.java:19-20 (`field_146999_f = 175`, `field_147000_g = 232`) — so this
+    // window is the one authored panel that is NOT the 176-wide vanilla width; the
+    // 232 height is the window height (the art region below the hotbar carries no
+    // slots), and 1.21.1 draws it with the vanilla panel at these coordinates
+    // (D-004 / BD-37; the pech-specific substitutions are BD-73).
+    // ---------------------------------------------------------------------------
+
+    /** {@code GuiPech.java:19} — {@code field_146999_f = 175}. */
+    public static final int PECH_WINDOW_WIDTH = 175;
+    /** {@code GuiPech.java:20} — {@code field_147000_g = 232}. */
+    public static final int PECH_WINDOW_HEIGHT = 232;
+    /** {@code ContainerPech.java:33} — the offered stack at (36, 29). */
+    public static final int PECH_OFFER_X = 36;
+    public static final int PECH_OFFER_Y = 29;
+    /** {@code ContainerPech.java:37} — the 2x2 output grid, `106 + 18*j`, `20 + 18*i`. */
+    public static final int PECH_OUTPUT_LEFT = 106;
+    public static final int PECH_OUTPUT_TOP = 20;
+    public static final int PECH_OUTPUT_PITCH = 18;
+    /** {@code ContainerPech.java:43,48} — the player grid at 84, hotbar at 142. */
+    public static final int PECH_PLAYER_GRID_TOP = 84;
+    public static final int PECH_HOTBAR_TOP = 142;
+    /**
+     * {@code GuiPech.java:40} — the 25x25 dice overlay at {@code (67, 24)}, blitted
+     * from sheet coordinate {@code (176, 0)} of {@code textures/gui/gui_pech.png}.
+     * The sheet ships only in the asset-overlay build (D-004), so the landed screen
+     * draws the same rect as a framed vanilla-toned box (BD-73); the click rect and
+     * the predicate are the original's, at these coordinates.
+     */
+    public static final int PECH_DICE_X = 67;
+    public static final int PECH_DICE_Y = 24;
+    public static final int PECH_DICE_SIZE = 25;
+    /** The output-slot x of grid cell (row i, column j) — {@code ContainerPech.java:37}. */
+    public static int pechOutputX(final int column) {
+        return PECH_OUTPUT_LEFT + PECH_OUTPUT_PITCH * column;
+    }
+    /** The output-slot y of grid cell (row i, column j) — {@code ContainerPech.java:37}. */
+    public static int pechOutputY(final int row) {
+        return PECH_OUTPUT_TOP + PECH_OUTPUT_PITCH * row;
+    }
     private ContainerLayout() {
     }
 }

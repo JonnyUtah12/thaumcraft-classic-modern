@@ -8,6 +8,7 @@ import com.jonnyutah12.thaumcraftclassic.menus.ArcaneBoreMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.DeconstructionTableMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.HandMirrorMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.MagicBoxMenu;
+import com.jonnyutah12.thaumcraftclassic.menus.PechMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.ResearchTableMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.SpaMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.ThaumatoriumMenu;
@@ -100,6 +101,14 @@ class MenuTypeScreenCoverageTest {
                 AlchemyFurnaceMenu.class, "gui_alchemy_furnace"));
         SCREENS.put(ArcaneBoreScreen.class, new ScreenUnderTest("CatalogDevices", "MENU_ARCANE_BORE",
                 ArcaneBoreMenu.class, "gui_arcane_bore"));
+        // TC-M7-04-m3-b (t_63e11e8c): PechScreen extends AbstractContainerScreen<PechMenu>
+        // directly, so it takes the strict contract this test enforces. The golem and
+        // research-note screens stay out of SCREENS: their superclass identity deviates
+        // (BD-49/BD-70, rows in docs/BEHAVIORAL_DEVIATIONS.md) and the strict
+        // everyScreenIsAContainerScreenForItsOwnMenu assertion is exactly where that
+        // deviation lands - their parity lives in GolemMenuGameTest / GolemGuiParityTest.
+        SCREENS.put(PechScreen.class, new ScreenUnderTest("CatalogPech", "GUI_PECH",
+                PechMenu.class, "gui_pech"));
 
         EXPECTED_HOLDERS.put("CatalogTrinketsLoot.GUI_TRUNK", "gui_trunk");
         EXPECTED_HOLDERS.put("CatalogTrinketsLoot.GUI_HAND_MIRROR", "gui_hand_mirror");
@@ -111,6 +120,7 @@ class MenuTypeScreenCoverageTest {
         EXPECTED_HOLDERS.put("CatalogFurniture.MENU_RESEARCH_TABLE", "gui_research_table");
         EXPECTED_HOLDERS.put("CatalogEssentiaStorage.MENU_ALCHEMY_FURNACE", "gui_alchemy_furnace");
         EXPECTED_HOLDERS.put("CatalogDevices.MENU_ARCANE_BORE", "gui_arcane_bore");
+        EXPECTED_HOLDERS.put("CatalogPech.GUI_PECH", "gui_pech");
     }
 
     private record ScreenUnderTest(String catalog, String holder, Class<?> menu, String id) {
@@ -185,7 +195,10 @@ class MenuTypeScreenCoverageTest {
                     "a registered menu type with no screen registration: "
                             + expected.catalog() + "." + expected.holder());
         }
-        assertEquals(10, SCREENS.size(), "the ten gui rows whose menus exist today: main\'s eight (five TC-M7-04-s rows, the workbench, the thaumatorium, the research table) plus the two device machines TC-M7-04-m1 lands (gui_alchemy_furnace = original gui_id 9, gui_arcane_bore = gui_id 15)");
+        assertEquals(11, SCREENS.size(), "the eleven gui rows whose menus have a screen on this tree: the five "
+                + "TC-M7-04-s rows, the workbench, the thaumatorium, the research table, the two device machines "
+                + "TC-M7-04-m1 lands (gui_alchemy_furnace = original gui_id 9, gui_arcane_bore = gui_id 15) and "
+                + "the pech trade window TC-M7-04-m3-b lands (gui_pech = original gui_id 1)");
     }
 
     @Test
@@ -203,6 +216,8 @@ class MenuTypeScreenCoverageTest {
                 "CatalogEssentiaStorage", declared);
         collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogDevices.java",
                 "CatalogDevices", declared);
+        collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogPech.java",
+                "CatalogPech", declared);
         assertEquals(EXPECTED_HOLDERS, declared,
                 "the catalogs' MenuType declarations and this test's expectations must agree; a new menu type "
                         + "needs a screen and an entry here");
@@ -242,7 +257,11 @@ class MenuTypeScreenCoverageTest {
         // call handleInventoryButtonClick(containerId, 1).
         assertEquals(1, DeconstructionTableScreen.BUTTON_COLLECT_ASPECT);
         assertEquals(1, SpaScreen.BUTTON_TOGGLE_MIX);
-        for (final Class<?> screen : new Class<?>[] {DeconstructionTableScreen.class, SpaScreen.class}) {
+        // GuiPech.java:62 sends handleInventoryButtonClick(containerId, 0) - the dice is
+        // button 0, NOT the trunk/spa id 1 (run 418's audit of the WIP, kept in the landing).
+        assertEquals(0, PechMenu.DICE_BUTTON);
+        for (final Class<?> screen : new Class<?>[] {DeconstructionTableScreen.class, SpaScreen.class,
+                PechScreen.class}) {
             final String source = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/client/"
                     + screen.getSimpleName() + ".java");
             assertTrue(source.contains("handleInventoryButtonClick(this.menu.containerId,"),

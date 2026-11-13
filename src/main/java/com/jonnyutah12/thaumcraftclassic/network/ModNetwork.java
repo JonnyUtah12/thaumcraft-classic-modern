@@ -36,6 +36,7 @@ import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXInfusionSourcePayl
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXShieldPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXSonicPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXVisDrainPayload;
+import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXWardBlockPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXWispZapPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXZapPayload;
 import io.netty.buffer.ByteBuf;
@@ -143,6 +144,7 @@ public final class ModNetwork {
         toClient(registrar, FXEssentiaSourcePayload.TYPE, FXEssentiaSourcePayload.STREAM_CODEC, ClientPayloadHandlers::handleFxEssentiaSource);
         toClient(registrar, FXInfusionSourcePayload.TYPE, FXInfusionSourcePayload.STREAM_CODEC, ClientPayloadHandlers::handleFxInfusionSource);
         toClient(registrar, FXShieldPayload.TYPE, FXShieldPayload.STREAM_CODEC, ClientPayloadHandlers::handleFxShield);
+        toClient(registrar, FXWardBlockPayload.TYPE, FXWardBlockPayload.STREAM_CODEC, ClientPayloadHandlers::handleWardBlock);
         toClient(registrar, FXSonicPayload.TYPE, FXSonicPayload.STREAM_CODEC, ClientPayloadHandlers::handleFxSonic);
         toClient(registrar, FXVisDrainPayload.TYPE, FXVisDrainPayload.STREAM_CODEC, ClientPayloadHandlers::handleFxVisDrain);
         toClient(registrar, FXWispZapPayload.TYPE, FXWispZapPayload.STREAM_CODEC, ClientPayloadHandlers::handleFxWispZap);

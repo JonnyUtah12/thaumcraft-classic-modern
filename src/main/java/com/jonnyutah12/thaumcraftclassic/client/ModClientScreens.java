@@ -6,6 +6,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogGolems;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogPech;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogThaumatorium;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.M3ResearchContent;
@@ -95,6 +96,9 @@ public final class ModClientScreens {
         // TC-M7-04-m1, the device machines (gui_id 9 and 15):
         event.register(CatalogEssentiaStorage.MENU_ALCHEMY_FURNACE.get(), AlchemyFurnaceScreen::new);
         event.register(CatalogDevices.MENU_ARCANE_BORE.get(), ArcaneBoreScreen::new);
+        // TC-M7-04-m3-b: the pech trade window (gui_id 1, GuiPech) — the 175x232
+        // panel, the 2x2 output grid and the conditional dice overlay (BD-73).
+        event.register(CatalogPech.GUI_PECH.get(), PechScreen::new);
     }
 
     private ModClientScreens() {
