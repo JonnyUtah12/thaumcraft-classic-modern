@@ -53,4 +53,13 @@ public interface TrunkHost {
 
     /** Original stay-toggle button: flip the follow/stay mode. */
     void toggleTrunkStay();
+
+    /**
+     * Original {@code EntityTravelingTrunk.getStay()}: the current follow
+     * mode. The GUI draws its 10x10 texel at {@code (112,0)} only while this
+     * is true, and its click text announces the mode the toggle is about to
+     * produce (TC-M7-04-m4; the menu syncs it to the client through a data
+     * slot, so the client needs it readable on the entity it holds).
+     */
+    boolean trunkStay();
 }

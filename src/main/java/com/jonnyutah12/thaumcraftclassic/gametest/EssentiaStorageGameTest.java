@@ -411,9 +411,12 @@ public final class EssentiaStorageGameTest {
 
         // The real break path: BlockJar.getDrops -> the filled-jar item.
         helper.getLevel().destroyBlock(pos, true, null);
-        final List<ItemStack> filled = dropsAround(helper, pos);
+        final List<ItemStack> filledScan = dropsAround(helper, pos);
+        final List<ItemStack> filled = ownedBy(filledScan, CatalogEssentiaStorage.ITEM_JAR_FILLED.get());
         helper.assertTrue(filled.size() == 1,
-                "breaking a filled jar drops exactly one item, got " + filled.size() + " " + filled);
+                "breaking a filled jar drops exactly one filled-jar item, got " + filled.size() + " " + filled
+                        + " (foreign stacks in the scan box: "
+                        + foreignTo(filledScan, CatalogEssentiaStorage.ITEM_JAR_FILLED.get()) + ")");
         final ItemStack drop = filled.get(0);
         helper.assertTrue(drop.is(CatalogEssentiaStorage.ITEM_JAR_FILLED.get()),
                 "a filled jar drops the filled-jar item, not the block, got " + drop);
@@ -438,9 +441,12 @@ public final class EssentiaStorageGameTest {
         helper.assertTrue(emptyJar != null && emptyJar.amount == 0 && emptyJar.aspectFilter == null,
                 "the fresh cell's void jar is empty and unlabelled");
         helper.getLevel().destroyBlock(emptyPos, true, null);
-        final List<ItemStack> plain = dropsAround(helper, emptyPos);
+        final List<ItemStack> plainScan = dropsAround(helper, emptyPos);
+        final List<ItemStack> plain = ownedBy(plainScan, CatalogEssentiaStorage.ITEM_JAR.get());
         helper.assertTrue(plain.size() == 1,
-                "an empty jar drops exactly one item, got " + plain.size() + " " + plain);
+                "an empty jar drops exactly one jar block item, got " + plain.size() + " " + plain
+                        + " (foreign stacks in the scan box: "
+                        + foreignTo(plainScan, CatalogEssentiaStorage.ITEM_JAR.get()) + ")");
         helper.assertTrue(plain.get(0).is(CatalogEssentiaStorage.ITEM_JAR.get()),
                 "an empty void jar drops the jar block item, got " + plain.get(0));
         helper.assertTrue(VariantStateItems.applyVariant(CatalogEssentiaStorage.jarState(true), plain.get(0))
@@ -457,10 +463,13 @@ public final class EssentiaStorageGameTest {
         helper.setBlock(12, 1, 1, CatalogEssentiaStorage.BLOCK_ARCANE_FURNACE.get().defaultBlockState()
                 .setValue(BlockArcaneFurnace.VARIANT, BlockArcaneFurnace.VARIANT_NOZZLE));
         helper.getLevel().destroyBlock(furnacePos, true, null);
-        final List<ItemStack> furnaceDrops = dropsAround(helper, furnacePos);
+        final List<ItemStack> furnaceScan = dropsAround(helper, furnacePos);
+        final List<ItemStack> furnaceDrops = ownedBy(furnaceScan, CatalogEssentiaStorage.ITEM_ARCANE_FURNACE.get());
         helper.assertTrue(furnaceDrops.size() == 1
                         && furnaceDrops.get(0).is(CatalogEssentiaStorage.ITEM_ARCANE_FURNACE.get()),
-                "a broken arcane furnace drops itself, got " + furnaceDrops);
+                "a broken arcane furnace drops itself, got " + furnaceDrops
+                        + " (foreign stacks in the scan box: "
+                        + foreignTo(furnaceScan, CatalogEssentiaStorage.ITEM_ARCANE_FURNACE.get()) + ")");
         helper.assertTrue(VariantStateItems.applyVariant(
                         CatalogEssentiaStorage.BLOCK_ARCANE_FURNACE.get().defaultBlockState(), furnaceDrops.get(0))
                         .getValue(BlockArcaneFurnace.VARIANT) == BlockArcaneFurnace.VARIANT_NOZZLE,
@@ -474,6 +483,28 @@ public final class EssentiaStorageGameTest {
         final AABB box = new AABB(pos).inflate(2.0D);
         return helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box)
                 .stream().map(net.minecraft.world.entity.item.ItemEntity::getItem).toList();
+    }
+
+    /** The subset of a drop scan this probe owns. An ItemEntity scan over an
+     *  inflated box reads a neighbour pad's stacks once the batch's structure
+     *  packing shifts them into range - measured 2026-11-04 on the ore-drop
+     *  probe ("got 2 stacks [1 minecraft:wheat_seeds, 1
+     *  thaumcraft:blockcustomore]") and 2026-11-13 on this class in the
+     *  NO-CURIOS leg ("a broken tube drops the tube block item, got [1
+     *  minecraft:wheat_seeds, 1 thaumcraft:blocktube]", CI run 43336961023 on
+     *  main de3b988c). So assert on the owned subset and NAME the foreign
+     *  stacks in the message: contamination stays visible, and the probe stops
+     *  being a hostage of how many templates the batch happens to carry. */
+    private static List<ItemStack> ownedBy(final List<ItemStack> drops,
+                                           final net.minecraft.world.item.Item owned) {
+        return drops.stream().filter(stack -> stack.is(owned)).toList();
+    }
+
+    /** The stacks in the scan box that belong to no probe here - the
+     *  contamination, kept in the failure message on purpose. */
+    private static List<ItemStack> foreignTo(final List<ItemStack> drops,
+                                             final net.minecraft.world.item.Item owned) {
+        return drops.stream().filter(stack -> !stack.is(owned)).toList();
     }
 
     // --- ids, rows, and the bonus table in the registry -------------------

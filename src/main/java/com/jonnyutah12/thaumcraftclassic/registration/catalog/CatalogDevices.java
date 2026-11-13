@@ -10,6 +10,7 @@ import com.jonnyutah12.thaumcraftclassic.blocks.BlockStoneDeviceItem;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockWoodenDevice;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockWoodenDeviceItem;
 import com.jonnyutah12.thaumcraftclassic.blocks.DeviceTileFactory;
+import com.jonnyutah12.thaumcraftclassic.menus.ArcaneBoreMenu;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileArcaneBore;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileArcaneBoreBase;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileArcaneLamp;
@@ -21,10 +22,12 @@ import com.jonnyutah12.thaumcraftclassic.tiles.TileNitor;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileOwned;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileSensor;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -81,6 +84,21 @@ public final class CatalogDevices {
             DeferredRegister.createItems(ThaumcraftClassic.MOD_ID);
     private static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, ThaumcraftClassic.MOD_ID);
+
+    /**
+     * TC-M7-04-m1: the arcane bore window. The original opened it as
+     * {@code gui_id} 15 ({@code GuiArcaneBore}, ClientProxy:381); the port ids
+     * GUI menu types by their content-mapping gui id, the convention the
+     * furniture catalog set with {@code gui_decon_table}/{@code gui_spa}.
+     */
+    public static final DeferredRegister<MenuType<?>> MENUS =
+            DeferredRegister.create(Registries.MENU, ThaumcraftClassic.MOD_ID);
+    public static final DeferredHolder<MenuType<?>, MenuType<ArcaneBoreMenu>> MENU_ARCANE_BORE =
+            MENUS.register("gui_arcane_bore", () -> IMenuTypeExtension.create(
+                    (windowId, inventory, buf) -> new ArcaneBoreMenu(
+                            windowId, inventory,
+                            (TileArcaneBore) inventory.player.level()
+                                    .getBlockEntity(buf.readBlockPos()))));
 
     // --- device blocks (ids and meta ranges verbatim from the original) -----
 
@@ -175,6 +193,7 @@ public final class CatalogDevices {
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
         BLOCK_ENTITY_TYPES.register(modEventBus);
+        MENUS.register(modEventBus);
         modEventBus.addListener((final RegisterEvent event) -> {
             if (event.getRegistryKey().equals(Registries.BLOCK)) {
                 wireDeviceTiles();

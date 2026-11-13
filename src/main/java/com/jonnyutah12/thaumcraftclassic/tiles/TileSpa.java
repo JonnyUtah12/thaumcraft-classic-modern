@@ -66,6 +66,35 @@ public class TileSpa extends BlockEntity implements WorldlyContainer, com.jonnyu
         return this.tankAmount;
     }
 
+    /**
+     * The tank's 5000 mB capacity (the original tank size) — the GUI needs it
+     * to scale the fluid column, and the spa menu carries it in data slot
+     * {@code SpaMenu.DATA_CAPACITY} (TC-M7-04-m4, BD-17).
+     */
+    public int getTankCapacity() {
+        return TANK_CAPACITY;
+    }
+
+    /**
+     * Apply a mix-state sync from {@code SpaMenu.DATA_MIX}. Only the client's
+     * menu instance calls this (server data slots are read, never written, on
+     * the server), so it carries display state, not gameplay state — the
+     * gameplay flip is {@link #toggleMix()}.
+     */
+    public void setMixFromSync(final boolean mix) {
+        this.mix = mix;
+    }
+
+    /**
+     * Apply a tank sync from {@code SpaMenu.DATA_FLUID_ID} /
+     * {@code SpaMenu.DATA_FLUID_AMOUNT}; client-side display state only
+     * (fills and drains go through {@link #fill}/{@link #drain}).
+     */
+    public void setTankFromSync(@Nullable final ResourceLocation fluid, final int amount) {
+        this.tankFluid = amount > 0 ? fluid : null;
+        this.tankAmount = Math.max(0, amount);
+    }
+
     @Nullable
     public ResourceLocation getTankFluid() {
         return this.tankFluid;

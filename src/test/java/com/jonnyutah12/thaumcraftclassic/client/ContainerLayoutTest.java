@@ -1,7 +1,9 @@
 package com.jonnyutah12.thaumcraftclassic.client;
 
+import net.minecraft.util.Mth;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -150,6 +152,142 @@ class ContainerLayoutTest {
         assertEquals(8, SpaScreen.MIX_SIZE);
     }
 
+    // -------------------------------- arcane workbench (TC-M7-04-m2, gui_id 13)
+
+    @Test
+    void workbenchPanelIsTheOriginals190By234() {
+        // field_146999_f is xSize and field_147000_g is ySize
+        // (reference/mcp-mappings/fields_1.7.10_mcp_stable_11.csv:648-649), and
+        // GuiArcaneWorkbench's constructor assigns 190 to the first, 234 to the
+        // second. Read the pair backwards and the panel comes out 234 wide — which
+        // is how this slice's first pass drew it, and why the assertion names the CSV.
+        assertEquals(190, ContainerLayout.WB_PANEL_WIDTH,
+                "xSize — vanilla's 176 plus a 14 px strip");
+        assertEquals(234, ContainerLayout.WB_PANEL_HEIGHT, "ySize — the height the original blits");
+        assertEquals(234, ContainerLayout.panelHeight(ContainerLayout.WB_PLAYER_GRID_TOP),
+                "the port derives its height from the original's 151 px player grid: 138 + 96");
+        assertEquals(ContainerLayout.WB_PANEL_HEIGHT, ContainerLayout.panelHeight(ContainerLayout.WB_PLAYER_GRID_TOP),
+                "the derived height lands on the original's own ySize, so the port draws the original's rect");
+        assertEquals(0, ContainerLayout.WB_PLAYER_PIECE_X,
+                "the vanilla 176 px player piece sits at x=0 so the slots at x=16 keep vanilla's inset");
+        assertTrue(ContainerLayout.WB_PANEL_WIDTH - ContainerLayout.PANEL_WIDTH == 14,
+                "the strip ScreenPanel fills beside the player piece is 190 - 176 = 14 px");
+    }
+
+    @Test
+    void theOriginalsOwnBlitCoversItsHotbarRow() {
+        // The original blits (xSize, ySize) = (190, 234); its hotbar sits at
+        // y = 209 and is 18 tall, so 227 <= 234: the original's art covers its own
+        // hotbar, and the port's 234-derived height puts every row on screen too.
+        assertTrue(ContainerLayout.WB_HOTBAR_TOP + ContainerLayout.SLOT_FRAME <= ContainerLayout.WB_PANEL_HEIGHT,
+                "hotbar bottom 227 must sit inside the original's 234 px ySize");
+        assertTrue(ContainerLayout.WB_PLAYER_GRID_X + 9 * ContainerLayout.SLOT_FRAME <= ContainerLayout.WB_PANEL_WIDTH,
+                "the 176 px player row must sit inside the original's 190 px xSize");
+    }
+
+    @Test
+    void workbenchSlotsUseTheOriginalsAnchorsAndPitch() {
+        assertEquals(40, ContainerLayout.workbenchGridX(0));
+        assertEquals(64, ContainerLayout.workbenchGridX(1), "the original's grid pitch is 24, not vanilla's 18");
+        assertEquals(88, ContainerLayout.workbenchGridX(2));
+        assertEquals(40, ContainerLayout.workbenchGridY(0));
+        assertEquals(64, ContainerLayout.workbenchGridY(1));
+        assertEquals(88, ContainerLayout.workbenchGridY(2));
+        assertEquals(160, ContainerLayout.WB_RESULT_X);
+        assertEquals(64, ContainerLayout.WB_RESULT_Y);
+        assertEquals(160, ContainerLayout.WB_WAND_X);
+        assertEquals(24, ContainerLayout.WB_WAND_Y);
+        assertEquals(16, ContainerLayout.workbenchPlayerX(0));
+        assertEquals(160, ContainerLayout.workbenchPlayerX(8));
+        assertEquals(151, ContainerLayout.workbenchPlayerY(0));
+        assertEquals(187, ContainerLayout.workbenchPlayerY(2), "151 + 2*18: the original's pitch here is vanilla's");
+        assertEquals(209, ContainerLayout.WB_HOTBAR_TOP, "the original's hotbar row, 4 px below the player grid");
+    }
+
+    @Test
+    void everyWorkbenchSlotAnchorFitsThePanelItDraws() {
+        final int panelHeight = ContainerLayout.panelHeight(ContainerLayout.WB_PLAYER_GRID_TOP);
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 3; col++) {
+                assertTrue(ContainerLayout.workbenchGridX(col) + ContainerLayout.SLOT_FRAME
+                                <= ContainerLayout.WB_PANEL_WIDTH,
+                        "grid slot (" + row + "," + col + ") inside the 190 px panel");
+                assertTrue(ContainerLayout.workbenchGridY(row) + ContainerLayout.SLOT_FRAME <= panelHeight,
+                        "grid slot (" + row + "," + col + ") inside the panel height");
+            }
+        }
+        for (int col = 0; col < 9; col++) {
+            assertTrue(ContainerLayout.workbenchPlayerX(col) + ContainerLayout.SLOT_FRAME
+                    <= ContainerLayout.WB_PANEL_WIDTH);
+        }
+        assertTrue(ContainerLayout.WB_RESULT_Y + ContainerLayout.SLOT_FRAME <= panelHeight);
+        assertTrue(ContainerLayout.WB_WAND_Y + ContainerLayout.SLOT_FRAME <= panelHeight);
+        assertTrue(ContainerLayout.WB_HOTBAR_TOP + ContainerLayout.SLOT_FRAME <= panelHeight,
+                "the hotbar row is inside the panel the port draws, exactly as the original's own "
+                        + "(xSize, ySize) = (190, 234) blit covers it");
+    }
+
+    @Test
+    void workbenchAspectHexagonIsTheOriginalsSixPoints() {
+        assertArrayEquals(new int[] {72, 24, 24, 72, 120, 120}, ContainerLayout.WB_ASPECT_CENTER_X,
+                "aer, terra, ignis, aqua, ordo, perditio — the order Aspect.getPrimalAspects() walks");
+        assertArrayEquals(new int[] {21, 43, 102, 124, 102, 43}, ContainerLayout.WB_ASPECT_CENTER_Y);
+        assertEquals(16, ContainerLayout.WB_ASPECT_BOX, "UtilsFX.drawTag draws a 16x16 tag at its point");
+        assertEquals(64, ContainerLayout.aspectBoxX(0), "the box is 8 px up-left of the point");
+        assertEquals(13, ContainerLayout.aspectBoxY(0));
+        assertEquals(16, ContainerLayout.aspectBoxX(1));
+        assertEquals(35, ContainerLayout.aspectBoxY(1));
+        assertTrue(ContainerLayout.WB_ASPECT_CENTER_X[5] + ContainerLayout.WB_ASPECT_BOX / 2
+                <= ContainerLayout.WB_PANEL_WIDTH);
+    }
+
+    @Test
+    void workbenchAspectAlphaIsTheOriginalsPulse() {
+        assertEquals(1.0F, ContainerLayout.aspectAlpha(0, 0, true),
+                "an affordable aspect drew at full alpha");
+        assertEquals(0.3F, ContainerLayout.aspectAlpha(0, 0, false), 1e-6,
+                "0.5 + (sin(0/2)*0.2 - 0.2) = 0.3");
+        assertEquals(0.5F + (Mth.sin(11 / 2.0F) * 0.2F - 0.2F),
+                ContainerLayout.aspectAlpha(1, 1, false), 1e-6,
+                "the original's phase is (gameTime + index*10) / 2.0F");
+        for (int time = 0; time < 400; time++) {
+            for (int index = 0; index < 6; index++) {
+                final float alpha = ContainerLayout.aspectAlpha(time, index, false);
+                assertTrue(alpha >= 0.1F - 1e-5F && alpha <= 0.5F + 1e-5F,
+                        "the pulse lives between 0.1 and 0.5, exactly as the original's formula allows");
+            }
+        }
+    }
+
+    @Test
+    void workbenchColourCarriesAlphaAndCostsDivideByTheOriginalsHundred() {
+        assertEquals(0xFFFFFFFF, ContainerLayout.withAlpha(0xFFFFFF, 1.0F));
+        assertEquals(0x00FFFFFF, ContainerLayout.withAlpha(0xFFFFFF, 0.0F));
+        assertEquals(0x80FF0000, ContainerLayout.withAlpha(0xFF0000, 0.5F));
+        assertEquals(0xFF123456, ContainerLayout.withAlpha(0x123456, 2.0F), "alpha is clamped, not wrapped");
+        assertEquals(0x00123456, ContainerLayout.withAlpha(0x123456, -1.0F));
+        assertEquals(100, ContainerLayout.CENTI_VIS_PER_VIS,
+                "the original's * 100 (ItemWandCasting.java:314) — the unit the cost slots travel in");
+        assertEquals(3, ContainerLayout.displayVis(300));
+        assertEquals(0, ContainerLayout.displayVis(99), "the original's integer division");
+    }
+
+    @Test
+    void workbenchNoticeIsTheOriginalsTransformTextAndColour() {
+        assertEquals(168, ContainerLayout.WB_INSUFFICIENT_X);
+        assertEquals(46, ContainerLayout.WB_INSUFFICIENT_Y);
+        assertEquals(0.5F, ContainerLayout.WB_INSUFFICIENT_SCALE, 0.0F, "the original's glScalef(0.5F, 0.5F, 0)");
+        assertEquals(0xFFEE000E, ContainerLayout.WB_INSUFFICIENT_COLOUR,
+                "the original's colour int 15625838, with full alpha for 1.21.1");
+        assertEquals(0xEE000E, ContainerLayout.WB_INSUFFICIENT_COLOUR & 0xFFFFFF);
+        assertEquals(0xA8555555, ContainerLayout.WB_BLOCKED_TINT,
+                "the original's glColor4f(0.33, 0.33, 0.33, 0.66) over the blocked result — 0.66 alpha is 0xA8");
+        assertEquals(0x555555, ContainerLayout.WB_BLOCKED_TINT & 0xFFFFFF, "the grey itself");
+        assertTrue(ContainerLayout.WB_INSUFFICIENT_X < ContainerLayout.WB_PANEL_WIDTH,
+                "the notice is centred on x=168 (the original draws at -width/2 after the translate), "
+                        + "so the anchor itself must sit inside the 190 px panel");
+    }
+
     // ------------------------------------------------------- resources
 
     @Test
@@ -164,6 +302,105 @@ class ContainerLayoutTest {
     void titleLabelsUseTheCratesEightByFourOrigin() {
         assertEquals(8, ContainerLayout.titleLabelX());
         assertEquals(4, ContainerLayout.titleLabelY());
+    }
+
+    // ------------------------------ research table window (TC-M7-04-m2b)
+
+    @Test
+    void researchTablePanelIsTheOriginals255x255() {
+        // GuiResearchTable.java:70-71 — field_146999_f (xSize) = 255 and
+        // field_147000_g (ySize) = 255, the pair the MCP fields CSV names.
+        assertEquals(255, ContainerLayout.RT_PANEL_WIDTH,
+                "the original's xSize (GuiResearchTable.java:70)");
+        assertEquals(255, ContainerLayout.RT_PANEL_HEIGHT,
+                "the original's ySize (GuiResearchTable.java:71)");
+        assertEquals(40, ContainerLayout.RT_PLAYER_PIECE_X,
+                "the player piece blits at (x+40, y+167) (GuiResearchTable.java:231)");
+        assertEquals(48, ContainerLayout.RT_PLAYER_GRID_X,
+                "the player grid starts at 48 (ContainerResearchTable.java:30)");
+        assertEquals(175, ContainerLayout.RT_PLAYER_GRID_TOP,
+                "the player grid's first row is at y=175 (ContainerResearchTable.java:30)");
+        assertEquals(233, ContainerLayout.RT_HOTBAR_TOP,
+                "the hotbar row is at y=233 (ContainerResearchTable.java:35)");
+        assertEquals(14, ContainerLayout.RT_INK_X, "SlotLimitedByClass(IScribeTools, ..., 14, 10) (ContainerResearchTable.java:22)");
+        assertEquals(10, ContainerLayout.RT_INK_Y);
+        assertEquals(70, ContainerLayout.RT_NOTES_X, "SlotLimitedByClass(ItemResearchNotes, ..., 70, 10) (ContainerResearchTable.java:23)");
+        assertEquals(10, ContainerLayout.RT_NOTES_Y);
+    }
+
+    @Test
+    void researchTableGridIsTheOriginalsFiveByFiveSixteenPitchPage() {
+        // getClickedAspect: xx = drawn / 5 * 16, yy = drawn % 5 * 16 off (10, 40),
+        // page window starts at page * 5 (GuiResearchTable.java:742-747), and
+        // drawAspects walks the same (10, 40) origin (its :258).
+        assertEquals(10, ContainerLayout.RT_ASPECT_X);
+        assertEquals(40, ContainerLayout.RT_ASPECT_Y);
+        assertEquals(16, ContainerLayout.RT_ASPECT_CELL);
+        assertEquals(5, ContainerLayout.RT_ASPECT_COLS);
+        assertEquals(25, ContainerLayout.RT_ASPECTS_PER_PAGE, "twenty-five cells per page");
+        assertEquals(5, ContainerLayout.RT_PAGE_STRIDE, "a page moves the start index by five");
+        assertEquals(10, ContainerLayout.researchTableGridX(0));
+        assertEquals(26, ContainerLayout.researchTableGridX(5), "the second column sits one 16 px pitch over");
+        assertEquals(56, ContainerLayout.researchTableGridY(1), "the second row is one 16 px pitch down");
+        assertEquals(104, ContainerLayout.researchTableGridY(4), "the fifth row of a page is 4 * 16 below the top");
+        assertEquals(0, ContainerLayout.researchTableIndexAt(0, 0));
+        assertEquals(5, ContainerLayout.researchTableIndexAt(0, 1), "page 1 starts at index 5");
+        // lastPage = (count - 20) / 5 (GuiResearchTable.java:268), integer division.
+        assertEquals(0, ContainerLayout.researchTableLastPage(20));
+        assertEquals(1, ContainerLayout.researchTableLastPage(25));
+        assertEquals(5, ContainerLayout.researchTableLastPage(48), "the port's 48 registered aspects span pages 0..5");
+    }
+
+    @Test
+    void researchTableClickTargetsAreTheOriginalsRects() {
+        // func_73864_a (GuiResearchTable.java:623-693): combine plate (35,139) 32x16
+        // behind a 200 ms cooldown (:628-632), page rails (27,121)/(51,121) 24x8
+        // (:649/:655), clear boxes (11,137)/(71,137) 16x16 (:662/:672), camera
+        // plate (37,5) 24x24 (:684).
+        assertEquals(35, ContainerLayout.RT_COMBINE_X);
+        assertEquals(139, ContainerLayout.RT_COMBINE_Y);
+        assertEquals(32, ContainerLayout.RT_COMBINE_WIDTH);
+        assertEquals(16, ContainerLayout.RT_COMBINE_HEIGHT);
+        assertEquals(200_000_000L, ContainerLayout.RT_BUTTON_COOLDOWN_NANOS,
+                "the original's System.nanoTime() + 200000000L (GuiResearchTable.java:631)");
+        assertEquals(27, ContainerLayout.RT_PAGE_PREV_X);
+        assertEquals(51, ContainerLayout.RT_PAGE_NEXT_X);
+        assertEquals(121, ContainerLayout.RT_PAGE_Y);
+        assertEquals(24, ContainerLayout.RT_PAGE_WIDTH);
+        assertEquals(8, ContainerLayout.RT_PAGE_HEIGHT);
+        assertEquals(11, ContainerLayout.RT_CLEAR1_X);
+        assertEquals(71, ContainerLayout.RT_CLEAR2_X);
+        assertEquals(137, ContainerLayout.RT_CLEAR_Y);
+        assertEquals(16, ContainerLayout.RT_CLEAR_SIZE);
+        assertEquals(13, ContainerLayout.RT_SELECT1_X);
+        assertEquals(71, ContainerLayout.RT_SELECT2_X);
+        assertEquals(139, ContainerLayout.RT_SELECT_Y);
+        assertEquals(16, ContainerLayout.RT_SELECT_SIZE);
+        assertEquals(37, ContainerLayout.RT_DUPE_X);
+        assertEquals(5, ContainerLayout.RT_DUPE_Y);
+        assertEquals(24, ContainerLayout.RT_DUPE_SIZE);
+    }
+
+    @Test
+    void researchTableDropTargetsAndNoticeAreTheOriginals() {
+        // The mouseReleased drop targets are 16-radius boxes centred on (20,146)
+        // and (79,146) (GuiResearchTable.java:177-190); the out-of-ink notice is
+        // centred on gx + 157 at gy + 84 (its :213-228, drawn at :223).
+        assertEquals(20, ContainerLayout.RT_DROP1_X);
+        assertEquals(79, ContainerLayout.RT_DROP2_X);
+        assertEquals(146, ContainerLayout.RT_DROP_Y);
+        assertEquals(16, ContainerLayout.RT_DROP_RADIUS);
+        assertTrue(ContainerLayout.inDragTarget(20, 146, ContainerLayout.RT_DROP1_X, ContainerLayout.RT_DROP_Y),
+                "the centre is inside its own target");
+        assertTrue(ContainerLayout.inDragTarget(4, 146, ContainerLayout.RT_DROP1_X, ContainerLayout.RT_DROP_Y),
+                "the original's box is inclusive at -16 (mouseX >= -16)");
+        assertTrue(!ContainerLayout.inDragTarget(3, 146, ContainerLayout.RT_DROP1_X, ContainerLayout.RT_DROP_Y),
+                "and exclusive at +16, so -17 is outside");
+        assertEquals(157, ContainerLayout.RT_NOINK_X);
+        assertEquals(84, ContainerLayout.RT_NOINK_Y);
+        assertEquals(147, ContainerLayout.researchTableNoInkX(20), "the original's gx + 157 - widest/2");
+        assertEquals(0.33F, ContainerLayout.RT_FADED_ALPHA, 0.0F,
+                "the original's faded tag: glColor4f alpha 0.33F when the pool is 0");
     }
 
     // ------------------------------------- no drift against cr1 (TrunkScreen)
@@ -183,5 +420,463 @@ class ContainerLayoutTest {
         assertEquals(TrunkScreen.SLOT_SPRITE, ContainerLayout.SLOT_SPRITE);
         assertEquals(TrunkScreen.PANEL_FILL, ContainerLayout.PANEL_FILL);
         assertEquals(TrunkScreen.PANEL_FRAME, ContainerLayout.PANEL_FRAME);
+    }
+
+    // ------------------------------ TC-M7-04-m2c: the thaumatorium geometry
+
+    @Test
+    void thaumatoriumGeometryIsTheOriginals() {
+        // GuiThaumatorium never sets xSize/ySize, so its panel is 1.7.10's
+        // GuiContainer default 176x166. The window takes that literal pair:
+        // the shared derivation (panelHeight = playerGridTop - 13 + 96) lands
+        // on 167 for the original's 84 px grid, because vanilla's own rule is
+        // imageHeight = player-grid origin + 83. The one pixel is the delta
+        // between the original's fixed default and vanilla's derivation, so
+        // both numbers are pinned here and the screen uses the original's.
+        assertEquals(176, ContainerLayout.PANEL_WIDTH);
+        assertEquals(166, ContainerLayout.TAU_PANEL_HEIGHT);
+        assertEquals(167, ContainerLayout.panelHeight(ContainerLayout.PLAYER_GRID_TOP),
+                "vanilla's derivation for an 84 px player grid — one pixel over the original's 166");
+
+        // The tag row: 16x16 tags at (40 + 16*pos, 40), bars at (41 + 16*pos, 57)
+        // with the fill column at 42 + 16*pos — all on the 16 px pitch.
+        assertEquals(40, ContainerLayout.thaumatoriumTagX(0));
+        assertEquals(120, ContainerLayout.thaumatoriumTagX(5));
+        assertEquals(16, ContainerLayout.thaumatoriumTagX(5) - ContainerLayout.thaumatoriumTagX(4),
+                "the tag pitch is the original's 16 px");
+        assertEquals(41, ContainerLayout.thaumatoriumBarX(0));
+        assertEquals(42, ContainerLayout.thaumatoriumBarFillX(0));
+        assertEquals(6, ContainerLayout.TAU_VISIBLE_ASPECTS);
+
+        // The original's bar fill is (int)(have / need * 12.0F), uncapped — a
+        // full-plus-1 buffer runs one pixel past the 14 px background, and the
+        // port keeps that arithmetic verbatim.
+        assertEquals(15, ContainerLayout.thaumatoriumBarFill(5, 4));
+        assertEquals(12, ContainerLayout.thaumatoriumBarFill(4, 4));
+        assertEquals(3, ContainerLayout.thaumatoriumBarFill(1, 4));
+        assertEquals(0, ContainerLayout.thaumatoriumBarFill(0, 4));
+        assertEquals(0, ContainerLayout.thaumatoriumBarFill(5, 0));
+
+        // The pulses, at the original's formulas: the queue box's
+        // 0.6 + sin(t/5)*0.4 + 0.4 and the output tint's
+        // 0.3 + sin(t/4)*0.3 + 0.3 (GuiThaumatorium.java:118, 182-183).
+        assertEquals(1.0F, ContainerLayout.thaumatoriumQueuePulse(0), 0.0001F);
+        assertEquals(0.6F, ContainerLayout.thaumatoriumDullPulse(0), 0.0001F);
+
+        // The queue counter's anchor: (136,33), scaled 0.5, centred, white.
+        assertEquals(136, ContainerLayout.TAU_COUNT_X);
+        assertEquals(33, ContainerLayout.TAU_COUNT_Y);
+        assertEquals(0.5F, ContainerLayout.TAU_COUNT_SCALE, 0.0001F);
+    }
+
+    /**
+     * TC-M7-04-m2e: the sheet rectangles this window now blits, transcribed from
+     * {@code GuiThaumatorium.func_146976_a} / {@code drawAspects}
+     * ({@code reference/decompiled/…/GuiThaumatorium.java:50-160}).
+     *
+     * <p>This is the card's whole claim in one place: the panel, the four pager
+     * boxes, the 48x48 highlight, the 24x24 queue box and both essentia bar
+     * cells are named by <b>the original's own UVs</b>, at the same destination
+     * rectangles its blits used — so the screen draws the shipped sheet, and the
+     * flat stand-ins survive only where the bytes are absent (D-004). The
+     * numbers are transcriptions, not inventions: each line cites the source
+     * call it came from, and the destination sizes are the geometry constants
+     * TC-M7-04-m2c already pinned, so a UV that drifted from a size would show
+     * up as a mismatch here.</p>
+     */
+    @Test
+    void thaumatoriumGlyphCellsAreTheOriginalsSheetRects() {
+        // The panel: drawTexturedModalRect(k, l, 0, 0, xSize, ySize), i.e. the
+        // sheet's top-left 176x166 — the same pair the geometry test pins.
+        assertEquals(0, ContainerLayout.TAU_SHEET_U);
+        assertEquals(0, ContainerLayout.TAU_SHEET_V);
+        assertEquals(ContainerLayout.PANEL_WIDTH, ContainerLayout.TAU_SHEET_W);
+        assertEquals(ContainerLayout.TAU_PANEL_HEIGHT, ContainerLayout.TAU_SHEET_H);
+
+        // The prev/next arrows at (128,16)/(128,24), 16x8: the source blits u 192
+        // when the button is live and 176 when it is not, on rows 16 and 24.
+        assertEquals(16, ContainerLayout.TAU_PAGE_W);
+        assertEquals(8, ContainerLayout.TAU_PAGE_H);
+        assertEquals(176, ContainerLayout.thaumatoriumArrowU(false));
+        assertEquals(192, ContainerLayout.thaumatoriumArrowU(true));
+        assertEquals(16, ContainerLayout.TAU_UV_PREV_V);
+        assertEquals(24, ContainerLayout.TAU_UV_NEXT_V);
+
+        // The aspect pager at (32,40)/(136,40), 8x16: 176/192 for the left box
+        // and 184/200 for the right, all on row 32 — the pair is 8 texels apart,
+        // unlike the arrows' 16, so each side is stated, not derived.
+        assertEquals(8, ContainerLayout.TAU_ASPECT_PAGER_W);
+        assertEquals(16, ContainerLayout.TAU_ASPECT_PAGER_H);
+        assertEquals(176, ContainerLayout.thaumatoriumAspectPagerU(0, false));
+        assertEquals(192, ContainerLayout.thaumatoriumAspectPagerU(0, true));
+        assertEquals(184, ContainerLayout.thaumatoriumAspectPagerU(1, false));
+        assertEquals(200, ContainerLayout.thaumatoriumAspectPagerU(1, true));
+        assertEquals(32, ContainerLayout.TAU_UV_ASPECT_PAGER_V);
+
+        // The essentia bar: the 14x6 background cell at (176,8) and the coloured
+        // fill strip at (176,0), blitted i1 texels wide, 4 tall.
+        assertEquals(176, ContainerLayout.TAU_UV_BAR_BACKGROUND_U);
+        assertEquals(8, ContainerLayout.TAU_UV_BAR_BACKGROUND_V);
+        assertEquals(14, ContainerLayout.TAU_BAR_W);
+        assertEquals(6, ContainerLayout.TAU_BAR_H);
+        assertEquals(176, ContainerLayout.TAU_UV_BAR_FILL_U);
+        assertEquals(0, ContainerLayout.TAU_UV_BAR_FILL_V);
+        assertEquals(4, ContainerLayout.TAU_BAR_FILL_H);
+
+        // The two bar cells MEASURED on the shipped sheet: the alpha-opaque run
+        // at (176,0) is exactly 12x4 and the one at (176,8) exactly 14x6, so the
+        // fill scale IS the cell's own width. The source clamps nothing
+        // (GuiThaumatorium.java:150-152) — 5 of a needed 4 is 15 texels read
+        // straight off raw texture coordinates — so the DRAWN width saturates at
+        // the cell (a 1.21.1 blit samples a sprite's region, not raw coordinates)
+        // while the arithmetic stays uncapped and pinned here (BD-18's
+        // render-state list; the empty bar is skipped, not blitted degenerate).
+        assertEquals(12, ContainerLayout.TAU_BAR_FILL_CELL);
+        assertEquals(15, ContainerLayout.thaumatoriumBarFill(5, 4));
+        assertEquals(12, ContainerLayout.thaumatoriumBarFillDrawn(5, 4));
+        assertEquals(12, ContainerLayout.thaumatoriumBarFillDrawn(14, 4));
+        assertEquals(9, ContainerLayout.thaumatoriumBarFillDrawn(3, 4));
+        assertEquals(0, ContainerLayout.thaumatoriumBarFillDrawn(0, 4));
+        assertEquals(12, ContainerLayout.thaumatoriumBarFillDrawn(144, 1));
+
+        // The 24x24 queue box cell (176,56) and the 48x48 highlight (176,96).
+        assertEquals(176, ContainerLayout.TAU_UV_PULSE_U);
+        assertEquals(56, ContainerLayout.TAU_UV_PULSE_V);
+        assertEquals(24, ContainerLayout.TAU_PULSE_SIZE);
+        assertEquals(176, ContainerLayout.TAU_UV_HIGHLIGHT_U);
+        assertEquals(96, ContainerLayout.TAU_UV_HIGHLIGHT_V);
+        assertEquals(48, ContainerLayout.TAU_HIGHLIGHT_SIZE);
+
+        // Every cell is inside the 256x256 sheet the reference measures, and the
+        // window is 176 wide: the widest cell this screen blits starts at x 136
+        // and is 8 wide, so no blit runs off the panel.
+        assertTrue(ContainerLayout.TAU_UV_ENABLED_SHIFT + ContainerLayout.TAU_UV_ASPECT_RIGHT_DISABLED <= 256);
+        assertTrue(ContainerLayout.TAU_ASPECT_RIGHT_X + ContainerLayout.TAU_ASPECT_PAGER_W
+                <= ContainerLayout.PANEL_WIDTH);
+
+        // The tag's alpha: the SIX-argument drawTag (the thaumatorium's call,
+        // GuiThaumatorium.java:167-168) forwards 1.0F with no time term. The
+        // workbench's pulse formula belongs to GuiArcaneWorkbench.java:57 and is
+        // asserted in pulseKeepsTheOriginalsBandAndPhase — it is NOT this
+        // window's tag alpha, and pinning 1.0 here is what keeps the two apart.
+        assertEquals(1.0F, ContainerLayout.TAU_TAG_ALPHA, 0.0001F);
+    }
+
+    /**
+     * The path this window blits must be the path the overlay installs — the
+     * other half of D-004. {@code docs/asset-mapping.csv} is the recorded
+     * contract; {@code OriginalTextureOverlayTest} proves the copy keeps the
+     * {@code gui} directory unrenamed, and this pins the row itself.
+     */
+    @Test
+    void thaumatoriumSheetIsTheMappedOverlayAsset() throws Exception {
+        final java.nio.file.Path csv = java.nio.file.Path.of(
+                System.getProperty("tc.assetMappingFile", ""));
+        assertTrue(java.nio.file.Files.isRegularFile(csv),
+                "asset-mapping.csv not wired — run tests through ./gradlew test");
+
+        final String path = ContainerLayout.TAU_SHEET.getPath();
+        final String namespace = ContainerLayout.TAU_SHEET.getNamespace();
+        assertEquals("thaumcraft", namespace, "the sheet is the mod's own asset");
+        assertEquals("textures/gui/gui_thaumatorium.png", path);
+
+        String row = null;
+        for (final String line : java.nio.file.Files.readAllLines(csv)) {
+            if (line.startsWith("textures/gui/gui_thaumatorium.png,")) {
+                row = line;
+                break;
+            }
+        }
+        assertTrue(row != null, "docs/asset-mapping.csv has no gui_thaumatorium.png row");
+        final String[] fields = row.split(",", 5);
+        assertEquals(fields[0], path, "the overlay maps the sheet to ITSELF — the runtime path "
+                + "the screen asks for is the path the overlay installs");
+        assertEquals("ARR-overlay", fields[3],
+                "the sheet is All Rights Reserved: it ships in the overlay build only, which is "
+                        + "exactly the case the screen's gate branches on (D-004)");
+    }
+
+    // ------------------------------------------- aspect tag (UtilsFX.drawTag)
+    //
+    // TC-M7-04-m2d. The renderer (client/AspectTagRenderer) draws pixels and so
+    // lives where no test in this repo can see them; every number it draws FROM
+    // is here, transcribed from
+    // reference/decompiled/thaumcraft/thaumcraft/client/lib/UtilsFX.java:814-897.
+
+    @Test
+    void tagBoxIsTheOriginalsSixteenPixelsAtThePointMinusEight() {
+        assertEquals(16, ContainerLayout.TAG_SIZE,
+                "UtilsFX.java:839-842 blits (x,y)..(x+16,y+16): the tag box is 16 px");
+        assertEquals(-8, ContainerLayout.TAG_CENTER_OFFSET,
+                "GuiArcaneWorkbench.java:65 passes the point minus 8");
+        assertEquals(64, ContainerLayout.tagBoxX(72));
+        assertEquals(13, ContainerLayout.tagBoxY(21));
+        assertEquals(ContainerLayout.TAG_SIZE, ContainerLayout.WB_ASPECT_BOX,
+                "the workbench's vis box is the same 16 px tag box");
+        assertEquals(ContainerLayout.TAG_SIZE, ContainerLayout.DECON_ASPECT_SIZE,
+                "the deconstruction table's box is the same 16 px tag box");
+        assertEquals(64, ContainerLayout.DECON_ASPECT_X, "GuiDeconstructionTable.java:39 draws at (64,48)");
+        assertEquals(48, ContainerLayout.DECON_ASPECT_Y);
+        for (int i = 0; i < ContainerLayout.WB_ASPECT_CENTER_X.length; i++) {
+            assertEquals(ContainerLayout.WB_ASPECT_CENTER_X[i] + ContainerLayout.TAG_CENTER_OFFSET,
+                    ContainerLayout.aspectBoxX(i), "workbench tag " + i + " must sit on the original's point");
+            assertEquals(ContainerLayout.WB_ASPECT_CENTER_Y[i] + ContainerLayout.TAG_CENTER_OFFSET,
+                    ContainerLayout.aspectBoxY(i));
+        }
+    }
+
+    @Test
+    void amountGlyphUsesTheOriginalsHalfScaleLiterals() {
+        assertEquals(0.5F, ContainerLayout.TAG_AMOUNT_SCALE, 0.0F, "UtilsFX.java:847 glScalef(0.5F,..)");
+        assertEquals(32, ContainerLayout.TAG_AMOUNT_ORIGIN, "the 32 in the original's two glyph literals");
+        assertEquals(0xFFFFFFFF, ContainerLayout.TAG_AMOUNT_COLOUR, "16777215 (UtilsFX.java:861)");
+        assertEquals(32 - 8 + 64 * 2, ContainerLayout.tagAmountScaledX(64, 8),
+                "the original's x is 32 - sw + (int)x * 2 — right-aligned on the tag's right edge");
+        assertEquals(32 - 8 + 13 * 2, ContainerLayout.tagAmountScaledY(13, 8),
+                "the original's y is 32 - font.FONT_HEIGHT + (int)y * 2");
+        assertEquals(8, ContainerLayout.TAG_AMOUNT_BOX, "the original's bx = 16 * 0.5F");
+        assertEquals(8 - 3 + 64 * 2, ContainerLayout.tagBonusScaledX(64, 6),
+                "the bonus glyph's x is 8 - width/2 + a*2 (UtilsFX.java:882)");
+        assertEquals(15 - 8 + 13 * 2, ContainerLayout.tagBonusScaledY(13, 8),
+                "the bonus glyph's y is 15 - font.FONT_HEIGHT + y*2 (UtilsFX.java:884)");
+    }
+
+    @Test
+    void amountTextIsTheOriginalsDecimalFormat() {
+        // UtilsFX.myFormatter = new DecimalFormat("#######.##") over REAL vis (UtilsFX.java:311,849).
+        assertEquals("2", ContainerLayout.tagAmountText(ContainerLayout.displayVisFloat(200)));
+        assertEquals("2.5", ContainerLayout.tagAmountText(ContainerLayout.displayVisFloat(250)));
+        assertEquals("0.25", ContainerLayout.tagAmountText(0.25F));
+        assertEquals("0", ContainerLayout.tagAmountText(0.0F));
+        assertEquals("1234.57", ContainerLayout.tagAmountText(1234.5678F),
+                "two decimals, no thousands separator, no forced digits");
+        assertEquals(2.5F, ContainerLayout.displayVisFloat(250), 0.0F,
+                "the centi-vis the menu syncs is the original's * 100");
+        assertEquals(2, ContainerLayout.displayVis(250), "the int the vis row shows stays the floor");
+    }
+
+    @Test
+    void blackAndWhiteTagIsTheOriginalsToneAndAlpha() {
+        assertEquals(0.1F, ContainerLayout.TAG_BW_TONE, 0.0F, "glColor4f(0.1F, 0.1F, 0.1F, ..) (UtilsFX.java:828)");
+        assertEquals(0.8F, ContainerLayout.TAG_BW_ALPHA, 0.0F, "alpha * 0.8F (UtilsFX.java:828)");
+        assertEquals(0.8F, ContainerLayout.tagAlphaOf(1.0F, true), 0.0F);
+        assertEquals(1.0F, ContainerLayout.tagAlphaOf(1.0F, false), 0.0F);
+        assertEquals(0xCC1A1A1A, ContainerLayout.tagTint(0xFF55AA, 1.0F, true),
+                "tone Math.round(0.1F*255)=26, alpha Math.round(0.8F*255)=204");
+        assertEquals(0x80FF55AA, ContainerLayout.tagTint(0xFF55AA, 0.5F, false),
+                "a colour tag keeps the aspect's colour at the caller's alpha");
+    }
+
+    @Test
+    void sparkleFramesWalkTheOriginalsSixteenStep() {
+        assertEquals(0, ContainerLayout.tagSparkleFrame(0));
+        assertEquals(16, ContainerLayout.tagSparkleFrame(1));
+        assertEquals(240, ContainerLayout.tagSparkleFrame(15));
+        assertEquals(0, ContainerLayout.tagSparkleFrame(16), "16 * (age % 16) (UtilsFX.java:869)");
+        assertEquals(240, ContainerLayout.tagSparkleFrame(-1),
+                "a negative age wraps inside the sheet (Math.floorMod), it does not go off it");
+        assertEquals(-4, ContainerLayout.TAG_SPARKLE_OFFSET, "drawTexturedQuad(x - 4, y - 4, px, 80, 16, 16)");
+        assertEquals(80, ContainerLayout.TAG_SPARKLE_V);
+        assertEquals(256, ContainerLayout.TAG_SPARKLE_SHEET, "the sheet's UVs are texel * 0.00390625F");
+        assertEquals(16, ContainerLayout.TAG_TEXTURE_FALLBACK,
+                "the fallback edge when there are no bytes to measure (D-004)");
+        assertEquals("thaumcraft", ContainerLayout.PARTICLE_SHEET.getNamespace());
+        assertEquals("textures/misc/particles.png", ContainerLayout.PARTICLE_SHEET.getPath(),
+                "ParticleEngine.particleTexture, the sheet the fx family already slices");
+    }
+
+
+    @Test
+    void spaFluidColumnScalesTheWayTheOriginalBlitDid() {
+        // GuiSpa: bar = fluidAmount / capacity, (int)(48 - 48*bar) px of the
+        // (107,15) 48 px column left blank at the top — the fill is
+        // floor(amount * 48 / capacity) px rising from the bottom.
+        assertEquals(0, ContainerLayout.scaledFluidHeight(0, 5000, 48), "an empty tank paints nothing");
+        assertEquals(9, ContainerLayout.scaledFluidHeight(1000, 5000, 48), "1000/5000 of 48 px");
+        assertEquals(47, ContainerLayout.scaledFluidHeight(4999, 5000, 48), "the fill floors");
+        assertEquals(48, ContainerLayout.scaledFluidHeight(5000, 5000, 48), "full paints the rail");
+        assertEquals(48, ContainerLayout.scaledFluidHeight(6000, 5000, 48), "clamped, never past the rail");
+        assertEquals(0, ContainerLayout.scaledFluidHeight(-5, 5000, 48), "a negative amount never paints");
+        assertEquals(0, ContainerLayout.scaledFluidHeight(5, 0, 48), "a zero capacity never paints");
+        assertEquals(15, ContainerLayout.fluidTop(15, 48, 48), "full starts at the column top");
+        assertEquals(54, ContainerLayout.fluidTop(15, 48, 9), "9 px sit at the column bottom");
+        assertEquals(63, ContainerLayout.fluidTop(15, 48, 0), "empty starts at the column floor");
+    }
+    @Test
+    void spaMixAndTooltipBoxesAreTheOriginalsBoxes() {
+        // GuiSpa: the 8x8 mix indicator at (89,35); its tooltip box is the
+        // 10x10 at (88,34) and the tank's tooltip box the 10x55 at (104,10).
+        assertEquals(89, ContainerLayout.SPA_MIX_X);
+        assertEquals(35, ContainerLayout.SPA_MIX_Y);
+        assertEquals(8, ContainerLayout.SPA_MIX_SIZE);
+        assertEquals(SpaScreen.MIX_X, ContainerLayout.SPA_MIX_X,
+                "the screen's click box and the shared geometry must not drift");
+        assertEquals(SpaScreen.MIX_Y, ContainerLayout.SPA_MIX_Y);
+        assertEquals(SpaScreen.MIX_SIZE, ContainerLayout.SPA_MIX_SIZE);
+        assertEquals(88, ContainerLayout.SPA_MIX_TIP_X);
+        assertEquals(34, ContainerLayout.SPA_MIX_TIP_Y);
+        assertEquals(10, ContainerLayout.SPA_MIX_TIP_SIZE);
+        assertEquals(104, ContainerLayout.SPA_TANK_TIP_X);
+        assertEquals(10, ContainerLayout.SPA_TANK_TIP_Y);
+        assertEquals(10, ContainerLayout.SPA_TANK_TIP_WIDTH);
+        assertEquals(55, ContainerLayout.SPA_TANK_TIP_HEIGHT);
+        assertEquals(0xFF8A5CC8, ContainerLayout.SPA_MIX_ON_FILL,
+                "the authored on-texel is the crate's indicator colour");
+    }
+    @Test
+    void magicBoxPageMathIsTheOriginalsRowBind() {
+        // ContainerMagicBox.bindBoxInventory(row): 3 rows of 9 = 27 slots per page.
+        assertEquals(27, ContainerLayout.MAGIC_BOX_PAGE_SLOTS);
+        assertEquals(1, ContainerLayout.magicBoxPageCount(0), "an empty box is one page");
+        assertEquals(1, ContainerLayout.magicBoxPageCount(27), "one box is one page");
+        assertEquals(2, ContainerLayout.magicBoxPageCount(28), "the 28th slot opens page 2");
+        assertEquals(2, ContainerLayout.magicBoxPageCount(54));
+        assertEquals(8, ContainerLayout.magicBoxPageCount(216), "the original 8-box cluster");
+        assertEquals(0, ContainerLayout.magicBoxPageStart(0));
+        assertEquals(27, ContainerLayout.magicBoxPageStart(1), "the original (j + row) * 9");
+        assertEquals(54, ContainerLayout.magicBoxPageStart(2));
+        assertEquals(1, ContainerLayout.clampPage(5, 2), "clamped to the last page");
+        assertEquals(0, ContainerLayout.clampPage(-1, 2), "clamped to page 0");
+        assertEquals(1, ContainerLayout.clampPage(1, 2), "an in-range page is untouched");
+    }
+    @Test
+    void magicBoxPageWidgetSitsInTheTitleBand() {
+        assertEquals(152, ContainerLayout.MAGIC_BOX_PAGE_PREV_X);
+        assertEquals(2, ContainerLayout.MAGIC_BOX_PAGE_PREV_Y);
+        assertEquals(164, ContainerLayout.MAGIC_BOX_PAGE_NEXT_X);
+        assertEquals(2, ContainerLayout.MAGIC_BOX_PAGE_NEXT_Y);
+        assertEquals(10, ContainerLayout.MAGIC_BOX_PAGE_BUTTON_SIZE);
+        assertTrue(ContainerLayout.MAGIC_BOX_PAGE_NEXT_X + ContainerLayout.MAGIC_BOX_PAGE_BUTTON_SIZE <= 176,
+                "the arrows stay inside the 176 px panel");
+        assertTrue(ContainerLayout.MAGIC_BOX_PAGE_NEXT_Y + ContainerLayout.MAGIC_BOX_PAGE_BUTTON_SIZE
+                        <= ContainerLayout.playerPanelTop(84),
+                "the title band is above the player panel piece");
+    }
+    @Test
+    void trunkStayBoxKeepsTheOriginalsInclusiveEdge() {
+        // GuiTravelingTrunk: k1 >= 0 && l1 >= 0 && k1 < 10 && l1 <= 10 at (112,0).
+        assertEquals(112, ContainerLayout.TRUNK_STAY_X);
+        assertEquals(0, ContainerLayout.TRUNK_STAY_Y);
+        assertEquals(10, ContainerLayout.TRUNK_STAY_WIDTH);
+        assertEquals(10, ContainerLayout.TRUNK_STAY_HEIGHT);
+        assertTrue(ContainerLayout.inTrunkStayBox(0, 0));
+        assertTrue(ContainerLayout.inTrunkStayBox(9, 0));
+        assertTrue(ContainerLayout.inTrunkStayBox(9, 10), "the <= 10 keeps row 10 inside");
+        assertFalse(ContainerLayout.inTrunkStayBox(10, 0), "the < 10 closes column 10");
+        assertFalse(ContainerLayout.inTrunkStayBox(0, 11), "row 11 is outside");
+        assertFalse(ContainerLayout.inTrunkStayBox(-1, 0), "left of the panel is outside");
+        assertFalse(ContainerLayout.inTrunkStayBox(0, -1), "above the panel is outside");
+        assertEquals(0xFF8A5CC8, ContainerLayout.TRUNK_STAY_ON_FILL,
+                "the authored on-texel is the crate's indicator colour");
+    }
+
+    @Test
+    void alchemicalFurnaceWidgetsAreTheOriginalsBlits() {
+        // ContainerAlchemyFurnace's two slots.
+        assertEquals(80, ContainerLayout.FURNACE_SLOT_INPUT_X);
+        assertEquals(8, ContainerLayout.FURNACE_SLOT_INPUT_Y);
+        assertEquals(80, ContainerLayout.FURNACE_SLOT_FUEL_X);
+        assertEquals(48, ContainerLayout.FURNACE_SLOT_FUEL_Y);
+        // GuiAlchemyFurnace's three scaled blits, at their rails.
+        assertEquals(80, ContainerLayout.FURNACE_FIRE_X);
+        assertEquals(26, ContainerLayout.FURNACE_FIRE_TOP);
+        assertEquals(16, ContainerLayout.FURNACE_FIRE_WIDTH);
+        assertEquals(20, ContainerLayout.FURNACE_FIRE_PIXELS, "getBurnTimeRemainingScaled(20)");
+        assertEquals(106, ContainerLayout.FURNACE_COOK_X);
+        assertEquals(13, ContainerLayout.FURNACE_COOK_TOP);
+        assertEquals(9, ContainerLayout.FURNACE_COOK_WIDTH);
+        assertEquals(46, ContainerLayout.FURNACE_COOK_PIXELS, "getCookProgressScaled(46)");
+        assertEquals(60, ContainerLayout.FURNACE_TANK_X);
+        assertEquals(8, ContainerLayout.FURNACE_TANK_TOP);
+        assertEquals(10, ContainerLayout.FURNACE_TANK_WIDTH);
+        assertEquals(55, ContainerLayout.FURNACE_TANK_HEIGHT);
+        assertEquals(61, ContainerLayout.FURNACE_VIS_X);
+        assertEquals(12, ContainerLayout.FURNACE_VIS_TOP);
+        assertEquals(8, ContainerLayout.FURNACE_VIS_WIDTH);
+        assertEquals(48, ContainerLayout.FURNACE_VIS_PIXELS, "getContentsScaled(48)");
+        assertEquals(200, ContainerLayout.FURNACE_FALLBACK_BURN_TIME, "the original's 0-burn guard");
+    }
+    @Test
+    void scaledProgressMatchesTheOriginalScaledGetters() {
+        // getCookProgressScaled(46): cook * 46 / smeltTime, bottom-anchored.
+        assertEquals(46, ContainerLayout.scaledProgress(100, 100, 46));
+        assertEquals(23, ContainerLayout.scaledProgress(50, 100, 46));
+        assertEquals(0, ContainerLayout.scaledProgress(0, 100, 46), "an idle furnace draws no fill");
+        assertEquals(0, ContainerLayout.scaledProgress(10, 0, 46), "a zero max reads as empty, no divide by zero");
+        assertEquals(46, ContainerLayout.scaledProgress(200, 100, 46), "the fill clamps at the rail height");
+        // The 1.7.10 furnace: cookTime 60 of a smeltTime 100 (the port's tile
+        // divides over its own furnaceMaxCookTime; the shape is the same).
+        assertEquals(27, ContainerLayout.scaledProgress(60, 100, 46));
+        assertEquals(13 + 46 - 27,
+                ContainerLayout.barTop(ContainerLayout.FURNACE_COOK_TOP, ContainerLayout.FURNACE_COOK_PIXELS,
+                        ContainerLayout.scaledProgress(60, 100, 46)),
+                "the fill's top edge sits so the bar grows from the rail bottom (13+46)");
+    }
+    @Test
+    void arcaneBoreWidgetsAreTheOriginalsBlits() {
+        // ContainerArcaneBore: focus slot, pickaxe slot, short player grid.
+        assertEquals(26, ContainerLayout.BORE_SLOT_FOCUS_X);
+        assertEquals(18, ContainerLayout.BORE_SLOT_FOCUS_Y);
+        assertEquals(74, ContainerLayout.BORE_SLOT_PICKAXE_X);
+        assertEquals(18, ContainerLayout.BORE_SLOT_PICKAXE_Y);
+        assertEquals(59, ContainerLayout.BORE_PLAYER_GRID_TOP);
+        assertEquals(117, ContainerLayout.BORE_PLAYER_HOTBAR_TOP);
+        assertEquals(59 + 58, ContainerLayout.BORE_PLAYER_HOTBAR_TOP, "the original's 58 px grid→hotbar gap");
+        // GuiArcaneBore: the panel override and the readout block.
+        assertEquals(141, ContainerLayout.BORE_SHEET_HEIGHT, "the original's field_147000_g");
+        assertEquals(142, ContainerLayout.panelHeight(ContainerLayout.BORE_PLAYER_GRID_TOP),
+                "the vanilla derivation is 142; the 1 px sheet difference is the original's rounding");
+        assertEquals(74, ContainerLayout.BORE_BROKEN_X);
+        assertEquals(18, ContainerLayout.BORE_BROKEN_Y);
+        assertEquals(16, ContainerLayout.BORE_BROKEN_SIZE);
+        assertEquals(112, ContainerLayout.BORE_TEXT_X);
+        assertEquals(8, ContainerLayout.BORE_TEXT_Y);
+        assertEquals(0, ContainerLayout.BORE_TEXT_WIDTH_Y);
+        assertEquals(10, ContainerLayout.BORE_TEXT_SPEED_Y);
+        assertEquals(24, ContainerLayout.BORE_TEXT_OTHER_Y);
+        assertEquals(34, ContainerLayout.BORE_TEXT_ROWS_TOP);
+        assertEquals(9, ContainerLayout.BORE_TEXT_ROW_STEP);
+    }
+    @Test
+    void boreReadoutFormulasAreTheOriginals() {
+        // GuiArcaneBore: "Width: " + (1 + (area + maxRadius) * 2).
+        assertEquals(1, ContainerLayout.boreWidth(0, 0));
+        assertEquals(11, ContainerLayout.boreWidth(1, 4));
+        assertEquals(25, ContainerLayout.boreWidth(1, 11));
+        // The break icon gate: damage + 1 >= maxDamage.
+        assertTrue(ContainerLayout.borePickaxeNearBroken(150, 151));
+        assertTrue(ContainerLayout.borePickaxeNearBroken(151, 151));
+        assertEquals(false, ContainerLayout.borePickaxeNearBroken(149, 151));
+        // GuiArcaneBore's three decimal color literals.
+        assertEquals(0xFF000000 | 12632256, ContainerLayout.BORE_COLOR_NATIVE, "12632256 native");
+        assertEquals(0xFF000000 | 15648330, ContainerLayout.BORE_COLOR_FORTUNE, "15648330 fortune");
+        assertEquals(0xFF000000 | 8421631, ContainerLayout.BORE_COLOR_SILK, "8421631 silk");
+    }
+    @Test
+    void pulseKeepsTheOriginalsBandAndPhase() {
+        // GuiArcaneWorkbench.java:57 — 0.5 + (sin((age + i*10)/2) * 0.2 - 0.2), and 1.0
+        // when the wand can pay. The 15-period sine the card body quotes is the runic
+        // matrix's (TileRunicMatrixRenderer.java:106); the 0.4/0.6 pair is the aura
+        // HUD's (ClientTickEventsFML.java:549). BD-18 records the difference.
+        assertEquals(1.0F, ContainerLayout.aspectAlpha(0, 0, true), 0.0F);
+        assertEquals(0.3F, ContainerLayout.aspectAlpha(0, 0, false), 1.0E-5F);
+        float min = Float.MAX_VALUE;
+        float max = -Float.MAX_VALUE;
+        for (int age = 0; age < 4000; age++) {
+            for (int i = 0; i < 6; i++) {
+                final float alpha = ContainerLayout.aspectAlpha(age, i, false);
+                min = Math.min(min, alpha);
+                max = Math.max(max, alpha);
+            }
+        }
+        assertTrue(min >= 0.1F - 1.0E-5F && max <= 0.5F + 1.0E-5F,
+                "the pulse must stay in the original's 0.1..0.5 band, got " + min + ".." + max);
+        assertTrue(min < 0.101F && max > 0.499F, "the pulse must reach both ends of the band");
+        for (int i = 0; i < 6; i++) {
+            assertEquals(ContainerLayout.aspectAlpha(200 + i * 10, 0, false),
+                    ContainerLayout.aspectAlpha(200, i, false), 1.0E-5F,
+                    "the phase offset is index*10, the original's (age + i*10) / 2");
+        }
+        assertEquals(Mth.sin(0.0F), 0.0F, 1.0E-6F, "the port's sine is the vanilla one the formula names");
     }
 }
