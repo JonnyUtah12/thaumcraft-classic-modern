@@ -177,7 +177,12 @@ class LocalizationFileTest {
             // (GuiArcaneWorkbench.java:105) and the wand-slot tooltip the port
             // added where the original drew an unlabelled slot. Neither names a
             // content id, so they are code-authored, not registry keys.
-            "container.thaumcraft.insufficient_vis", "container.thaumcraft.wand_slot_hint");
+            "container.thaumcraft.insufficient_vis", "container.thaumcraft.wand_slot_hint",
+            // TC-M6-06-s-c3-a: the pech's per-type names (the original's
+            // func_70005_c_, EntityPech.java:70-80). Only the type-0 key is
+            // registry-derived; the Mage (type 1) and Stalker (type 2) keys
+            // ride EntityPech.getDisplayName.
+            "entity.thaumcraft.pech.1", "entity.thaumcraft.pech.2");
 
     /**
      * The shipped multi-meta items and the original-metadata domain their
