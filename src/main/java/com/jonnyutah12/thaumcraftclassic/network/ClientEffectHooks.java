@@ -6,6 +6,7 @@ import com.jonnyutah12.thaumcraftclassic.client.fx.TcBeamParticle;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcEffects;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcFxPlans;
 import com.jonnyutah12.thaumcraftclassic.client.fx.FxWispRules;
+import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXWardBlockPayload;
 import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
 import com.jonnyutah12.thaumcraftclassic.taint.TaintBiomes;
 import net.minecraft.client.Minecraft;
@@ -345,8 +346,47 @@ public final class ClientEffectHooks {
         LOGGER.debug("fx infusion source at {} offset={} color={}", pos, offset, color);
     }
 
+    /**
+     * {@code PacketFXShield} → the runes its client handler asked for
+     * (PacketFXShield.java:38-79, TC-M7-02-c-s-f4). Both id fields ride in: the
+     * runes follow the packet's <em>source</em> entity
+     * ({@code FXShieldRunes.java:92-94}) and the yaw/pitch aim at the packet's
+     * target ({@code PacketFXShield.java:47-49, 56-58}).
+     */
     static void fxShield(final int sourceEntityId, final int targetEntityId) {
-        LOGGER.debug("fx shield {} -> {}", sourceEntityId, targetEntityId);
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        // No cultist entity is landed, so the original's
+        // `!(x instanceof EntityCultist)` exclusion (FXShieldRunes.java:61)
+        // can never fire: the mob branch (0.5 colour, ripple frames) is the
+        // always-excluded side, exactly as on a client without those entities.
+        TcEffects.shieldRunes(mc.level, sourceEntityId, targetEntityId, false,
+                RandomSource.create());
+    }
+
+    /**
+     * The ward hexagram (TC-M7-02-c-s-f4) on a block a server-side sender
+     * named: the payload carries exactly what {@code ClientProxy.blockWard}
+     * takes — block, hit face, {@code (hitVec - pos)} triple
+     * ({@code ClientProxy.java:980-984}) — and the plan rolls the mote's
+     * lifetime, scale, rotation and jitter on the client, as the constructor
+     * did ({@code FXBlockWard.java:24-35}).
+     *
+     * <p>A ward block that draws this on its own hit does not need the packet:
+     * {@code TcWardHitEffects} calls {@code TcEffects.wardBlock} directly, the
+     * way the original's {@code Dist.CLIENT} branch did. This entry point is
+     * for senders that are not client-side.</p>
+     */
+    static void wardBlock(final FXWardBlockPayload payload) {
+        final Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        final Vec3 hit = payload.hit();
+        TcEffects.wardBlock(mc.level, payload.pos(), payload.side(),
+                hit.x, hit.y, hit.z, RandomSource.create());
     }
 
     static void fxSonic(final int sourceEntityId) {

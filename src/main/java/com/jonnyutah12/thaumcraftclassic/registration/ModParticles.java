@@ -8,7 +8,9 @@ import com.jonnyutah12.thaumcraftclassic.client.fx.TcBubbleOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcGlowSparkleOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcGolemBeamOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcParticleType;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcShieldOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcSparkleOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcWardOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispArcingOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispEgOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispOptions;
@@ -133,6 +135,41 @@ public final class ModParticles {
             PARTICLE_TYPES.register("sparkle_glow",
                     () -> new TcParticleType<>(false, TcGlowSparkleOptions.MAP_CODEC,
                             TcGlowSparkleOptions.STREAM_CODEC));
+
+    /**
+     * TC-M7-02-c-s-f4: the ward hexagram ({@code FXBlockWard}, sent by
+     * {@code ClientProxy.blockWard} from the ward blocks' hit/destroy effects).
+     * Velocity relevance is off: the mote has no gravity and no motion
+     * (FXBlockWard.java:21-26), so the platform must not add relative velocity
+     * on top of the baked-in face offset.
+     */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcWardOptions>> WARD =
+            PARTICLE_TYPES.register("ward",
+                    () -> new TcParticleType<>(false, TcWardOptions.MAP_CODEC, TcWardOptions.STREAM_CODEC));
+
+    /**
+     * TC-M7-02-c-s-f4: the shield runes ({@code FXShieldRunes}, sent by
+     * {@code PacketFXShield}) — the hemis form, frames hemis1..hemis15. The
+     * runes integrate their own motion (the constructor zeroes it and the tick
+     * overwrites the position from the entity), so velocity relevance is off.
+     */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcShieldOptions>> SHIELD_RUNES =
+            PARTICLE_TYPES.register("shield_runes",
+                    () -> new TcParticleType<>(false, TcShieldOptions.MAP_CODEC,
+                            TcShieldOptions.STREAM_CODEC));
+
+    /**
+     * TC-M7-02-c-s-f4: the shield runes' mob form — the ripple frames and the
+     * 0.5 colour the original switches on inside its own draw
+     * ({@code instanceof EntityMob && !(instanceof EntityCultist)},
+     * FXShieldRunes.java:61-66). 1.21.1 picks the frame list at construction,
+     * so the branch is a second type; {@link TcShieldOptions#getType()} routes
+     * it, and the plain type keeps the hemis frames.
+     */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcShieldOptions>> SHIELD_RUNES_MOB =
+            PARTICLE_TYPES.register("shield_runes_mob",
+                    () -> new TcParticleType<>(false, TcShieldOptions.MAP_CODEC,
+                            TcShieldOptions.STREAM_CODEC));
 
     private ModParticles() {
     }

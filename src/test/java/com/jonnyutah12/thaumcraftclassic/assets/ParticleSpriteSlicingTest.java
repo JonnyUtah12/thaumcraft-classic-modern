@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -95,6 +96,50 @@ class ParticleSpriteSlicingTest {
             "bolt_glow", "p_large.png",
             "bolt_core", "p_small.png");
 
+    /**
+     * TC-M7-02-c-s-f4: the ward/shield-rune family draws whole
+     * <code>textures/models</code> frames, not sheet cells and not misc tiles.
+     * {@code FXBlockWard} binds {@code /models/hemis<frame>.png} with
+     * {@code frame = min(15, (int)(15F * fade))} (FXBlockWard.java:52-54), so
+     * the ward takes hemis0..15. {@code FXShieldRunes} binds
+     * {@code /models/hemis<frame>.png} with
+     * {@code frame = min(15, (int)(14F * fade) + 1)} (FXShieldRunes.java:60) —
+     * 1..15, so <b>hemis0 belongs to the ward alone</b> — and switches to
+     * {@code /models/ripple<frame>.png} on the mob branch (FXShieldRunes.java:61-63).
+     * Kept in step with the {@code originalModelFrames} map in build.gradle.
+     */
+    private static final Map<String, List<String>> MODEL_PARTICLES = modelDefinitions();
+
+    /** Sliced model-frame base name -> original file under textures/models. */
+    private static final Map<String, String> ORIGINAL_MODEL_FRAMES = modelFrameSources();
+
+    private static Map<String, List<String>> modelDefinitions() {
+        final Map<String, List<String>> out = new LinkedHashMap<>();
+        out.put("ward", modelFrames("hemis", 0, 15));
+        out.put("shield_runes", modelFrames("hemis", 1, 15));
+        out.put("shield_runes_mob", modelFrames("ripple", 1, 15));
+        return out;
+    }
+
+    private static Map<String, String> modelFrameSources() {
+        final Map<String, String> out = new LinkedHashMap<>();
+        for (int frame = 0; frame <= 15; frame++) {
+            out.put("hemis" + frame, "hemis" + frame + ".png");
+        }
+        for (int frame = 1; frame <= 15; frame++) {
+            out.put("ripple" + frame, "ripple" + frame + ".png");
+        }
+        return out;
+    }
+
+    private static List<String> modelFrames(final String base, final int from, final int to) {
+        final List<String> out = new ArrayList<>();
+        for (int frame = from; frame <= to; frame++) {
+            out.add(base + frame);
+        }
+        return List.copyOf(out);
+    }
+
     private static int[] cells(final int from, final int to) {
         int[] out = new int[to - from + 1];
         for (int i = 0; i < out.length; i++) {
@@ -108,6 +153,7 @@ class ParticleSpriteSlicingTest {
         CELL_PARTICLES.forEach(p -> names.add(p.json()));
         names.addAll(SUBSTITUTE_PARTICLES.keySet().stream().sorted().toList());
         names.addAll(TILE_PARTICLES.keySet().stream().sorted().toList());
+        names.addAll(MODEL_PARTICLES.keySet().stream().sorted().toList());
         return names;
     }
 
@@ -174,6 +220,27 @@ class ParticleSpriteSlicingTest {
                                 + "(FXBeam.java:77-81, FXLightningBolt.java:178-182)");
             }
         }
+
+        for (Map.Entry<String, List<String>> entry : MODEL_PARTICLES.entrySet()) {
+            List<String> textures = texturesOf(Files.readString(definition(entry.getKey())));
+            assertEquals(entry.getValue().size(), textures.size(),
+                    entry.getKey() + ": the frame list must cover every models frame the "
+                            + "original binds (" + entry.getValue().size() + ")");
+            for (int frame = 0; frame < entry.getValue().size(); frame++) {
+                String id = textures.get(frame);
+                assertTrue(SPRITE_ID.matcher(id).matches(),
+                        entry.getKey() + " frame " + frame + ": not a particle-atlas sprite id: " + id);
+                assertEquals("thaumcraft:particle/" + entry.getValue().get(frame), id,
+                        entry.getKey() + ": the frame order must follow the original ramp "
+                                + "(FXBlockWard.java:52-54, FXShieldRunes.java:60-66 — the rune "
+                                + "ramp starts at 1, so hemis0 is the ward's alone)");
+            }
+        }
+        assertTrue(texturesOf(Files.readString(definition("ward"))).contains("thaumcraft:particle/hemis0"),
+                "the ward's ramp is 0..15 (FXBlockWard.java:53)");
+        assertTrue(!texturesOf(Files.readString(definition("shield_runes")))
+                        .contains("thaumcraft:particle/hemis0"),
+                "the rune ramp is min(15, (int)(14F * fade) + 1) = 1..15 (FXShieldRunes.java:60)");
     }
 
     private static List<String> texturesOf(final String json) {
@@ -236,6 +303,38 @@ class ParticleSpriteSlicingTest {
             assertArrayEquals(src, dst,
                     entry.getKey() + " must be a pixel-identical copy of textures/misc/" + entry.getValue()
                             + " (the original binds it whole, no crop)");
+        }
+    }
+
+    /**
+     * The model frames are copied whole-file by
+     * {@code sliceOriginalParticleSprites}; this pins each copy to the original
+     * 128x128 texture pixel-for-pixel, so a wrong frame index in
+     * {@code originalModelFrames} is a red test and not a ward that flickers.
+     */
+    @Test
+    void slicedModelFramesAreTheOriginalTextures() throws IOException {
+        Path spritesDir = Path.of(System.getProperty("tc.originalParticleSpritesDir", ""));
+        Path modelsDir = Path.of(System.getProperty("tc.originalModelTexturesDir", ""));
+        Assumptions.assumeTrue(Files.isDirectory(spritesDir),
+                "sliceOriginalParticleSprites has not run — run ./gradlew processResources first");
+        Assumptions.assumeTrue(Files.isDirectory(modelsDir),
+                "the original models textures are only present with the reference tree (CI has none)");
+        Path particleDir = spritesDir.resolve("assets/thaumcraft/textures/particle");
+        for (Map.Entry<String, String> entry : ORIGINAL_MODEL_FRAMES.entrySet()) {
+            Path original = modelsDir.resolve(entry.getValue());
+            assertTrue(Files.isRegularFile(original), "the original frame is missing: " + original);
+            Path sprite = particleDir.resolve(entry.getKey() + ".png");
+            assertTrue(Files.isRegularFile(sprite),
+                    entry.getKey() + ": the models frame was not copied: " + sprite);
+            BufferedImage source = ImageIO.read(original.toFile());
+            BufferedImage copied = ImageIO.read(sprite.toFile());
+            assertEquals(source.getWidth(), copied.getWidth(), entry.getKey() + " keeps the width");
+            assertEquals(source.getHeight(), copied.getHeight(), entry.getKey() + " keeps the height");
+            assertArrayEquals(
+                    source.getRGB(0, 0, source.getWidth(), source.getHeight(), null, 0, source.getWidth()),
+                    copied.getRGB(0, 0, source.getWidth(), source.getHeight(), null, 0, source.getWidth()),
+                    entry.getKey() + " must be the original " + entry.getValue() + " pixel for pixel");
         }
     }
 

@@ -40,7 +40,11 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * TC-M4-07-s evidence: the essentia transport network in the world — the tube
@@ -110,10 +114,47 @@ public final class EssentiaTransportGameTest {
         return tubeAt(helper, x, y, z, TileJarFillable.class);
     }
 
-    private static List<ItemStack> dropsAround(final GameTestHelper helper, final BlockPos pos) {
+    /**
+     * Item-entity ids inside this probe's own box, captured BEFORE a producing
+     * call. Probes share one level and one packing grid, so a stack a
+     * neighbouring probe spawned can sit in the box at the time of the scan:
+     * the shipped version of this file asserted on <em>everything in the
+     * box</em> and reddened on the first CI leg of this slice with
+     * {@code a broken tube drops the tube block item, got [1 minecraft:wheat_seeds,
+     * 1 thaumcraft:blocktube]} — the tube drop was correct, a grass cell's seed
+     * stack was the extra. Item-identity filters are not the fix here: the
+     * mutation surface of these probes IS the drop table, and a drop table that
+     * produces seeds instead of the block is a legal item to filter on. The
+     * verdict therefore runs on the id delta the call itself produced, and the
+     * foreign stacks get named in the message, never counted.
+     */
+    private static Set<UUID> dropsPresent(final GameTestHelper helper, final BlockPos pos) {
         final AABB box = new AABB(pos).inflate(2.0D);
         return helper.getLevel().getEntitiesOfClass(ItemEntity.class, box).stream()
-                .map(ItemEntity::getItem).toList();
+                .map(ItemEntity::getUUID)
+                .collect(Collectors.toCollection(HashSet::new));
+    }
+
+    /** The stacks a producing call at {@code pos} CREATED: the ids new to the box. */
+    private static List<ItemStack> dropsProduced(final GameTestHelper helper, final BlockPos pos,
+                                                 final Set<UUID> before) {
+        return stacksInBox(helper, pos, before, true);
+    }
+
+    private static List<ItemStack> stacksInBox(final GameTestHelper helper, final BlockPos pos,
+                                               final Set<UUID> before, final boolean producedOnly) {
+        final AABB box = new AABB(pos).inflate(2.0D);
+        return helper.getLevel().getEntitiesOfClass(ItemEntity.class, box).stream()
+                .filter(entity -> producedOnly != before.contains(entity.getUUID()))
+                .map(ItemEntity::getItem)
+                .toList();
+    }
+
+    /** The stacks that were already in the box, spelled out for a failure message. */
+    private static String foreignNote(final GameTestHelper helper, final BlockPos pos,
+                                      final Set<UUID> before) {
+        final List<ItemStack> foreign = stacksInBox(helper, pos, before, false);
+        return foreign.isEmpty() ? "" : " (foreign stacks already in the box, not counted: " + foreign + ")";
     }
 
     // --- registration and the id contract ---------------------------------
@@ -334,16 +375,18 @@ public final class EssentiaTransportGameTest {
             player.setShiftKeyDown(true);
             player.setPose(net.minecraft.world.entity.Pose.CROUCHING);
             player.setPos(pos.getX() + 0.5D, pos.getY() + 2.0D, pos.getZ() + 0.5D);
+            final Set<UUID> beforeClear = dropsPresent(helper, pos);
             final net.minecraft.world.InteractionResult cleared = state.useWithoutItem(
                     helper.getLevel(), player, hit);
             helper.assertTrue(cleared.consumesAction(),
                     "clearing a labelled tube consumes the interaction, got " + cleared);
             helper.assertTrue(filter.aspectFilter == null, "the filter is cleared");
-            final boolean labelBack = dropsAround(helper, pos).stream()
-                    .anyMatch(stack -> stack.is(CatalogEssentiaStorage.ITEM_ESSENCE.get())
-                            || ItemResource.storedMeta(stack) == ItemResource.META_JAR_LABEL);
-            helper.assertTrue(labelBack,
-                    "and the label is handed back to the world, got " + dropsAround(helper, pos));
+            final List<ItemStack> handedBack = dropsProduced(helper, pos, beforeClear);
+            helper.assertTrue(handedBack.stream()
+                            .anyMatch(stack -> stack.is(CatalogEssentiaStorage.ITEM_ESSENCE.get())
+                                    || ItemResource.storedMeta(stack) == ItemResource.META_JAR_LABEL),
+                    "and THIS click hands the label back to the world, got " + handedBack
+                            + foreignNote(helper, pos, beforeClear));
             helper.succeed();
         });
     }
@@ -353,36 +396,55 @@ public final class EssentiaTransportGameTest {
     @GameTest(template = "empty_24")
     public static void tubesDropThemselvesWithTheirVariant(final GameTestHelper helper) {
         // A plain tube and a buffer, broken for real, through the shipped loot
-        // table (1.21.1 has no implicit block self-drop).
+        // table (1.21.1 has no implicit block self-drop). Every verdict below
+        // runs on the stacks THAT break produced (item-entity ids captured
+        // around the call), not on everything in the box — see dropsPresent.
+        final BlockPos plainPos = at(helper, 1, 1, 1);
         helper.setBlock(1, 1, 1, CatalogEssentiaTransport.state(BlockTube.VARIANT_TUBE));
-        helper.getLevel().destroyBlock(at(helper, 1, 1, 1), true, null);
-        final List<ItemStack> plain = dropsAround(helper, at(helper, 1, 1, 1));
+        final Set<UUID> beforePlain = dropsPresent(helper, plainPos);
+        helper.getLevel().destroyBlock(plainPos, true, null);
+        final List<ItemStack> plain = dropsProduced(helper, plainPos, beforePlain);
         helper.assertTrue(plain.size() == 1 && plain.get(0).is(CatalogEssentiaTransport.ITEM_TUBE.get()),
-                "a broken tube drops the tube block item, got " + plain);
+                "a broken tube drops the tube block item, got " + plain
+                        + foreignNote(helper, plainPos, beforePlain));
         helper.assertTrue(carriedVariant(plain.get(0)) == BlockTube.VARIANT_TUBE,
                 "and the drop keeps the original metadata (variant 0), got " + carriedVariant(plain.get(0)));
 
+        final BlockPos bufferPos = at(helper, 4, 1, 1);
         helper.setBlock(4, 1, 1, CatalogEssentiaTransport.state(BlockTube.VARIANT_BUFFER));
-        helper.getLevel().destroyBlock(at(helper, 4, 1, 1), true, null);
-        final List<ItemStack> buffer = dropsAround(helper, at(helper, 4, 1, 1));
-        helper.assertTrue(buffer.size() == 1 && carriedVariant(buffer.get(0)) == BlockTube.VARIANT_BUFFER,
-                "a broken buffer drops a buffer variant, not a plain tube, got " + buffer);
+        final Set<UUID> beforeBuffer = dropsPresent(helper, bufferPos);
+        helper.getLevel().destroyBlock(bufferPos, true, null);
+        final List<ItemStack> buffer = dropsProduced(helper, bufferPos, beforeBuffer);
+        helper.assertTrue(buffer.size() == 1
+                        && buffer.get(0).is(CatalogEssentiaTransport.ITEM_TUBE.get())
+                        && carriedVariant(buffer.get(0)) == BlockTube.VARIANT_BUFFER,
+                "a broken buffer drops the tube block item carrying the buffer variant, not a plain tube "
+                        + "and not some other stack that happens to carry the component, got " + buffer
+                        + foreignNote(helper, bufferPos, beforeBuffer));
 
         // A labelled filtered tube drops the block AND its label (the original's
-        // breakBlock).
+        // breakBlock). Two stacks, both produced by this one break.
+        final BlockPos filterPos = at(helper, 7, 1, 1);
         helper.setBlock(7, 1, 1, CatalogEssentiaTransport.state(BlockTube.VARIANT_FILTER));
         final TileTubeFilter filter = tubeAt(helper, 7, 1, 1, TileTubeFilter.class);
         helper.assertTrue(filter != null, "the filtered tube must have placed its tile");
         filter.aspectFilter = ignis();
-        helper.getLevel().destroyBlock(at(helper, 7, 1, 1), true, null);
-        final List<ItemStack> labelled = dropsAround(helper, at(helper, 7, 1, 1));
-        helper.assertTrue(labelled.stream().anyMatch(stack -> carriedVariant(stack) == BlockTube.VARIANT_FILTER),
-                "the filtered tube drops its own variant, got " + labelled);
+        final Set<UUID> beforeFilter = dropsPresent(helper, filterPos);
+        helper.getLevel().destroyBlock(filterPos, true, null);
+        final List<ItemStack> labelled = dropsProduced(helper, filterPos, beforeFilter);
+        helper.assertTrue(labelled.stream().anyMatch(stack -> stack.is(CatalogEssentiaTransport.ITEM_TUBE.get())
+                        && carriedVariant(stack) == BlockTube.VARIANT_FILTER),
+                "the filtered tube drops its own variant as the tube block item, got " + labelled
+                        + foreignNote(helper, filterPos, beforeFilter));
         helper.assertTrue(labelled.stream().anyMatch(
                         stack -> stack.is(com.jonnyutah12.thaumcraftclassic.registration.catalog
                                 .CatalogResources.ITEM_RESOURCE.get())
                                 && ItemResource.storedMeta(stack) == ItemResource.META_JAR_LABEL),
-                "and the label comes back out of a labelled tube, got " + labelled);
+                "and the label comes back out of a labelled tube, got " + labelled
+                        + foreignNote(helper, filterPos, beforeFilter));
+        helper.assertTrue(labelled.size() == 2,
+                "the break produces exactly the block and its label, got " + labelled.size() + " stacks "
+                        + labelled + foreignNote(helper, filterPos, beforeFilter));
         helper.succeed();
     }
 

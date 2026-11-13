@@ -1091,12 +1091,42 @@ public class EntityPech extends Monster implements RangedAttackMob {
      */
     @Override
     protected InteractionResult mobInteract(final Player player, final InteractionHand hand) {
+        // :695-698 — the tamed pech's trade window (gui_id 1), this card's GUI
+        // (TC-M7-04-m3-b). The original gates it on `!isSneaking() && (mainhand == null
+        // || !(mainhand instanceof ItemNameTag))`; 1.7.10's ItemNameTag is not ported,
+        // so vanilla's NAME_TAG stands in — the same stand-in the trading branch below
+        // uses, and the same shape the golem lane records for its unported
+        // ItemWandCasting exclusion (BD-38). Recorded as BD-73.
+        if (openTradeGui(player)) {
+            return InteractionResult.SUCCESS;                                                // :697
+        }
         if (!this.trading && !this.isTamed() && !(this.getTarget() instanceof Player)
                 && !player.getMainHandItem().is(Items.NAME_TAG)) {                             // :696-699
             this.trading = true;                                                               // :700
             return InteractionResult.sidedSuccess(this.level().isClientSide);
         }
         return super.mobInteract(player, hand);                                                // :704
+    }
+
+    /**
+     * The {@code :696-698} GUI-open branch, split out as the probe seam (a protected
+     * {@code mobInteract} is not callable from a game test). Server side, tamed, not
+     * sneaking, mainhand not the name-tag stand-in: open {@code thaumcraft:gui_pech}
+     * with the pech id in the extra buffer. The original returns {@code true} there,
+     * which 1.21.1 spells {@code SUCCESS}; its {@code :703} "false" case falls through
+     * to {@code super} exactly as the original's {@code :699-701} does.
+     */
+    public boolean openTradeGui(final Player player) {
+        if (this.level().isClientSide || !this.isTamed() || player.isShiftKeyDown()
+                || player.getMainHandItem().is(Items.NAME_TAG)) {
+            return false;
+        }
+        player.openMenu(new net.minecraft.world.SimpleMenuProvider(
+                        (windowId, inventory, opener) ->
+                                new com.jonnyutah12.thaumcraftclassic.menus.PechMenu(windowId, inventory, this),
+                        net.minecraft.network.chat.Component.translatable("container.thaumcraft.gui_pech")),
+                buffer -> buffer.writeInt(this.getId()));
+        return true;
     }
 
     /**

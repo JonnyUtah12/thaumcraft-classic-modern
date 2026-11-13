@@ -301,6 +301,23 @@ def originalBeamTiles = [
         'bolt_core': 'p_small.png',
 ]
 
+// TC-M7-02-c-s-f4: the ward/shield-rune family draws neither grid cells nor
+// misc tiles. FXBlockWard binds /models/hemis<frame>.png per render
+// (FXBlockWard.java:52-54, frames 0..15) and FXShieldRunes binds
+// /models/hemis<frame>.png, switching to /models/ripple<frame>.png on the mob
+// branch (FXShieldRunes.java:60-66, frames 1..15 — the ramp is
+// min(15, (int)(14F * fade) + 1), so hemis0 belongs to the ward alone). Those
+// are 128x128 whole-texture frames — the animation of the hemisphere the
+// original loaded as an OBJ (hemis.obj) — so they copy whole-file like the
+// beam tiles, from the models directory, into the particle texture folder.
+// ParticleSpriteSlicingTest pins the copy byte-for-byte.
+def originalModelFrames = [:].with {
+    (0..15).each { frame -> it["hemis${frame}"] = "hemis${frame}.png" }
+    (1..15).each { frame -> it["ripple${frame}"] = "ripple${frame}.png" }
+    it
+}
+def originalModelFramesDirName = 'models'
+
 def particleCellPx = 16
 
 def sliceOriginalParticleSprites = tasks.register("sliceOriginalParticleSprites") {
@@ -308,6 +325,7 @@ def sliceOriginalParticleSprites = tasks.register("sliceOriginalParticleSprites"
     inputs.file(originalParticleSheet)
     inputs.property('cells', originalParticleCells)
     inputs.property('beamTiles', originalBeamTiles)
+    inputs.property('modelFrames', originalModelFrames)
     outputs.dir(originalParticleSpritesDir)
     doLast {
         def out = originalParticleSpritesDir.get().asFile
@@ -373,6 +391,18 @@ def sliceOriginalParticleSprites = tasks.register("sliceOriginalParticleSprites"
             if (tile == null) { throw new GradleException("cannot decode ${tileFile}") }
             def file = new File(spriteDir, "${name}.png")
             if (!javax.imageio.ImageIO.write(tile, 'png', file)) {
+                throw new GradleException("no PNG writer for ${file}")
+            }
+            written++
+        }
+        // TC-M7-02-c-s-f4: the ward/shield-rune frames (see the map above).
+        originalModelFrames.each { name, source ->
+            def frameFile = new File("${originalAssetsDir}/thaumcraft/textures/${originalModelFramesDirName}", source)
+            if (!frameFile.exists()) { throw new GradleException("missing model frame ${frameFile}") }
+            def frame = javax.imageio.ImageIO.read(frameFile)
+            if (frame == null) { throw new GradleException("cannot decode ${frameFile}") }
+            def file = new File(spriteDir, "${name}.png")
+            if (!javax.imageio.ImageIO.write(frame, 'png', file)) {
                 throw new GradleException("no PNG writer for ${file}")
             }
             written++
@@ -541,6 +571,10 @@ tasks.named('test', Test).configure {
             file('src/main/resources/assets').absolutePath
     systemProperty 'tc.originalMiscTexturesDir',
             file("${originalAssetsDir}/thaumcraft/textures/misc").absolutePath
+    // TC-M7-02-c-s-f4: the ward/shield-rune frames copy whole-file out of the
+    // models directory; ParticleSpriteSlicingTest pins each copy to that source.
+    systemProperty 'tc.originalModelTexturesDir',
+            file("${originalAssetsDir}/thaumcraft/textures/${originalModelFramesDirName}").absolutePath
     systemProperty 'tc.particleDefinitionDir',
             file('src/main/resources/assets/thaumcraft/particles').absolutePath
     systemProperty 'tc.originalParticleSpritesDir',
