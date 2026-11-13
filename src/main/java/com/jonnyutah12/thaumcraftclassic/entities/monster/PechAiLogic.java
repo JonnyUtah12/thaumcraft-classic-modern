@@ -137,6 +137,11 @@ public final class PechAiLogic {
     public static final float VOICE_PITCH = 0.4F;
     /** {@code :540} — {@code mumble *= 0.75F} every tick (the client decay). */
     public static final float MUMBLE_DECAY = 0.75F;
+
+    /** {@code ContainerPech.java:95} — the scam's {@code thaumcraft:pech_trade} volume. */
+    public static final float TRADE_SCAM_VOLUME = 0.4F;
+    /** {@code ContainerPech.java:95} — the scam's {@code thaumcraft:pech_trade} pitch. */
+    public static final float TRADE_SCAM_PITCH = 1.0F;
     /** {@code :552-563} — the per-tick mumble roll: {@code nextInt(100)} gates
      *  the trade chat, {@code nextInt(15)} the angry particles, {@code nextInt(25)}
      *  the tamed hearts. */
