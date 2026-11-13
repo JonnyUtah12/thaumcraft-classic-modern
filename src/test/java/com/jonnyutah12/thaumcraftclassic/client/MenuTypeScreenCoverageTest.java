@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 import com.jonnyutah12.thaumcraftclassic.menus.DeconstructionTableMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.HandMirrorMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.MagicBoxMenu;
+import com.jonnyutah12.thaumcraftclassic.menus.PechMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.SpaMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.TrunkMenu;
 import net.minecraft.client.gui.screens.Screen;
@@ -76,12 +77,21 @@ class MenuTypeScreenCoverageTest {
                 MagicBoxMenu.class, "gui_magic_box"));
         SCREENS.put(SpaScreen.class, new ScreenUnderTest("CatalogFurniture", "MENU_SPA",
                 SpaMenu.class, "gui_spa"));
+        // TC-M7-04-m3-b (t_63e11e8c): PechScreen extends AbstractContainerScreen<PechMenu>
+        // directly, so it takes the strict contract this test enforces. The golem and
+        // research-note screens stay out of SCREENS: their superclass identity deviates
+        // (BD-49/BD-70, rows in docs/BEHAVIORAL_DEVIATIONS.md) and the strict
+        // everyScreenIsAContainerScreenForItsOwnMenu assertion is exactly where that
+        // deviation lands - their parity lives in GolemMenuGameTest / GolemGuiParityTest.
+        SCREENS.put(PechScreen.class, new ScreenUnderTest("CatalogPech", "GUI_PECH",
+                PechMenu.class, "gui_pech"));
 
         EXPECTED_HOLDERS.put("CatalogTrinketsLoot.GUI_TRUNK", "gui_trunk");
         EXPECTED_HOLDERS.put("CatalogTrinketsLoot.GUI_HAND_MIRROR", "gui_hand_mirror");
         EXPECTED_HOLDERS.put("CatalogFurniture.MENU_DECON_TABLE", "gui_decon_table");
         EXPECTED_HOLDERS.put("CatalogFurniture.MENU_MAGIC_BOX", "gui_magic_box");
         EXPECTED_HOLDERS.put("CatalogFurniture.MENU_SPA", "gui_spa");
+        EXPECTED_HOLDERS.put("CatalogPech.GUI_PECH", "gui_pech");
     }
 
     private record ScreenUnderTest(String catalog, String holder, Class<?> menu, String id) {
@@ -146,16 +156,18 @@ class MenuTypeScreenCoverageTest {
                     "a registered menu type with no screen registration: "
                             + expected.catalog() + "." + expected.holder());
         }
-        assertEquals(5, SCREENS.size(), "the five gui rows whose menus exist today");
+        assertEquals(6, SCREENS.size(), "the six gui rows whose screens meet this test's strict contract");
     }
 
     @Test
-    void catalogSourcesDeclareExactlyTheFiveScreensMenus() throws Exception {
+    void catalogSourcesDeclareExactlyTheCoveredScreensMenus() throws Exception {
         final Map<String, String> declared = new LinkedHashMap<>();
         collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogTrinketsLoot.java",
                 "CatalogTrinketsLoot", declared);
         collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogFurniture.java",
                 "CatalogFurniture", declared);
+        collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogPech.java",
+                "CatalogPech", declared);
         assertEquals(EXPECTED_HOLDERS, declared,
                 "the catalogs' MenuType declarations and this test's expectations must agree; a new menu type "
                         + "needs a screen and an entry here");
@@ -195,7 +207,11 @@ class MenuTypeScreenCoverageTest {
         // call handleInventoryButtonClick(containerId, 1).
         assertEquals(1, DeconstructionTableScreen.BUTTON_COLLECT_ASPECT);
         assertEquals(1, SpaScreen.BUTTON_TOGGLE_MIX);
-        for (final Class<?> screen : new Class<?>[] {DeconstructionTableScreen.class, SpaScreen.class}) {
+        // GuiPech.java:62 sends handleInventoryButtonClick(containerId, 0) - the dice is
+        // button 0, NOT the trunk/spa id 1 (run 418's audit of the WIP, kept in the landing).
+        assertEquals(0, PechMenu.DICE_BUTTON);
+        for (final Class<?> screen : new Class<?>[] {DeconstructionTableScreen.class, SpaScreen.class,
+                PechScreen.class}) {
             final String source = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/client/"
                     + screen.getSimpleName() + ".java");
             assertTrue(source.contains("handleInventoryButtonClick(this.menu.containerId,"),
