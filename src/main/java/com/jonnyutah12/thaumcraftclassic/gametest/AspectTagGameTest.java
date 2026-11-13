@@ -213,16 +213,16 @@ public final class AspectTagGameTest {
                         + menu.dataSlotCount() + " data slots");
         helper.assertTrue(menu.dataValue(DeconstructionTableMenu.DATA_BREAK_TIME) == table.breaktime,
                 "data slot 0 is still the break timer the bar reads");
-        helper.assertTrue(menu.dataValue(DeconstructionTableMenu.DATA_ASPECT) == -1,
-                "an empty table shows the original's empty box (-1)");
+        helper.assertTrue(menu.dataValue(DeconstructionTableMenu.DATA_ASPECT) == 0,
+                "an empty table shows the original's empty box (0 = no aspect)");
         helper.assertTrue(menu.getRevealedAspect() == null,
                 "an empty table has no aspect to draw");
 
         // Reveal one, the way the tile does: a primal from its reduced tag list.
         table.aspect = primal("ignis");
         final int wire = menu.dataValue(DeconstructionTableMenu.DATA_ASPECT);
-        helper.assertTrue(wire == DeconstructionTableMenu.encodeAspectIndex(table.aspect) && wire >= 0,
-                "data slot 1 must carry ignis's primal index, got " + wire);
+        helper.assertTrue(wire == DeconstructionTableMenu.encodeAspectIndex(table.aspect) && wire > 0,
+                "data slot 1 must carry ignis's registry id + 1, got " + wire);
         helper.assertTrue(menu.getRevealedAspect() == table.aspect,
                 "the screen reads the revealed aspect through the menu");
 
@@ -234,14 +234,19 @@ public final class AspectTagGameTest {
             helper.assertTrue(index >= 0 && DeconstructionTableMenu.decodeAspectIndex(index) == primal,
                     "the index channel must be total over " + primal.getTag());
         }
-        helper.assertTrue(DeconstructionTableMenu.encodeAspectIndex(null) == -1,
-                "no aspect is -1 on the wire");
-        helper.assertTrue(DeconstructionTableMenu.decodeAspectIndex(-1) == null,
-                "-1 is the original's empty box on the client");
+        // 0, not -1: a 1.21.1 client builds its ContainerData with every slot at 0
+        // before the server's first sync, so 0 is the value the box is actually
+        // initialised with, and -1 would never be seen. TC-M7-04-m4's
+        // deconstructiontableaspectreachesthemenudataslot probe pins the same
+        // encoding (registry id + 1, 0 = none); reconciled here in the merge.
+        helper.assertTrue(DeconstructionTableMenu.encodeAspectIndex(null) == 0,
+                "no aspect is 0 on the wire");
+        helper.assertTrue(DeconstructionTableMenu.decodeAspectIndex(0) == null,
+                "0 is the original's empty box on the client");
         helper.assertTrue(DeconstructionTableMenu.decodeAspectIndex(9999) == null,
                 "an out-of-range index is the empty box, not a crash");
         helper.assertTrue(DeconstructionTableMenu.decodeAspectIndex(
-                        Aspect.getPrimalAspects().size()) == null,
+                        Aspect.getPrimalAspects().size() + 1) == null,
                 "one past the last primal is the empty box");
 
         // The gated collect click (BD-17) reads this same state, so an empty box sends
@@ -249,7 +254,7 @@ public final class AspectTagGameTest {
         helper.assertTrue(menu.getRevealedAspect() != null,
                 "a loaded box passes the screen's click gate");
         table.aspect = null;
-        helper.assertTrue(menu.dataValue(DeconstructionTableMenu.DATA_ASPECT) == -1
+        helper.assertTrue(menu.dataValue(DeconstructionTableMenu.DATA_ASPECT) == 0
                         && menu.getRevealedAspect() == null,
                 "collecting empties the box in the same channel the screen reads");
         helper.succeed();

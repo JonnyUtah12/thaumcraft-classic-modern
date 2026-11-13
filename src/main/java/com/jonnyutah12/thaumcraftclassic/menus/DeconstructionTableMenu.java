@@ -3,7 +3,9 @@ package com.jonnyutah12.thaumcraftclassic.menus;
 import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.player.ModAttachments;
 import com.jonnyutah12.thaumcraftclassic.player.PlayerKnowledgeData;
+import com.jonnyutah12.thaumcraftclassic.registration.ModAspects;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileDeconstructionTable;
+import net.minecraft.core.Registry;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -11,8 +13,6 @@ import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
 
 /**
  * Deconstruction table menu (content-mapping.csv {@code thaumcraft:gui_decon_table},
@@ -144,29 +144,57 @@ public class DeconstructionTableMenu extends AbstractContainerMenu {
     }
 
     /**
-     * The wire value for a revealed aspect: its primal index, or {@code -1} for none.
-     * Compared by tag, not by reference — the registry interns its instances, but the
-     * channel's contract is the tag, and a tag comparison cannot be broken by a future
-     * registry that hands out copies.
+     * The wire value for a revealed aspect: its aspect-registry id + 1, restricted to
+     * the primal domain the deconstruction table's tile can roll, or {@code 0} for
+     * none. The +1 is not decoration: a 1.21.1 client builds its
+     * {@code ContainerData} with every slot at {@code 0} BEFORE the server's first
+     * sync lands, so 0 must decode to the empty box — an encoding that put the first
+     * primal at 0 would open the window with a phantom aspect tag drawn in it. The
+     * domain stays the primal list because a composite's registry id would decode to
+     * a primal on the client side. Compared by tag, not by reference — the registry
+     * interns its instances, but the channel's contract is the tag, and a tag
+     * comparison cannot be broken by a future registry that hands out copies.
      */
     public static int encodeAspectIndex(@Nullable final Aspect aspect) {
         if (aspect == null) {
-            return -1;
+            return 0;
         }
-        final List<Aspect> primals = Aspect.getPrimalAspects();
-        for (int i = 0; i < primals.size(); i++) {
-            if (primals.get(i).getTag().equals(aspect.getTag())) {
-                return i;
+        final Registry<Aspect> registry = ModAspects.registry();
+        if (registry == null) {
+            return 0;
+        }
+        for (final Aspect primal : Aspect.getPrimalAspects()) {
+            if (primal.getTag().equals(aspect.getTag())) {
+                final int id = registry.getId(primal);
+                return id < 0 ? 0 : id + 1;
             }
         }
-        return -1;
+        return 0;
     }
 
-    /** The aspect for a wire value; anything out of range is the empty box. */
+    /**
+     * The aspect for a wire value; {@code 0}, anything out of range and any id outside
+     * the tile's primal roll domain are the empty box.
+     */
     @Nullable
     public static Aspect decodeAspectIndex(final int index) {
-        final List<Aspect> primals = Aspect.getPrimalAspects();
-        return index >= 0 && index < primals.size() ? primals.get(index) : null;
+        if (index <= 0) {
+            return null;
+        }
+        final Registry<Aspect> registry = ModAspects.registry();
+        if (registry == null) {
+            return null;
+        }
+        final Aspect registered = registry.byId(index - 1);
+        if (registered == null) {
+            return null;
+        }
+        for (final Aspect primal : Aspect.getPrimalAspects()) {
+            if (primal.getTag().equals(registered.getTag())) {
+                return primal;
+            }
+        }
+        return null;
     }
 
     // MC 1.21.1 declares clickMenuButton as boolean (true = the button did something).
