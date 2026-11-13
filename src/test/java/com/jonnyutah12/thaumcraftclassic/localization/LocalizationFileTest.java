@@ -94,6 +94,11 @@ class LocalizationFileTest {
             // TC-M6-08-s: the original tc.adv label (ConfigItems' advanced-golem
             // tooltip line), kept verbatim.
             "tc.adv",
+            // t_1a83f0db: the warp-event chat lines the wired arms send
+            // (WarpEvents.java:241 warp.text.6, :321 warp.text.7, :175
+            // warp.text.14), kept in the original 1.7.10 key shape with the
+            // original en_US.lang wording.
+            "warp.text.6", "warp.text.7", "warp.text.14",
             // TC-M3-04-s-iv-b: the Thaumonomicon crafting-page station labels, kept in
             // the original key shape (GuiResearchRecipe:821 / :888, the key printed centred
             // above the ingredient grid of a crafting page).

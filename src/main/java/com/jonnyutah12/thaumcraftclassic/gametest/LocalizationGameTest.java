@@ -220,7 +220,13 @@ public final class LocalizationGameTest {
             Map.entry("entity.thaumcraft.pech.1",
                     "EntityPech.getDisplayName, type 1 (original entity.Thaumcraft.Pech.1.name, :72)"),
             Map.entry("entity.thaumcraft.pech.2",
-                    "EntityPech.getDisplayName, type 2 (original entity.Thaumcraft.Pech.2.name, :74)"));
+                    "EntityPech.getDisplayName, type 2 (original entity.Thaumcraft.Pech.2.name, :74)"),
+            // t_1a83f0db: the warp-event chat lines the wired arms send
+            // (WarpEvents.java:241 / :321 / :175), keys and wording verbatim
+            // from the original en_US.lang.
+            Map.entry("warp.text.6", "WarpEvents.spawnMist chat line (WarpEvents.java:241, warp.text.6)"),
+            Map.entry("warp.text.7", "WarpEvents.suddenlySpiders chat line (WarpEvents.java:321, warp.text.7)"),
+            Map.entry("warp.text.14", "WarpEvents sticky-relief chat line (WarpEvents.java:175, warp.text.14)"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always
