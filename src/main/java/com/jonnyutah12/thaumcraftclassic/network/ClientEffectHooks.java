@@ -15,6 +15,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
@@ -333,17 +334,80 @@ public final class ClientEffectHooks {
                 0.1F, 1.0F + mc.level.getRandom().nextFloat() * 0.2F, false);
     }
 
+    /**
+     * TC-M7-02-c-s-f5: the one seam every wired effect handler shares — the
+     * plan's spawns go to the client level's particle engine, the way the
+     * original's {@code FXHandler.onEffect} loop ends in {@code addEffect}. On a
+     * dedicated server there is no client level and the payload never reaches
+     * this handler: the original's whole FX path sits behind the client gate
+     * ({@code world.field_72995_K}).
+     */
+    private static void spawnRaw(final net.minecraft.client.multiplayer.ClientLevel level,
+            final com.jonnyutah12.thaumcraftclassic.client.fx.ParticleSpawn spawn) {
+        level.addParticle(spawn.options(), spawn.x(), spawn.y(), spawn.z(),
+                spawn.vx(), spawn.vy(), spawn.vz());
+    }
+
+    private static void spawnFx(final net.minecraft.client.multiplayer.ClientLevel level,
+            final java.util.List<com.jonnyutah12.thaumcraftclassic.client.fx.ParticleSpawn> spawns) {
+        if (level == null) {
+            return;
+        }
+        for (com.jonnyutah12.thaumcraftclassic.client.fx.ParticleSpawn spawn : spawns) {
+            spawnRaw(level, spawn);
+        }
+    }
+
+
     static void fxBlockDig(final BlockPos targetPos, final ResourceLocation blockOrItemId, final int data,
             final BlockPos digFromPos) {
         LOGGER.debug("fx block dig at {} block={} data={} from={}", targetPos, blockOrItemId, data, digFromPos);
+        // TC-M7-02-c-s-f5 WIRED: the bore's dig dust. The original's
+        // PacketFXBlockDig client handler (PacketFXBlockDig.java:44-59) builds
+        // FXBoreParticles and FXBoreSparkle; 1.21.1 has no per-block face crumb,
+        // so the crumb maps to the platform's own block dust and the sparkle
+        // keeps thaumcraft:bore_sparkle (cells 64..67, FXBoreSparkle.java:56-59).
+        final Minecraft digMc = Minecraft.getInstance();
+        if (digMc.level != null) {
+            spawnFx(digMc.level, TcFxPlans.blockDig(targetPos, digFromPos,
+                    digMc.level.getBlockState(targetPos), ItemStack.EMPTY,
+                    digMc.level.getRandom(), particleSetting()));
+        }
     }
 
     static void fxEssentiaSource(final BlockPos pos, final BlockPos offset, final int color) {
         LOGGER.debug("fx essentia source at {} offset={} color={}", pos, offset, color);
+        // TC-M7-02-c-s-f5 WIRED: the pedestal source mote (PacketFXEssentiaSource,
+        // ClientProxy.java:925-941) — the trail into the amulet's cell plus the
+        // bore sparkle on it. thaumcraft:essentia_trail carries the trail's single
+        // sprite cell; the pedestal's aura stack is the tile's own, and EMPTY
+        // stands in on a client that has not synced the tile.
+        final Minecraft essMc = Minecraft.getInstance();
+        if (essMc.level != null) {
+            spawnFx(essMc.level, TcFxPlans.infusionPedestalTick(
+                    pos.getX() + offset.getX(), pos.getY() + offset.getY(),
+                    pos.getZ() + offset.getZ(), pos.getX(), pos.getY(), pos.getZ(),
+                    essMc.level.getBlockState(pos), ItemStack.EMPTY,
+                    particleSetting(), essMc.level.getRandom()));
+        }
     }
 
     static void fxInfusionSource(final BlockPos pos, final BlockPos offset, final int color) {
         LOGGER.debug("fx infusion source at {} offset={} color={}", pos, offset, color);
+        // TC-M7-02-c-s-f5 WIRED: the infusion source mote at the player's face
+        // (PacketFXInfusionSource, ClientProxy.java:980-1000) — the trail from the
+        // amulet cell to the receiver, with the bore sparkle at the cell.
+        final Minecraft infMc = Minecraft.getInstance();
+        if (infMc.level != null) {
+            final net.minecraft.world.phys.Vec3 eye = infMc.player == null
+                    ? pos.getCenter() : infMc.player.getEyePosition();
+            spawnFx(infMc.level, TcFxPlans.infusionPlayerTick(
+                    pos.getX() + offset.getX(), pos.getY() + offset.getY(),
+                    pos.getZ() + offset.getZ(), eye.x, eye.y, eye.z,
+                    infMc.player == null ? 1.0 : infMc.player.getBbWidth(),
+                    infMc.player == null ? 2.0 : infMc.player.getBbHeight(),
+                    particleSetting(), infMc.level.getRandom()));
+        }
     }
 
     /**
@@ -357,6 +421,14 @@ public final class ClientEffectHooks {
         final Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) {
             return;
+        }
+        // TC-M7-02-c-s-f5 WIRED: the shield's burst. The original's PacketFXShield
+        // builds an FXBurst (ClientProxy.java:747-751), the node-burst ring;
+        // thaumcraft:burst carries its 32-frame strip (FXBurst.java:31).
+        final Entity shieldSource = mc.level.getEntity(sourceEntityId);
+        if (shieldSource != null) {
+            spawnFx(mc.level, TcFxPlans.burst(shieldSource.getX(), shieldSource.getY(),
+                    shieldSource.getZ(), 1.0F));
         }
         // No cultist entity is landed, so the original's
         // `!(x instanceof EntityCultist)` exclusion (FXShieldRunes.java:61)
@@ -391,18 +463,50 @@ public final class ClientEffectHooks {
 
     static void fxSonic(final int sourceEntityId) {
         LOGGER.debug("fx sonic at {}", sourceEntityId);
+        // TC-M7-02-c-s-f5 PARTIAL: the family is landed — thaumcraft:sonic,
+        // TcSonicParticle/Options, the 15 ripple frames (fx/other/FXSonic.java:
+        // 34-36,62) and its sprite set. The sender seam stays open: the plan
+        // builder (the boom's per-tick expansion, FXSonic.java:62) is the
+        // follow-up; see card TC-M7-02-c-s-f5's handoff.
     }
 
     static void fxVisDrain(final BlockPos pos, final BlockPos offset, final int color) {
         LOGGER.debug("fx vis drain at {} offset={} color={}", pos, offset, color);
+        // TC-M7-02-c-s-f5 PARTIAL: the family is landed — thaumcraft:vis_sparkle,
+        // TcVisSparkleParticle/Options, cells 128..143 (FXVisSparkle.java:49-52)
+        // and its sprite set. The drain sender's own loop (PacketFXVisDrain:26-32,
+        // per ClientProxy.visSparkleFX) needs its plan builder; follow-up.
     }
 
     static void fxWispZap(final int sourceEntityId, final int targetEntityId) {
         LOGGER.debug("fx wisp zap {} -> {}", sourceEntityId, targetEntityId);
+        // TC-M7-02-c-s-f5 WIRED: the wisp zap's swarm mote (PacketFXWispZap,
+        // ClientProxy.swarmParticleFX at ClientProxy.java:987-1000) — the buzzer
+        // that homes on the target. thaumcraft:swarm carries its 8-frame strip
+        // (cells 71..78, FXSwarm.java:56-59).
+        final Minecraft wispMc = Minecraft.getInstance();
+        final Entity wispSource = wispMc.level == null ? null
+                : wispMc.level.getEntity(sourceEntityId);
+        if (wispSource != null) {
+            spawnFx(wispMc.level, TcFxPlans.swarm(targetEntityId, wispSource.getX(),
+                    wispSource.getY(), wispSource.getZ(), 0x547FFF, wispMc.level.getRandom()));
+        }
     }
 
     static void fxZap(final int sourceEntityId, final int targetEntityId) {
         LOGGER.debug("fx zap {} -> {}", sourceEntityId, targetEntityId);
+        // TC-M7-02-c-s-f5 WIRED: the zap's soul trail (PacketFXZap,
+        // ClientProxy.soulTrail at ClientProxy.java:916-941) — the smoke motes
+        // that stream off the source entity toward its target.
+        // thaumcraft:smoke_trail carries cells 1..5 (FXSmokeTrail.java:52-55).
+        final Minecraft zapMc = Minecraft.getInstance();
+        final Entity zapSource = zapMc.level == null ? null
+                : zapMc.level.getEntity(sourceEntityId);
+        if (zapSource != null) {
+            spawnFx(zapMc.level, TcFxPlans.soulTrail(targetEntityId, zapSource.getX(),
+                    zapSource.getY(), zapSource.getZ(), zapSource.getBbWidth(),
+                    zapSource.getBbHeight(), zapMc.level.getRandom()));
+        }
     }
 
     /**

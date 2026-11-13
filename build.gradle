@@ -287,6 +287,25 @@ def originalParticleCells = [
         // u = age%13/16, v = 0.1875 (FXWispEG.java:59-62) — row 3, columns
         // 0..12 = cells 48..60 of the sheet grid it indexes.
         'wisp_eg'     : (48..60).toList(),
+        // TC-M7-02-c-s-f5: the shared particle families. Every strip is read
+        // off the original class's own UV lines (D-017), the same way the rune
+        // family's cells 96..111 were (FXBlockRunes.java:51-54):
+        'scorch'        : (151..159).toList(),   // FXScorch.java:43,100-104 texture index 151..159
+        'smoke_spiral'  : (1..5).toList(),       // FXSmokeSpiral.java:31-33 part=1+age/lifetime*4, u=part%16/16, v=0
+        'smoke_trail'   : (1..5).toList(),       // FXSmokeTrail.java:52-55 the same row-0 strip
+        'vent'          : (1..5).toList(),       // FXVent.java:95-97 the same row-0 strip
+        'swarm'         : (71..78).toList(),     // FXSwarm.java:56-59 part=7+age%8 (u<1), v=0.25 -> row 4
+        'bore_sparkle'  : (64..67).toList(),     // FXBoreSparkle.java:56-59 part=age%4, v=0.25 -> row 4, cols 0..3
+        'vis_sparkle'   : (128..143).toList(),   // FXVisSparkle.java:49-52 part=age%16, v=0.5 -> row 8
+        'essentia_trail': [25],                  // FXEssentiaTrail.java:69-70 the trail's single cell
+        'drop'          : (112..114).toList(),   // FXDrop.java:27,52,58,73 texture index 112/113/114
+]
+// TC-M7-02-c-s-f5: the sonic ripple is a whole-file strip, not grid cells —
+// FXSonic draws the OBJ shell textured by models/ripple1..15.png
+// (FXSonic.java:38-45, the model's own pages), so those 15 files become the
+// 15 frames of thaumcraft:sonic, copied whole-file like the beam tiles.
+def originalWholeFileParticleFrames = [
+        'sonic': (1..15).collect { "models/ripple${it}.png".toString() },
 ]
 // TC-M7-02-b-s: the beam/bolt family draws whole sheet tiles, not grid cells
 // (FXBeam.java:77-81 /misc/beam*.png; FXLightningBolt.java:178-182
@@ -326,6 +345,7 @@ def sliceOriginalParticleSprites = tasks.register("sliceOriginalParticleSprites"
     inputs.property('cells', originalParticleCells)
     inputs.property('beamTiles', originalBeamTiles)
     inputs.property('modelFrames', originalModelFrames)
+    inputs.property('wholeFileFrames', originalWholeFileParticleFrames)
     outputs.dir(originalParticleSpritesDir)
     doLast {
         def out = originalParticleSpritesDir.get().asFile
@@ -383,6 +403,31 @@ def sliceOriginalParticleSprites = tasks.register("sliceOriginalParticleSprites"
         if (stubbed > 0) {
             logger.lifecycle("particle sprites: ${written - stubbed} sliced from the sheet, " +
                     "${stubbed} stand-in cells (sheet is ${image.getWidth()}x${image.getHeight()})")
+        }
+        originalWholeFileParticleFrames.each { name, sources ->
+            sources.eachWithIndex { source, frame ->
+                def tileFile = new File("${originalAssetsDir}/thaumcraft/textures", source)
+                def tile = tileFile.exists() ? javax.imageio.ImageIO.read(tileFile) : null
+                if (tile == null) {
+                    // A whole-file frame the tree (or the CI fixture) does not
+                    // carry becomes a stand-in sprite: the frame COUNT is the
+                    // contract the JSON and the particle's strip indexing check,
+                    // the pixels are D-004 overlay business.
+                    tile = new java.awt.image.BufferedImage(particleCellPx, particleCellPx,
+                            java.awt.image.BufferedImage.TYPE_INT_ARGB)
+                    for (int px = 0; px < particleCellPx; px++) {
+                        for (int py = 0; py < particleCellPx; py++) {
+                            tile.setRGB(px, py, (int) 0x808080FF)
+                        }
+                    }
+                    stubbed++
+                }
+                def file = new File(spriteDir, "${name}_${frame}.png")
+                if (!javax.imageio.ImageIO.write(tile, 'png', file)) {
+                    throw new GradleException("no PNG writer for ${file}")
+                }
+                written++
+            }
         }
         originalBeamTiles.each { name, source ->
             def tileFile = new File("${originalAssetsDir}/thaumcraft/textures/misc", source)

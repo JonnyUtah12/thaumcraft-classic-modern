@@ -21,6 +21,8 @@ import com.jonnyutah12.thaumcraftclassic.registration.ModParticles;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
 import io.netty.buffer.Unpooled;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -60,23 +62,57 @@ public final class FxParticleGameTest {
     private FxParticleGameTest() {
     }
 
-    /** The two ported particle types must be live in the registry. */
+    /**
+     * Every particle id the M7-02 cards register, in one list shared by both
+     * registry probes: 2 (TC-M7-02-s) + 6 beams/bolts (TC-M7-02-b-s) + 3 wisp
+     * family (TC-M7-02-c-s-f1) + 11 shared families (TC-M7-02-c-s-f5: scorch,
+     * smoke_spiral, smoke_trail, swarm, vent, bore_sparkle, vis_sparkle,
+     * essentia_trail, sonic, drop, burst).
+     *
+     * <p>The two registry probes each carried their own hardcoded count pin
+     * (first 8, then 11), so every slice that registered types had to remember
+     * to bump two literals in two files, and a slice that registered a type
+     * whose id nobody listed stayed invisible. The set is the contract now:
+     * {@link #assertParticleRegistryIsExact} names the missing ids and the extra
+     * ones, so an unlisted registration is red and a deleted definition is red.
+     */
+    public static final Set<String> PORTED_PARTICLE_PATHS = Set.of(
+            "sparkle", "bubble",
+            "bolt", "beam", "beam_impact", "beam_golem_boss", "arc", "sparkle_glow",
+            "wisp", "wisp_eg", "wisp_arcing",
+            "scorch", "smoke_spiral", "smoke_trail", "swarm", "vent",
+            "bore_sparkle", "vis_sparkle", "essentia_trail", "sonic", "drop", "burst",
+            "ward", "shield_runes", "shield_runes_mob");
+
+    /** The thaumcraft particle registry must be exactly {@link #PORTED_PARTICLE_PATHS}. */
+    static void assertParticleRegistryIsExact(GameTestHelper helper) {
+        Set<ResourceLocation> registered = new TreeSet<>();
+        BuiltInRegistries.PARTICLE_TYPE.holders()
+                .filter(key -> ThaumcraftClassic.MOD_ID.equals(key.key().location().getNamespace()))
+                .forEach(key -> registered.add(key.key().location()));
+        Set<ResourceLocation> expected = new TreeSet<>();
+        for (String path : PORTED_PARTICLE_PATHS) {
+            expected.add(ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, path));
+        }
+        Set<ResourceLocation> missing = new TreeSet<>(expected);
+        missing.removeAll(registered);
+        Set<ResourceLocation> extra = new TreeSet<>(registered);
+        extra.removeAll(expected);
+        helper.assertTrue(missing.isEmpty() && extra.isEmpty(),
+                "thaumcraft particle types must be exactly the " + expected.size() + " ported ids"
+                        + "; missing=" + missing + " extra=" + extra
+                        + " (registered=" + registered.size() + ")");
+    }
+
+    /** Every ported particle type must be live in the registry, and nothing else. */
     @GameTest(template = "empty")
     public static void portedParticleTypesRegistered(GameTestHelper helper) {
-        for (String path : new String[] {"sparkle", "bubble", "wisp", "wisp_eg", "wisp_arcing"}) {
+        for (String path : PORTED_PARTICLE_PATHS) {
             ResourceLocation id = ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, path);
             helper.assertTrue(BuiltInRegistries.PARTICLE_TYPE.containsKey(id),
                     "particle type " + id + " is not in the registry");
         }
-        // The whole slice: the mod registers exactly the particle types the
-        // M7-02 cards scope — 2 (TC-M7-02-s) + 6 beams/bolts (TC-M7-02-b-s)
-        // + 3 wisp family (TC-M7-02-c-s-f1).
-        long registered = BuiltInRegistries.PARTICLE_TYPE.holders()
-                .filter(key -> ThaumcraftClassic.MOD_ID.equals(key.key().location().getNamespace()))
-                .count();
-        helper.assertTrue(registered == 14,
-                "thaumcraft-namespace particle types must be the 14 ported ones (the ward "
-                        + "hexagram and the two shield-rune forms add 3), found " + registered);
+        assertParticleRegistryIsExact(helper);
         helper.assertTrue(ModParticles.SPARCLE.get().codec() == TcSparkleOptions.MAP_CODEC,
                 "sparkle type must decode through TcSparkleOptions.MAP_CODEC");
         helper.assertTrue(ModParticles.BUBBLE.get().codec() == TcBubbleOptions.MAP_CODEC,
