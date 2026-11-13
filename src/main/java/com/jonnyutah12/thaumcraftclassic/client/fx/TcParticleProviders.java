@@ -49,6 +49,16 @@ public final class TcParticleProviders {
         event.registerSpriteSet(ModParticles.WISP.get(), TcWispParticle.Provider::new);
         event.registerSpriteSet(ModParticles.WISP_EG.get(), TcWispEgParticle.Provider::new);
         event.registerSpriteSet(ModParticles.WISP_ARCING.get(), TcWispArcingParticle.Provider::new);
+        // TC-M7-02-c-s-f4: the ward/shield-rune family. These are not sheet
+        // cells: the originals bind whole-texture frames under
+        // textures/models — hemis0..15 for the ward strip and hemis1..15 /
+        // ripple1..15 for the runes (FXBlockWard.java:111,
+        // FXShieldRunes.java:62-65) — and the build copies each file whole
+        // into the particle folder. The mob form gets the ripple strip, which
+        // is why it has its own frame list (and its own type).
+        event.registerSpriteSet(ModParticles.WARD.get(), TcWardParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.SHIELD_RUNES.get(), TcShieldRunesParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.SHIELD_RUNES_MOB.get(), TcShieldRunesParticle.Provider::new);
     }
 
     private TcParticleProviders() {

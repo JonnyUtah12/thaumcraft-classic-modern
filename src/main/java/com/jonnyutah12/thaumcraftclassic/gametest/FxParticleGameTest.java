@@ -1,20 +1,28 @@
 package com.jonnyutah12.thaumcraftclassic.gametest;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.blocks.BlockCosmeticOpaque;
 import com.jonnyutah12.thaumcraftclassic.client.fx.FxParticleCounts;
+import com.jonnyutah12.thaumcraftclassic.client.fx.FxShieldRules;
+import com.jonnyutah12.thaumcraftclassic.client.fx.FxWardRules;
 import com.jonnyutah12.thaumcraftclassic.client.fx.FxWispRules;
 import com.jonnyutah12.thaumcraftclassic.client.fx.ParticleSpawn;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcBubbleOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcEffects;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcFxPlans;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcShieldOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcSparkleOptions;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcWardHitEffects;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcWardOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispArcingOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispEgOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcWispOptions;
 import com.jonnyutah12.thaumcraftclassic.registration.ModParticles;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
 import io.netty.buffer.Unpooled;
 import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -22,6 +30,10 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -62,8 +74,9 @@ public final class FxParticleGameTest {
         long registered = BuiltInRegistries.PARTICLE_TYPE.holders()
                 .filter(key -> ThaumcraftClassic.MOD_ID.equals(key.key().location().getNamespace()))
                 .count();
-        helper.assertTrue(registered == 11,
-                "thaumcraft-namespace particle types must be the 11 ported ones, found " + registered);
+        helper.assertTrue(registered == 14,
+                "thaumcraft-namespace particle types must be the 14 ported ones (the ward "
+                        + "hexagram and the two shield-rune forms add 3), found " + registered);
         helper.assertTrue(ModParticles.SPARCLE.get().codec() == TcSparkleOptions.MAP_CODEC,
                 "sparkle type must decode through TcSparkleOptions.MAP_CODEC");
         helper.assertTrue(ModParticles.BUBBLE.get().codec() == TcBubbleOptions.MAP_CODEC,
@@ -428,6 +441,210 @@ public final class FxParticleGameTest {
         helper.assertTrue(eg.toString().equals(TcFxPlans.wispEg(spawn, 7, false,
                         FxParticleCounts.SETTING_ALL, RandomSource.create(9L)).toString()),
                 "a wisp burst must be reproducible from the same random seed");
+        helper.succeed();
+    }
+
+    /**
+     * TC-M7-02-c-s-f4: the ward hexagram's plan. The original fires ONE
+     * {@code FXBlockWard} per hit face ({@code BlockCosmeticOpaque
+     * .addHitEffects}, line 68-82), riding the face normal by 0.505 with the
+     * constructor's jitter zeroed along that normal, and it is static
+     * (FXBlockWard.java:57-59). Every face must show that geometry, so the
+     * probe walks all six.
+     */
+    @GameTest(template = "empty")
+    public static void wardHexagramPlanRidesTheFaceNormal(GameTestHelper helper) {
+        final BlockPos pos = helper.absolutePos(new BlockPos(1, 2, 1));
+        for (final Direction side : Direction.values()) {
+            final List<ParticleSpawn> plan =
+                    TcFxPlans.wardBlock(pos, side, 0.25, 0.5, 0.75, RandomSource.create(11L));
+            helper.assertTrue(plan.size() == 1,
+                    "one hexagram per hit face, got " + plan.size() + " for " + side);
+            final ParticleSpawn spawn = plan.get(0);
+            helper.assertTrue(spawn.type() == ModParticles.WARD.get(),
+                    "the ward plan must use the registered ward type");
+            helper.assertTrue(spawn.vx() == 0.0 && spawn.vy() == 0.0 && spawn.vz() == 0.0,
+                    side + ": the hexagram is static (FXBlockWard.java:57-59)");
+            final double ex = pos.getX() + 0.5 + side.getStepX() * FxWardRules.FACE_OFFSET;
+            final double ey = pos.getY() + 0.5 + side.getStepY() * FxWardRules.FACE_OFFSET;
+            final double ez = pos.getZ() + 0.5 + side.getStepZ() * FxWardRules.FACE_OFFSET;
+            final double offX = spawn.x() - ex;
+            final double offY = spawn.y() - ey;
+            final double offZ = spawn.z() - ez;
+            final double along = offX * side.getStepX() + offY * side.getStepY() + offZ * side.getStepZ();
+            helper.assertTrue(along == 0.0,
+                    side + ": the jitter must not move the quad off the face normal, got " + along);
+            // MEASURED (this card, run 3, after my 0.1 bound went red at
+            // 0.3925…): the jitter is per component, not in-plane length.
+            // FXBlockWard.java:33-35 turns each hit offset f into
+            // clamp(f - 0.6 + rand*0.2, -0.4, 0.4), rand in [0,1), and the
+            // constructor zeroes only the component along the normal
+            // (lines 36-46). The band endpoints below ARE that expression at
+            // roll 0 and roll 1, so the assertion pins the measured rule.
+            final double[] hit = {0.25, 0.5, 0.75};
+            final double[] off = {offX, offY, offZ};
+            for (final Direction.Axis axis : Direction.Axis.values()) {
+                if (FxWardRules.zeroesAxis(side, axis)) {
+                    helper.assertTrue(off[axis.ordinal()] == 0.0,
+                            side + ": the " + axis + " jitter lies on the normal and must be "
+                                    + "exactly 0 (FXBlockWard.java:36-46), got " + off[axis.ordinal()]);
+                } else {
+                    final double lo = FxWardRules.jitter(hit[axis.ordinal()], 0.0);
+                    final double hi = FxWardRules.jitter(hit[axis.ordinal()], 1.0);
+                    helper.assertTrue(off[axis.ordinal()] >= lo && off[axis.ordinal()] < hi,
+                            side + ": the " + axis + " jitter lies in [" + lo + ", " + hi
+                                    + ") = clamp(f - 0.6 + rand*0.2, -0.4, 0.4) of f = "
+                                    + hit[axis.ordinal()] + ", got " + off[axis.ordinal()]);
+                }
+            }
+            if (spawn.options() instanceof TcWardOptions options) {
+                helper.assertTrue(options.side() == side.get3DDataValue(),
+                        "the draw-side must travel on the wire, got " + options.side());
+                helper.assertTrue(options.rotation() >= 0.0F && options.rotation() < 360.0F,
+                        "the face roll is nextInt(360), got " + options.rotation());
+                helper.assertTrue(within(options.scale(), 0.4, 2.4),
+                        "the scale is 1.4 + gaussian*0.3 (FXBlockWard.java:24-25), inside the "
+                                + "1.4 +- 1.0 band the wisp probe pins, got " + options.scale());
+                helper.assertTrue(options.lifetime() >= 12 && options.lifetime() <= 16,
+                        "the lifetime is 12 + rand(5) ticks (FXBlockWard.java:24), got "
+                                + options.lifetime());
+            } else {
+                helper.fail("the ward plan must carry TcWardOptions");
+            }
+        }
+        helper.assertTrue(TcFxPlans.wardBlock(pos, Direction.UP, 0.25, 0.5, 0.75,
+                        RandomSource.create(5L)).toString()
+                .equals(TcFxPlans.wardBlock(pos, Direction.UP, 0.25, 0.5, 0.75,
+                        RandomSource.create(5L)).toString()),
+                "a ward hexagram must be reproducible from the same random seed");
+        helper.succeed();
+    }
+
+    /**
+     * TC-M7-02-c-s-f4: the ward gate on a real block state — warded glass
+     * (metadata 2) fires and returns true (which suppresses vanilla's digging
+     * particles); the amber metas return false and fall through
+     * (BlockCosmeticOpaque.java:74-81). The particle hand-off itself is a
+     * documented game-test-server no-op (see the class note), so what this
+     * probe can prove is the branch, which is the fidelity claim.
+     */
+    @GameTest(template = "empty")
+    public static void wardHexagramFiresForWardedGlassOnly(GameTestHelper helper) {
+        final BlockPos pos = helper.absolutePos(new BlockPos(1, 2, 1));
+        // The landed block's variant property is 0..2 (BlockCosmeticOpaque.java:49),
+        // so the original's amber metas are variants 0 and 1 here and 2 is warded
+        // glass — the landed ids, not the original's metadata numbering.
+        final BlockState base = CatalogDecorativeBlocks.BLOCK_COSMETIC_OPAQUE.get()
+                .defaultBlockState();
+        final BlockState warded =
+                base.setValue(BlockCosmeticOpaque.VARIANT, BlockCosmeticOpaque.VARIANT_WARDED_GLASS);
+        final BlockState amber =
+                base.setValue(BlockCosmeticOpaque.VARIANT, BlockCosmeticOpaque.VARIANT_AMBER_BRICKS);
+        final BlockHitResult hit = new BlockHitResult(pos.getCenter(), Direction.UP, pos, false);
+        helper.assertTrue(TcWardHitEffects.addHitEffects(warded, helper.getLevel(), hit, null),
+                "warded glass (meta 2) must fire the ward and swallow vanilla's particles");
+        helper.assertTrue(!TcWardHitEffects.addHitEffects(amber, helper.getLevel(), hit, null),
+                "the amber meta must fall through to vanilla (the else return false)");
+        helper.succeed();
+    }
+
+    /**
+     * TC-M7-02-c-s-f4: the orbiting runes follow the packet's sentinels
+     * (PacketFXShield.java:38-79). The runes ride the SOURCE entity; the target
+     * only aims them; {@code -1} is two runes (pitch 90 then 270 in the
+     * handler's order); a target id that is gone aims down; a non-mob source
+     * takes the flat frame and the non-mob particle type (the mob form swaps
+     * the 1..15 ripple frames — BD-45).
+     */
+    @GameTest(template = "empty")
+    public static void shieldRunePlanFollowsThePacketSentinels(GameTestHelper helper) {
+        // MEASURED (this card, run 3): helper.spawn(EntityType, BlockPos)
+        // TRANSLATES its position by the template origin — the cell stays
+        // template-RELATIVE (the note at GolemAiInstallationGameTest:205-211).
+        // Passing absolutePos put the cow out of the structure and the plan
+        // looked up a null entity: the -1 sentinel then produced 0 runes.
+        final Entity cow = helper.spawn(EntityType.COW, new BlockPos(1, 3, 1));
+        final Entity tnt = helper.spawn(EntityType.TNT, new BlockPos(5, 3, 1));
+        final RandomSource rand = RandomSource.create(4L);
+
+        helper.assertTrue(TcFxPlans.shieldRunes(helper.getLevel(), 999999,
+                        FxShieldRules.TARGET_ANY, false, rand).isEmpty(),
+                "no source entity, no runes (PacketFXShield.java:39-40)");
+
+        final List<ParticleSpawn> bothPitches = TcFxPlans.shieldRunes(helper.getLevel(),
+                cow.getId(), FxShieldRules.TARGET_ANY, false, rand);
+        helper.assertTrue(bothPitches.size() == 2,
+                "the -1 sentinel is two runes, got " + bothPitches.size());
+        for (final ParticleSpawn spawn : bothPitches) {
+            helper.assertTrue(spawn.type() == ModParticles.SHIELD_RUNES_MOB.get(),
+                    "a mob source must ride the ripple-frame type (BD-45)");
+            if (spawn.options() instanceof TcShieldOptions options) {
+                helper.assertTrue(options.mob(), "the mob branch must set the mob flag");
+                helper.assertTrue(options.yaw() == FxShieldRules.SENTINEL_YAW,
+                        "a sentinel target gives yaw 180 (PacketFXShield.java:45), got "
+                                + options.yaw());
+                helper.assertTrue(options.sourceEntityId() == cow.getId(),
+                        "the rune must carry the source id it orbits (BD-46)");
+                helper.assertTrue(options.scale() == (float) (cow.getBbWidth() * FxShieldRules.SCALE_FROM_WIDTH),
+                        "the scale is 0.4 * the source width, got " + options.scale());
+                helper.assertTrue(options.lifetime() >= 8 && options.lifetime() < 16,
+                        "the rune lifetime is 8 + rand*(8/2), got " + options.lifetime());
+            } else {
+                helper.fail("the shield plan must carry TcShieldOptions");
+            }
+            helper.assertTrue(within(spawn.x(), cow.getX() - 0.5, cow.getX() + 0.5)
+                            && within(spawn.z(), cow.getZ() - 0.5, cow.getZ() + 0.5),
+                    "the rune rides the source's x/z (FXShieldRunes.java:39-41)");
+            helper.assertTrue(within(spawn.y(), cow.getBoundingBox().minY,
+                            cow.getBoundingBox().maxY),
+                    "the rune rides the source's AABB centre height");
+        }
+        if (bothPitches.size() == 2
+                && bothPitches.get(0).options() instanceof TcShieldOptions first
+                && bothPitches.get(1).options() instanceof TcShieldOptions second) {
+            helper.assertTrue(first.pitch() == FxShieldRules.SENTINEL_PITCH_DOWN
+                            && second.pitch() == FxShieldRules.SENTINEL_PITCH_UP,
+                    "the -1 branch is 270 then 90, the handler's own order "
+                            + "(PacketFXShield.java:63-65), got " + first.pitch() + "," + second.pitch());
+        }
+
+        final List<ParticleSpawn> gone = TcFxPlans.shieldRunes(helper.getLevel(),
+                cow.getId(), 999998, false, rand);
+        helper.assertTrue(gone.size() == 1, "a gone target is one rune, got " + gone.size());
+        if (gone.size() == 1 && gone.get(0).options() instanceof TcShieldOptions goneOptions) {
+            helper.assertTrue(goneOptions.pitch() == FxShieldRules.SENTINEL_PITCH_DOWN
+                            && goneOptions.yaw() == FxShieldRules.SENTINEL_YAW,
+                    "a gone target aims straight down (PacketFXShield.java:55-58)");
+        }
+
+        final List<ParticleSpawn> aimed = TcFxPlans.shieldRunes(helper.getLevel(),
+                cow.getId(), tnt.getId(), false, rand);
+        helper.assertTrue(aimed.size() == 1, "a real target is one rune, got " + aimed.size());
+        if (aimed.size() == 1 && aimed.get(0).options() instanceof TcShieldOptions aimedOptions) {
+            final double dx = cow.getX() - tnt.getX();
+            final double dz = cow.getZ() - tnt.getZ();
+            final double dy = (cow.getBoundingBox().minY + cow.getBoundingBox().maxY) / 2.0
+                    - (tnt.getBoundingBox().minY + tnt.getBoundingBox().maxY) / 2.0;
+            helper.assertTrue(Math.abs(aimedOptions.yaw()
+                            - FxShieldRules.yawTo(dx, dz)) < 1.0e-4F,
+                    "the aim yaw must be the source-target delta (BD-16), got "
+                            + aimedOptions.yaw() + " want " + FxShieldRules.yawTo(dx, dz));
+            helper.assertTrue(Math.abs(aimedOptions.pitch()
+                            - FxShieldRules.pitchTo(dy, FxShieldRules.horizontal(dx, dz))) < 1.0e-4F,
+                    "the aim pitch must be the source-target delta, got " + aimedOptions.pitch());
+        }
+
+        final List<ParticleSpawn> flat = TcFxPlans.shieldRunes(helper.getLevel(),
+                tnt.getId(), FxShieldRules.TARGET_ANY, false, rand);
+        helper.assertTrue(flat.size() == 2, "the -1 sentinel is two runes for a mob too, got "
+                + flat.size());
+        for (final ParticleSpawn spawn : flat) {
+            helper.assertTrue(spawn.type() == ModParticles.SHIELD_RUNES.get(),
+                    "primed tnt is not a Mob: the runes take the flat frame and the base type");
+            if (spawn.options() instanceof TcShieldOptions options) {
+                helper.assertTrue(!options.mob(), "the non-mob branch must clear the mob flag");
+            }
+        }
         helper.succeed();
     }
 
