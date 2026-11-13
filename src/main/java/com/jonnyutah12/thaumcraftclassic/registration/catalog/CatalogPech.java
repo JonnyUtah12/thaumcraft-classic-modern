@@ -3,9 +3,11 @@ package com.jonnyutah12.thaumcraftclassic.registration.catalog;
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityPech;
 import com.jonnyutah12.thaumcraftclassic.entities.projectile.EntityPechBlast;
+import com.jonnyutah12.thaumcraftclassic.menus.PechMenu;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.inventory.MenuType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -58,11 +60,26 @@ public final class CatalogPech {
             ENTITY_TYPES.register("pech",
                     () -> EntityPech.buildType(MobCategory.MONSTER));
 
+    public static final DeferredRegister<MenuType<?>> MENUS =
+            DeferredRegister.create(Registries.MENU, ThaumcraftClassic.MOD_ID);
+
+    /** GUI_PECH (original gui_id 1, {@code ContainerPech}; content-mapping
+     *  {@code Thaumcraft:GUI_PECH}). Entity-bound: the open-menu extra buffer
+     *  carries the pech's entity id — the original's {@code openGui(Thaumcraft, 1,
+     *  world, entityId, 0, 0)} ({@code EntityPech.java:697}) passes the id as the
+     *  x argument and 0 for y/z, so the id is the only payload (see
+     *  {@link com.jonnyutah12.thaumcraftclassic.menus.PechMenu}). */
+    public static final DeferredHolder<MenuType<?>, MenuType<PechMenu>> GUI_PECH =
+            MENUS.register("gui_pech",
+                    () -> net.neoforged.neoforge.common.extensions.IMenuTypeExtension.create(
+                            (menuId, inv, extraData) -> new PechMenu(menuId, inv, extraData)));
+
     private CatalogPech() {
     }
 
     public static void init(final IEventBus modEventBus) {
         ENTITY_TYPES.register(modEventBus);
+        MENUS.register(modEventBus);
         modEventBus.addListener(CatalogPech::onAttributeCreation);
     }
 

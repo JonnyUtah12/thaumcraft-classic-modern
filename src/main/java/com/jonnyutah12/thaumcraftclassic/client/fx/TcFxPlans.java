@@ -4,8 +4,13 @@ import com.jonnyutah12.thaumcraftclassic.registration.ModParticles;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -561,6 +566,149 @@ public final class TcFxPlans {
     /** Extracts the 0..1 green channel of a packed colour. */
     public static float green(final int color) {
         return ((color >> 8) & 0xFF) / 255.0F;
+    }
+
+    /**
+     * The ward hexagram: {@code ClientProxy.blockWard(x, y, z, f, f1, f2, side,
+     * world)} (ClientProxy.java:974-980) spawns exactly one
+     * {@code FXBlockWard} on the block centre, jittered from the hit point
+     * (TC-M7-02-c-s-f4). The senders are the ward blocks' hit/destroy
+     * effects — {@code BlockWarded.addHitEffects} (BlockWarded.java:64-70,
+     * unconditional) and {@code BlockCosmeticOpaque.addHitEffects}
+     * (BlockCosmeticOpaque.java:68-82, metadata 2 only, warded glass) — whose
+     * parameters are exactly {@code (blockPos, hitVec - pos, sideHit)}, so the
+     * plan takes the same shape and the sender does the {@code - pos}
+     * arithmetic.
+     *
+     * <p>The draw order is the constructor's (FXBlockWard.java:27-35): the
+     * lifetime roll, the gaussian scale, the rotation, then the three jitter
+     * rolls. The face then zeroes the jitter components that lie in the hit
+     * plane (lines 36-55) and the draw's {@code 0.505} push along the face
+     * normal is baked into the spawn position (line 107) — the mote has no
+     * gravity and no motion, so it never moves after that.</p>
+     *
+     * @param pos  the ward block (the mote spawns on its centre)
+     * @param side the hit face ({@code hitVec.getDirection()} in 1.21.1, the
+     *             original's {@code EnumFacing side} parameter)
+     * @param f    the hit offset inside the block on X, as
+     *             {@code ClientProxy.blockWard}'s {@code f} parameter — the
+     *             sender's {@code (hitVec - pos)} triple
+     *             (BlockCosmeticOpaque.java:70-76, BlockWarded.java:65-67)
+     * @param f1   the same on Y
+     * @param f2   the same on Z
+     */
+    public static List<ParticleSpawn> wardBlock(final BlockPos pos, final Direction side,
+            final double f, final double f1, final double f2, final RandomSource rand) {
+        final List<ParticleSpawn> plan = new ArrayList<>(1);
+        // FXBlockWard.java:27-31, the constructor's positional rolls in order.
+        final int lifetime = FxWardRules.lifetime(rand.nextInt(FxWardRules.LIFETIME_ROLLS));
+        final double scale = FxWardRules.scale(rand.nextGaussian());
+        final int rotation = rand.nextInt(FxWardRules.ROTATION_ROLLS);
+        // FXBlockWard.java:33-35: clamp(f - 0.6 + rand * 0.2, -0.4, 0.4).
+        final double jitterX = FxWardRules.jitter(f, rand.nextFloat());
+        final double jitterY = FxWardRules.jitter(f1, rand.nextFloat());
+        final double jitterZ = FxWardRules.jitter(f2, rand.nextFloat());
+        // FXBlockWard.java:36-55: the face zeroes the two plane components.
+        final double offsetX = FxWardRules.zeroJitter(jitterX, jitterY, jitterZ, side,
+                Direction.Axis.X);
+        final double offsetY = FxWardRules.zeroJitter(jitterX, jitterY, jitterZ, side,
+                Direction.Axis.Y);
+        final double offsetZ = FxWardRules.zeroJitter(jitterX, jitterY, jitterZ, side,
+                Direction.Axis.Z);
+        // The draw's push along the face normal, baked in (line 107).
+        final Vec3 face = FxWardRules.faceOffset(side, rotation);
+        plan.add(new ParticleSpawn(ModParticles.WARD.get(),
+                new TcWardOptions(side.get3DDataValue(), rotation, (float) scale, lifetime),
+                pos.getX() + 0.5 + offsetX + face.x,
+                pos.getY() + 0.5 + offsetY + face.y,
+                pos.getZ() + 0.5 + offsetZ + face.z,
+                0.0, 0.0, 0.0));
+        return plan;
+    }
+
+    /**
+     * The orbiting shield runes: {@code PacketFXShield.onMessage}
+     * (PacketFXShield.java:38-79), transcribed branch by branch
+     * (TC-M7-02-c-s-f4). The runes always ride the packet's <em>source</em>
+     * entity; the packet's target only aims them, and its {@code -1 / -2 / -3}
+     * sentinels pick how many runes spawn and at which pitch.
+     *
+     * <p>The draw order is the handler's: the yaw/pitch arithmetic (no random),
+     * then one lifetime roll per spawned particle inside the constructor
+     * ({@code 8 + rand.nextInt(8 / 2)}, FXShieldRunes.java:31) — so the
+     * {@code -1} branch burns two rolls, in its own order.</p>
+     *
+     * @param level          the client level, for the two entity lookups
+     * @param sourceEntityId the entity the runes ride
+     * @param targetEntityId the aimed entity, or the original's sentinels
+     *                       {@code -1} (both pitches), {@code -2} (270),
+     *                       {@code -3} (90)
+     * @param cultist        the original's {@code instanceof EntityCultist}
+     *                       exclusion of the mob branch (FXShieldRunes.java:61);
+     *                       the cultist family is not landed on this repo, so
+     *                       callers pass false and the branch stays plan-visible
+     *                       (the shape {@link #blockArc}'s {@code cultistPortal}
+     *                       parameter uses)
+     */
+    public static List<ParticleSpawn> shieldRunes(final Level level, final int sourceEntityId,
+            final int targetEntityId, final boolean cultist, final RandomSource rand) {
+        final List<ParticleSpawn> plan = new ArrayList<>();
+        final Entity source = level.getEntity(sourceEntityId);
+        if (source == null) {
+            // PacketFXShield.java:39-40: no source, nothing spawns.
+            return plan;
+        }
+        final boolean mob = FxShieldRules.usesRippleFrames(source instanceof Mob, cultist);
+        if (targetEntityId >= 0) {
+            final Entity target = level.getEntity(targetEntityId);
+            if (target != null) {
+                // PacketFXShield.java:46-54: the aim triple.
+                final double dx = source.getX() - target.getX();
+                final double dy = centreHeight(source) - centreHeight(target);
+                final double dz = source.getZ() - target.getZ();
+                final float pitch = FxShieldRules.pitchTo(dy, FxShieldRules.horizontal(dx, dz));
+                final float yaw = FxShieldRules.yawTo(dx, dz);
+                plan.add(shieldRuneSpawn(source, yaw, pitch, mob, rand));
+            } else {
+                // PacketFXShield.java:55-58: a target that is gone aims down.
+                plan.add(shieldRuneSpawn(source, FxShieldRules.SENTINEL_YAW,
+                        FxShieldRules.SENTINEL_PITCH_DOWN, mob, rand));
+            }
+        } else if (targetEntityId == FxShieldRules.TARGET_ANY) {
+            // PacketFXShield.java:62-66: two runes, pitch 90 then 270.
+            plan.add(shieldRuneSpawn(source, FxShieldRules.SENTINEL_YAW,
+                    FxShieldRules.SENTINEL_PITCH_DOWN, mob, rand));
+            plan.add(shieldRuneSpawn(source, FxShieldRules.SENTINEL_YAW,
+                    FxShieldRules.SENTINEL_PITCH_UP, mob, rand));
+        } else if (targetEntityId == FxShieldRules.TARGET_BELOW) {
+            // PacketFXShield.java:67-69.
+            plan.add(shieldRuneSpawn(source, FxShieldRules.SENTINEL_YAW,
+                    FxShieldRules.SENTINEL_PITCH_UP, mob, rand));
+        } else if (targetEntityId == FxShieldRules.TARGET_ABOVE) {
+            // PacketFXShield.java:70-72.
+            plan.add(shieldRuneSpawn(source, FxShieldRules.SENTINEL_YAW,
+                    FxShieldRules.SENTINEL_PITCH_DOWN, mob, rand));
+        }
+        return plan;
+    }
+
+    /** One rune: the constructor's roll, the ride position, the 0.4 * width scale. */
+    private static ParticleSpawn shieldRuneSpawn(final Entity source, final float yaw,
+            final float pitch, final boolean mob, final RandomSource rand) {
+        final int lifetime = FxShieldRules.lifetime(FxShieldRules.AGE_BASE,
+                rand.nextInt(FxShieldRules.rolledExtra(FxShieldRules.AGE_BASE)));
+        // FXShieldRunes.java:39-41: x, the AABB centre height, z of the source.
+        return new ParticleSpawn(mob ? ModParticles.SHIELD_RUNES_MOB.get()
+                        : ModParticles.SHIELD_RUNES.get(),
+                new TcShieldOptions(source.getId(), yaw, pitch,
+                        FxShieldRules.scale(source.getBbWidth()), lifetime, mob),
+                source.getX(), centreHeight(source), source.getZ(), 0.0, 0.0, 0.0);
+    }
+
+    /** The AABB centre height: {@code (bbMinY + bbMaxY) / 2} (FXShieldRunes.java:40, 93). */
+    private static double centreHeight(final Entity entity) {
+        final AABB box = entity.getBoundingBox();
+        return (box.minY + box.maxY) / 2.0;
     }
 
     /** Extracts the 0..1 blue channel of a packed colour. */
