@@ -8,6 +8,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEntities;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchRealm;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogMindSpider;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogOuterLands;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
@@ -237,6 +238,14 @@ public final class ModRegistration {
         // Renderer + spawn egg stay on TC-M7-03-s / TC-M6-06-s-c6; the trade
         // GUI has no menu surface in the port (BD row).
         CatalogPech.init(modEventBus);
+
+        // TC-M6-06-s-c3-b: the mind spider — thaumcraft:mindspider
+        // (EntityMindSpider extends the vanilla spider, with its harmless mode,
+        // viewer name, 1200-tick harmless fuse and every drop shut off in
+        // MindSpiderAiLogic). The AI switch is forced ON exactly as the
+        // original's func_145773_az() = true does, so the inherited spider
+        // goals never run. Renderer TC-M7-03-s, spawn egg row TC-M6-06-s-c6.
+        CatalogMindSpider.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-
