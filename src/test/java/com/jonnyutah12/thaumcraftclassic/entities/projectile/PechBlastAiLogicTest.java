@@ -29,8 +29,11 @@ class PechBlastAiLogicTest {
         // ConfigEntities.java:86. The update interval is 20, NOT the 3 the
         // mobs use: the original relies on the tracker for its arc, which is
         // why 1.21.1's builder must call setShouldReceiveVelocityUpdates(true).
-        assertEquals(64, PechBlastAiLogic.TRACK_RANGE_BLOCKS);
-        assertEquals(20, PechBlastAiLogic.UPDATE_INTERVAL);
+        assertEquals(64, PechBlastAiLogic.TRACK_RANGE_BLOCKS, "ConfigEntities.java:86");
+        // 1.21.1's clientTrackingRange counts CHUNKS, so the 64 blocks land as
+        // 4 (the family rule pinned at BrainyZombieAiLogicTest:38).
+        assertEquals(4, PechBlastAiLogic.TRACK_RANGE_CHUNKS, "64 blocks is 4 chunks");
+        assertEquals(20, PechBlastAiLogic.UPDATE_INTERVAL, "ConfigEntities.java:86");
         assertTrue(PechBlastAiLogic.VELOCITY_UPDATES);
         // EntityThrowable's own box (func_70026_a(0.5F, 0.5F))
         assertEquals(0.5F, PechBlastAiLogic.WIDTH, F);

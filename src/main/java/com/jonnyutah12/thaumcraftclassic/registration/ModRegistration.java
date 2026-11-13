@@ -1,16 +1,28 @@
 package com.jonnyutah12.thaumcraftclassic.registration;
 
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArcaneWorkbench;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArmor;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEntities;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchRealm;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogOuterLands;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaTransport;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogGolems;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogPech;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResearchBook;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTaint;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTaintMobs;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogWandRecipes;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogWands;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.M3ResearchContent;
 import net.neoforged.bus.api.IEventBus;
 
 /**
@@ -65,8 +77,10 @@ public final class ModRegistration {
         // Feature content holders (append-only): each registers into the
         // shared ModItems holder; class-init trigger only, no new bus wiring.
         CatalogBaubles.init(); // TC-M8-02 bauble items
+        CatalogWands.init(modEventBus); // TC-M6-01 wand items + thaumcraft:wand_component registry
 
         ModDataComponents.DATA_COMPONENT_TYPES.register(modEventBus);
+        ModLootNumberProviders.register(modEventBus); // SPINE-1 fortuned_uniform rolls
         ModBlocks.BLOCKS.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITY_TYPES.register(modEventBus);
@@ -144,12 +158,96 @@ public final class ModRegistration {
         // hand-rolled AI/navigation (entities/monster/WispAiLogic pins every
         // figure). Renderers stay on TC-M7-03-s, golems on TC-M6-08-s.
         CatalogEntities.init(modEventBus);
+        // TC-M6-06-s-b: the taint mob family (taint animals, taintacles, spore
+        // chain, thaumic slime, taint spider, falling taint). The spawn-guard
+        // ids TaintManager and BlockTaint look up at call time (taintspore,
+        // taintswarmer, fallingtaint) land here, flipping those seams on.
+        CatalogTaintMobs.init(modEventBus);
 
         // TC-M4-06-s: essentia extraction + storage — the infernal furnace
         // (base + nozzle) and its smelting-bonus table, the warded/void jars
         // with their jar tiles, the glass phial and the filled-jar item. The
         // tube network that moves essentia between them stays on TC-M4-07.
         CatalogEssentiaStorage.init(modEventBus);
+
+        // TC-M6-07-s: thaumic armour + equipment effects — the two armour
+        // materials the original registers (armorMatThaumium / armorMatSpecial)
+        // as real ARMOR_MATERIAL registry entries, the four thaumium pieces,
+        // the three robe pieces and the goggles of revealing, and their effects
+        // through the already-merged contracts: IVisDiscountGear into
+        // wands/WornGearDiscounts, IRunicArmor into runic/RunicShielding's
+        // armour-slot scan, and IRevealer into nodes/NodeReveal. The boots of
+        // the traveller, the thaumostatic harness, the fortress/void/cult
+        // families, the robe dye mechanics and the armour models stay on
+        // TC-M6-07b / TC-M6-06 / TC-M7-01.
+        CatalogArmor.init(modEventBus);
+        // TC-M5-04-s: taint — the crust/soil/flesh and fibres mega-blocks and
+        // their variant items. The Tainted Land biome is a datapack entry
+        // (data/thaumcraft/worldgen/biome/), and the spread/conversion rules
+        // run in TaintManager; the config keys already live in
+        // TcConfigCatalog. Taint cleansing and aura restore stay on the
+        // sibling card TC-M5-04b, the taint creatures and the Taint Poison
+        // effect on TC-M6-06 / TC-M6-05, and the worldgen biome hook on
+        // TC-M5-05.
+        CatalogTaint.init(modEventBus);
+        // TC-M6-04f-s: the Eldritch realm's content — blockEldritch (11
+        // variants) + blockEldritchnothing, their tiles (altar, obelisk, cap,
+        // lock, crab spawner, nothing), the pure/death fluids with their
+        // blocks and buckets, the Eldritch Objects mega-item, and the
+        // taint/dissolve damage types (data/thaumcraft/damage_type). The
+        // dimension/portal and structure placement are TC-M6-04f-m; the maze
+        // generation shipped in f252c58.
+        CatalogEldritchRealm.init(modEventBus);
+        // BOOK-1 (t_1e6b18cc): the Thaumonomicon book item — the book's open
+        // path. Right-click runs the original's research sync (the siblings of
+        // everything completed) and sends the S2C open payload; the browser
+        // itself is containerless like the original's GuiScreen, so this card
+        // registers NO menu type (BD-22). Pages/navigation stay on BD-13.
+        CatalogResearchBook.init(modEventBus);
+        // TC-M3-04-s-ii: the research note item (thaumcraft:itemresearchnotes)
+        // — the meta-carrying note/discovery family whose right-click finishes a
+        // completed note (plus requisition-satisfying siblings) and whose blank
+        // discovery note (meta 24/42) rolls findHiddenResearch into a fresh
+        // NotePuzzle note or 7-9 knowledge fragments. Its note state is the
+        // thaumcraft:research_note component; the hex-grid note screen and the
+        // per-meta icons/glint stay on their cards.
+        M3ResearchContent.init(modEventBus);
+        // TC-M6-08-s: golem content — the five golem items
+        // (itemgolemplacer / itemgolemcore / itemgolemupgrade / golembell /
+        // itemgolemdecoration) and the thaumcraft:golem entity type
+        // (EntityGolemBase substrate; behaviour is TC-M6-08-s-b, GUI and
+        // renderers TC-M6-08-s-c). Registering the items makes the shipped
+        // GOLEM*/CORE*/UPGRADE*/TINY* crucible, arcane and infusion recipe rows
+        // that gate on them live.
+        CatalogGolems.init(modEventBus);
+        // TC-M6-01-s-b: the wand/sceptre assembly recipes' ingredient type —
+        // the JSON form of ArcaneWandRecipe.checkItemEquals (item + original
+        // damage value) that the 107 wand + 108 sceptre rows under
+        // data/thaumcraft/recipe/ name. The rows themselves ride the
+        // CatalogArcaneWorkbench type/serializer pair above.
+        CatalogWandRecipes.init(modEventBus);
+        // TC-M6-04f-m: the Outer Lands dimension family — the eldritch portal
+        // block/tile (thaumcraft:blockPortalEldritch), the maze build sweep
+        // (MazeHandler) and the teleporter. The dimension itself is the
+        // dimension_type/dimension datapack pair under data/thaumcraft/.
+        CatalogOuterLands.init(modEventBus);
+
+        // TC-M6-06-s-c3-a: the pech — thaumcraft:pech (EntityPech, monster
+        // with its own hand-rolled AI/navigation in PechAiLogic) and
+        // thaumcraft:pechblast (EntityPechBlast, the pech wand's projectile).
+        // Renderer + spawn egg stay on TC-M7-03-s / TC-M6-06-s-c6; the trade
+        // GUI has no menu surface in the port (BD row).
+        CatalogPech.init(modEventBus);
+        // TC-M4-07-i (t_765fab90, consolidating TC-M4-07-s t_62ddfe14 + TC-M4-07-m t_bd264b62 +
+        // TC-M4-07-f t_0d3b1b2a): the essentia transport network — the tube block
+        // (thaumcraft:blocktube, the original's metadata 0..7 on a variant property) with the six
+        // conduit tiles it hosts (tube, valve, filter, buffer, restricted, directional) and their
+        // suction/flow rules. The two machines the original also hosted on this block (metadata 2
+        // centrifuge, metadata 7 crystallizer) and the wand/resonator face toggling (the
+        // IWandable seam over the tiles' sub-hit cuboids) landed in the same consolidation.
+        // The pipe/machine renderers, particles and sounds stay on TC-M7-01/TC-M7-05 and the
+        // per-variant item labels on TC-M7-01b.
+        CatalogEssentiaTransport.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

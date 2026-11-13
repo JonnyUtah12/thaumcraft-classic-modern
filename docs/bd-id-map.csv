@@ -1,0 +1,45 @@
+head,head_sha,old_id,new_id,card,canonical,system
+origin/wt/m7-fx-wisps,535d81680aaabe9030d2aa035c7d55de6c1828df,BD-17,BD-46,t_ed46eb80,yes,FX render substrate (TC-M7-02-c-s)
+origin/wt/m7-fx-wisps,535d81680aaabe9030d2aa035c7d55de6c1828df,BD-18,BD-47,t_ed46eb80,yes,Dig / infusion crumb particles (TC-M7-02-c-s)
+origin/wt/m7-fx-wisps,535d81680aaabe9030d2aa035c7d55de6c1828df,BD-19,BD-48,t_ed46eb80,yes,Zap / wisp-zap bolt rendering (TC-M7-02-c-s)
+origin/wt/m7-fx-wisps,535d81680aaabe9030d2aa035c7d55de6c1828df,BD-20,BD-49,t_ed46eb80,yes,Entity-targeted FX payload (TC-M7-02-c-s)
+origin/wt/m7-gui-devices,1f327804049c5f0756e5d730f796e9d711f295ad,BD-18,BD-50,t_e4e67fd6,yes,Alchemical furnace window gauges (TC-M7-04-m1)
+origin/wt/m7-gui-devices,1f327804049c5f0756e5d730f796e9d711f295ad,BD-19,BD-51,t_e4e67fd6,yes,Arcane bore window readouts and focus slot (TC-M7-04-m1)
+origin/wt/m7-gui-devices,1f327804049c5f0756e5d730f796e9d711f295ad,BD-20,BD-52,t_e4e67fd6,yes,`gui_crucible` (TC-M7-04 label) closes on absence (TC-M7-04-m1)
+origin/wt/m7-gui-pouch,d8849160f5d5cac90e73c1998803dfa8cc368d55,BD-18,BD-53,t_e4e67fd6,yes,Focus pouch GUI geometry + close authority (TC-M7-04-m3)
+origin/wt/m7-gui-crafting,a523174d4530780b9e2f8a557a196ba2517afaac,BD-18,BD-54,t_e4e67fd6,no,"Arcane workbench window (TC-M7-04-m2 / t_8dd79934, `thaumcraft:gui_arcane_workbench`, gui_id 13)"
+origin/wt/m7-gui-research-table,5a7726e527dcfbab953dcdb80b6f153f8042c337,BD-18,BD-54,t_590193c0,no,"Arcane workbench window (TC-M7-04-m2 / t_8dd79934, `thaumcraft:gui_arcane_workbench`, gui_id 13)"
+origin/wt/m7-gui-tagdraw,fc22f7a5ea971acfa03da66a235be9d9fbb3d224,BD-18,BD-54,t_e4e67fd6,no,"Arcane workbench window (TC-M7-04-m2 / t_8dd79934, `thaumcraft:gui_arcane_workbench`, gui_id 13)"
+origin/wt/m7-gui-tau-glyphs,daf10b9f9456859be6ac010a9917d29cf6fabd30,BD-18,BD-54,t_e4e67fd6,yes,"Arcane workbench window (TC-M7-04-m2 / t_8dd79934, `thaumcraft:gui_arcane_workbench`, gui_id 13)"
+origin/wt/m7-gui-thaumatorium,16ffb5ebcc7c4d5ba4498f8c4b3854656cfdf31f,BD-18,BD-54,t_e4e67fd6,no,"Arcane workbench window (TC-M7-04-m2 / t_8dd79934, `thaumcraft:gui_arcane_workbench`, gui_id 13)"
+origin/wt/t_fee89bb7,6131705670d32f9eff72b393a84a3f1826c3789b,BD-18,BD-54,t_e4e67fd6,no,"Arcane workbench window (TC-M7-04-m2 / t_8dd79934, `thaumcraft:gui_arcane_workbench`, gui_id 13)"
+origin/wt/m7-gui-tau-glyphs,daf10b9f9456859be6ac010a9917d29cf6fabd30,BD-19,BD-55,t_e4e67fd6,yes,"Thaumatorium window (TC-M7-04-m2c / t_8f57a102 and TC-M7-04-m2e / t_f1395853, `thaumcraft:gui_thaumatorium`, gui_id 3)"
+origin/wt/m7-gui-thaumatorium,16ffb5ebcc7c4d5ba4498f8c4b3854656cfdf31f,BD-19,BD-55,t_e4e67fd6,no,"Thaumatorium window (TC-M7-04-m2c / t_8f57a102 and TC-M7-04-m2e / t_f1395853, `thaumcraft:gui_thaumatorium`, gui_id 3)"
+origin/wt/m7-renderers,4accac42010dbdd44fa2cd48428fa792c3f6d76d,BD-17,BD-56,t_215d6fd4,yes,Entity billboard render seam (TC-M7-03-s)
+origin/wt/t_20ad0211,8a71dcde091a1143fcdb7ba2e43bec6b5945aff8,BD-17,BD-57,t_20ad0211,yes,Recipe browser (JEI categories) — SPINE-4
+origin/wt/t_7bf6a4d0,9490dc85525455e670d5939b5b6bbc5cfc31c754,BD-17,BD-57,t_20ad0211,no,Recipe browser (JEI categories) — SPINE-4
+origin/wt/t_aebd14cf,43fda37b760027d636ebeb72a2554950c9a89d07,BD-17,BD-57,t_20ad0211,no,Recipe browser (JEI categories) — SPINE-4
+origin/wt/t_065502ba,0e3d49efb81300b37f620c7b0ad2f832f8b37cb7,BD-18,BD-58,t_6563ce50,no,"Block appearance that a **static blockstate model cannot express** (SPINE-4, t_4f36e7d7; the landed half = BD-18 slices 2-3, t_065502ba)"
+origin/wt/t_42864caf,d32579c5c67eddd2944199e1d3bb27849236ef58,BD-18,BD-58,t_42864caf,yes,"Block appearance that a **static blockstate model cannot express** (SPINE-4, t_4f36e7d7; the landed half = BD-18 slices 2-3, t_065502ba)"
+origin/wt/t_45b89dd2,ff5547bd18746308c286659b6288a267816ee50b,BD-18,BD-58,t_6563ce50,no,"Block appearance that a **static blockstate model cannot express** (SPINE-4, t_4f36e7d7; the landed half = BD-18 slices 2-3, t_065502ba)"
+origin/wt/t_47316a9b,b351ad3cc7ebd86048eee7d7690f8685de97c99d,BD-18,BD-58,t_6563ce50,no,"Block appearance that a **static blockstate model cannot express** (SPINE-4, t_4f36e7d7; the landed half = BD-18 slices 2-3, t_065502ba)"
+origin/wt/t_4f36e7d7,735381a5412d94cdd29f42a38873267832c2d1e0,BD-18,BD-58,t_4f36e7d7,no,"Block appearance that a **static blockstate model cannot express** (SPINE-4, t_4f36e7d7; the landed half = BD-18 slices 2-3, t_065502ba)"
+origin/wt/t_5eb27d02,960c2823015b534fc8f3bbee3d6e94f99ad7a7ef,BD-18,BD-58,t_6563ce50,no,"Block appearance that a **static blockstate model cannot express** (SPINE-4, t_4f36e7d7; the landed half = BD-18 slices 2-3, t_065502ba)"
+origin/wt/t_6563ce50,376d2ce823278d592d37097784bee1aed8ce0901,BD-18,BD-58,t_6563ce50,no,"Block appearance that a **static blockstate model cannot express** (SPINE-4, t_4f36e7d7; the landed half = BD-18 slices 2-3, t_065502ba)"
+origin/wt/t_fd5265f3,5561bb36fd1c26094457e6d8c3b17123327e40cc,BD-18,BD-58,t_6563ce50,no,"Block appearance that a **static blockstate model cannot express** (SPINE-4, t_4f36e7d7; the landed half = BD-18 slices 2-3, t_065502ba)"
+origin/wt/book3a,caa729323944ba332621b87ac1ffe550b0b042e7,BD-22,BD-59,t_eaa49d35,no,"Research page markup in the generated research lang (BOOK-3a, D-016 option 2)"
+origin/wt/t_28ce4d49,6869db2008dc3fcf935516f0c94d47e259db03ec,BD-22,BD-59,t_28ce4d49,no,"Research page markup in the generated research lang (BOOK-3a, D-016 option 2)"
+origin/wt/t_6799fd3f,e865ce69130a177a3ac2fc722fa8684e22476875,BD-22,BD-59,t_28ce4d49,yes,"Research page markup in the generated research lang (BOOK-3a, D-016 option 2)"
+origin/wt/t_28ce4d49,6869db2008dc3fcf935516f0c94d47e259db03ec,BD-30,BD-60,t_28ce4d49,no,"Research display text resolution path (BOOK-3a follow-up, t_28ce4d49)"
+origin/wt/t_6799fd3f,e865ce69130a177a3ac2fc722fa8684e22476875,BD-30,BD-60,t_28ce4d49,yes,"Research display text resolution path (BOOK-3a follow-up, t_28ce4d49)"
+origin/wt/t_6d464a8b,2ac607cae4883a4d2529e94effcbe9645333f7a6,BD-30,BD-61,t_6d464a8b,yes,Client FX plan streams: the original draws FX randomness from two unmeasurable streams (TC-M7-02-c-s family)
+origin/wt/t_f04c44fb,675871a630e5934b0998b44cc197e28599e976ed,BD-17,BD-62,t_f04c44fb,yes,"Per-meta item appearance and the four custom item renderers (BD-17 follow-up, `t_f04c44fb`)"
+origin/wt/m7-gui-research-table,5a7726e527dcfbab953dcdb80b6f153f8042c337,BD-19,BD-63,t_590193c0,no,"Research table window (TC-M7-04-m2b / t_5caddd7d, `thaumcraft:gui_research_table`, gui_id 10)"
+origin/wt/t_fee89bb7,6131705670d32f9eff72b393a84a3f1826c3789b,BD-19,BD-63,t_e4e67fd6,yes,"Research table window (TC-M7-04-m2b / t_5caddd7d, `thaumcraft:gui_research_table`, gui_id 10)"
+origin/wt/knowfrag-recipe,05f64952384fbdc4be2b5c2216e11b458cadf1cb,BD-19,BD-64,t_9eefdde6,no,KnowFrag recipe / research-page recipe display (TC-M3-04-s-iv + TC-M3-04-s-iv-b)
+origin/wt/thaumonomicon-recipe-page,96b247a7789350efa90d1b7ded81c5cfdb203601,BD-19,BD-64,t_9eefdde6,yes,KnowFrag recipe / research-page recipe display (TC-M3-04-s-iv + TC-M3-04-s-iv-b)
+origin/wt/inkwell-recipe,d0ed7164b6eaa2c0b00452381f74607233ead443,BD-20,BD-66,t_28fe696f,yes,Scribing Tools acquisition (TC-M3-04-s-vi)
+origin/salvage/t_3cb64300-delta,d4f48a46bbaec476d3cd54950f2e61202e7150d2,BD-46,BD-67,t_3cb64300,yes,"Pech trade window (TC-M6-06-s-c3-a / t_3cb64300)"
+origin/salvage/t_3cb64300-delta,d4f48a46bbaec476d3cd54950f2e61202e7150d2,BD-47,BD-68,t_3cb64300,yes,"Pech wand branch gated on an unregistered item (TC-M6-06-s-c3-a / t_3cb64300)"
+origin/salvage/t_3cb64300-delta,d4f48a46bbaec476d3cd54950f2e61202e7150d2,BD-48,BD-69,t_3cb64300,yes,"Pech boss status (TC-M6-06-s-c3-a / t_3cb64300)"
+origin/salvage/t_3cb64300-delta,d4f48a46bbaec476d3cd54950f2e61202e7150d2,BD-49,BD-70,t_3cb64300,yes,"Pech village gate and wander factor (TC-M6-06-s-c3-a / t_3cb64300)"

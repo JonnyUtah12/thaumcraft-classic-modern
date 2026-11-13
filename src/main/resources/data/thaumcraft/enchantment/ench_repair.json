@@ -1,0 +1,21 @@
+{
+  "_source": "TC-M6-05-s-e1c registration slice. Id contract: docs/content-mapping.csv row Thaumcraft:ench_repair (kind=enchantment). The row names the enchantment that recipe.201.infusion_enchantment.json (original_key InfEnchRepair) puts on the pedestal item. Registration only: the Repair effect body (mend the durability from XP) is the next slice, so this payload carries no `effects` component.",
+  "description": {
+    "translate": "enchantment.thaumcraft.ench_repair"
+  },
+  "supported_items": "#minecraft:enchantable/durability",
+  "weight": 2,
+  "max_level": 2,
+  "min_cost": {
+    "base": 20,
+    "per_level_above_first": 10
+  },
+  "max_cost": {
+    "base": 70,
+    "per_level_above_first": 10
+  },
+  "anvil_cost": 2,
+  "slots": [
+    "any"
+  ]
+}

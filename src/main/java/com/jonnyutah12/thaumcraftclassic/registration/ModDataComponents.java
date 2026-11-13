@@ -2,6 +2,7 @@ package com.jonnyutah12.thaumcraftclassic.registration;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.aspect.EssentiaContainer;
+import com.jonnyutah12.thaumcraftclassic.research.ResearchNoteData;
 import com.jonnyutah12.thaumcraftclassic.wands.VisPool;
 import com.mojang.serialization.Codec;
 import io.netty.buffer.ByteBuf;
@@ -62,12 +63,74 @@ public final class ModDataComponents {
      * the same way). 1.21.1 has no damage-value variants, so the meta travels
      * on the stack; {@code new_id} stays one registered object per
      * content-mapping.csv row (docs/architecture/registration.md).
+     *
+     * <p>TC-M6-08-s widened the range from 0..63 to the original's full
+     * damage-value domain: {@code ItemGolemCore}'s blank core is metadata
+     * <b>100</b> (the {@code golem_core_blank} icon and the crucible row
+     * {@code recipe.42.crucible}'s catalyst) and the original's "any metadata"
+     * wildcard is <b>32767</b> ({@code ResearchManager.META_ANY}; the
+     * ADVANCEDGOLEM research icon's {@code ItemGolemPlacer} meta). The shipped
+     * data files already carry those values, so the narrower codec rejected
+     * rows that used to gate out on an unregistered item.</p>
+     * <p>The wand family (TC-M6-01-s, t_becee16b / t_4b191041) needed the same
+     * widening for its own reason: the wand rod item's original damage values
+     * reach 100 (the primal staff core, {@code ItemWandRod.func_150895_a}) and a
+     * wand's damage value is {@code capCraftCost × rodCraftCost} (up to 9 × 32,
+     * ×1.5 for a sceptre, {@code ArcaneWandRecipe}/{@code ArcaneSceptreRecipe}),
+     * i.e. {@code 0..1023} — a strict subset of the domain above, so the wand
+     * rows and the golem rows share one codec bound. Widening a persistent
+     * codec's accepted range is additive: every value the previous bound
+     * accepted still encodes and decodes identically.</p>
      */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> ITEM_META =
             DATA_COMPONENT_TYPES.register("item_meta",
                     () -> DataComponentType.<Integer>builder()
-                            .persistent(Codec.intRange(0, 63))
+                            .persistent(Codec.intRange(0, 32767))
                             .networkSynchronized(ByteBufCodecs.VAR_INT)
+                            .build());
+
+    /**
+     * The rod a wand stack is built from (TC-M6-01): the original's
+     * {@code "rod"} ItemStack NBT key written by
+     * {@code ItemWandCasting.setRod} ({@code common/items/wands/
+     * ItemWandCasting.java:499-500}, a {@code NBTTagString} of the rod tag).
+     * An absent component resolves to the wood rod, exactly as the original's
+     * {@code getRod} did.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> WAND_ROD =
+            DATA_COMPONENT_TYPES.register("wand_rod",
+                    () -> DataComponentType.<String>builder()
+                            .persistent(Codec.STRING)
+                            .networkSynchronized(ByteBufCodecs.STRING_UTF8)
+                            .build());
+
+    /**
+     * The cap a wand stack is built from (TC-M6-01): the original's
+     * {@code "cap"} NBT key ({@code ItemWandCasting.setCap}, line 522-524).
+     * An absent component resolves to the iron cap, as in the original's
+     * {@code getCap}.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> WAND_CAP =
+            DATA_COMPONENT_TYPES.register("wand_cap",
+                    () -> DataComponentType.<String>builder()
+                            .persistent(Codec.STRING)
+                            .networkSynchronized(ByteBufCodecs.STRING_UTF8)
+                            .build());
+
+    /**
+     * The sceptre marker (TC-M6-01): the original wrote a
+     * {@code NBTTagByte} under the {@code "sceptre"} key on the wand stack
+     * ({@code ArcaneSceptreRecipe.getCraftingResult},
+     * {@code ItemWandCasting.java:101-102}) and {@code isSceptre} tested the
+     * key's <em>presence</em> ({@code func_74764_b("sceptre")}, line 490-491) —
+     * so a present-but-false value still reads as a sceptre, and the port
+     * preserves that by always writing {@code TRUE} and testing presence.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Boolean>> WAND_SCEPTRE =
+            DATA_COMPONENT_TYPES.register("wand_sceptre",
+                    () -> DataComponentType.<Boolean>builder()
+                            .persistent(Codec.BOOL)
+                            .networkSynchronized(ByteBufCodecs.BOOL)
                             .build());
 
     /**
@@ -104,6 +167,25 @@ public final class ModDataComponents {
                             .build());
 
     /**
+     * Robe armour tint (TC-M6-07-s): the original wrote a 24-bit RGB int to the
+     * stack's {@code display.color} NBT — {@code ItemRobeArmor.setColor}
+     * ({@code common/items/armor/ItemRobeArmor.java:118-131}), read by
+     * {@code getColor} (lines 96-104, default {@code 6961280}) and written by
+     * {@code RecipesRobeArmorDyes}, which mixes two dyes into a blended colour.
+     * 1.21.1's {@code minecraft:base_color} carries a {@code DyeColor} (16
+     * values), so it cannot hold the original's blended colour; the port keeps
+     * the full int on its own component, same shape as {@link #BANNER_COLOR}.
+     * The client read (the dyeable layer tint) is the armour model pass,
+     * TC-M7-01.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> ARMOR_COLOR =
+            DATA_COMPONENT_TYPES.register("armor_color",
+                    () -> DataComponentType.<Integer>builder()
+                            .persistent(Codec.intRange(0, 0xFFFFFF))
+                            .networkSynchronized(ByteBufCodecs.VAR_INT)
+                            .build());
+
+    /**
      * Runic hardening bonus (TC-M8-02): the original's {@code "RS.HARDEN"}
      * ItemStack NBT int read by {@code EventHandlerRunic.getFinalCharge}
      * ({@code common/lib/events/EventHandlerRunic.java:347-350}); written by
@@ -115,6 +197,26 @@ public final class ModDataComponents {
                     () -> DataComponentType.<Integer>builder()
                             .persistent(Codec.INT)
                             .networkSynchronized(ByteBufCodecs.VAR_INT)
+                            .build());
+
+    /**
+     * The puzzle state of one research note (TC-M3-04-s-ii): replaces the
+     * original's {@code ResearchNoteData} ItemStack NBT written by
+     * {@code ResearchManager.createNote} and read by
+     * {@code ResearchManager.getData} ({@code common/lib/research/
+     * ResearchManager.java:110/191}, and the note item's own
+     * {@code onItemRightClick}/{@code addInformation}). Persistent codec is
+     * {@link ResearchNoteData#CODEC}, which writes the original
+     * {@code key}/{@code color}/{@code complete}/{@code copies}/{@code hexgrid}
+     * tag layout, and the network codec is its {@code STREAM_CODEC} — the
+     * original synced the whole note NBT to the client with the stack, which is
+     * what a synced component does here (the note's own screen is a later card).
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<ResearchNoteData>> RESEARCH_NOTE =
+            DATA_COMPONENT_TYPES.register("research_note",
+                    () -> DataComponentType.<ResearchNoteData>builder()
+                            .persistent(ResearchNoteData.CODEC)
+                            .networkSynchronized(ResearchNoteData.STREAM_CODEC)
                             .build());
 
     private ModDataComponents() {

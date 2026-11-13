@@ -9,6 +9,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
 import com.jonnyutah12.thaumcraftclassic.registration.ModRegistration;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
@@ -21,6 +22,7 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.BlockItemStateProperties;
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.entity.EntityType;
@@ -93,9 +95,24 @@ public final class LocalizationGameTest {
             Map.entry("container.thaumcraft.deconstructiontable", "TileDeconstructionTable.getDisplayName"),
             Map.entry("container.thaumcraft.magicbox", "TileMagicBox.getDisplayName"),
             Map.entry("container.thaumcraft.spa", "TileSpa.getDisplayName"),
+            // BOOK-1 (t_1e6b18cc): the containerless book screen's own title —
+            // ThaumonomiconScreen.TITLE_KEY. The browser has no Container
+            // (GuiResearchBrowser.java:41) and no menu type, so no registry
+            // derivation produces this key (BD-22).
+            Map.entry("container.thaumcraft.thaumonomicon", "ThaumonomiconScreen.TITLE_KEY"),
             // tooltip / action lines
             Map.entry("item.thaumcraft.itemlootbag.tooltip", "ItemLootBag.appendHoverText"),
             Map.entry("item.thaumcraft.trunkspawner.tooltip", "ItemTrunkSpawner.appendHoverText"),
+            // TC-M6-08-s: the golem upgrade's own description line (original
+            // item.ItemGolemUpgrade.<meta>.desc, ItemGolemUpgrade.appendHoverText)
+            // and the advanced-golem tooltip label (original tc.adv).
+            Map.entry("item.thaumcraft.itemgolemupgrade.0.desc", "ItemGolemUpgrade.appendHoverText"),
+            Map.entry("item.thaumcraft.itemgolemupgrade.1.desc", "ItemGolemUpgrade.appendHoverText"),
+            Map.entry("item.thaumcraft.itemgolemupgrade.2.desc", "ItemGolemUpgrade.appendHoverText"),
+            Map.entry("item.thaumcraft.itemgolemupgrade.3.desc", "ItemGolemUpgrade.appendHoverText"),
+            Map.entry("item.thaumcraft.itemgolemupgrade.4.desc", "ItemGolemUpgrade.appendHoverText"),
+            Map.entry("item.thaumcraft.itemgolemupgrade.5.desc", "ItemGolemUpgrade.appendHoverText"),
+            Map.entry("tc.adv", "ItemGolemPlacer tooltip (original tc.adv, advanced golems)"),
             Map.entry("item.thaumcraft.itemgolemupgrade.0", "ItemTrunkSpawner tooltip (TC-M6-06 trunk upgrades)"),
             Map.entry("item.thaumcraft.itemgolemupgrade.1", "ItemTrunkSpawner tooltip (TC-M6-06 trunk upgrades)"),
             Map.entry("item.thaumcraft.itemgolemupgrade.2", "ItemTrunkSpawner tooltip (TC-M6-06 trunk upgrades)"),
@@ -111,7 +128,99 @@ public final class LocalizationGameTest {
             Map.entry("tc.handmirrorlinkedto", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorlinked", "ItemHandMirror link message"),
             Map.entry("tc.handmirrorerror", "ItemHandMirror link message"),
-            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"));
+            Map.entry("tc.researcherror", "ResearchManager knowledge-gate message"),
+            // TC-M6-07-s: the robe/goggles tooltip line, the original's own key
+            // (ItemRobeArmor.java:132-133, ItemGoggles.java:40-42), shipped verbatim.
+            Map.entry("tc.visdiscount",
+                    "ItemRobeArmor/ItemGoggles appendHoverText (the original's tc.visdiscount)"),
+            // Eldritch Objects lore (ItemEldritchObject.addInformation, TC4:81-92)
+            // and the lock's boss-room chat lines (TileEldritchLock:136/220/300/340).
+            Map.entry("item.ItemEldritchObject.text.1", "ItemEldritchObject lore, meta 0"),
+            Map.entry("item.ItemEldritchObject.text.2", "ItemEldritchObject lore, meta 1"),
+            Map.entry("item.ItemEldritchObject.text.3", "ItemEldritchObject lore, meta 1 second line"),
+            Map.entry("item.ItemEldritchObject.text.4", "ItemEldritchObject lore, meta 2"),
+            Map.entry("item.ItemEldritchObject.text.5", "ItemEldritchObject lore, meta 3"),
+            Map.entry("item.ItemEldritchObject.text.6", "ItemEldritchObject lore, meta 3 second line"),
+            Map.entry("tc.boss.crimson", "EldritchBossRoomHost announce (original TileEldritchLock:300)"),
+            Map.entry("tc.boss.golem", "EldritchBossRoomHost announce (original TileEldritchLock:220)"),
+            Map.entry("tc.boss.taint", "EldritchBossRoomHost announce (original TileEldritchLock:340)"),
+            Map.entry("tc.boss.warden", "EldritchBossRoomHost announce (original TileEldritchLock:136)"),
+            // TC-M3-04-s-ii research notes (ItemResearchNotes): the discovery
+            // family label (the original's item.discovery.name, metas 64+), the
+            // two blank-note tooltip lines and the warp block — the last three
+            // keep the original 1.7.10 key shape verbatim.
+            Map.entry("item.thaumcraft.itemresearchnotes.discovery",
+                    "ItemResearchNotes.getName discovery family"),
+            Map.entry("item.researchnotes.unknown.1",
+                    "ItemResearchNotes blank-note tooltip (original key shape kept)"),
+            Map.entry("item.researchnotes.unknown.2",
+                    "ItemResearchNotes blank-note tooltip (original key shape kept)"),
+            Map.entry("tc.forbidden", "ItemResearchNotes warp tooltip"),
+            Map.entry("tc.forbidden.level.1", "ItemResearchNotes warp tooltip level 1"),
+            Map.entry("tc.forbidden.level.2", "ItemResearchNotes warp tooltip level 2"),
+            Map.entry("tc.forbidden.level.3", "ItemResearchNotes warp tooltip level 3"),
+            Map.entry("tc.forbidden.level.4", "ItemResearchNotes warp tooltip level 4"),
+            Map.entry("tc.forbidden.level.5", "ItemResearchNotes warp tooltip level 5"),
+            // TC-M3-04-s-v Thaumonomicon node interaction: the per-state hint
+            // line the book draws under the hovered node, the 3 s note popup and
+            // the prerequisite line. The keys are the original's verbatim
+            // (GuiResearchBrowser.java:560, :614-618, :656-658, :717-726);
+            // BookNoteRequest names them; the book screen (client) draws them.
+            Map.entry("tc.research.getprim", "book-screen node hint (BookNoteRequest.KEY_GET_PRIM)"),
+            Map.entry("tc.research.hasnote", "book-screen node hint (BookNoteRequest.KEY_HAS_NOTE)"),
+            Map.entry("tc.research.shortprim", "book-screen node hint (BookNoteRequest.KEY_SHORT_PRIM)"),
+            Map.entry("tc.research.purchase", "book-screen node hint (BookNoteRequest.KEY_PURCHASE)"),
+            Map.entry("tc.research.short", "book-screen node hint (BookNoteRequest.KEY_SHORT)"),
+            Map.entry("tc.researchmissing", "book-screen prerequisite hint (BookNoteRequest.KEY_MISSING)"),
+            Map.entry("tc.research.popup", "book-screen note popup (BookNoteRequest.popupMessage)"),
+            // TC-M3-04-s-iii-b research-note menu: the two out-of-ink tooltip
+            // lines (the original's TileResearchTable ink gate, keys verbatim
+            // from en_US.lang) and the copy-cost header the RESEARCHDUPE plate
+            // draws. All three are read by the note GUI, not by a registry id,
+            // so they are code-authored like the container titles.
+            Map.entry("tile.researchtable.noink.0", "ResearchNoteMenu ink gate (GuiResearchTable tooltip)"),
+            Map.entry("tile.researchtable.noink.1", "ResearchNoteMenu ink gate (GuiResearchTable tooltip)"),
+            Map.entry("tc.research.copy", "ResearchNoteMenu copy-cost header (GuiResearchTable)"),
+            Map.entry("item.thaumcraft.wandcasting.iron", "ItemWandCasting.getName fragment (original item.Wand.iron.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.gold", "ItemWandCasting.getName fragment (original item.Wand.gold.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.copper", "ItemWandCasting.getName fragment (original item.Wand.copper.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.silver", "ItemWandCasting.getName fragment (original item.Wand.silver.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.thaumium", "ItemWandCasting.getName fragment (original item.Wand.thaumium.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.void", "ItemWandCasting.getName fragment (original item.Wand.void.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.wood", "ItemWandCasting.getName fragment (original item.Wand.wood.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.greatwood", "ItemWandCasting.getName fragment (original item.Wand.greatwood.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.silverwood", "ItemWandCasting.getName fragment (original item.Wand.silverwood.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.obsidian", "ItemWandCasting.getName fragment (original item.Wand.obsidian.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.blaze", "ItemWandCasting.getName fragment (original item.Wand.blaze.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.ice", "ItemWandCasting.getName fragment (original item.Wand.ice.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.bone", "ItemWandCasting.getName fragment (original item.Wand.bone.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.reed", "ItemWandCasting.getName fragment (original item.Wand.reed.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.quartz", "ItemWandCasting.getName fragment (original item.Wand.quartz.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.primal", "ItemWandCasting.getName fragment (original item.Wand.primal.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.wand", "ItemWandCasting.getName fragment (original item.Wand.wand.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.sceptre", "ItemWandCasting.getName fragment (original item.Wand.sceptre.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("item.thaumcraft.wandcasting.staff", "ItemWandCasting.getName fragment (original item.Wand.staff.cap/.rod/.obj), TC-M6-01"),
+            Map.entry("tc.boss.enrage", "EntityTaintacleGiant enrage announcement — the key is "
+                    + "TaintacleGiantAiLogic.ENRAGE_LANG_KEY, the original's "
+                    + "StatCollector.translateToLocal(\"tc.boss.enrage\") at "
+                    + "EntityTaintacleGiant.java:122 (en_US.lang:761)"),
+            // TC-M3-04-s-iv-b (research-page recipe body): the station label the original
+            // printed centred above the ingredient grid of a crafting page, verbatim key and
+            // wording (GuiResearchRecipe.java:821-823 shaped / :887-890 shapeless). Read on
+            // this tree by recipes/RecipePageDisplay; the page-body draw into the unified book
+            // screen is the half this landing does not ship (BD-64).
+            Map.entry("recipe.type.workbench",
+                    "RecipePageDisplay.station().labelKey() (original GuiResearchRecipe.java:821-823 key)"),
+            Map.entry("recipe.type.workbenchshapeless",
+                    "RecipePageDisplay.station().labelKey() (original GuiResearchRecipe.java:887-890 key)"),
+            // TC-M6-06-s-c3-a: the pech names itself by type (the original's
+            // func_70005_c_, EntityPech.java:70-80) — the wand pech is the
+            // Mage, the bow pech the Stalker. Only type 0 is the registry
+            // key, so these two ride the override.
+            Map.entry("entity.thaumcraft.pech.1",
+                    "EntityPech.getDisplayName, type 1 (original entity.Thaumcraft.Pech.1.name, :72)"),
+            Map.entry("entity.thaumcraft.pech.2",
+                    "EntityPech.getDisplayName, type 2 (original entity.Thaumcraft.Pech.2.name, :74)"));
 
     /**
      * Base name keys of the multi-meta items whose {@code getName} always
@@ -122,7 +231,9 @@ public final class LocalizationGameTest {
      */
     private static final Set<String> META_DRIVEN_ITEMS = Set.of(
             "itemresource", "itemshard", "itemnugget", "itemlootbag", "itembaubleblanks",
-            "itemamuletvis", "itemamuletrunic", "itemringrunic", "itemgirdlerunic");
+            "itemamuletvis", "itemamuletrunic", "itemringrunic", "itemgirdlerunic",
+            "itemeldritchobject",
+            "itemgolemplacer", "itemgolemcore", "itemgolemupgrade", "itemgolemdecoration");
 
     private LocalizationGameTest() {
     }
@@ -132,7 +243,7 @@ public final class LocalizationGameTest {
     @GameTest(template = "empty")
     public static void everyRegisteredNameHasAnEntry(final GameTestHelper helper) {
         final JsonObject lang = loadLang(helper);
-        final Set<String> required = requiredKeys();
+        final Set<String> required = requiredKeys(helper);
         final Set<String> missing = new TreeSet<>();
         for (final String key : required) {
             if (!lang.has(key)) {
@@ -235,7 +346,7 @@ public final class LocalizationGameTest {
     @GameTest(template = "empty")
     public static void noDeadLangEntries(final GameTestHelper helper) {
         final JsonObject lang = loadLang(helper);
-        final Set<String> required = requiredKeys();
+        final Set<String> required = requiredKeys(helper);
         final Set<String> dead = new TreeSet<>();
         for (final String key : lang.keySet()) {
             if (required.contains(key) || CODE_AUTHORED_KEYS.containsKey(key)) {
@@ -265,7 +376,7 @@ public final class LocalizationGameTest {
     // ------------------------------------------------------------------ helpers
 
     /** Every translation key the live registries make reachable, plus the keys the code passes to translatable(). */
-    private static Set<String> requiredKeys() {
+    private static Set<String> requiredKeys(final GameTestHelper helper) {
         final Set<String> keys = new LinkedHashSet<>();
 
         for (final Block block : BuiltInRegistries.BLOCK) {
@@ -316,7 +427,60 @@ public final class LocalizationGameTest {
             }
         }
 
+        // 1.21.1 enchantments are datapack entries, so their live set only
+        // exists on this server: each one is labelled by enchantment.<ns>.<path>
+        // (the payload's `description` translate key), read from the level's
+        // dynamic registry provider — the same accessor
+        // RegistrationGameTest.DATAPACK_KINDS resolves kind=enchantment rows.
+        final Registry<Enchantment> enchantments =
+                helper.getLevel().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
+        for (final ResourceLocation id : enchantments.keySet()) {
+            if (eligible(id)) {
+                keys.add("enchantment." + id.getNamespace() + "." + id.getPath());
+            }
+        }
+
         keys.addAll(CODE_AUTHORED_KEYS.keySet());
+
+        // TC-M6-04f-s: the fluid types (NeoForge's static registry) label
+        // themselves through FluidType.Properties.descriptionId, and the
+        // damage types (datapack registry) label their death message as
+        // death.attack.<message_id> — both families are shipped content,
+        // so the audit walks them like the vanilla static registries above.
+        for (final net.neoforged.neoforge.fluids.FluidType fluidType
+                : net.neoforged.neoforge.registries.NeoForgeRegistries.FLUID_TYPES) {
+            final ResourceLocation id = net.neoforged.neoforge.registries.NeoForgeRegistries.FLUID_TYPES.getKey(fluidType);
+            if (eligible(id)) {
+                keys.add(fluidType.getDescriptionId());
+            }
+        }
+        final net.minecraft.core.Registry<net.minecraft.world.damagesource.DamageType> damageTypes =
+                helper.getLevel().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE);
+        for (final ResourceLocation id : damageTypes.keySet()) {
+            if (eligible(id)) {
+                final String msgId = damageTypes.get(id).msgId();
+                // DeathMessageTypes appends ".player" when the attacking
+                // entity is a player and ".item" when a cause item is
+                // present, so all three key shapes are reachable for every
+                // shipped type (the originals ship taint[.player],
+                // dissolve[.player] and swarm[.item] strings).
+                keys.add("death.attack." + msgId);
+                keys.add("death.attack." + msgId + ".player");
+                keys.add("death.attack." + msgId + ".item");
+            }
+        }
+
+        // TC-M6-04f-m: the biomes (datapack registry) label themselves
+        // through vanilla's "biome.<namespace>.<path>" key — the Eldritch
+        // biome is shipped content (the original's biome.Eldritch display
+        // name), so the audit walks the family like the ones above.
+        final net.minecraft.core.Registry<net.minecraft.world.level.biome.Biome> biomes =
+                helper.getLevel().registryAccess().registryOrThrow(Registries.BIOME);
+        for (final ResourceLocation id : biomes.keySet()) {
+            if (eligible(id)) {
+                keys.add("biome." + id.getNamespace() + "." + id.getPath());
+            }
+        }
         return keys;
     }
 

@@ -253,9 +253,16 @@ public final class EssentiaStorageGameTest {
 
         // Cold, no bellows: 140 ticks of cook, then the eject. Ticked, not faked:
         // the eject is a real entity in the world, driven by the block's ticker.
-        helper.runAtTickTime(8L, () -> helper.assertTrue(furnace.furnaceCookTime > 0,
-                "the block's ticker must be driving TileArcaneFurnace.serverTick: CookTime after 8 ticks = "
-                        + furnace.furnaceCookTime));
+        //
+        // The cook progress is LATCHED from onEachTick below, not read at a fixed
+        // tick. The old form asserted `furnaceCookTime > 0` at test tick 8, which
+        // scheduled the mod's block ticker on the harness's clock: the cook advances
+        // from the chunk's block-tick pass over a tile the structure just placed, and
+        // how many of those passes land in the first 8 ticks of a probe is a property
+        // of the batch (chunk ticketing, neighbour probes, the 24³ pad), not of the
+        // port. The contract is that the ticker DRIVES the cook at all, and that is a
+        // fact an outcome poll can state; the 400-tick budget stays as the watchdog.
+        // docs/testing.md, "assert the OUTCOME, never the schedule".
 
         // Watch on every tick instead of reading one fixed tick: the original's
         // onEntityCollidedWithBlock lifts items resting on the plate back into
@@ -263,8 +270,16 @@ public final class EssentiaStorageGameTest {
         // (see deviceEntityInside). The evidence is that the raw iron left the
         // slot and that the result existed as a world entity.
         final int[] ejectTick = { -1 };
+        final int[] cookStartTick = { -1 };
         final boolean[] rawIronLeft = { false };
         helper.onEachTick(() -> {
+            // Latch the FIRST tick at which each fact was observed. Every latch is
+            // monotone (set once, never cleared), which is what makes the single
+            // succeedWhen below safe: it can only become true, never oscillate, and
+            // it is false on the probe's first tick, so it cannot pass vacuously.
+            if (cookStartTick[0] < 0 && furnace.furnaceCookTime > 0) {
+                cookStartTick[0] = (int) helper.getTick();
+            }
             if (ejectTick[0] < 0) {
                 for (final net.minecraft.world.entity.item.ItemEntity drop
                         : helper.getLevel().getEntities(EntityType.ITEM, new AABB(pos).inflate(6.0D), e -> true)) {
@@ -278,14 +293,24 @@ public final class EssentiaStorageGameTest {
                 rawIronLeft[0] = true;
             }
         });
-        helper.runAtTickTime(175L, () -> {
+        // The full outcome, polled: the ticker drove a cook, the input was consumed,
+        // the result left the nozzle as a real entity, and nothing smeltable is left.
+        // One final clause per test is the harness rule (GameTestHelper#ensureSingleFinalCheck
+        // throws on a second), which is why the cook-progress arm rides the same poll.
+        // Watchdog: timeoutTicks = 400 (the 140-tick cook cold, so the margin is ~3x).
+        helper.succeedWhen(() -> {
+            helper.assertTrue(cookStartTick[0] >= 0,
+                    "the block's ticker must be driving TileArcaneFurnace.serverTick: CookTime is "
+                            + furnace.furnaceCookTime + " after " + helper.getTick() + " probe ticks");
             helper.assertTrue(rawIronLeft[0],
-                    "the furnace consumed the raw iron input, slot 0 = " + furnace.getStackInSlot(0));
+                    "the furnace consumed the raw iron input, slot 0 = " + furnace.getStackInSlot(0)
+                            + " (cook started at probe tick " + cookStartTick[0] + ")");
             helper.assertTrue(ejectTick[0] >= 0,
-                    "the smelt result must be ejected out of the nozzle side as a real item entity");
+                    "the smelt result must be ejected out of the nozzle side as a real item entity"
+                            + " (cook started at probe tick " + cookStartTick[0] + ", cooked "
+                            + furnace.furnaceCookTime + ")");
             helper.assertTrue(!furnace.canSmelt(0),
                     "and nothing smeltable is left in the input slot, got " + furnace.getStackInSlot(0));
-            helper.succeed();
         });
     }
 

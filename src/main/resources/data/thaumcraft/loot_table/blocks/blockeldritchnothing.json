@@ -1,0 +1,58 @@
+{
+  "type": "minecraft:block",
+  "_comment": "Original BlockEldritchNothing dropped meta 1 (the hollow 'nothing') on break (its quantityFromDrops/drop branch); both variants drop the hollow form, the shell's own drop happens through the structure exposure rule, not vanilla mining.",
+  "pools": [
+    {
+      "rolls": 1.0,
+      "conditions": [
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "thaumcraft:blockeldritchnothing",
+          "properties": {
+            "variant": "0"
+          }
+        }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": {
+            "thaumcraft:item_meta": 1
+          }
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "thaumcraft:blockeldritchnothing"
+        }
+      ]
+    },
+    {
+      "rolls": 1.0,
+      "conditions": [
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "thaumcraft:blockeldritchnothing",
+          "properties": {
+            "variant": "1"
+          }
+        }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": {
+            "thaumcraft:item_meta": 1
+          }
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "thaumcraft:blockeldritchnothing"
+        }
+      ]
+    }
+  ]
+}

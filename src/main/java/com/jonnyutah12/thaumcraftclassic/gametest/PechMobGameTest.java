@@ -3,9 +3,7 @@ package com.jonnyutah12.thaumcraftclassic.gametest;
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.entities.ai.pech.AIPechItemEntityGoto;
 import com.jonnyutah12.thaumcraftclassic.entities.ai.pech.AIPechTradePlayer;
-import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityMindSpider;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityPech;
-import com.jonnyutah12.thaumcraftclassic.entities.monster.MindSpiderAiLogic;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.PechAiLogic;
 import com.jonnyutah12.thaumcraftclassic.entities.projectile.EntityPechBlast;
 import com.jonnyutah12.thaumcraftclassic.entities.projectile.PechBlastAiLogic;
@@ -48,22 +46,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * World probes for the Pech, its blast projectile and the Mind Spider
- * (TC-M6-06-s-c3, content-mapping {@code Thaumcraft:Pech} mod_index 12,
- * {@code Thaumcraft:PechBlast} mod_index 10 and {@code Thaumcraft:MindSpider}
- * mod_index 24).
+ * World probes for the Pech and its blast projectile (TC-M6-06-s-c3-a,
+ * content-mapping {@code Thaumcraft:Pech} (row 290) mod_index 23 and
+ * {@code Thaumcraft:PechBlast} mod_index 10). The Mind Spider's probes are the
+ * sibling card TC-M6-06-s-c3-b's and are not in this class.
  *
  * <p>Every figure reaches the mob through the <b>live registry</b> and the
  * vanilla {@code Mob} / {@code LivingEntity} / {@code Projectile} API, so the
  * class goes RED on behaviour rather than on a missing symbol. Each literal is
  * the original's own and quotes its decompiled line in
  * {@code thaumcraft.common.entities.monster.EntityPech} (830 lines),
- * {@code thaumcraft.common.entities.projectile.EntityPechBlast} (182 lines),
- * {@code thaumcraft.common.entities.monster.EntityMindSpider} (115 lines) and
+ * {@code thaumcraft.common.entities.projectile.EntityPechBlast} (182 lines) and
  * the two {@code entities/ai/pech/} goals. The same figures live as named
  * constants on the port's Level-free rule classes, pinned world-free by
- * {@code PechAiLogicTest}, {@code PechBlastAiLogicTest} and
- * {@code MindSpiderAiLogicTest}.</p>
+ * {@code PechAiLogicTest} and {@code PechBlastAiLogicTest}.</p>
  */
 @GameTestHolder(ThaumcraftClassic.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -124,7 +120,7 @@ public final class PechMobGameTest {
         final EntityType<?> type = registered(helper, "pech");
         helper.assertTrue(Math.abs(type.getDimensions().width() - 0.6F) < 1.0E-4F
                         && Math.abs(type.getDimensions().height() - 1.8F) < 1.0E-4F,
-                "the pech's hitbox is not the original 0.6 x 1.8 (EntityPech.java:86) but "
+                "the pech's hitbox is not the original 0.6 x 1.8 (EntityPech.java:92) but "
                         + type.getDimensions().width() + " x " + type.getDimensions().height());
         helper.assertTrue(type.getCategory() == MobCategory.MONSTER,
                 "the pech is not registered as a MONSTER-category mob but " + type.getCategory());
@@ -161,6 +157,45 @@ public final class PechMobGameTest {
                 "the pech's eye height is not height * 0.66 (:91) but "
                         + pech.getEyeHeight(pech.getPose()) + " (want " + PechAiLogic.eyeHeight() + ")");
         helper.succeed();
+    }
+
+    /**
+     * {@code :73-87} — {@code func_70005_c_} (getCommandSenderName): the pech's
+     * name is its TYPE's lang key, not its entity type's. The probe asserts the
+     * KEY (a dedicated server resolves no client lang, so {@code getString()}
+     * would return the key itself and prove nothing about the mapping), and
+     * asserts the original's custom-name branch ({@code :74-75}) wins over the
+     * type switch.
+     */
+    @GameTest(template = "empty")
+    public static void pechNamesItselfByItsType(final GameTestHelper helper) {
+        final EntityPech pech = pech(helper);
+        pech.setPechType(PechAiLogic.TYPE_NORMAL);
+        helper.assertTrue("entity.thaumcraft.pech".equals(nameKey(pech)),
+                "a type-0 pech must read the registry key (the original's entity.Thaumcraft.Pech.name,"
+                        + " :79) but its name key is " + nameKey(pech));
+        pech.setPechType(PechAiLogic.TYPE_WAND);
+        helper.assertTrue("entity.thaumcraft.pech.1".equals(nameKey(pech)),
+                "the wand pech must be the original's Pech Mage (entity.Thaumcraft.Pech.1.name, :81)"
+                        + " but its name key is " + nameKey(pech));
+        pech.setPechType(PechAiLogic.TYPE_BOW);
+        helper.assertTrue("entity.thaumcraft.pech.2".equals(nameKey(pech)),
+                "the bow pech must be the original's Pech Stalker (entity.Thaumcraft.Pech.2.name, :83)"
+                        + " but its name key is " + nameKey(pech));
+        // :74-75 — func_94056_bM() (hasCustomName) returns func_94057_bL() (the
+        // custom tag), so the type switch never runs.
+        pech.setCustomName(net.minecraft.network.chat.Component.literal("Notch"));
+        helper.assertTrue(!(pech.getDisplayName().getContents()
+                        instanceof net.minecraft.network.chat.contents.TranslatableContents),
+                "a named pech must keep its custom name (:74-75) but reads " + nameKey(pech));
+        pech.discard();
+        helper.succeed();
+    }
+
+    private static String nameKey(final EntityPech pech) {
+        return pech.getDisplayName().getContents()
+                instanceof net.minecraft.network.chat.contents.TranslatableContents tc
+                        ? tc.getKey() : "<not translatable>";
     }
 
     /** {@code GoalSelector#getAvailableGoals()} is a guava Multimap (no
@@ -406,23 +441,42 @@ public final class PechMobGameTest {
         // :352-397 — ids 16/17/18/19 are the client particle/sound handlers. The
         // world-side contract is that the receiver EXISTS and is inert on a
         // server: a gametest server is never field_72995_K, so each id must
-        // dispatch without touching a client-only API. An unknown id goes to the
-        // parent (:394-396).
+        // dispatch without touching a client-only API and without touching the
+        // mob's own state. An id the pech does not know goes to the parent
+        // (:394-396) — id 33 there, which 1.21.1 answers with its
+        // "Unidentified entity event" branch, so the delegation runs and nothing
+        // else happens.
+        //
+        // Id 3 is deliberately NOT asserted inert: in 1.7.10 the parent answered
+        // it with playDeathSound() (hence the original's inertness), while
+        // 1.21.1 defines id 3 as EntityEvent.DEATH and LivingEntity answers it by
+        // killing the mob. That is the same notification with a 1.21.1 body, so
+        // the probe asserts the delegation, not the 1.7.10 parent's side effect.
         final EntityPech pech = pech(helper);
+        // The `empty` pad sets mobs alight (the c2 finding: a DamageSource
+        // (onFire), 60 -> 58 hp), which is not this contract, so the probe pins a
+        // known state first and asserts the DELTA across the dispatches.
+        pech.clearFire();
+        pech.setHealth(20.0F);
         pech.handleEntityEvent(PechAiLogic.EVENT_MUMBLE);
         pech.handleEntityEvent(PechAiLogic.EVENT_MUMBLE_TRADE);
-        // The dispatch must not change the mob's own state. A mob spawned on an
-        // `empty` pad can already be outside the structure's ticking area by
-        // this tick (the c2 finding: 12 mob ticks across 65 probe ticks), so the
-        // probe compares the state ACROSS the dispatches instead of claiming
-        // fresh liveness.
+        final float before = pech.getHealth();
         final boolean removedBefore = pech.isRemoved();
-        pech.handleEntityEvent(PechAiLogic.EVENT_TAMED);
-        pech.handleEntityEvent(PechAiLogic.EVENT_ANGRY);
-        pech.handleEntityEvent((byte) 3);
-        helper.assertTrue(pech.isRemoved() == removedBefore && pech.getHealth() > 0.0F,
-                "the four event ids of :352-397 must not kill or remove the mob; removed "
-                        + removedBefore + " -> " + pech.isRemoved() + ", health " + pech.getHealth());
+        final StringBuilder trail = new StringBuilder();
+        for (final byte id : new byte[] {PechAiLogic.EVENT_TAMED, PechAiLogic.EVENT_ANGRY,
+                PechAiLogic.EVENT_MUMBLE, 33}) {
+            pech.handleEntityEvent(id);
+            trail.append(" id ").append(id).append("->hp ").append(pech.getHealth());
+        }
+        helper.assertTrue(pech.isRemoved() == removedBefore && pech.getHealth() == before,
+                "the four event ids of :352-397 and the parent's unknown-id branch must not kill,"
+                        + " remove or damage the mob; hp " + before + trail + ", removed "
+                        + removedBefore + " -> " + pech.isRemoved());
+        // The mumble field is the only state the four ids may touch (:355, :358).
+        helper.assertTrue(pech.getMumble() > 0.0F,
+                "the mumble ids of :355 / :358 must set the field the renderer reads, got "
+                        + pech.getMumble());
+        pech.discard();
         helper.succeed();
     }
 
@@ -468,8 +522,14 @@ public final class PechMobGameTest {
         helper.succeed();
     }
 
-    @GameTest(template = "empty", timeoutTicks = 400)
+    @GameTest(template = "empty_24", timeoutTicks = 400)
     public static void pechBlastFliesAtItsOwnSpeedAndDropsAtItsOwnGravity(final GameTestHelper helper) {
+        // empty_24, not empty: thaumcraft:empty is a 1x1x1 template (its NBT
+        // size list is [1,0,0]), so the cell this probe launches the blast in
+        // sits outside the structure's ticking area and the projectile never
+        // ticks — the first run of this probe read y-motion 0.0 after 6 server
+        // ticks. empty_24 (24x24x24) is this repo's template for probes that
+        // measure a real tick cadence.
         final ServerLevel level = helper.getLevel();
         @SuppressWarnings("unchecked")
         final EntityType<EntityPechBlast> type = (EntityType<EntityPechBlast>) registered(helper, "pechblast");
@@ -507,8 +567,10 @@ public final class PechMobGameTest {
         });
     }
 
-    @GameTest(template = "empty", timeoutTicks = 400)
+    @GameTest(template = "empty_24", timeoutTicks = 400)
     public static void pechBlastHitsLivingEntitiesAndVanishes(final GameTestHelper helper) {
+        // empty_24 for the same reason as pechBlastFliesAtItsOwnSpeed...: the
+        // impact needs the blast to fly 2 blocks on real server ticks.
         final ServerLevel level = helper.getLevel();
         @SuppressWarnings("unchecked")
         final EntityType<EntityPechBlast> type = (EntityType<EntityPechBlast>) registered(helper, "pechblast");
@@ -546,11 +608,14 @@ public final class PechMobGameTest {
         });
     }
 
-    @GameTest(template = "empty", timeoutTicks = 700)
+    @GameTest(template = "empty_24", timeoutTicks = 700)
     public static void pechBlastAgesOutAtFiveHundredTicks(final GameTestHelper helper) {
         // :79-81 — if (ticksExisted > 500) func_70106_y(). tickCount is
         // server-owned (ServerLevel#tickNonPassenger), so this probe runs on
         // real probe ticks and sits above the age: 520 ticks, timeout 700.
+        // The template must be empty_24: on the 1x1x1 `empty` template the
+        // blast is outside the ticking area, tickCount stayed 0 and the probe
+        // "passed" its own fuse check vacuously.
         final ServerLevel level = helper.getLevel();
         @SuppressWarnings("unchecked")
         final EntityType<EntityPechBlast> type = (EntityType<EntityPechBlast>) registered(helper, "pechblast");
@@ -570,137 +635,208 @@ public final class PechMobGameTest {
         });
     }
 
-    // ------------------------------------------------------ the mind spider
+    // ---- TC-M6-06-s-c3-a (t_3cb64300): the card's own probes ----
 
+    /**
+     * THE SPAWN QUESTION, MEASURED. :189-209 is the gate: overworld only, the
+     * biome must carry NeoForge's is_magical flag (:189-191), the three named
+     * exclusions must not match (:188-192 / :201-205), at most MAX_PECHS_IN_BOX
+     * pechs in the 16-inflated box (:193-200, :207), and the weight-100 spawn
+     * placement roll (:206). The probe measures the parts that are live in this
+     * tree AND answers the question the card asks: it counts the shipped biomes
+     * that carry the flag. A pech spawns only where a biome is flagged magical —
+     * the shipped tree flags NONE (the biome rows 961-963 and the family's shared
+     * mob_spawn row 347 are `not_started`, owned by the biome cards and by
+     * TC-M6-06-s-c6), so in a shipped world today NO pech spawns, while the gate
+     * itself is live code. Both halves are asserted, so the day a biome carries
+     * the flag this probe says so.
+     */
     @GameTest(template = "empty")
-    public static void mindSpiderIsRegisteredAtZeroPointThreeAndRunsNoAi(final GameTestHelper helper) {
-        final EntityType<?> type = registered(helper, "mindspider");
-        // :18 — func_70105_a(0.3F, 0.3F)
-        helper.assertTrue(Math.abs(type.getDimensions().width() - 0.3F) < 1.0E-4F
-                        && Math.abs(type.getDimensions().height() - 0.3F) < 1.0E-4F,
-                "the mind spider's hitbox is not the original 0.3 x 0.3 (EntityMindSpider.java:18) but "
-                        + type.getDimensions().width() + " x " + type.getDimensions().height());
-        // ConfigEntities.java:105-106 — 64 / 3 / true
-        helper.assertTrue(type.updateInterval() == 3 && type.clientTrackingRange() == 4,
-                "the mind spider's tracking triple is not 64 blocks / 3 ticks");
-        final Mob mob = spawn(helper, "mindspider");
-        helper.assertTrue(mob instanceof EntityMindSpider,
-                "thaumcraft:mindspider did not create an EntityMindSpider");
-        final EntityMindSpider spider = (EntityMindSpider) mob;
-        // :26-30 — health 1.0, attack 1.0; :19 — xp 1
-        helper.assertTrue(spider.getAttributeValue(Attributes.MAX_HEALTH) == 1.0,
-                "the mind spider's health is not the original 1.0 (:26) but "
-                        + spider.getAttributeValue(Attributes.MAX_HEALTH));
-        helper.assertTrue(spider.getAttributeBaseValue(Attributes.ATTACK_DAMAGE) == 1.0,
-                "the mind spider's attack is not the original 1.0 (:27-30) but "
-                        + spider.getAttributeBaseValue(Attributes.ATTACK_DAMAGE));
-        helper.assertTrue(spider.getExperienceReward(helper.getLevel(), null) == 1,
-                "the mind spider's xp is not the original 1 (:19)");
-        // :90-92 — func_145773_az() = true: the whole goal engine is inert
-        helper.assertTrue(spider.isNoAi(),
-                "the mind spider must run with the AI-off flag (:90-92 func_145773_az)");
-        helper.assertTrue(!spider.isEffectiveAi(),
-                "isEffectiveAi() must be false for the AI-off mind spider (Mob.java:1421)");
-        // :79-81 — the crosshair reach of a real spider is 0.1
-        helper.assertTrue(Math.abs(spider.getPickRadius() - MindSpiderAiLogic.PICK_RADIUS_NORMAL) < 1.0E-6,
-                "a non-harmless mind spider's pick radius must be 0.1 (:79-81)");
-        // :14 — a normal spider never expires
-        helper.assertTrue(spider.lifeSpan() == MindSpiderAiLogic.DEFAULT_LIFESPAN,
-                "a non-harmless mind spider's lifespan must be Integer.MAX_VALUE (:14)");
-        helper.succeed();
-    }
-
-    @GameTest(template = "empty")
-    public static void mindSpiderGoalSetIsTheSpiderParentsMinusTheArmadilloGoal(final GameTestHelper helper) {
-        // The original adds NO goal (zero addTask lines), so the set is the
-        // 1.7.10 EntitySpider parent's. 1.21.1's Spider.java:56 installs an
-        // AvoidEntityGoal against the ARMADILLO (a 1.20.11 mob absent from
-        // 1.7.10) — the port must strip it.
-        final Mob spider = spawn(helper, "mindspider");
-        final List<WrappedGoal> goals = goals(spider, false);
-        helper.assertTrue(goals.stream().noneMatch(g -> g.getGoal() instanceof AvoidEntityGoal<?>),
-                "the mind spider kept 1.21.1's armadillo AvoidEntityGoal (Spider.java:56) — 1.7.10 "
-                        + "had no armadillo — " + describe(goals));
-        helper.assertTrue(goals.stream().anyMatch(g -> g.getGoal() instanceof FloatGoal
-                        && g.getPriority() == 1),
-                "no FloatGoal at slot 1 (the 1.7.10 EntityAIFloat analogue) — " + describe(goals));
-        helper.assertTrue(goals.stream().anyMatch(g ->
-                        g.getGoal().getClass().getSimpleName().contains("Spider$SpiderAttackGoal")
-                                && g.getPriority() == 4),
-                "the spider's own melee goal is not at slot 4 — " + describe(goals));
-        helper.assertTrue(goals.stream().anyMatch(g -> g.getGoal() instanceof RandomStrollGoal
-                        && g.getPriority() == 5),
-                "no wander goal at slot 5 (1.7.10 EntityAIWander(0.8)) — " + describe(goals));
-        helper.assertTrue(goals.stream().anyMatch(g -> g.getGoal() instanceof LookAtPlayerGoal
-                        && g.getPriority() == 6)
-                        && goals.stream().anyMatch(g -> g.getGoal() instanceof RandomLookAroundGoal
-                                && g.getPriority() == 6),
-                "the look-at / look-around pair is not at slot 6 (1.7.10 slots 7/8) — " + describe(goals));
-        final List<WrappedGoal> targets = goals(spider, true);
-        helper.assertTrue(targets.size() == 3,
-                "the target set must be the spider parent's three goals (hurt, player, golem) but has "
-                        + targets.size() + " — " + describe(targets));
-        helper.assertTrue(targets.stream().anyMatch(g ->
-                        g.getGoal() instanceof NearestAttackableTargetGoal<?> && g.getPriority() == 2),
-                "the spider's player-target goal is not at target slot 2 — " + describe(targets));
-        helper.succeed();
-    }
-
-    @GameTest(template = "empty")
-    public static void mindSpiderHarmlessModeArmsTheFuseAndCannotBite(final GameTestHelper helper) {
+    public static void theNaturalSpawnGateIsLiveAndIsMeasuredAgainstTheShippedBiomes(
+            final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
-        final EntityMindSpider spider = (EntityMindSpider) spawn(helper, "mindspider");
-        final Cow cow = new Cow(EntityType.COW, level);
-        final BlockPos at = pad(helper, 2, 3, 1);
-        cow.moveTo(at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5, 0.0F, 0.0F);
-        cow.setNoGravity(true);
-        level.addFreshEntity(cow);
-        // :52 — harmless mode arms the 1200-tick (60 s) fuse
-        spider.setHarmless(true);
-        helper.assertTrue(spider.isHarmless(), "setHarmless(true) did not stick");
-        helper.assertTrue(spider.lifeSpan() == MindSpiderAiLogic.HARMLESS_LIFESPAN,
-                "a harmless spider's fuse must be 1200 ticks (:52) but is " + spider.lifeSpan());
-        // :79-81 — a harmless spider cannot be picked
-        helper.assertTrue(spider.getPickRadius() == 0.0F,
-                "a harmless spider's pick radius must be 0.0 (:79-81)");
-        // :98-102 — the bite (the card's "attack/poison") runs only for a real spider
-        final float before = cow.getHealth();
-        helper.assertTrue(!spider.doHurtTarget(cow),
-                "a harmless spider must not land the parent's bite (:98-102)");
-        helper.assertTrue(cow.getHealth() == before,
-                "the harmless bite damaged the cow: " + before + " -> " + cow.getHealth());
-        // :22-24 — a harmless spider grants no xp
-        helper.assertTrue(spider.getExperienceReward(helper.getLevel(), null) == 0,
-                "a harmless spider must grant 0 xp (:22-24)");
-        // a non-harmless one bites
-        spider.setHarmless(false);
-        helper.assertTrue(spider.doHurtTarget(cow),
-                "a non-harmless mind spider must land the parent's bite (:98-102)");
-        helper.assertTrue(cow.getHealth() < before,
-                "the bite dealt no damage: " + before + " -> " + cow.getHealth());
-        cow.discard();
-        spider.discard();
+        final EntityPech pech = pech(helper);
+        // :189-191 — the pad biome carries no magical flag, so the gate rejects.
+        helper.assertTrue(!pech.checkSpawnRules(level, MobSpawnType.NATURAL),
+                "the spawn gate accepted the gametest pad biome, which carries no "
+                        + "neoforge:is_magical flag (:189-191) — the gate is not live");
+        // :193-200, :207, :202-206 — the rule constants ride the gate.
+        helper.assertTrue(PechAiLogic.MAX_PECHS_IN_BOX == 4
+                        && Math.abs(PechAiLogic.SPAWN_BOX_INFLATE - 16.0) < 1.0E-9
+                        && PechAiLogic.OVERWORLD_ONLY,
+                "the gate's constants are not the original's (4 pechs / expand(16.0) / overworld"
+                        + " only): " + PechAiLogic.MAX_PECHS_IN_BOX + " / "
+                        + PechAiLogic.SPAWN_BOX_INFLATE + " / " + PechAiLogic.OVERWORLD_ONLY);
+        // :201-205 — the exclusions.
+        helper.assertTrue(PechAiLogic.isExcludedBiome(true, false, false)
+                        && PechAiLogic.isExcludedBiome(false, true, false)
+                        && PechAiLogic.isExcludedBiome(false, false, true)
+                        && !PechAiLogic.isExcludedBiome(false, false, false),
+                ":201-205 excludes taint, the magical forest and the eerie wood — the shipped rule"
+                        + " is inverted or incomplete");
+        // The question: how many shipped biomes carry the flag?
+        final net.minecraft.core.Registry<net.minecraft.world.level.biome.Biome> biomes =
+                level.registryAccess().registryOrThrow(
+                        net.minecraft.core.registries.Registries.BIOME);
+        int magical = 0;
+        final StringBuilder named = new StringBuilder();
+        for (final ResourceLocation id : biomes.keySet()) {
+            // 21.1.259 Registry has no wrapAsKey: getHolder(ResourceLocation) is
+            // the accessor that answers the tag question (Holder#is(TagKey)).
+            if (biomes.getHolder(id)
+                    .map(h -> h.is(net.neoforged.neoforge.common.Tags.Biomes.IS_MAGICAL))
+                    .orElse(false)) {
+                magical++;
+                named.append(' ').append(id);
+            }
+        }
+        helper.assertTrue(magical == 0,
+                "the shipped data now flags " + magical + " biomes magical (" + named
+                        + ") — this probe's plain statement (no pech spawns in a shipped world"
+                        + " today) is stale and must be re-measured and re-written");
+        pech.discard();
         helper.succeed();
     }
 
+    /**
+     * Does the blast attack fire? The firing seam is {@code performRangedAttack}
+     * (:465-489): type 2 looses an arrow at motion 1.6 (:466-476) and the wand
+     * pech fires an {@code EntityPechBlast} with the call-site arguments
+     * {@code (1, 0, nextFloat() < 0.1F)} (:481) at motion 1.5 / spread 4.0
+     * (:482-485). The probe drives the seam in the world and reads the blast
+     * back — its owner and its launch speed — and asserts the branch is
+     * exclusive: a bow pech never throws a blast. The blast's 2.0 damage and 0.25
+     * knockback of :50-53 are pinned at the rule constants
+     * ({@code PechBlastAiLogicTest}) and read by the impact probe; 1.21.1's
+     * Projectile exposes no damage/knockback getters.
+     */
     @GameTest(template = "empty")
-    public static void mindSpiderCarriesHarmlessAndViewerAcrossANbtRoundTrip(final GameTestHelper helper) {
-        // :104-114 — the two keys the original writes: "harmless" and "viewer"
-        final EntityMindSpider spider = (EntityMindSpider) spawn(helper, "mindspider");
-        spider.setHarmless(true);
-        spider.setViewer("Notch");
-        final net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
-        spider.addAdditionalSaveData(tag);
-        helper.assertTrue(tag.getBoolean(MindSpiderAiLogic.NBT_HARMLESS),
-                "addAdditionalSaveData did not write the harmless key (:104-109): " + tag);
-        helper.assertTrue("Notch".equals(tag.getString(MindSpiderAiLogic.NBT_VIEWER)),
-                "addAdditionalSaveData did not write the viewer key (:110-114): " + tag);
-        spider.setHarmless(false);
-        spider.setViewer("");
-        spider.readAdditionalSaveData(tag);
-        helper.assertTrue(spider.isHarmless() && "Notch".equals(spider.getViewer()),
-                "the round trip lost the harmless/viewer state: harmless=" + spider.isHarmless()
-                        + " viewer=" + spider.getViewer());
+    public static void theRangedAttackSeamLaunchesTheBlastWithTheOriginalConstants(
+            final GameTestHelper helper) {
+        final EntityPech pech = pech(helper);
+        final net.minecraft.world.entity.monster.Zombie victim = helper.spawn(
+                net.minecraft.world.entity.EntityType.ZOMBIE, pad(helper, 6, 3, 1));
+        pech.setPechType(PechAiLogic.TYPE_WAND);
+        pech.performRangedAttack(victim, 1.0F);                                                // :481
+        final java.util.List<EntityPechBlast> blasts = helper.getLevel().getEntitiesOfClass(
+                EntityPechBlast.class, pech.getBoundingBox().inflate(24.0));
+        helper.assertTrue(blasts.size() == 1,
+                "the :481 firing path put " + blasts.size() + " blasts in the world, expected 1");
+        final EntityPechBlast blast = blasts.get(0);
+        helper.assertTrue(blast.getOwner() == pech,
+                "the blast's owner is not the firing pech (EntityPechBlast.java:50)");
+        final double speed = blast.getDeltaMovement().length();
+        helper.assertTrue(Math.abs(speed - PechAiLogic.BLAST_MOTION) < 0.75F,
+                "the blast's launch speed is not the :483 motion 1.5 (with the :484-485 arc"
+                        + " compensation and the :485 spread of 4.0) but " + speed);
+        // :465-466 — the bow leg. 1.21.1's Arrow ctor
+        // (level, owner, pickupStack, firedFromWeapon) throws
+        // IllegalStateException("Invalid weapon firing an arrow") unless the
+        // weapon is a bow/crossbow, and the original's type-2 pech is derived
+        // FROM a bow in the mainhand (:172-178), so the probe equips one
+        // (finalizeSpawn's roll does the same in a world).
+        pech.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND,
+                new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BOW));
+        pech.setPechType(PechAiLogic.TYPE_BOW);                                                 // :465
+        pech.performRangedAttack(victim, 1.0F);                                                 // :466
+        helper.assertTrue(helper.getLevel().getEntitiesOfClass(EntityPechBlast.class,
+                        pech.getBoundingBox().inflate(24.0)).size() == 1,
+                "a bow pech (type 2) must loose an arrow (:466-476), never a blast");
+        final java.util.List<net.minecraft.world.entity.projectile.Arrow> arrows =
+                helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.projectile.Arrow.class,
+                        pech.getBoundingBox().inflate(24.0));
+        helper.assertTrue(!arrows.isEmpty(), "the :466 arrow is missing - the bow branch never fired");
+        // The regression this leg carries. AbstractArrow.addAdditionalSaveData (AbstractArrow.java:544)
+        // serializes the pickup stack UNCONDITIONALLY, and ItemStack.save throws
+        // IllegalStateException("Cannot encode empty ItemStack") (ItemStack.java:409) on an empty one, so
+        // an arrow built with an EMPTY pickup stack crashes the CHUNK SAVE
+        // (ServerLevel.save -> EntityStorage.storeEntities -> AbstractArrow.addAdditionalSaveData) -
+        // measured in CI on this card's first game leg. Encode the shipped arrow here, then discard it so
+        // the probe leaves nothing alive for the shutdown save to serialize.
+        for (net.minecraft.world.entity.projectile.Arrow arrow : arrows) {
+            final net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
+            try {
+                arrow.saveWithoutId(tag);
+            } catch (RuntimeException e) {
+                helper.fail("the :466 arrow cannot be serialized - the chunk save that reaches it throws "
+                        + e.getClass().getSimpleName() + ": " + e.getMessage());
+            }
+            helper.assertTrue(tag.contains("item"), "the arrow's NBT carries no `item` pickup entry");
+            arrow.discard();
+        }
+        pech.discard();
+        victim.discard();
+        helper.succeed();
+    }
+
+    /**
+     * The blast never fires at nothing: the firing path of :466-496 runs only
+     * while a target is in sight, and the goal that drives it is the ranged
+     * attack goal of :64 (combat slot 2). The probe asserts the mage pech carries
+     * that goal and that it is NOT armed while the pech has no target.
+     */
+    @GameTest(template = "empty")
+    public static void pechblastFiresOnlyOnATargetInSight(final GameTestHelper helper) {
+        final EntityPech mage = pech(helper);
+        mage.setPechType(PechAiLogic.TYPE_WAND);
+        // setPechType only writes the data value (:238-240 — the watcher byte);
+        // the original reinstalls the combat goal on the NEXT TICK through
+        // updateAINextTick (:600-603), so the probe drives that seam directly.
+        mage.setCombatTask();
+        mage.setTarget(null);
+        final java.util.List<WrappedGoal> list = goals(mage, false);
+        final java.util.List<WrappedGoal> ranged = list.stream()
+                .filter(g -> g.getGoal() instanceof RangedAttackGoal).toList();
+        helper.assertTrue(!ranged.isEmpty(),
+                "a mage pech must carry the ranged attack goal of :64 (combat slot 2 at :453);"
+                        + " goals: " + list);
+        helper.assertTrue(ranged.stream().allMatch(g -> !g.canUse()),
+                "the ranged goal is armed with no target — the firing path of :466-496 runs only on"
+                        + " a target in sight (:64-65)");
+        mage.discard();
+        helper.succeed();
+    }
+
+    /**
+     * :170-178 — the pech's type is read BACK from the mainhand item id. The
+     * probe drives {@code finalizeSpawn} (the pass that equips, :168, then reads
+     * the mainhand back, :170-178) over draws and asserts the derived type: the
+     * bow rolls land type 2, and nothing lands type 1, because the wand branch is
+     * gated on the unregistered {@code thaumcraft:wandcasting} (BD-68).
+     */
+    @GameTest(template = "empty")
+    public static void pechTypeTracksTheMainhandItemIdThroughTheSpawnPass(
+            final GameTestHelper helper) {
+        int bows = 0;
+        for (int i = 0; i < 12; i++) {
+            final EntityPech pech = pech(helper);
+            final BlockPos at = pad(helper, 1, 3, 1);
+            // :167-178 — 21.1.259's DifficultyInstance is (Difficulty, dayTime,
+            // specialWorldArg, difficulty); a 0 specialWorldArg keeps
+            // getSpecialMultiplier() at 0, so the probe measures the equip/type
+            // derivation without the boss-scaling term (BD-69).
+            pech.finalizeSpawn(helper.getLevel(), new net.minecraft.world.DifficultyInstance(
+                            helper.getLevel().getDifficulty(), helper.getLevel().getDayTime(), 0L, 0.0F),
+                    MobSpawnType.NATURAL, null);                                               // :167-178
+            final ItemStack mainhand = pech.getItemBySlot(
+                    net.minecraft.world.entity.EquipmentSlot.MAINHAND);
+            final ResourceLocation id = mainhand.isEmpty() ? null
+                    : BuiltInRegistries.ITEM.getKey(mainhand.getItem());
+            final int type = pech.getPechType();
+            final boolean bow = PechAiLogic.BOW_ITEM.equals(id);
+            helper.assertTrue((bow ? type == PechAiLogic.TYPE_BOW : type == PechAiLogic.TYPE_NORMAL)
+                            && type != PechAiLogic.TYPE_WAND,
+                    "mainhand " + id + " derived pechType " + type + " — :172-178 derives 2 from the"
+                            + " bow, 1 only from a REGISTERED thaumcraft:wandcasting (BD-68), 0"
+                            + " otherwise");
+            if (bow) {
+                bows++;
+            }
+            pech.discard();
+        }
+        helper.assertTrue(bows >= 1,
+                "none of the 12 spawn passes equipped a bow (rolls 1-3 of :122-146), so the"
+                        + " mainhand-to-type link is unmeasured");
         helper.succeed();
     }
 }

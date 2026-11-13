@@ -527,22 +527,35 @@ public final class InfusionAltarGameTest {
                 manager.getAllRecipesFor(CatalogInfusion.INFUSION_TYPE.get());
         helper.assertFalse(dataRows.isEmpty(),
                 "no thaumcraft:infusion recipe is loaded");
-        // The two rows naming the Thaumcraft enchantments (TC-M6-05) must LOAD
-        // and resolve to no holder: a row for unported content ships as data and
-        // never matches, instead of failing the data pack with a parse error the
-        // dedicated-server smoke gate counts as mod-attributable.
-        int unregistered = 0;
+        // The two rows naming the Thaumcraft enchantments must LOAD and resolve a
+        // holder. They shipped naming thaumcraft:ench_repair / ench_haste long
+        // before anything registered those ids, so this probe used to pin the
+        // opposite (both rows loaded and resolved null — the row exists, simply
+        // never matches, which is how a row for unported content ships as data
+        // instead of failing the data pack with a parse error the
+        // dedicated-server smoke gate counts as mod-attributable).
+        // TC-M6-05-s-e1c registered the two ids as datapack enchantment entries,
+        // so the invariant flips: 2 loaded rows naming them, 0 unresolvable.
+        final var registries = helper.getLevel().registryAccess();
+        int resolvable = 0;
+        int unresolvable = 0;
         for (final RecipeHolder<InfusionEnchantmentRecipe> row
                 : manager.getAllRecipesFor(CatalogInfusion.INFUSION_ENCHANTMENT_TYPE.get())) {
-            if (row.value().enchantmentKey().location().getNamespace()
-                    .equals(ThaumcraftClassic.MOD_ID)
-                    && row.value().enchantment(helper.getLevel().registryAccess()) == null) {
-                unregistered++;
+            if (!row.value().enchantmentKey().location().getNamespace().equals(ThaumcraftClassic.MOD_ID)) {
+                continue;
+            }
+            if (row.value().enchantment(registries) == null) {
+                unresolvable++;
+            } else {
+                resolvable++;
             }
         }
-        helper.assertTrue(unregistered == 2,
-                "the two rows naming thaumcraft:ench_repair/ench_haste (TC-M6-05) must be "
-                        + "loaded with no resolvable holder, found " + unregistered);
+        helper.assertTrue(resolvable == 2,
+                "the two rows naming thaumcraft:ench_repair/ench_haste (TC-M6-05-s-e1c) must be "
+                        + "loaded and resolve a holder, found " + resolvable);
+        helper.assertTrue(unresolvable == 0,
+                "a loaded row naming a thaumcraft enchantment resolves no holder, so it can never "
+                        + "match a pedestal; found " + unresolvable + " unresolvable of 2");
         assertEveryLoadableRowLoaded(helper);
         RecipeHolder<InfusionCraftingRecipe> mirrorHand = null;
         for (final RecipeHolder<InfusionCraftingRecipe> row : dataRows) {
@@ -570,6 +583,15 @@ public final class InfusionAltarGameTest {
                 pedestalWith(helper, new BlockPos(5, 2, 1), new ItemStack(net.minecraft.world.item.Items.GLASS_PANE));
         final TestProbeContent.ProbeAspectSource source =
                 seedAspectSource(helper, new BlockPos(3, 2, 1), "potentia", 5);
+        // INTEGRATE-BOOK-LANES (t_ee886c7e): `drainedTotal` is a STATIC counter
+        // that CrucibleGameTest's essentia leg shares, and the harness runs the
+        // probes in registration order — which the merged tree shifted, so this
+        // probe started with a neighbour's drain already in the counter and an
+        // absolute read of it went red (`got 3` = the crucible's 1 + this
+        // craft's 2). Measure THIS craft's drain as a delta over the ambient
+        // baseline, and pin the probe's own pool as the owned-subset proof.
+        final int ambientDrains =
+                TestProbeContent.ProbeAspectSource.drainedTotal();
 
         // The original's onWandRightClick: first use arms the matrix, second
         // use starts a craft against whatever the pedestals hold.
@@ -595,9 +617,19 @@ public final class InfusionAltarGameTest {
 
         // Both essentia units were taken from the seeded source, the component
         // pedestal is empty, and the central pedestal now holds the result.
-        helper.assertTrue(TestProbeContent.ProbeAspectSource.drainedTotal() == 2,
-                "the recipe's two potentia must have been drained, got "
-                        + TestProbeContent.ProbeAspectSource.drainedTotal());
+        final int thisCraftDrained =
+                TestProbeContent.ProbeAspectSource.drainedTotal() - ambientDrains;
+        helper.assertTrue(thisCraftDrained == 2,
+                "the recipe's two potentia must have been drained by THIS craft, got "
+                        + thisCraftDrained + " (global counter "
+                        + TestProbeContent.ProbeAspectSource.drainedTotal()
+                        + ", ambient before this probe " + ambientDrains
+                        + " — CrucibleGameTest shares this static counter, so an"
+                        + " absolute read measures a neighbour's drain)");
+        helper.assertTrue(source.amount(aspect("potentia")) == 3,
+                "the seeded source held 5 potentia and the recipe costs 2, so THIS probe's"
+                        + " source must hold 3 after the craft, got "
+                        + source.amount(aspect("potentia")));
         helper.assertTrue(componentPedestal.getItem(0).isEmpty(),
                 "the component item must have been consumed");
         final ItemStack result = centreOf(helper, ALTAR.below(2)).getItem(0);

@@ -41,8 +41,11 @@ class PechAiLogicTest {
         // running `id++` counter; 12 is the mod_index the ledger row carries
         // (docs/content-mapping.csv), and the egg colours are card c6's.
         assertEquals(23, PechAiLogic.MOD_INDEX);
-        assertEquals(64, PechAiLogic.TRACK_RANGE_BLOCKS);
-        assertEquals(3, PechAiLogic.UPDATE_INTERVAL);
+        assertEquals(64, PechAiLogic.TRACK_RANGE_BLOCKS, "ConfigEntities.java:103");
+        // 1.21.1's clientTrackingRange counts CHUNKS, so the 64 blocks land as
+        // 4 (the family rule pinned at BrainyZombieAiLogicTest:38).
+        assertEquals(4, PechAiLogic.TRACK_RANGE_CHUNKS, "64 blocks is 4 chunks");
+        assertEquals(3, PechAiLogic.UPDATE_INTERVAL, "ConfigEntities.java:103");
         assertTrue(PechAiLogic.VELOCITY_UPDATES);
     }
 
@@ -444,5 +447,14 @@ class PechAiLogicTest {
         // :804-806 — the isMagical biome test
         assertTrue(PechAiLogic.isMagicBiomeTag(true));
         assertFalse(PechAiLogic.isMagicBiomeTag(false));
+        // :201-205 — the three named exclusions: taint, the magical forest and
+        // the eerie wood return TRUE (the caller refuses the spawn), anything
+        // else false. The first run of the game probe caught this rule shipped
+        // inverted, which would have let pechs spawn in taint.
+        assertTrue(PechAiLogic.isExcludedBiome(true, false, false));
+        assertTrue(PechAiLogic.isExcludedBiome(false, true, false));
+        assertTrue(PechAiLogic.isExcludedBiome(false, false, true));
+        assertTrue(PechAiLogic.isExcludedBiome(true, true, true));
+        assertFalse(PechAiLogic.isExcludedBiome(false, false, false));
     }
 }

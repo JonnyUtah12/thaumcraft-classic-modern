@@ -19,7 +19,7 @@ import net.minecraft.world.phys.HitResult;
 import java.util.List;
 
 /**
- * The Pech Blast — {@code thaumcraft:pechblast} (content-mapping row 308,
+ * The Pech Blast — {@code thaumcraft:pechblast} (content-mapping {@code Thaumcraft:PechBlast}, row 277,
  * mod_index 10). Original:
  * {@code thaumcraft.common.entities.projectile.EntityPechBlast}, 182 lines,
  * {@code extends EntityThrowable} (located with
@@ -89,7 +89,7 @@ public class EntityPechBlast extends ThrowableProjectile {
         // overload set makes `EntityPechBlast::new` ambiguous for inference.
         return EntityType.Builder.<EntityPechBlast>of(EntityPechBlast::new, category)
                 .sized(PechBlastAiLogic.WIDTH, PechBlastAiLogic.HEIGHT)   // EntityThrowable 0.5x0.5
-                .clientTrackingRange(PechBlastAiLogic.TRACK_RANGE_BLOCKS)  // 64
+                .clientTrackingRange(PechBlastAiLogic.TRACK_RANGE_CHUNKS)  // 64 blocks = 4 chunks
                 .updateInterval(PechBlastAiLogic.UPDATE_INTERVAL)          // 20
                 .setShouldReceiveVelocityUpdates(PechBlastAiLogic.VELOCITY_UPDATES)
                 .build("pechblast");

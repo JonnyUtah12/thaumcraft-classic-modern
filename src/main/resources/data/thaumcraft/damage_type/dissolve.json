@@ -1,0 +1,7 @@
+{
+  "message_id": "thaumcraft.dissolve",
+  "exhaustion": 0.1,
+  "scaling": "when_caused_by_living_non_player",
+  "effects": "hurt",
+  "_comment": "Original DamageSourceThaumcraft.dissolve: setDamageBypassesArmor() (TC4), dealt by Liquid Death (BlockFluidDeath.func_149670_a, BlockFluidDeath.java:42) for the fluid block's metadata + 1 - 1.0 at a source block, 8.0 at the shallowest flowing step. 21.1.259's DamageEffects has no armour-bypass profile (1.21 deleted the 1.20.x BYPASSES_ARMOR profiles), so the bypass is expressed by the damage-type tag minecraft:bypasses_armor, which names this type (data/minecraft/tags/damage_type/bypasses_armor.json). The emitter supplies the amount only. msgId 'thaumcraft.dissolve' resolves death.attack.thaumcraft.dissolve[.player] with the original strings. Wired by fluids/BlockFluidDeath."
+}

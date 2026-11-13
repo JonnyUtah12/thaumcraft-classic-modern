@@ -22,6 +22,10 @@ public final class PechBlastAiLogic {
 
     // ---- registration (ConfigEntities.java:86) ----
     public static final int TRACK_RANGE_BLOCKS = 64;
+    /** The original's 64 blocks become 4 CHUNKS in 1.21.1's
+     *  {@code clientTrackingRange} (the family rule, {@code
+     *  BrainyZombieAiLogicTest:38}). */
+    public static final int TRACK_RANGE_CHUNKS = TRACK_RANGE_BLOCKS / 16;
     public static final int UPDATE_INTERVAL = 20;
     public static final boolean VELOCITY_UPDATES = true;
 

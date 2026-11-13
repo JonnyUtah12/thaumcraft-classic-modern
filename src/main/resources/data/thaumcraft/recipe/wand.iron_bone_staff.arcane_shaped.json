@@ -1,0 +1,73 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research_all": [
+    "CAP_iron",
+    "ROD_bone_staff"
+  ],
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 14
+    },
+    {
+      "aspect": "terra",
+      "amount": 14
+    },
+    {
+      "aspect": "ignis",
+      "amount": 14
+    },
+    {
+      "aspect": "aqua",
+      "amount": 14
+    },
+    {
+      "aspect": "ordo",
+      "amount": 14
+    },
+    {
+      "aspect": "perditio",
+      "amount": 14
+    }
+  ],
+  "pattern": [
+    "  C",
+    " R ",
+    "C  "
+  ],
+  "key": {
+    "C": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandcap",
+      "meta": 0
+    },
+    "R": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandrod",
+      "meta": 57
+    }
+  },
+  "result": {
+    "id": "thaumcraft:wandcasting",
+    "count": 1,
+    "components": {
+      "thaumcraft:wand_cap": "iron",
+      "thaumcraft:wand_rod": "bone_staff",
+      "thaumcraft:item_meta": 14
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcap"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandrod"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcasting"
+    }
+  ]
+}

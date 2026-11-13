@@ -7,8 +7,8 @@ live outside the repository, and are overlaid into the local build; this
 document and `docs/asset-mapping.csv` are the committed mapping surface.
 
 Verified totals: **1079 files** under `assets/thaumcraft/` in the JAR.
-Every one appears exactly once in `docs/asset-mapping.csv`: **1037 mapped,
-42 explicitly marked unused** (list at the end).
+Every one appears exactly once in `docs/asset-mapping.csv`: **1041 mapped,
+38 explicitly marked unused** (list at the end).
 
 ## Method
 
@@ -73,7 +73,7 @@ note column records the construction site.
 | Directory | Files | Mapped | Unused | What it is |
 | --- | --- | --- | --- | --- |
 | `textures/blocks/` | 262 | 256 | 6 | block icons (incl. 24 `furnace0-26` arcane-furnace faces, 47 `warded_glass_1-47`, `taint_over_*`, `greatwood/silverwood` log sides, `crate_*/urn_*` loot blocks) |
-| `textures/items/` | 291 | 278 | 13 | item icons (wand rods/caps, focus icons `focus_*`, golem task cores, baubles, curiosities) |
+| `textures/items/` | 291 | 282 | 9 | item icons (wand rods/caps, focus icons `focus_*`, golem task cores, baubles, curiosities) |
 | `textures/models/` | 216 | 208 | 8 | entity/armor skins (crab, cultist, golem bodies, robes), OBJ models (16), textures bound by TESRs |
 | `textures/misc/` | 77 | 69 | 8 | HUD (`hud.png`), research icons (`r_*.png`), particles (`particles*.png`, `wisp*`), portals, parchment/quill |
 | `textures/aspects/` | 50 | 50 | 0 | 48 aspect tag icons (built in `Aspect.java` from the tag name) + `_back.png`, `_unknown.png` |
@@ -83,7 +83,7 @@ note column records the construction site.
 | `lang/` | 24 | 22 | 2 | 22 `.lang` locales (en_US master + 21 translations); README/contributing are not game assets |
 | `shader/` | 3 | 0 | 3 | `test*.frag/.vert` — never referenced; TC's post shaders live under `assets/minecraft` (`shaders/post/*.json`) |
 | `sounds.json` | 1 | 1 | 0 | sound event registry |
-| **Total** | **1079** | **1037** | **42** | |
+| **Total** | **1079** | **1041** | **38** | |
 
 Animated textures: 101 `.png.mcmeta` files; 98 pair with a used texture
 (format unchanged in 1.21.1), 3 are orphaned/paired-with-unused (see unused
@@ -189,11 +189,26 @@ to the sheet cell the original indexes — an off-by-one in `col = idx % 16` /
 `row = idx / 16` fails the test rather than shipping a wrong-looking particle,
 (3) no sliced sprite is left unnamed by a definition.
 
+The **fixture carries the same contract**: CI has no sheet (D-004), so
+`scripts/make_asset_overlay_fixture.py` writes `textures/misc/particles.png` at
+its real **256x256** — the one placeholder that must have dimensions, because
+the slicer indexes cells in it; every other placeholder stays 1x1 since the
+path gates read paths, not pixels. A 1x1 sheet there is what kept every branch
+red from 2026-10-29 to 2026-11-02 (`(x + width) is outside of Raster`); the
+slicer now fails with the file, its measured size and the required size named.
+
 The sheet's other 246 cells stay untouched: the FX families that index them
 (`FXBoreParticles`, `FXVisSparkle`, the wisp and beam art) are on their own
 cards, and slicing a cell no particle names would put dead art in every jar.
 
-## Unused assets (42) — explicit, with reason
+## Unused assets (38) — explicit, with reason
+
+SPINE-3 (`t_15e43d12`) moved `textures/items/nugget{beef,chicken,fish,pork}.png`
+out of this list: the port registers the four `ItemNuggetEdible` ids
+(`itemnuggetbeef/chicken/pork/fish`) and ships an item model per id, so those
+four icons — which 4.2.3.5's code never referenced, though it registers the
+same names for its own edible nuggets (`config/ConfigItems.java:399-405`) — are
+now published targets.
 
 | File | Reason |
 | --- | --- |
@@ -208,7 +223,6 @@ cards, and slicing a cell no particle names would put dead art in every jar.
 | `textures/gui/arcane.png` | leftover; `GuiArcaneWorkbench` uses `gui_arcaneworkbench.png` |
 | `textures/items/focus.png`, `focus_reversal.png`, `focus_whatever_orn.png`, `focuspouchbauble.png` | features not present in 4.2.3.5; real focus icons are `focus_<type>` |
 | `textures/items/golem_core_bodyguard.png(+.mcmeta)`, `golem_core_patrol.png(+.mcmeta)` | superseded; `ItemGolemCore` registers `golem_core_guard`, no `patrol` task |
-| `textures/items/nuggetbeef/chicken/fish/pork.png` | no nugget items in 4.2.3.5 |
 | `textures/items/phialoverlay.png` | no code reference; phial = `phial.png` + aspect icon |
 | `textures/misc/eldritchajor1/2.png` | no code reference; research icons use `misc/r_eldritchmajor.png` |
 | `textures/misc/quill.png` | no code reference; table quill uses `blocks/tablequill.png` |

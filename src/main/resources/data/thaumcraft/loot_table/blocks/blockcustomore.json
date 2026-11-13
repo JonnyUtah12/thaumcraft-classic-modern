@@ -1,0 +1,607 @@
+{
+  "_comment": "SPINE-1. Faithful port of thaumcraft.common.blocks.BlockCustomOre.getDrops (1.7.10): meta 0 (cinnabar) drops the ore itself (furnace-smelted to quicksilver later); metas 1-6 (infused stone) drop itemshard meta md-1, q = 1 + rand.nextInt(2 + fortune) single stacks (the original loop adds q stacks of 1, so rolls carry the count and each stack is size 1); meta 7 (amber bearing stone) drops itemresource meta 6, 1 + rand.nextInt(fortune + 1) via uniform_bonus_count(bonusMultiplier=1) == 1 + rand(1+fortune). Silk touch: the original getDrops has NO silk branch because 1.7.10 vanilla Block.harvestBlock short-circuits to the block item (canSilkHarvest true, damageDropped(meta)=meta) before getDrops runs, so the silk pool drops the block itself with the variant preserved. Exp (rand(0,3) for 1-6, rand(1,4) for 7) is not expressible in a loot table and lives in BlockCustomOre.getExpDrop.",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:match_tool",
+          "predicate": {
+            "predicates": {
+              "minecraft:enchantments": [
+                {
+                  "enchantments": "minecraft:silk_touch",
+                  "levels": {
+                    "min": 1
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "thaumcraft:blockcustomore",
+          "conditions": [
+            {
+              "block": "thaumcraft:blockcustomore",
+              "condition": "minecraft:block_state_property",
+              "properties": {
+                "variant": "0"
+              }
+            }
+          ],
+          "functions": [
+            {
+              "components": {
+                "minecraft:block_state": {
+                  "variant": "0"
+                }
+              },
+              "function": "minecraft:set_components"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thaumcraft:blockcustomore",
+          "conditions": [
+            {
+              "block": "thaumcraft:blockcustomore",
+              "condition": "minecraft:block_state_property",
+              "properties": {
+                "variant": "1"
+              }
+            }
+          ],
+          "functions": [
+            {
+              "components": {
+                "minecraft:block_state": {
+                  "variant": "1"
+                }
+              },
+              "function": "minecraft:set_components"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thaumcraft:blockcustomore",
+          "conditions": [
+            {
+              "block": "thaumcraft:blockcustomore",
+              "condition": "minecraft:block_state_property",
+              "properties": {
+                "variant": "2"
+              }
+            }
+          ],
+          "functions": [
+            {
+              "components": {
+                "minecraft:block_state": {
+                  "variant": "2"
+                }
+              },
+              "function": "minecraft:set_components"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thaumcraft:blockcustomore",
+          "conditions": [
+            {
+              "block": "thaumcraft:blockcustomore",
+              "condition": "minecraft:block_state_property",
+              "properties": {
+                "variant": "3"
+              }
+            }
+          ],
+          "functions": [
+            {
+              "components": {
+                "minecraft:block_state": {
+                  "variant": "3"
+                }
+              },
+              "function": "minecraft:set_components"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thaumcraft:blockcustomore",
+          "conditions": [
+            {
+              "block": "thaumcraft:blockcustomore",
+              "condition": "minecraft:block_state_property",
+              "properties": {
+                "variant": "4"
+              }
+            }
+          ],
+          "functions": [
+            {
+              "components": {
+                "minecraft:block_state": {
+                  "variant": "4"
+                }
+              },
+              "function": "minecraft:set_components"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thaumcraft:blockcustomore",
+          "conditions": [
+            {
+              "block": "thaumcraft:blockcustomore",
+              "condition": "minecraft:block_state_property",
+              "properties": {
+                "variant": "5"
+              }
+            }
+          ],
+          "functions": [
+            {
+              "components": {
+                "minecraft:block_state": {
+                  "variant": "5"
+                }
+              },
+              "function": "minecraft:set_components"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thaumcraft:blockcustomore",
+          "conditions": [
+            {
+              "block": "thaumcraft:blockcustomore",
+              "condition": "minecraft:block_state_property",
+              "properties": {
+                "variant": "6"
+              }
+            }
+          ],
+          "functions": [
+            {
+              "components": {
+                "minecraft:block_state": {
+                  "variant": "6"
+                }
+              },
+              "function": "minecraft:set_components"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thaumcraft:blockcustomore",
+          "conditions": [
+            {
+              "block": "thaumcraft:blockcustomore",
+              "condition": "minecraft:block_state_property",
+              "properties": {
+                "variant": "7"
+              }
+            }
+          ],
+          "functions": [
+            {
+              "components": {
+                "minecraft:block_state": {
+                  "variant": "7"
+                }
+              },
+              "function": "minecraft:set_components"
+            }
+          ]
+        }
+      ],
+      "rolls": 1.0
+    },
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:inverted",
+          "term": {
+            "condition": "minecraft:match_tool",
+            "predicate": {
+              "predicates": {
+                "minecraft:enchantments": [
+                  {
+                    "enchantments": "minecraft:silk_touch",
+                    "levels": {
+                      "min": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "block": "thaumcraft:blockcustomore",
+          "condition": "minecraft:block_state_property",
+          "properties": {
+            "variant": "0"
+          }
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "thaumcraft:blockcustomore",
+          "functions": [
+            {
+              "components": {
+                "minecraft:block_state": {
+                  "variant": "0"
+                }
+              },
+              "function": "minecraft:set_components"
+            }
+          ]
+        }
+      ],
+      "rolls": 1.0
+    },
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:inverted",
+          "term": {
+            "condition": "minecraft:match_tool",
+            "predicate": {
+              "predicates": {
+                "minecraft:enchantments": [
+                  {
+                    "enchantments": "minecraft:silk_touch",
+                    "levels": {
+                      "min": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "block": "thaumcraft:blockcustomore",
+          "condition": "minecraft:block_state_property",
+          "properties": {
+            "variant": "1"
+          }
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "thaumcraft:itemshard",
+          "functions": [
+            {
+              "components": {
+                "thaumcraft:item_meta": 0
+              },
+              "function": "minecraft:set_components"
+            }
+          ]
+        }
+      ],
+      "rolls": {
+        "base": 1,
+        "span": 2,
+        "type": "thaumcraft:fortuned_uniform"
+      }
+    },
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:inverted",
+          "term": {
+            "condition": "minecraft:match_tool",
+            "predicate": {
+              "predicates": {
+                "minecraft:enchantments": [
+                  {
+                    "enchantments": "minecraft:silk_touch",
+                    "levels": {
+                      "min": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "block": "thaumcraft:blockcustomore",
+          "condition": "minecraft:block_state_property",
+          "properties": {
+            "variant": "2"
+          }
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "thaumcraft:itemshard",
+          "functions": [
+            {
+              "components": {
+                "thaumcraft:item_meta": 1
+              },
+              "function": "minecraft:set_components"
+            }
+          ]
+        }
+      ],
+      "rolls": {
+        "base": 1,
+        "span": 2,
+        "type": "thaumcraft:fortuned_uniform"
+      }
+    },
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:inverted",
+          "term": {
+            "condition": "minecraft:match_tool",
+            "predicate": {
+              "predicates": {
+                "minecraft:enchantments": [
+                  {
+                    "enchantments": "minecraft:silk_touch",
+                    "levels": {
+                      "min": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "block": "thaumcraft:blockcustomore",
+          "condition": "minecraft:block_state_property",
+          "properties": {
+            "variant": "3"
+          }
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "thaumcraft:itemshard",
+          "functions": [
+            {
+              "components": {
+                "thaumcraft:item_meta": 2
+              },
+              "function": "minecraft:set_components"
+            }
+          ]
+        }
+      ],
+      "rolls": {
+        "base": 1,
+        "span": 2,
+        "type": "thaumcraft:fortuned_uniform"
+      }
+    },
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:inverted",
+          "term": {
+            "condition": "minecraft:match_tool",
+            "predicate": {
+              "predicates": {
+                "minecraft:enchantments": [
+                  {
+                    "enchantments": "minecraft:silk_touch",
+                    "levels": {
+                      "min": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "block": "thaumcraft:blockcustomore",
+          "condition": "minecraft:block_state_property",
+          "properties": {
+            "variant": "4"
+          }
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "thaumcraft:itemshard",
+          "functions": [
+            {
+              "components": {
+                "thaumcraft:item_meta": 3
+              },
+              "function": "minecraft:set_components"
+            }
+          ]
+        }
+      ],
+      "rolls": {
+        "base": 1,
+        "span": 2,
+        "type": "thaumcraft:fortuned_uniform"
+      }
+    },
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:inverted",
+          "term": {
+            "condition": "minecraft:match_tool",
+            "predicate": {
+              "predicates": {
+                "minecraft:enchantments": [
+                  {
+                    "enchantments": "minecraft:silk_touch",
+                    "levels": {
+                      "min": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "block": "thaumcraft:blockcustomore",
+          "condition": "minecraft:block_state_property",
+          "properties": {
+            "variant": "5"
+          }
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "thaumcraft:itemshard",
+          "functions": [
+            {
+              "components": {
+                "thaumcraft:item_meta": 4
+              },
+              "function": "minecraft:set_components"
+            }
+          ]
+        }
+      ],
+      "rolls": {
+        "base": 1,
+        "span": 2,
+        "type": "thaumcraft:fortuned_uniform"
+      }
+    },
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:inverted",
+          "term": {
+            "condition": "minecraft:match_tool",
+            "predicate": {
+              "predicates": {
+                "minecraft:enchantments": [
+                  {
+                    "enchantments": "minecraft:silk_touch",
+                    "levels": {
+                      "min": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "block": "thaumcraft:blockcustomore",
+          "condition": "minecraft:block_state_property",
+          "properties": {
+            "variant": "6"
+          }
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "thaumcraft:itemshard",
+          "functions": [
+            {
+              "components": {
+                "thaumcraft:item_meta": 5
+              },
+              "function": "minecraft:set_components"
+            }
+          ]
+        }
+      ],
+      "rolls": {
+        "base": 1,
+        "span": 2,
+        "type": "thaumcraft:fortuned_uniform"
+      }
+    },
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:inverted",
+          "term": {
+            "condition": "minecraft:match_tool",
+            "predicate": {
+              "predicates": {
+                "minecraft:enchantments": [
+                  {
+                    "enchantments": "minecraft:silk_touch",
+                    "levels": {
+                      "min": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "block": "thaumcraft:blockcustomore",
+          "condition": "minecraft:block_state_property",
+          "properties": {
+            "variant": "7"
+          }
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "thaumcraft:itemresource",
+          "functions": [
+            {
+              "components": {
+                "thaumcraft:item_meta": 6
+              },
+              "function": "minecraft:set_components"
+            },
+            {
+              "enchantment": "minecraft:fortune",
+              "formula": "minecraft:uniform_bonus_count",
+              "function": "minecraft:apply_bonus",
+              "parameters": {
+                "bonusMultiplier": 1
+              }
+            }
+          ]
+        }
+      ],
+      "rolls": 1.0
+    }
+  ],
+  "type": "minecraft:block"
+}

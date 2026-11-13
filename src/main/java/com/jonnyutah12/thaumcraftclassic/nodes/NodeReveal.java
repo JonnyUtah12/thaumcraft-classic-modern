@@ -1,5 +1,6 @@
 package com.jonnyutah12.thaumcraftclassic.nodes;
 
+import com.jonnyutah12.thaumcraftclassic.api.IRevealer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -62,6 +63,14 @@ public final class NodeReveal {
      */
     public static boolean canSeeNodes(final ItemStack held, final ItemStack helmet, final LivingEntity viewer) {
         if (!helmet.isEmpty()) {
+            // The original's own rule: the head-slot stack's item IS an
+            // IRevealer (TileNodeRenderer 187-192). The interface branch comes
+            // first so a registered item can never lose its reveal by this map
+            // being cleared (test isolation, server stop).
+            if (helmet.getItem() instanceof IRevealer revealer
+                    && revealer.showNodes(helmet, viewer)) {
+                return true;
+            }
             final Revealer revealer = REVEALERS.get(helmet.getItem());
             if (revealer != null && revealer.showNodes(helmet, viewer)) {
                 return true;

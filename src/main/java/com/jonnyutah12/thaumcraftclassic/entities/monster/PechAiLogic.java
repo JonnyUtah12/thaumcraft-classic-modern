@@ -31,6 +31,11 @@ public final class PechAiLogic {
      *  Thaumcraft.instance, 64, 3, true)}. */
     public static final int MOD_INDEX = 23;
     public static final int TRACK_RANGE_BLOCKS = 64;
+    /** 1.21.1's {@code EntityType.Builder#clientTrackingRange} counts CHUNKS,
+     *  so the original's 64 blocks ({@code ConfigEntities.java:103}) become 4 —
+     *  the family rule the c2 slice pinned at {@code BrainyZombieAiLogicTest:38}
+     *  ("64 blocks is 4"). */
+    public static final int TRACK_RANGE_CHUNKS = TRACK_RANGE_BLOCKS / 16;
     public static final int UPDATE_INTERVAL = 3;
     public static final boolean VELOCITY_UPDATES = true;
 
@@ -96,14 +101,14 @@ public final class PechAiLogic {
     }
 
     /** {@code :170} — {@code mainhand.getItem() == ConfigItems.itemWandCasting}.
-     *  ItemWandCasting is content-mapping row 190 ({@code Thaumcraft:WandCasting},
+     *  ItemWandCasting is content-mapping row 170 ({@code Thaumcraft:WandCasting},
      *  {@code not_started}), so the
      *  lookup resolves to no item today; the shape is kept so the wand lane
      *  closes it without touching this class. */
     public static final ResourceLocation WAND_ITEM =
             ResourceLocation.fromNamespaceAndPath("thaumcraft", "wandcasting");
     /** {@code :166-168} — the focus that rides the wand
-     *  ({@code ConfigItems.itemFocusPech}, row 201 {@code Thaumcraft:FocusPech},
+     *  ({@code ConfigItems.itemFocusPech}, row 181 {@code Thaumcraft:FocusPech},
      *  {@code not_started}). */
     public static final ResourceLocation FOCUS_PECH_ITEM =
             ResourceLocation.fromNamespaceAndPath("thaumcraft", "focuspech");
@@ -156,10 +161,10 @@ public final class PechAiLogic {
      *  magical-biome gate). */
     public static final boolean OVERWORLD_ONLY = true;
     /** {@code :208} — the exclusion ids, taken from the ledger's biome rows
-     *  ({@code thaumcraft:biome.biomegentaint} row 331,
-     *  {@code ...biomegenmagicalforest} 332, {@code ...biomegeneerie} 333, all
-     *  {@code not_started}): the gate is live code over ids that resolve to no
-     *  biome today. */
+     *  ({@code thaumcraft:biome.biomegentaint} row 961, {@code done};
+     *  {@code ...biomegenmagicalforest} row 962 and {@code ...biomegeneerie}
+     *  row 963, both {@code not_started}): the gate is live code over ids that
+     *  resolve to no biome today. */
     public static final ResourceLocation BIOME_TAINT =
             ResourceLocation.fromNamespaceAndPath("thaumcraft", "biome.biomegentaint");
     public static final ResourceLocation BIOME_MAGICAL_FOREST =
@@ -175,7 +180,7 @@ public final class PechAiLogic {
     /** {@code :201-205} — the three named exclusions. */
     public static boolean isExcludedBiome(final boolean taint, final boolean magicalForest,
             final boolean eerie) {
-        return !(taint || magicalForest || eerie);
+        return taint || magicalForest || eerie;
     }
 
     // ---- target lookup (:440-442, :548-551) ----
@@ -321,7 +326,7 @@ public final class PechAiLogic {
     /** {@code :122-163} — {@code nextInt(20)}: 0 and 12 want the wand (+focus),
      *  1 a stone sword, 2/4/10/11/13 a bow, 3 a stone axe, 5 an iron sword,
      *  6 an iron axe, 7 a fishing rod, 8 a stone pickaxe, 9 an iron pickaxe.
-     *  {@code null} = the unported wand branch (see BD-21). */
+     *  {@code null} = the unported wand branch (see BD-68). */
     public static ResourceLocation equipmentFor(final int roll) {
         switch (roll) {
             case 0:

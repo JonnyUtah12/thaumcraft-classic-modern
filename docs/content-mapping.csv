@@ -67,18 +67,18 @@ Thaumcraft:aspect.machina,thaumcraft:aspect.machina,aspect,MECHANISM,not_started
 Thaumcraft:aspect.vinculum,thaumcraft:aspect.vinculum,aspect,TRAP,not_started,not_tested,,components=none color=10125440
 Thaumcraft:blockFluxGoo,thaumcraft:blockfluxgoo,block,Flux Goo,not_started,not_tested,id case change only (D-001),class=BlockFluxGoo item_class=BlockFluxGooItem
 Thaumcraft:blockFluxGas,thaumcraft:blockfluxgas,block,Flux Gas,not_started,not_tested,id case change only (D-001),class=BlockFluxGas item_class=BlockFluxGasItem
-Thaumcraft:blockFluidPure,thaumcraft:blockfluidpure,block,Purifying Fluid,not_started,not_tested,id case change only (D-001),class=BlockFluidPure item_class=-
-Thaumcraft:blockFluidDeath,thaumcraft:blockfluiddeath,block,Liquid Death,not_started,not_tested,id case change only (D-001),class=BlockFluidDeath item_class=-
-Thaumcraft:blockCustomOre,thaumcraft:blockcustomore,block,Cinnabar Ore / Air Infused Stone / Fire Infused Stone / Water Infused Stone / Earth Infused Stone / Order Infused Stone / Entropy Infused Stone / Amber Bearing Stone,done,tested,id case change only (D-001),class=BlockCustomOre item_class=BlockCustomOreItem per-variant display names + the item_class block item wired by TC-M7-01b (t_f40bbc0d)
+Thaumcraft:blockFluidPure,thaumcraft:blockfluidpure,block,Purifying Fluid,done,tested,id case change only (D-001),class=BlockFluidPure item_class=-; TC-M6-04f-s ships the fluid type + flowing half + the block (the bucket item carries it)
+Thaumcraft:blockFluidDeath,thaumcraft:blockfluiddeath,block,Liquid Death,done,tested,id case change only (D-001),class=BlockFluidDeath item_class=-; TC-M6-04f-s ships the fluid type + flowing half + the block (the bucket item carries it); BD-20: entityInside deals dissolveDamage(the cell's fluid level) - 1.0 at a source block and 8.0 at the shallowest flowing step (the old 2.0F constant is gone); the dissolve armour bypass rides minecraft:bypasses_armor (data/minecraft/tags/damage_type/bypasses_armor.json)
+Thaumcraft:blockCustomOre,thaumcraft:blockcustomore,block,Cinnabar Ore / Air Infused Stone / Fire Infused Stone / Water Infused Stone / Earth Infused Stone / Order Infused Stone / Entropy Infused Stone / Amber Bearing Stone,done,tested,id case change only (D-001),class=BlockCustomOre item_class=BlockCustomOreItem per-variant display names + the item_class block item wired by TC-M7-01b (t_f40bbc0d); SPINE-1 (t_75bc2f22) ore drops shipped: data/thaumcraft/loot_table/blocks/blockcustomore.json - variant 0 self-drop / 1-6 itemshard meta v-1 at 1+rand(2+fortune) single stacks via thaumcraft:fortuned_uniform / 7 itemresource meta 6 at 1+rand(1+fortune) / silk-touch pool drops the block with variant preserved; exp rand(0-3)/rand(1-4)/0 via BlockCustomOre.getExpDrop; OreDropGameTest 6 probes (red before the table shipped)
 Thaumcraft:blockMagicalLog,thaumcraft:blockmagicallog,block,Greatwood Log / Silverwood Log,not_started,not_tested,id case change only (D-001),class=BlockMagicalLog item_class=BlockMagicalLogItem
 Thaumcraft:blockMagicalLeaves,thaumcraft:blockmagicalleaves,block,Greatwood Leaves / Silverwood Leaves,not_started,not_tested,id case change only (D-001),class=BlockMagicalLeaves item_class=BlockMagicalLeavesItem
-Thaumcraft:blockCustomPlant,thaumcraft:blockcustomplant,block,Greatwood Sapling / Silverwood Sapling / Shimmerleaf / Cinderpearl / Ethereal Bloom / Vishroom,not_started,not_tested,id case change only (D-001),class=BlockCustomPlant item_class=BlockCustomPlantItem
-Thaumcraft:blockTaint,thaumcraft:blocktaint,block,Crusted Taint / Tainted Soil / Block of Flesh,not_started,not_tested,id case change only (D-001),class=BlockTaint item_class=BlockTaintItem
-Thaumcraft:blockTaintFibres,thaumcraft:blocktaintfibres,block,Fibrous Taint / Tainted Grass / Tainted Plant / Spore Stalk / Mature Spore Stalk,not_started,not_tested,id case change only (D-001),class=BlockTaintFibres item_class=BlockTaintFibresItem
-Thaumcraft:blockCosmeticOpaque,thaumcraft:blockcosmeticopaque,block,Amber Block / Amber Bricks / Warded Glass,done,tested,id case change only (D-001),class=BlockCosmeticOpaque item_class=BlockCosmeticOpaqueItem per-variant display names + the item_class block item wired by TC-M7-01b (t_f40bbc0d)
+Thaumcraft:blockCustomPlant,thaumcraft:blockcustomplant,block,Greatwood Sapling / Silverwood Sapling / Shimmerleaf / Cinderpearl / Ethereal Bloom / Vishroom,done,not_tested,id case change only (D-001),class=BlockCustomPlant item_class=BlockCustomPlantItem - slice landed - gated on the merged tree
+Thaumcraft:blockTaint,thaumcraft:blocktaint,block,Crusted Taint / Tainted Soil / Block of Flesh,done,not_tested,id case change only (D-001),class=BlockTaint item_class=BlockTaintItem - slice landed - gated on the merged tree
+Thaumcraft:blockTaintFibres,thaumcraft:blocktaintfibres,block,Fibrous Taint / Tainted Grass / Tainted Plant / Spore Stalk / Mature Spore Stalk,done,not_tested,id case change only (D-001),class=BlockTaintFibres item_class=BlockTaintFibresItem - slice landed - gated on the merged tree
+Thaumcraft:blockCosmeticOpaque,thaumcraft:blockcosmeticopaque,block,Amber Block / Amber Bricks / Warded Glass,done,tested,id case change only (D-001),class=BlockCosmeticOpaque item_class=BlockCosmeticOpaqueItem per-variant display names + the item_class block item wired by TC-M7-01b (t_f40bbc0d); item model models/item/blockcosmeticopaque.json shipped by SPINE-3 (t_15e43d12) - one model (layer0 = warded_glass_1 = the original's meta-0 warded glass icon) - the original renders 16 per-meta warded_glass_<n> icons so per-meta appearance is deferred (BD-17)
 Thaumcraft:blockCosmeticSolid,thaumcraft:blockcosmeticsolid,block,Obsidian Totem / Obsidian Tile / Paving Stone of Travel / Paving Stone of Warding / Thaumium Block / Tallow Block / Arcane Stone Block / Arcane Stone Bricks / Charged Obsidian Totem / Golem Fetter / Active Golem Fetter / Ancient Stone / Ancient Rock / Ancient Stone / Crusted Stone / Ancient Stone Pedestal,done,tested,id case change only (D-001),class=BlockCosmeticSolid item_class=BlockCosmeticSolidItem per-variant display names + the item_class block item wired by TC-M7-01b (t_f40bbc0d)
 Thaumcraft:blockCrystal,thaumcraft:blockcrystal,block,Air Crystal Cluster / Fire Crystal Cluster / Water Crystal Cluster / Earth Crystal Cluster / Order Crystal Cluster / Entropy Crystal Cluster / Mixed Crystal Cluster / Strange Crystals,done,tested,id case change only (D-001),class=BlockCrystal item_class=BlockCrystalItem per-variant display names + the item_class block item wired by TC-M7-01b (t_f40bbc0d)
-Thaumcraft:blockTube,thaumcraft:blocktube,block,Essentia Tube / Essentia Valve / Alchemical Centrifuge / Filtered Essentia Tube / Essentia Buffer / Restricted Essentia Tube / Directional Essentia Tube / Essentia Crystallizer,not_started,not_tested,id case change only (D-001),class=BlockTube item_class=BlockTubeItem
+Thaumcraft:blockTube,thaumcraft:blocktube,block,Essentia Tube / Essentia Valve / Alchemical Centrifuge / Filtered Essentia Tube / Essentia Buffer / Restricted Essentia Tube / Directional Essentia Tube / Essentia Crystallizer,done,tested,id case change only (D-001),class=BlockTube item_class=BlockTubeItem
 Thaumcraft:blockMetalDevice,thaumcraft:blockmetaldevice,block,Crucible / Arcane Alembic / Vis Charge Relay / Advanced Alchemical Construct / Item Grate / Item Grate (Closed) / Arcane Lamp / Lamp of Growth / Alchemical Construct / Thaumatorium / Thaumatorium / Mnemonic Matrix / Lamp of Fertility / Vis Relay,done,tested,id case change only (D-001),class=BlockMetalDevice item_class=BlockMetalDeviceItem (TC-M6-04c registers the lamp metas 7/8/13 only - crucible/alembic/charger/thaumatorium/grate/vis-relay hosts and furnace machines are their own cards) per-variant display names + the item_class block item wired by TC-M7-01b (t_f40bbc0d)
 Thaumcraft:blockWoodenDevice,thaumcraft:blockwoodendevice,block,Arcane Bellows / Arcane Ear / Arcane Pressure Plate / Arcane Bore Base / Arcane Bore / Greatwood Planks / Silverwood Planks / Crimson Cult Banner / White Banner / Orange Banner / Magenta Banner / Light Blue Banner / Yellow Banner / Lime Banner / Pink Banner / Gray Banner / Light Gray Banner / Cyan Banner / Purple Banner / Blue Banner / Brown Banner / Green Banner / Red Banner / Black Banner,done,tested,id case change only (D-001),class=BlockWoodenDevice item_class=BlockWoodenDeviceItem (TC-M6-04c registers metas 0-5 - bellows / sensor / pressure plate / bore base + bore - banner and planks are TC-M6-04d) per-variant display names + the item_class block item wired by TC-M7-01b (t_f40bbc0d)
 Thaumcraft:blockStoneDevice,thaumcraft:blockstonedevice,block,Alchemical Furnace / Arcane Pedestal / Runic Matrix / Infusion Pillar / Infusion Pillar / Wand Recharge Pedestal / Infusion Pillar / Infusion Pillar / Compound Recharge Focus / Node Stabilizer / Advanced Node Stabilizer / Node Transducer / Arcane Spa / Focal Manipulator / Flux Scrubber,done,tested,id case change only (D-001),class=BlockStoneDevice item_class=BlockStoneDeviceItem (TC-M6-04c registers no stone meta host - the alchemical furnace host is TC-M4-07 and the pedestal/infusion/stabilizer/transducer/spa/focal-manipulator/flux-scrubber hosts are their own cards) per-variant display names + the item_class block item wired by TC-M7-01b (t_f40bbc0d)
@@ -91,15 +91,15 @@ Thaumcraft:blockMagicBox,thaumcraft:blockmagicbox,block,,done,tested,id case cha
 Thaumcraft:blockAlchemyFurnace,thaumcraft:blockalchemyfurnace,block,Advanced Alchemical Furnace,not_started,not_tested,id case change only (D-001),class=BlockAlchemyFurnace item_class=-
 Thaumcraft:blockJar,thaumcraft:blockjar,block,Warded Jar / Brain in a Jar / Node in a Jar / Void Jar,done,tested,id case change only (D-001),class=BlockJar item_class=BlockJarItem
 Thaumcraft:blockCandle,thaumcraft:blockcandle,block,White Tallow Candle / Orange Tallow Candle / Magenta Tallow Candle / Light Blue Tallow Candle / Yellow Tallow Candle / Lime Tallow Candle / Pink Tallow Candle / Gray Tallow Candle / Light Gray Tallow Candle / Cyan Tallow Candle / Purple Tallow Candle / Blue Tallow Candle / Brown Tallow Candle / Green Tallow Candle / Red Tallow Candle / Black Tallow Candle,done,tested,id case change only (D-001),class=BlockCandle item_class=BlockCandleItem per-variant display names + the item_class block item wired by TC-M7-01b (t_f40bbc0d)
-Thaumcraft:blockEldritch,thaumcraft:blockeldritch,block,Eldritch Altar / Eldritch Obelisk / Eldritch Obelisk / Eldritch Capstone / Glowing Crusted Stone / Glyphed Stone / Ancient Doorway / Ancient Locking Mechanism / Crusted Opening / Runed Stone,not_started,not_tested,id case change only (D-001),class=BlockEldritch item_class=BlockEldritchItem
-Thaumcraft:blockAiry,thaumcraft:blockairy,block,Aura Node / Nitor / Glimmer of Light / Glimmer of Light / Warding Aura / Energized Aura Node / Static Field / Sapping Field / Impassable,done,tested,id case change only (D-001),class=BlockAiry item_class=BlockAiryItem (vis-node host has no port-side block: TC-M5-02 nodes are record-driven per docs/architecture/node-behavior.md; nitor host registered by TC-M6-04c; warding-fence hosts pending their cards) per-variant display names + the item_class block item wired by TC-M7-01b (t_f40bbc0d)
+Thaumcraft:blockEldritch,thaumcraft:blockeldritch,block,Eldritch Altar / Eldritch Obelisk / Eldritch Obelisk / Eldritch Capstone / Glowing Crusted Stone / Glyphed Stone / Ancient Doorway / Ancient Locking Mechanism / Crusted Opening / Runed Stone,done,tested,id case change only (D-001),class=BlockEldritch item_class=BlockEldritchItem; TC-M6-04f-s ships the block with its 10 original metas; item model models/item/blockeldritch.json (layer0 block/obsidiantile = the original registerBlockIcons first line - BlockEldritch.java:55)
+Thaumcraft:blockAiry,thaumcraft:blockairy,block,Aura Node / Nitor / Glimmer of Light / Glimmer of Light / Warding Aura / Energized Aura Node / Static Field / Sapping Field / Impassable,done,tested,id case change only (D-001),class=BlockAiry item_class=BlockAiryItem (vis-node host has no port-side block: TC-M5-02 nodes are record-driven per docs/architecture/node-behavior.md; nitor host registered by TC-M6-04c; warding-fence hosts pending their cards) per-variant display names + the item_class block item wired by TC-M7-01b (t_f40bbc0d); item model models/item/blockairy.json shipped by SPINE-3 (t_15e43d12) - the original's block icon is blank (invisible block with an aura block-entity renderer); BlockAiryItem registers icon taint_over_2 which the port's item model uses as a flat sprite
 Thaumcraft:blockManaPod,thaumcraft:blockmanapod,block,,done,tested,id case change only (D-001),class=BlockManaPod item_class=-
 Thaumcraft:blockArcaneFurnace,thaumcraft:blockarcanefurnace,block,Infernal Furnace,done,tested,id case change only (D-001),class=BlockArcaneFurnace item_class=-
 Thaumcraft:blockWarded,thaumcraft:blockwarded,block,,not_started,not_tested,id case change only (D-001),class=BlockWarded item_class=-
 Thaumcraft:blockHole,thaumcraft:blockhole,block,Empty Space,not_started,not_tested,id case change only (D-001),class=BlockHole item_class=-
-Thaumcraft:blockPortalEldritch,thaumcraft:blockportaleldritch,block,Eldritch Portal,not_started,not_tested,id case change only (D-001),class=BlockEldritchPortal item_class=-
+Thaumcraft:blockPortalEldritch,thaumcraft:blockportaleldritch,block,Eldritch Portal,done,tested,id case change only (D-001),class=BlockEldritchPortal item_class=-
 Thaumcraft:blockEssentiaReservoir,thaumcraft:blockessentiareservoir,block,Essentia Reservoir,not_started,not_tested,id case change only (D-001),class=BlockEssentiaReservoir item_class=BlockEssentiaReservoirItem
-Thaumcraft:blockEldritchNothing,thaumcraft:blockeldritchnothing,block,,not_started,not_tested,id case change only (D-001),class=BlockEldritchNothing item_class=-
+Thaumcraft:blockEldritchNothing,thaumcraft:blockeldritchnothing,block,,done,tested,id case change only (D-001),class=BlockEldritchNothing item_class=-
 Thaumcraft:blockStairsArcaneStone,thaumcraft:blockstairsarcanestone,block,Arcane Stone Stairs,done,tested,id case change only (D-001),class=BlockCosmeticStairs item_class=-
 Thaumcraft:blockStairsGreatwood,thaumcraft:blockstairsgreatwood,block,Greatwood Stairs,done,tested,id case change only (D-001),class=BlockCosmeticStairs item_class=-
 Thaumcraft:blockStairsSilverwood,thaumcraft:blockstairssilverwood,block,Silverwood Stairs,done,tested,id case change only (D-001),class=BlockCosmeticStairs item_class=-
@@ -112,8 +112,8 @@ Thaumcraft:blockLootUrn,thaumcraft:blocklooturn,block,Old Urn,done,tested,id cas
 Thaumcraft:blockLootCrate,thaumcraft:blocklootcrate,block,Abandoned Crate,done,tested,id case change only (D-001),class=BlockLoot item_class=BlockLootItem
 Thaumcraft:fluxGoo,thaumcraft:fluxgoo,fluid,fluxGoo,not_started,not_tested,,class=Fluid
 Thaumcraft:fluxGas,thaumcraft:fluxgas,fluid,fluxGas,not_started,not_tested,,class=Fluid
-Thaumcraft:fluidPure,thaumcraft:fluidpure,fluid,fluidPure,not_started,not_tested,,class=Fluid
-Thaumcraft:fluidDeath,thaumcraft:fluiddeath,fluid,fluidDeath,not_started,not_tested,,class=Fluid
+Thaumcraft:fluidPure,thaumcraft:fluidpure,fluid,fluidPure,done,tested,,class=Fluid
+Thaumcraft:fluidDeath,thaumcraft:fluiddeath,fluid,fluidDeath,done,tested,,class=Fluid
 Thaumcraft:TileHole,thaumcraft:tilehole,tile_entity,TileHole,not_started,not_tested,,class=TileHole
 Thaumcraft:TileArcaneFurnace,thaumcraft:tilearcanefurnace,tile_entity,TileArcaneFurnace,not_started,not_tested,,class=TileArcaneFurnace
 Thaumcraft:TileArcaneFurnaceNozzle,thaumcraft:tilearcanefurnacenozzle,tile_entity,TileArcaneFurnaceNozzle,not_started,not_tested,,class=TileArcaneFurnaceNozzle
@@ -125,7 +125,7 @@ Thaumcraft:TileJarNode,thaumcraft:tilejarnode,tile_entity,TileJarNode,not_starte
 Thaumcraft:TileJarBrain,thaumcraft:tilejarbrain,tile_entity,TileJarBrain,not_started,not_tested,,class=TileJarBrain
 Thaumcraft:TileResearchTable,thaumcraft:tileresearchtable,tile_entity,TileResearchTable,not_started,not_tested,,class=TileResearchTable
 Thaumcraft:TileTable,thaumcraft:tiletable,tile_entity,TileTable,done,tested,,class=TileTable
-Thaumcraft:TileArcaneWorkbench,thaumcraft:tilearcaneworkbench,tile_entity,TileArcaneWorkbench,done,tested,,class=TileArcaneWorkbench
+Thaumcraft:TileArcaneWorkbench,thaumcraft:tilearcaneworkbench,tile_entity,TileArcaneWorkbench,done,tested,,class=TileArcaneWorkbench; item model models/item/tilearcaneworkbench.json shipped by SPINE-3 (t_15e43d12) - no 4.2.3.5 block class - the tile renders the table through TileArcaneWorkbenchRenderer over textures/models/worktable.png and the port's item model uses that same original art as a flat sprite
 Thaumcraft:TileChestHungry,thaumcraft:tilechesthungry,tile_entity,TileChestHungry,done,tested,,class=TileChestHungry
 Thaumcraft:TileBellows,thaumcraft:tilebellows,tile_entity,TileBellows,done,tested,,class=TileBellows
 Thaumcraft:TileSensor,thaumcraft:tilesensor,tile_entity,TileSensor,done,tested,,class=TileSensor
@@ -151,14 +151,14 @@ Thaumcraft:TileAlchemyFurnace,thaumcraft:tilealchemyfurnace,tile_entity,TileAlch
 Thaumcraft:TileAlchemyFurnaceAdvanced,thaumcraft:tilealchemyfurnaceadvanced,tile_entity,TileAlchemyFurnaceAdvanced,not_started,not_tested,,class=TileAlchemyFurnaceAdvanced
 Thaumcraft:TileAlchemyFurnaceAdvancedNozzle,thaumcraft:tilealchemyfurnaceadvancednozzle,tile_entity,TileAlchemyFurnaceAdvancedNozzle,not_started,not_tested,,class=TileAlchemyFurnaceAdvancedNozzle
 Thaumcraft:TileDeconstructionTable,thaumcraft:tiledeconstructiontable,tile_entity,TileDeconstructionTable,done,tested,,class=TileDeconstructionTable
-Thaumcraft:TilePurifyTotem,thaumcraft:tilepurifytotem,tile_entity,TileEtherealBloom,not_started,not_tested,,class=TileEtherealBloom
-Thaumcraft:TileTube,thaumcraft:tiletube,tile_entity,TileTube,not_started,not_tested,,class=TileTube
-Thaumcraft:TileTubeValve,thaumcraft:tiletubevalve,tile_entity,TileTubeValve,not_started,not_tested,,class=TileTubeValve
-Thaumcraft:TileCentrifuge,thaumcraft:tilecentrifuge,tile_entity,TileCentrifuge,not_started,not_tested,,class=TileCentrifuge
-Thaumcraft:TileTubeFilter,thaumcraft:tiletubefilter,tile_entity,TileTubeFilter,not_started,not_tested,,class=TileTubeFilter
-Thaumcraft:TileTubeBuffer,thaumcraft:tiletubebuffer,tile_entity,TileTubeBuffer,not_started,not_tested,,class=TileTubeBuffer
-Thaumcraft:TileTubeRestrict,thaumcraft:tiletuberestrict,tile_entity,TileTubeRestrict,not_started,not_tested,,class=TileTubeRestrict
-Thaumcraft:TileTubeOneway,thaumcraft:tiletubeoneway,tile_entity,TileTubeOneway,not_started,not_tested,,class=TileTubeOneway
+Thaumcraft:TilePurifyTotem,thaumcraft:tilepurifytotem,tile_entity,TileEtherealBloom,done,not_tested,,class=TileEtherealBloom - slice landed - gated on the merged tree
+Thaumcraft:TileTube,thaumcraft:tiletube,tile_entity,TileTube,done,tested,,class=TileTube
+Thaumcraft:TileTubeValve,thaumcraft:tiletubevalve,tile_entity,TileTubeValve,done,tested,,class=TileTubeValve
+Thaumcraft:TileCentrifuge,thaumcraft:tilecentrifuge,tile_entity,TileCentrifuge,done,tested,,class=TileCentrifuge
+Thaumcraft:TileTubeFilter,thaumcraft:tiletubefilter,tile_entity,TileTubeFilter,done,tested,,class=TileTubeFilter
+Thaumcraft:TileTubeBuffer,thaumcraft:tiletubebuffer,tile_entity,TileTubeBuffer,done,tested,,class=TileTubeBuffer
+Thaumcraft:TileTubeRestrict,thaumcraft:tiletuberestrict,tile_entity,TileTubeRestrict,done,tested,,class=TileTubeRestrict
+Thaumcraft:TileTubeOneway,thaumcraft:tiletubeoneway,tile_entity,TileTubeOneway,done,tested,,class=TileTubeOneway
 Thaumcraft:TileThaumatorium,thaumcraft:tilethaumatorium,tile_entity,TileThaumatorium,not_started,not_tested,,class=TileThaumatorium
 Thaumcraft:TileThaumatoriumTop,thaumcraft:tilethaumatoriumtop,tile_entity,TileThaumatoriumTop,not_started,not_tested,,class=TileThaumatoriumTop
 Thaumcraft:TileBrainbox,thaumcraft:tilebrainbox,tile_entity,TileBrainbox,not_started,not_tested,,class=TileBrainbox
@@ -174,22 +174,22 @@ Thaumcraft:TileNodeConverter,thaumcraft:tilenodeconverter,tile_entity,TileNodeCo
 Thaumcraft:TileMagicWorkbenchCharger,thaumcraft:tilemagicworkbenchcharger,tile_entity,TileMagicWorkbenchCharger,not_started,not_tested,,class=TileMagicWorkbenchCharger
 Thaumcraft:TileManaPod,thaumcraft:tilemanapod,tile_entity,TileManaPod,done,tested,,class=TileManaPod
 Thaumcraft:TileSpa,thaumcraft:tilespa,tile_entity,TileSpa,done,tested,,class=TileSpa
-Thaumcraft:TileEldritchAltar,thaumcraft:tileeldritchaltar,tile_entity,TileEldritchAltar,not_started,not_tested,,class=TileEldritchAltar
-Thaumcraft:TileEldritchObelisk,thaumcraft:tileeldritchobelisk,tile_entity,TileEldritchObelisk,not_started,not_tested,,class=TileEldritchObelisk
-Thaumcraft:TileEldritchCap,thaumcraft:tileeldritchcap,tile_entity,TileEldritchCap,not_started,not_tested,,class=TileEldritchCap
+Thaumcraft:TileEldritchAltar,thaumcraft:tileeldritchaltar,tile_entity,TileEldritchAltar,done,tested,,class=TileEldritchAltar
+Thaumcraft:TileEldritchObelisk,thaumcraft:tileeldritchobelisk,tile_entity,TileEldritchObelisk,done,tested,,class=TileEldritchObelisk
+Thaumcraft:TileEldritchCap,thaumcraft:tileeldritchcap,tile_entity,TileEldritchCap,done,tested,,class=TileEldritchCap
 Thaumcraft:TileBanner,thaumcraft:tilebanner,tile_entity,TileBanner,done,tested,,class=TileBanner
-Thaumcraft:TileEldritchPortal,thaumcraft:tileeldritchportal,tile_entity,TileEldritchPortal,not_started,not_tested,,class=TileEldritchPortal
+Thaumcraft:TileEldritchPortal,thaumcraft:tileeldritchportal,tile_entity,TileEldritchPortal,done,tested,,class=TileEldritchPortal
 Thaumcraft:TileEssentiaReservoir,thaumcraft:tileessentiareservoir,tile_entity,TileEssentiaReservoir,not_started,not_tested,,class=TileEssentiaReservoir
-Thaumcraft:TileEssentiaCrystalizer,thaumcraft:tileessentiacrystalizer,tile_entity,TileEssentiaCrystalizer,not_started,not_tested,,class=TileEssentiaCrystalizer
-Thaumcraft:TileEldritchNothing,thaumcraft:tileeldritchnothing,tile_entity,TileEldritchNothing,not_started,not_tested,,class=TileEldritchNothing
-Thaumcraft:TileEldritchLock,thaumcraft:tileeldritchlock,tile_entity,TileEldritchLock,not_started,not_tested,,class=TileEldritchLock
-Thaumcraft:TileEldritchCrabSpawner,thaumcraft:tileeldritchcrabspawner,tile_entity,TileEldritchCrabSpawner,not_started,not_tested,,class=TileEldritchCrabSpawner
+Thaumcraft:TileEssentiaCrystalizer,thaumcraft:tileessentiacrystalizer,tile_entity,TileEssentiaCrystalizer,done,tested,,class=TileEssentiaCrystalizer
+Thaumcraft:TileEldritchNothing,thaumcraft:tileeldritchnothing,tile_entity,TileEldritchNothing,done,tested,,class=TileEldritchNothing
+Thaumcraft:TileEldritchLock,thaumcraft:tileeldritchlock,tile_entity,TileEldritchLock,done,tested,,class=TileEldritchLock
+Thaumcraft:TileEldritchCrabSpawner,thaumcraft:tileeldritchcrabspawner,tile_entity,TileEldritchCrabSpawner,done,tested,,class=TileEldritchCrabSpawner
 Thaumcraft:TileFocalManipulator,thaumcraft:tilefocalmanipulator,tile_entity,TileFocalManipulator,not_started,not_tested,,class=TileFocalManipulator
 Thaumcraft:TileFluxScrubber,thaumcraft:tilefluxscrubber,tile_entity,TileFluxScrubber,not_started,not_tested,,class=TileFluxScrubber
 Thaumcraft:TileEldritchTrap,thaumcraft:tileeldritchtrap,tile_entity,TileEldritchTrap,not_started,not_tested,,class=TileEldritchTrap
-Thaumcraft:WandCasting,thaumcraft:wandcasting,item,,not_started,not_tested,id case change only (D-001),class=ItemWandCasting
-Thaumcraft:WandCap,thaumcraft:wandcap,item,Iron Cap / Gold Cap / Charged Thaumium Cap / Copper Cap / Charged Silver Cap / Inert Silver Cap / Inert Thaumium Cap / Charged Void metal Cap / Inert Void metal Cap,not_started,not_tested,id case change only (D-001),class=ItemWandCap
-Thaumcraft:WandRod,thaumcraft:wandrod,item,Greatwood Rod / Obsidian Rod / Silverwood Rod / Icy Rod / Quartz Rod / Reed Rod / Blazing Rod / Bone Rod / Greatwood Staff Core / Obsidian Staff Core / Silverwood Staff Core / Icy Staff Core / Quartz Staff Core / Reed Staff Core / Blazing Staff Core / Bone Staff Core / Staff Core of the Primal,not_started,not_tested,id case change only (D-001),class=ItemWandRod
+Thaumcraft:WandCasting,thaumcraft:wandcasting,item,,done,tested,id case change only (D-001),class=ItemWandCasting
+Thaumcraft:WandCap,thaumcraft:wandcap,item,Iron Cap / Gold Cap / Charged Thaumium Cap / Copper Cap / Charged Silver Cap / Inert Silver Cap / Inert Thaumium Cap / Charged Void metal Cap / Inert Void metal Cap,done,tested,id case change only (D-001),class=ItemWandCap
+Thaumcraft:WandRod,thaumcraft:wandrod,item,Greatwood Rod / Obsidian Rod / Silverwood Rod / Icy Rod / Quartz Rod / Reed Rod / Blazing Rod / Bone Rod / Greatwood Staff Core / Obsidian Staff Core / Silverwood Staff Core / Icy Staff Core / Quartz Staff Core / Reed Staff Core / Blazing Staff Core / Bone Staff Core / Staff Core of the Primal,done,tested,id case change only (D-001),class=ItemWandRod
 Thaumcraft:FocusPouch,thaumcraft:focuspouch,item,Focus Pouch,not_started,not_tested,id case change only (D-001),class=ItemFocusPouchBauble
 Thaumcraft:FocusFire,thaumcraft:focusfire,item,Wand Focus: Fire,not_started,not_tested,id case change only (D-001),class=ItemFocusFire
 Thaumcraft:FocusShock,thaumcraft:focusshock,item,Wand Focus: Shock,not_started,not_tested,id case change only (D-001),class=ItemFocusShock
@@ -201,52 +201,52 @@ Thaumcraft:FocusPortableHole,thaumcraft:focusportablehole,item,Wand Focus: Porta
 Thaumcraft:FocusPech,thaumcraft:focuspech,item,Wand Focus: Pech's Curse,not_started,not_tested,id case change only (D-001),class=ItemFocusPech
 Thaumcraft:FocusWarding,thaumcraft:focuswarding,item,Wand Focus: Warding,not_started,not_tested,id case change only (D-001),class=ItemFocusWarding
 Thaumcraft:FocusPrimal,thaumcraft:focusprimal,item,Wand Focus: Primal,not_started,not_tested,id case change only (D-001),class=ItemFocusPrimal
-Thaumcraft:ItemEssence,thaumcraft:itemessence,item,Glass Phial / Phial of Essentia,done,tested,id case change only (D-001),class=ItemEssence
+Thaumcraft:ItemEssence,thaumcraft:itemessence,item,Glass Phial / Phial of Essentia,done,tested,id case change only (D-001),class=ItemEssence; item model models/item/itemessence.json shipped by SPINE-3 (t_15e43d12) - the model layers mirror the original icon pair (layer0 = icon phial / layer1 = iconOverlay essence - animated); the per-aspect tint of the original's overlay render is deferred
 Thaumcraft:ItemManaBean,thaumcraft:itemmanabean,item,Mana Bean,done,tested,id case change only (D-001),class=ItemManaBean
 Thaumcraft:ItemWispEssence,thaumcraft:itemwispessence,item,Ethereal Essence,done,tested,id case change only (D-001),class=ItemWispEssence
-Thaumcraft:ItemResource,thaumcraft:itemresource,item,Alumentum / Nitor / Thaumium Ingot / Quicksilver / Magic Tallow / Zombie Brain (defunct) / Amber / Enchanted Fabric / Vis Filter / Knowledge Fragment / Mirrored Glass / Tainted Goo / Taint Tendril / Jar Label / Salis Mundus / Primal Charm / Void metal Ingot / Void Seed / Gold Coin,done,tested,id case change only (D-001),class=ItemResource
-Thaumcraft:ItemShard,thaumcraft:itemshard,item,Air Shard / Fire Shard / Water Shard / Earth Shard / Order Shard / Entropy Shard / Balanced Shard,done,tested,id case change only (D-001),class=ItemShard
-Thaumcraft:ItemResearchNotes,thaumcraft:itemresearchnotes,item,Research Notes,not_started,not_tested,id case change only (D-001),class=ItemResearchNotes
-Thaumcraft:ItemInkwell,thaumcraft:iteminkwell,item,Scribing Tools,not_started,not_tested,id case change only (D-001),class=ItemInkwell
-Thaumcraft:ItemThaumonomicon,thaumcraft:itemthaumonomicon,item,Thaumonomicon,not_started,not_tested,id case change only (D-001),class=ItemThaumonomicon
-Thaumcraft:ItemThaumometer,thaumcraft:itemthaumometer,item,Thaumometer,done,tested,id case change only (D-001),class=ItemThaumometer
-Thaumcraft:ItemGoggles,thaumcraft:itemgoggles,item,Goggles of Revealing,not_started,not_tested,id case change only (D-001),class=ItemGoggles
-Thaumcraft:ItemHelmetThaumium,thaumcraft:itemhelmetthaumium,item,Thaumium Helm,not_started,not_tested,id case change only (D-001),class=ItemThaumiumArmor
-Thaumcraft:ItemChestplateThaumium,thaumcraft:itemchestplatethaumium,item,Thaumium Chestplate,not_started,not_tested,id case change only (D-001),class=ItemThaumiumArmor
-Thaumcraft:ItemLeggingsThaumium,thaumcraft:itemleggingsthaumium,item,Thaumium Leggings,not_started,not_tested,id case change only (D-001),class=ItemThaumiumArmor
-Thaumcraft:ItemBootsThaumium,thaumcraft:itembootsthaumium,item,Thaumium Boots,not_started,not_tested,id case change only (D-001),class=ItemThaumiumArmor
+Thaumcraft:ItemResource,thaumcraft:itemresource,item,Alumentum / Nitor / Thaumium Ingot / Quicksilver / Magic Tallow / Zombie Brain (defunct) / Amber / Enchanted Fabric / Vis Filter / Knowledge Fragment / Mirrored Glass / Tainted Goo / Taint Tendril / Jar Label / Salis Mundus / Primal Charm / Void metal Ingot / Void Seed / Gold Coin,done,tested,id case change only (D-001),class=ItemResource; item model models/item/itemresource.json shipped by SPINE-3 (t_15e43d12) - one model for the whole family (layer0 = the original's index-0 icon alumentum) - 4.2.3.5 renders 19 per-meta icons through getIconFromDamage so per-meta appearance is deferred (BD-17)
+Thaumcraft:ItemShard,thaumcraft:itemshard,item,Air Shard / Fire Shard / Water Shard / Earth Shard / Order Shard / Entropy Shard / Balanced Shard,done,tested,id case change only (D-001),class=ItemShard; item model models/item/itemshard.json shipped by SPINE-3 (t_15e43d12) - one model (layer0 = index-0 icon shard) - the original has 7 metas with per-meta icons so per-meta appearance is deferred (BD-17)
+Thaumcraft:ItemResearchNotes,thaumcraft:itemresearchnotes,item,Research Notes,done,tested,id case change only (D-001),class=ItemResearchNotes note state rides the thaumcraft:research_note data component (BD-04); right-click finishes the entry plus eligible siblings and spends the note; blank discovery metas 24/42 reveal a fresh puzzle note via findHiddenResearch + NotePuzzle.generate or drop 7-9 knowledge fragments (itemresource meta 9); the discovery family (meta 64+) is name/rarity only because thaumcraft:item_meta is bounded at 63; per-meta icons + glint ride the item models card - the note's own base model `models/item/itemresearchnotes.json` (layer0 researchnotes + layer1 researchnotesoverlay; the original's icon pair ItemResearchNotes.java:45-46) ships in the merge commit so main's item-model gates pass; the interactive note screen is its own card (t_67e8faf4) BD-24 (was BD-18 on the research lane).
+Thaumcraft:ItemInkwell,thaumcraft:iteminkwell,item,Scribing Tools,done,tested,"id case change only (D-001); registered as thaumcraft:iteminkwell by M3ResearchContent (TC-M3-04-s-v, wt/book-note-action, base 312c162) with the original's constructor properties (max stack 1 + durability 100 - common/items/ItemInkwell.java:23-29); implements the IScribeTools marker ResearchManager.consumeInkFromPlayer reads as the ink source (ResearchManager.java:204-217) - one durability use per research note; the note arm's gate is this tool plus PAPER (the original's Items.field_151121_aF = paper, not an ink sac) and the paper is not consumed; acquisition rows shipped by TC-M3-04-s-vi t_28fe696f (landed by t_35921e6e) - recipe.scribe1.crafting_shapeless (empty phial item_meta 0 + feather + thaumcraft:oredict.dyeblack) and recipe.scribe2.crafting_shapeless (glass bottle + feather + same tag; every ingredient vanilla, so this is the unconditional survival path); the Scribe3 recolor row waits on the inkwell 16-colour meta family (BD-66); the onItemUseFirst research-table conversion rides the research-table card; the thaumcraft:inkwell sprite is ARR (D-004) so `models/item/iteminkwell.json` (layer0 thaumcraft:item/inkwell - ItemInkwell.java:33) ships in the merge commit for main's item-model gates and the sprite lands only with the overlay (BD-25)",class=ItemInkwell BD-25 (was BD-19 on the research lane; the id was taken by wisp FX on main). BOOK-5 (t_569e7f6e): the book's mint spends 1 durability on this tool and the note window publishes the ink it has left (BD-26) - pinned by an integration probe
+Thaumcraft:ItemThaumonomicon,thaumcraft:itemthaumonomicon,item,Thaumonomicon,done,tested,id case change only (D-001); right-click opens the book - server arm completes the siblings of every completed entry (ItemThaumonomicon.java:56-64) and sends the open payload; client arm plays thaumcraft:page (:72-73); meta 42 cheat-sheet arm deferred (BD-22),class=ItemThaumonomicon After the merge the registration site is the catalog row in catalog/items.json (CatalogResearchBook.ITEM_THAUMONOMICON) - not the research lane's ModItems hand-pick - and the right-click arm is the note/purchase affordance of BD-25.
+Thaumcraft:ItemThaumometer,thaumcraft:itemthaumometer,item,Thaumometer,done,tested,id case change only (D-001),class=ItemThaumometer; item model models/item/itemthaumometer.json shipped by SPINE-3 (t_15e43d12) - the original registers icon blank and draws the item through a custom renderer; the port ships no item renderer (renderers are a deferred card) so the model uses the vanilla compass face as a stand-in
+Thaumcraft:ItemGoggles,thaumcraft:itemgoggles,item,Goggles of Revealing,done,not_tested,id case change only (D-001),class=ItemGoggles - slice landed - gated on the merged tree
+Thaumcraft:ItemHelmetThaumium,thaumcraft:itemhelmetthaumium,item,Thaumium Helm,done,not_tested,id case change only (D-001),class=ItemThaumiumArmor - slice landed - gated on the merged tree
+Thaumcraft:ItemChestplateThaumium,thaumcraft:itemchestplatethaumium,item,Thaumium Chestplate,done,not_tested,id case change only (D-001),class=ItemThaumiumArmor - slice landed - gated on the merged tree
+Thaumcraft:ItemLeggingsThaumium,thaumcraft:itemleggingsthaumium,item,Thaumium Leggings,done,not_tested,id case change only (D-001),class=ItemThaumiumArmor - slice landed - gated on the merged tree
+Thaumcraft:ItemBootsThaumium,thaumcraft:itembootsthaumium,item,Thaumium Boots,done,not_tested,id case change only (D-001),class=ItemThaumiumArmor - slice landed - gated on the merged tree
 Thaumcraft:ItemShovelThaumium,thaumcraft:itemshovelthaumium,item,Thaumium Shovel,not_started,not_tested,id case change only (D-001),class=ItemThaumiumShovel
 Thaumcraft:ItemPickThaumium,thaumcraft:itempickthaumium,item,Thaumium Pickaxe,not_started,not_tested,id case change only (D-001),class=ItemThaumiumPickaxe
 Thaumcraft:ItemAxeThaumium,thaumcraft:itemaxethaumium,item,Thaumium Axe,not_started,not_tested,id case change only (D-001),class=ItemThaumiumAxe
 Thaumcraft:ItemSwordThaumium,thaumcraft:itemswordthaumium,item,Thaumium Sword,not_started,not_tested,id case change only (D-001),class=ItemThaumiumSword
 Thaumcraft:ItemHoeThaumium,thaumcraft:itemhoethaumium,item,Thaumium Hoe,not_started,not_tested,id case change only (D-001),class=ItemThaumiumHoe
 Thaumcraft:ItemArcaneDoor,thaumcraft:itemarcanedoor,item,Arcane Door,done,tested,id case change only (D-001),class=ItemArcaneDoor
-Thaumcraft:ItemNugget,thaumcraft:itemnugget,item,Iron Nugget / Copper Nugget / Tin Nugget / Silver Nugget / Lead Nugget / Quicksilver Drop / Thaumium Nugget / Void metal Nugget / Native Iron Cluster / Native Copper Cluster / Native Tin Cluster / Native Silver Cluster / Native Lead Cluster / Native Cinnabar Cluster / Native Gold Cluster,done,tested,id case change only (D-001),class=ItemNugget
+Thaumcraft:ItemNugget,thaumcraft:itemnugget,item,Iron Nugget / Copper Nugget / Tin Nugget / Silver Nugget / Lead Nugget / Quicksilver Drop / Thaumium Nugget / Void metal Nugget / Native Iron Cluster / Native Copper Cluster / Native Tin Cluster / Native Silver Cluster / Native Lead Cluster / Native Cinnabar Cluster / Native Gold Cluster,done,tested,id case change only (D-001),class=ItemNugget; item model models/item/itemnugget.json shipped by SPINE-3 (t_15e43d12) - one model (layer0 = index-0 icon nuggetiron) - the original registers 15 meta icons so per-meta appearance is deferred (BD-17)
 Thaumcraft:BootsTraveller,thaumcraft:bootstraveller,item,Boots of the Traveler,not_started,not_tested,id case change only (D-001),class=ItemBootsTraveller
-Thaumcraft:ItemNuggetChicken,thaumcraft:itemnuggetchicken,item,Chicken Nugget,done,tested,id case change only (D-001),class=ItemNuggetEdible
-Thaumcraft:ItemNuggetBeef,thaumcraft:itemnuggetbeef,item,Beef Nugget,done,tested,id case change only (D-001),class=ItemNuggetEdible
-Thaumcraft:ItemNuggetPork,thaumcraft:itemnuggetpork,item,Pork Nugget,done,tested,id case change only (D-001),class=ItemNuggetEdible
-Thaumcraft:ItemNuggetFish,thaumcraft:itemnuggetfish,item,Fish Nugget,done,tested,id case change only (D-001),class=ItemNuggetEdible
+Thaumcraft:ItemNuggetChicken,thaumcraft:itemnuggetchicken,item,Chicken Nugget,done,tested,id case change only (D-001),class=ItemNuggetEdible; item model models/item/itemnuggetchicken.json shipped by SPINE-3 (t_15e43d12) - the texture nuggetchicken.png moved from UNUSED to published (the original registers that icon name at config/ConfigItems.java:399)
+Thaumcraft:ItemNuggetBeef,thaumcraft:itemnuggetbeef,item,Beef Nugget,done,tested,id case change only (D-001),class=ItemNuggetEdible; item model models/item/itemnuggetbeef.json shipped by SPINE-3 (t_15e43d12) - the texture nuggetbeef.png moved from UNUSED to published (the original registers that icon name at config/ConfigItems.java:401)
+Thaumcraft:ItemNuggetPork,thaumcraft:itemnuggetpork,item,Pork Nugget,done,tested,id case change only (D-001),class=ItemNuggetEdible; item model models/item/itemnuggetpork.json shipped by SPINE-3 (t_15e43d12) - the texture nuggetpork.png moved from UNUSED to published (the original registers that icon name at config/ConfigItems.java:403)
+Thaumcraft:ItemNuggetFish,thaumcraft:itemnuggetfish,item,Fish Nugget,done,tested,id case change only (D-001),class=ItemNuggetEdible; item model models/item/itemnuggetfish.json shipped by SPINE-3 (t_15e43d12) - the texture nuggetfish.png moved from UNUSED to published (the original registers that icon name at config/ConfigItems.java:405)
 Thaumcraft:TripleMeatTreat,thaumcraft:triplemeattreat,item,Triple Meat Treat,done,tested,id case change only (D-001),class=ItemTripleMeatTreat
 Thaumcraft:ItemSwordElemental,thaumcraft:itemswordelemental,item,Sword of the Zephyr,not_started,not_tested,id case change only (D-001),class=ItemElementalSword
 Thaumcraft:ItemShovelElemental,thaumcraft:itemshovelelemental,item,Shovel of the Earthmover,not_started,not_tested,id case change only (D-001),class=ItemElementalShovel
 Thaumcraft:ItemPickaxeElemental,thaumcraft:itempickaxeelemental,item,Pickaxe of the Core,not_started,not_tested,id case change only (D-001),class=ItemElementalPickaxe
 Thaumcraft:ItemAxeElemental,thaumcraft:itemaxeelemental,item,Axe of the Stream,not_started,not_tested,id case change only (D-001),class=ItemElementalAxe
 Thaumcraft:ItemHoeElemental,thaumcraft:itemhoeelemental,item,Hoe of Growth,not_started,not_tested,id case change only (D-001),class=ItemElementalHoe
-Thaumcraft:ItemChestplateRobe,thaumcraft:itemchestplaterobe,item,Thaumaturge's Robe,not_started,not_tested,id case change only (D-001),class=ItemRobeArmor
-Thaumcraft:ItemLeggingsRobe,thaumcraft:itemleggingsrobe,item,Thaumaturge's Leggings,not_started,not_tested,id case change only (D-001),class=ItemRobeArmor
-Thaumcraft:ItemBootsRobe,thaumcraft:itembootsrobe,item,Thaumaturge's Boots,not_started,not_tested,id case change only (D-001),class=ItemRobeArmor
+Thaumcraft:ItemChestplateRobe,thaumcraft:itemchestplaterobe,item,Thaumaturge's Robe,done,not_tested,id case change only (D-001),class=ItemRobeArmor - slice landed - gated on the merged tree
+Thaumcraft:ItemLeggingsRobe,thaumcraft:itemleggingsrobe,item,Thaumaturge's Leggings,done,not_tested,id case change only (D-001),class=ItemRobeArmor - slice landed - gated on the merged tree
+Thaumcraft:ItemBootsRobe,thaumcraft:itembootsrobe,item,Thaumaturge's Boots,done,not_tested,id case change only (D-001),class=ItemRobeArmor - slice landed - gated on the merged tree
 Thaumcraft:ArcaneDoorKey,thaumcraft:arcanedoorkey,item,Iron Arcane Key / Gold Arcane Key,done,tested,id case change only (D-001),class=ItemKey
 Thaumcraft:HandMirror,thaumcraft:handmirror,item,Magic Hand Mirror,done,tested,id case change only (D-001),class=ItemHandMirror
 Thaumcraft:HoverHarness,thaumcraft:hoverharness,item,Thaumostatic Harness,not_started,not_tested,id case change only (D-001),class=ItemHoverHarness
-Thaumcraft:BlockJarFilledItem,thaumcraft:blockjarfilleditem,item,Jar of Essentia,done,tested,id case change only (D-001),class=ItemJarFilled
+Thaumcraft:BlockJarFilledItem,thaumcraft:blockjarfilleditem,item,Jar of Essentia,done,tested,id case change only (D-001),class=ItemJarFilled; item model models/item/blockjarfilleditem.json shipped by SPINE-3 (t_15e43d12) - the original registers icon blank and renders the jar with contents through the jar block-entity renderer; with no port item renderer the model uses the jar block's own icon jar_side
 Thaumcraft:BlockJarNodeItem,thaumcraft:blockjarnodeitem,item,Node in a Jar,not_started,not_tested,id case change only (D-001),class=ItemJarNode
-Thaumcraft:TrunkSpawner,thaumcraft:trunkspawner,item,Traveling Trunk,done,tested,id case change only (D-001),class=ItemTrunkSpawner
-Thaumcraft:ItemGolemPlacer,thaumcraft:itemgolemplacer,item,Straw Golem / Wood Golem / Tallow Golem / Clay Golem / Flesh Golem / Stone Golem / Iron Golem / Thaumium Golem,not_started,not_tested,id case change only (D-001),class=ItemGolemPlacer
-Thaumcraft:ItemGolemCore,thaumcraft:itemgolemcore,item,Golem Animation Core,not_started,not_tested,id case change only (D-001),class=ItemGolemCore
-Thaumcraft:ItemGolemUpgrade,thaumcraft:itemgolemupgrade,item,Golem Upgrade: Air / Golem Upgrade: Earth / Golem Upgrade: Fire / Golem Upgrade: Water / Golem Upgrade: Order / Golem Upgrade: Entropy,not_started,not_tested,id case change only (D-001),class=ItemGolemUpgrade
-Thaumcraft:GolemBell,thaumcraft:golembell,item,Golemancer's Bell,not_started,not_tested,id case change only (D-001),class=ItemGolemBell
-Thaumcraft:ItemGolemDecoration,thaumcraft:itemgolemdecoration,item,Accessory,not_started,not_tested,id case change only (D-001),class=ItemGolemDecoration
+Thaumcraft:TrunkSpawner,thaumcraft:trunkspawner,item,Traveling Trunk,done,tested,id case change only (D-001),class=ItemTrunkSpawner; item model models/item/trunkspawner.json shipped by SPINE-3 (t_15e43d12) - the original registers icon blank and draws ItemTrunkSpawnerRenderer over textures/models/trunk.png; with no port item renderer the model uses that same original art as a flat sprite
+Thaumcraft:ItemGolemPlacer,thaumcraft:itemgolemplacer,item,Straw Golem / Wood Golem / Tallow Golem / Clay Golem / Flesh Golem / Stone Golem / Iron Golem / Thaumium Golem,done,tested,id case change only (D-001),class=ItemGolemPlacer
+Thaumcraft:ItemGolemCore,thaumcraft:itemgolemcore,item,Golem Animation Core,done,tested,id case change only (D-001),class=ItemGolemCore
+Thaumcraft:ItemGolemUpgrade,thaumcraft:itemgolemupgrade,item,Golem Upgrade: Air / Golem Upgrade: Earth / Golem Upgrade: Fire / Golem Upgrade: Water / Golem Upgrade: Order / Golem Upgrade: Entropy,done,tested,id case change only (D-001),class=ItemGolemUpgrade
+Thaumcraft:GolemBell,thaumcraft:golembell,item,Golemancer's Bell,done,tested,id case change only (D-001),class=ItemGolemBell
+Thaumcraft:ItemGolemDecoration,thaumcraft:itemgolemdecoration,item,Accessory,done,tested,id case change only (D-001),class=ItemGolemDecoration
 Thaumcraft:ItemBowBone,thaumcraft:itembowbone,item,Bow of Bone,not_started,not_tested,id case change only (D-001),class=ItemBowBone
 Thaumcraft:PrimalArrow,thaumcraft:primalarrow,item,Air Arrow / Fire Arrow / Water Arrow / Earth Arrow / Order Arrow / Entropy Arrow,not_started,not_tested,id case change only (D-001),class=ItemPrimalArrow
 Thaumcraft:ItemResonator,thaumcraft:itemresonator,item,Essentia Resonator,done,tested,id case change only (D-001),class=ItemResonator
@@ -260,12 +260,12 @@ Thaumcraft:ItemSpawnerEgg,thaumcraft:itemspawneregg,item,,not_started,not_tested
 Thaumcraft:ItemZombieBrain,thaumcraft:itemzombiebrain,item,Zombie Brain,not_started,not_tested,id case change only (D-001),class=ItemZombieBrain
 Thaumcraft:ItemBathSalts,thaumcraft:itembathsalts,item,Purifying Bath Salts,not_started,not_tested,id case change only (D-001),class=ItemBathSalts
 Thaumcraft:ItemCrystalEssence,thaumcraft:itemcrystalessence,item,Crystallized Essence,done,tested,id case change only (D-001),class=ItemCrystalEssence
-Thaumcraft:ItemBucketDeath,thaumcraft:itembucketdeath,item,Bucket of Liquid Death,not_started,not_tested,id case change only (D-001),class=ItemBucketDeath
-Thaumcraft:ItemBucketPure,thaumcraft:itembucketpure,item,Bucket of Purifying Fluid,not_started,not_tested,id case change only (D-001),class=ItemBucketPure
+Thaumcraft:ItemBucketDeath,thaumcraft:itembucketdeath,item,Bucket of Liquid Death,done,tested,id case change only (D-001),class=ItemBucketDeath
+Thaumcraft:ItemBucketPure,thaumcraft:itembucketpure,item,Bucket of Purifying Fluid,done,tested,id case change only (D-001),class=ItemBucketPure
 Thaumcraft:ItemHelmetFortress,thaumcraft:itemhelmetfortress,item,Thaumium Fortress Helm,not_started,not_tested,id case change only (D-001),class=ItemFortressArmor
 Thaumcraft:ItemChestplateFortress,thaumcraft:itemchestplatefortress,item,Thaumium Fortress Cuirass,not_started,not_tested,id case change only (D-001),class=ItemFortressArmor
 Thaumcraft:ItemLeggingsFortress,thaumcraft:itemleggingsfortress,item,Thaumium Fortress Thigh Guards,not_started,not_tested,id case change only (D-001),class=ItemFortressArmor
-Thaumcraft:ItemEldritchObject,thaumcraft:itemeldritchobject,item,Eldritch Eye / Crimson Rites / Runed Tablet / Primordial Pearl / Eldritch Obelisk Placer,not_started,not_tested,id case change only (D-001),class=ItemEldritchObject
+Thaumcraft:ItemEldritchObject,thaumcraft:itemeldritchobject,item,Eldritch Eye / Crimson Rites / Runed Tablet / Primordial Pearl / Eldritch Obelisk Placer,done,tested,id case change only (D-001),class=ItemEldritchObject
 Thaumcraft:ItemHelmetVoid,thaumcraft:itemhelmetvoid,item,Void Helm,not_started,not_tested,id case change only (D-001),class=ItemVoidArmor
 Thaumcraft:ItemChestplateVoid,thaumcraft:itemchestplatevoid,item,Void Chestplate,not_started,not_tested,id case change only (D-001),class=ItemVoidArmor
 Thaumcraft:ItemLeggingsVoid,thaumcraft:itemleggingsvoid,item,Void Leggings,not_started,not_tested,id case change only (D-001),class=ItemVoidArmor
@@ -293,32 +293,32 @@ Thaumcraft:ItemChestplateCultistLeaderPlate,thaumcraft:itemchestplatecultistlead
 Thaumcraft:ItemLeggingsCultistLeaderPlate,thaumcraft:itemleggingscultistleaderplate,item,Crimson Praetor Greaves,not_started,not_tested,id case change only (D-001),class=ItemCultistLeaderArmor
 Thaumcraft:ItemSwordCrimson,thaumcraft:itemswordcrimson,item,Crimson Blade,not_started,not_tested,id case change only (D-001),class=ItemCrimsonSword
 Thaumcraft:ItemLootBag,thaumcraft:itemlootbag,item,Common Treasure / Uncommon Treasure / Rare Treasure,done,tested,id case change only (D-001); the original's potion block (metas i|8192 and i|16384 guarded by PotionHelper.getPotionEffects) was dead code in 1.7.10 - vanilla returned no effects for metas with the 0x2000/0x4000 bits set - the port realizes the ten effect ids valid in 1.7.10 in base/extended/upgraded tiers at the loop's weights 1/2/3 with the original durations,class=ItemLootBag
-Thaumcraft:ItemCompassStone,thaumcraft:itemcompassstone,item,Sinister Lodestone,done,tested,id case change only (D-001),class=ItemCompassStone
+Thaumcraft:ItemCompassStone,thaumcraft:itemcompassstone,item,Sinister Lodestone,done,tested,id case change only (D-001),class=ItemCompassStone; item model models/item/itemcompassstone.json shipped by SPINE-3 (t_15e43d12) - layer0 = the original's icon sinister_stone; the active-state icon sinister_stone_active is a per-state swap deferred with the other per-state fidelity
 Thaumcraft:ItemPrimalCrusher,thaumcraft:itemprimalcrusher,item,Primal Crusher,not_started,not_tested,id case change only (D-001),class=ItemPrimalCrusher
 Thaumcraft:SpecialItem,thaumcraft:specialitem,entity,Magic Item,not_started,not_tested,,class=EntitySpecialItem mod_index=0
 Thaumcraft:PermanentItem,thaumcraft:permanentitem,entity,,not_started,not_tested,,class=EntityPermanentItem mod_index=1
 Thaumcraft:FollowItem,thaumcraft:followitem,entity,Following Item,not_started,not_tested,,class=EntityFollowingItem mod_index=2
 Thaumcraft:AspectOrb,thaumcraft:aspectorb,entity,Aspect Orb,not_started,not_tested,,class=EntityAspectOrb mod_index=3
-Thaumcraft:FallingTaint,thaumcraft:fallingtaint,entity,Tainted Crust,not_started,not_tested,,class=EntityFallingTaint mod_index=4
+Thaumcraft:FallingTaint,thaumcraft:fallingtaint,entity,Tainted Crust,done,tested,,class=EntityFallingTaint mod_index=4
 Thaumcraft:Alumentum,thaumcraft:alumentum,entity,Alumentum,not_started,not_tested,,class=EntityAlumentum mod_index=5
 Thaumcraft:PrimalOrb,thaumcraft:primalorb,entity,Orb of Primal Energy,not_started,not_tested,,class=EntityPrimalOrb mod_index=6
 Thaumcraft:FrostShard,thaumcraft:frostshard,entity,Frost Shard,not_started,not_tested,,class=EntityFrostShard mod_index=7
-Thaumcraft:Dart,thaumcraft:dart,entity,Golem Dart,not_started,not_tested,,class=EntityDart mod_index=8
+Thaumcraft:Dart,thaumcraft:dart,entity,Golem Dart,done,tested,,class=EntityDart mod_index=8; TC-M6-08-s-c: entity type registered from the original registration row (ConfigEntities.java:84/89/119/154) with its hitbox/tracking/interval; behaviour deferred
 Thaumcraft:PrimalArrow,thaumcraft:primalarrow,entity,,not_started,not_tested,,class=EntityPrimalArrow mod_index=9
-Thaumcraft:PechBlast,thaumcraft:pechblast,entity,,not_started,not_tested,,class=EntityPechBlast mod_index=10
+Thaumcraft:PechBlast,thaumcraft:pechblast,entity,,done,tested,,projectile fired by EntityPech; TC-M6-06-s-c3; TC-M6-06-s-c3-a t_3cb64300 - ships and fires in the world on the pech's 200-tick wand cadence; its damage and knockback need the wand item (BD-68); the projectile is not a registry content id - no spawn egg row exists (ledger row 347 is the family's shared mob_spawn row and stays not_started) - class=EntityPechBlast mod_index=10 - TC-M6-06-s-c3-a port; 0.025 gravity - 1.5 motion - 4.0 spread - 500-tick fuse measured on real server ticks (empty_24); 2.0 damage and 0.25 knockback unit-pinned only (BD-68)
 Thaumcraft:EldritchOrb,thaumcraft:eldritchorb,entity,Eldritch Orb,not_started,not_tested,,class=EntityEldritchOrb mod_index=11
 Thaumcraft:BottleTaint,thaumcraft:bottletaint,entity,Bottled Taint,not_started,not_tested,,class=EntityBottleTaint mod_index=12
-Thaumcraft:GolemOrb,thaumcraft:golemorb,entity,Energy Orb,not_started,not_tested,,class=EntityGolemOrb mod_index=13
+Thaumcraft:GolemOrb,thaumcraft:golemorb,entity,Energy Orb,done,tested,,class=EntityGolemOrb mod_index=13; TC-M6-08-s-c: entity type registered from the original registration row (ConfigEntities.java:84/89/119/154) with its hitbox/tracking/interval; behaviour deferred
 Thaumcraft:ShockOrb,thaumcraft:shockorb,entity,Shocking Orb,not_started,not_tested,,class=EntityShockOrb mod_index=14
 Thaumcraft:ExplosiveOrb,thaumcraft:explosiveorb,entity,Explosive Fireball,not_started,not_tested,,class=EntityExplosiveOrb mod_index=15
 Thaumcraft:Ember,thaumcraft:ember,entity,,not_started,not_tested,,class=EntityEmber mod_index=16
-Thaumcraft:Golem,thaumcraft:golem,entity,Golem,not_started,not_tested,,class=EntityGolemBase mod_index=17
+Thaumcraft:Golem,thaumcraft:golem,entity,Golem,done,tested,,class=EntityGolemBase mod_index=17; renderer=RenderGolemBase/ModelGolem/ModelGolemAccessories TC-M6-08-s-c2
 Thaumcraft:TravelingTrunk,thaumcraft:travelingtrunk,entity,Traveling Trunk,not_started,not_tested,,class=EntityTravelingTrunk mod_index=18
 Thaumcraft:BrainyZombie,thaumcraft:brainyzombie,entity,Angry Zombie,done,tested,,class=EntityBrainyZombie mod_index=19 - TC-M6-06-s-c2 port; anger 1.0 start decay 0.002 cap 2.0; party buff 2.0 + 0.5 per neighbour to 5.0; size 1.2+anger; attack 7.0 + 5.0 per anger over 1.0; 5 goal slots override vanilla's 8
 Thaumcraft:GiantBrainyZombie,thaumcraft:giantbrainyzombie,entity,Furious Zombie,done,tested,,class=EntityGiantBrainyZombie mod_index=20 - TC-M6-06-s-c2 port; anger cap 2.0 + doubled damage; size x2; xp 14 + 2 per point over 20; damage rewrite 7.0 + 5.0 per anger over 1.0; drops x4 and 12 flesh flips of 2; the 1.7.10 scale hook is ported on the box
 Thaumcraft:Wisp,thaumcraft:wisp,entity,Wisp,done,tested,,class=EntityWisp
 Thaumcraft:Firebat,thaumcraft:firebat,entity,Firebat,done,tested,,class=EntityFireBat mod_index=22
-Thaumcraft:Pech,thaumcraft:pech,entity,Pech Forager,not_started,not_tested,,class=EntityPech mod_index=23
+Thaumcraft:Pech,thaumcraft:pech,entity,Pech Forager,done,tested,,entity: EntityPech; spawn in magicalbiomes; trades; tamed follow/attack; master; TC-M6-06-s-c3; TC-M6-06-s-c3-a t_3cb64300 - registered in CatalogPech; PechMobGameTest proves the natural spawn and the 200-tick blast cadence; the mage form and the blast's damage gate on the unregistered wand item (BD-68) - class=EntityPech mod_index=23 - TC-M6-06-s-c3-a port; gate live (overworld - is_magical tag - taint/magical-forest/eerie exclusions - 16-inflated box - 4-pech cap) but NO shipped biome carries neoforge:is_magical so no natural spawn in a shipped world today (probe-asserted); type 1 needs the unregistered thaumcraft:wandcasting (BD-68); no trade window (BD-67); boss flag (BD-69); village gate (BD-70)
 Thaumcraft:MindSpider,thaumcraft:mindspider,entity,Mind Spider,not_started,not_tested,,class=EntityMindSpider mod_index=24
 Thaumcraft:EldritchGuardian,thaumcraft:eldritchguardian,entity,Eldritch Guardian,not_started,not_tested,,class=EntityEldritchGuardian mod_index=25
 Thaumcraft:EldritchWarden,thaumcraft:eldritchwarden,entity,%s the %d,not_started,not_tested,,class=EntityEldritchWarden mod_index=26
@@ -326,25 +326,25 @@ Thaumcraft:CultistKnight,thaumcraft:cultistknight,entity,Crimson Knight,not_star
 Thaumcraft:CultistCleric,thaumcraft:cultistcleric,entity,Crimson Cleric,not_started,not_tested,,class=EntityCultistCleric mod_index=28
 Thaumcraft:CultistLeader,thaumcraft:cultistleader,entity,Praetor %s the %d,not_started,not_tested,,class=EntityCultistLeader mod_index=29
 Thaumcraft:CultistPortal,thaumcraft:cultistportal,entity,Crimson Portal,not_started,not_tested,,class=EntityCultistPortal mod_index=30
-Thaumcraft:EldritchGolem,thaumcraft:eldritchgolem,entity,%s Eldritch Construct,not_started,not_tested,,class=EntityEldritchGolem mod_index=31
+Thaumcraft:EldritchGolem,thaumcraft:eldritchgolem,entity,%s Eldritch Construct,done,tested,,class=EntityEldritchGolem mod_index=31; TC-M6-08-s-c: entity type registered from the original registration row (ConfigEntities.java:84/89/119/154) with its hitbox/tracking/interval; behaviour deferred; renderer=RenderEldritchGolem/ModelEldritchGolem TC-M6-08-s-c2 (unregistered in game until the Monster behaviour card)
 Thaumcraft:EldritchCrab,thaumcraft:eldritchcrab,entity,Eldritch Crab,not_started,not_tested,,class=EntityEldritchCrab mod_index=32
 Thaumcraft:InhabitedZombie,thaumcraft:inhabitedzombie,entity,Shambling Husk,not_started,not_tested,,class=EntityInhabitedZombie mod_index=33
-Thaumcraft:ThaumSlime,thaumcraft:thaumslime,entity,Thaumic Slime,not_started,not_tested,,class=EntityThaumicSlime mod_index=34
-Thaumcraft:TaintSpider,thaumcraft:taintspider,entity,Tainted Crawler,not_started,not_tested,,class=EntityTaintSpider mod_index=35
-Thaumcraft:Taintacle,thaumcraft:taintacle,entity,Taintacle,not_started,not_tested,,class=EntityTaintacle mod_index=36
-Thaumcraft:TaintacleTiny,thaumcraft:taintacletiny,entity,Taint Tendril,not_started,not_tested,,class=EntityTaintacleSmall mod_index=37
-Thaumcraft:TaintSpore,thaumcraft:taintspore,entity,Taint Spore,not_started,not_tested,,class=EntityTaintSpore mod_index=38
-Thaumcraft:TaintSwarmer,thaumcraft:taintswarmer,entity,Taint Spore Swarmer,not_started,not_tested,,class=EntityTaintSporeSwarmer mod_index=39
-Thaumcraft:TaintSwarm,thaumcraft:taintswarm,entity,Taint Swarm,not_started,not_tested,,class=EntityTaintSwarm mod_index=40
-Thaumcraft:TaintedChicken,thaumcraft:taintedchicken,entity,Tainted Chicken,not_started,not_tested,,class=EntityTaintChicken mod_index=41
-Thaumcraft:TaintedCow,thaumcraft:taintedcow,entity,Tainted Cow,not_started,not_tested,,class=EntityTaintCow mod_index=42
-Thaumcraft:TaintedCreeper,thaumcraft:taintedcreeper,entity,Tainted Creeper,not_started,not_tested,,class=EntityTaintCreeper mod_index=43
-Thaumcraft:TaintedPig,thaumcraft:taintedpig,entity,Tainted Pig,not_started,not_tested,,class=EntityTaintPig mod_index=44
-Thaumcraft:TaintedSheep,thaumcraft:taintedsheep,entity,Tainted Sheep,not_started,not_tested,,class=EntityTaintSheep mod_index=45
-Thaumcraft:TaintedVillager,thaumcraft:taintedvillager,entity,Tainted Villager,not_started,not_tested,,class=EntityTaintVillager mod_index=46
-Thaumcraft:TaintacleGiant,thaumcraft:taintaclegiant,entity,Giant Taintacle,not_started,not_tested,,class=EntityTaintacleGiant mod_index=47
+Thaumcraft:ThaumSlime,thaumcraft:thaumslime,entity,Thaumic Slime,done,tested,,class=EntityThaumicSlime mod_index=34
+Thaumcraft:TaintSpider,thaumcraft:taintspider,entity,Tainted Crawler,done,tested,,class=EntityTaintSpider mod_index=35
+Thaumcraft:Taintacle,thaumcraft:taintacle,entity,Taintacle,done,tested,,class=EntityTaintacle mod_index=36
+Thaumcraft:TaintacleTiny,thaumcraft:taintacletiny,entity,Taint Tendril,done,tested,,class=EntityTaintacleSmall mod_index=37
+Thaumcraft:TaintSpore,thaumcraft:taintspore,entity,Taint Spore,done,tested,,class=EntityTaintSpore mod_index=38
+Thaumcraft:TaintSwarmer,thaumcraft:taintswarmer,entity,Taint Spore Swarmer,done,tested,,class=EntityTaintSporeSwarmer mod_index=39
+Thaumcraft:TaintSwarm,thaumcraft:taintswarm,entity,Taint Swarm,done,tested,,class=EntityTaintSwarm mod_index=40
+Thaumcraft:TaintedChicken,thaumcraft:taintedchicken,entity,Tainted Chicken,done,tested,,class=EntityTaintChicken mod_index=41
+Thaumcraft:TaintedCow,thaumcraft:taintedcow,entity,Tainted Cow,done,tested,,class=EntityTaintCow mod_index=42
+Thaumcraft:TaintedCreeper,thaumcraft:taintedcreeper,entity,Tainted Creeper,done,tested,,class=EntityTaintCreeper mod_index=43
+Thaumcraft:TaintedPig,thaumcraft:taintedpig,entity,Tainted Pig,done,tested,,class=EntityTaintCow.Pig (nested static class) mod_index=44
+Thaumcraft:TaintedSheep,thaumcraft:taintedsheep,entity,Tainted Sheep,done,tested,,class=EntityTaintSheep mod_index=45
+Thaumcraft:TaintedVillager,thaumcraft:taintedvillager,entity,Tainted Villager,done,tested,,class=EntityTaintVillager mod_index=46
+Thaumcraft:TaintacleGiant,thaumcraft:taintaclegiant,entity,Giant Taintacle,done,tested,,class=EntityTaintacleGiant mod_index=47
 Thaumcraft:SpecialItemGrate,thaumcraft:specialitemgrate,entity,,done,tested,,class=EntityItemGrate mod_index=48
-Thaumcraft:GolemBobber,thaumcraft:golembobber,entity,Golem Fishing Bobber,not_started,not_tested,,class=EntityGolemBobber mod_index=49
+Thaumcraft:GolemBobber,thaumcraft:golembobber,entity,Golem Fishing Bobber,done,tested,,class=EntityGolemBobber mod_index=49; TC-M6-08-s-c: entity type registered from the original registration row (ConfigEntities.java:84/89/119/154) with its hitbox/tracking/interval; behaviour deferred; renderer=RenderGolemBobber TC-M6-08-s-c2
 Thaumcraft:spawnegg.BrainyZombie,thaumcraft:spawnegg.brainyzombie,spawner_egg,BrainyZombie,not_started,not_tested,,egg_colors=FFC0FF/008000
 Thaumcraft:spawnegg.GiantBrainyZombie,thaumcraft:spawnegg.giantbrainyzombie,spawner_egg,GiantBrainyZombie,not_started,not_tested,,egg_colors=FFC0FF/004000
 Thaumcraft:spawnegg.Wisp,thaumcraft:spawnegg.wisp,spawner_egg,Wisp,not_started,not_tested,,egg_colors=FFC0FF/FFFFFF
@@ -357,7 +357,7 @@ Thaumcraft:spawnegg.CultistKnight,thaumcraft:spawnegg.cultistknight,spawner_egg,
 Thaumcraft:spawnegg.CultistCleric,thaumcraft:spawnegg.cultistcleric,spawner_egg,CultistCleric,not_started,not_tested,,egg_colors=FF5055/800000
 Thaumcraft:spawnegg.CultistLeader,thaumcraft:spawnegg.cultistleader,spawner_egg,CultistLeader,not_started,not_tested,,egg_colors=FF5055/505050
 Thaumcraft:spawnegg.CultistPortal,thaumcraft:spawnegg.cultistportal,spawner_egg,CultistPortal,not_started,not_tested,,egg_colors=FF5055/FF50FF
-Thaumcraft:spawnegg.EldritchGolem,thaumcraft:spawnegg.eldritchgolem,spawner_egg,EldritchGolem,not_started,not_tested,,egg_colors=555555/404040
+Thaumcraft:spawnegg.EldritchGolem,thaumcraft:spawnegg.eldritchgolem,spawner_egg,EldritchGolem,done,tested,,egg_colors=555555/404040; TC-M6-08-s-c3: registered as a DeferredSpawnEggItem under this row's dotted new_id verbatim (CatalogGolems.java) with the original's colour pair - ItemSpawnerEgg.addMapping 5592405/4210752 (ConfigEntities.java:120) read back through SpawnEggItem.getColor(0)/(1); model models/item/spawnegg.eldritchgolem.json parents minecraft:item/template_spawn_egg; pinned by GolemMenuGameTest.eldritchSpawnEggCarriesTheOriginalColours; the localization audit resolves the key by longest inventoried id prefix (BD-40)
 Thaumcraft:spawnegg.EldritchCrab,thaumcraft:spawnegg.eldritchcrab,spawner_egg,EldritchCrab,not_started,not_tested,,egg_colors=555555/550000
 Thaumcraft:spawnegg.InhabitedZombie,thaumcraft:spawnegg.inhabitedzombie,spawner_egg,InhabitedZombie,not_started,not_tested,,egg_colors=557755/550000
 Thaumcraft:spawnegg.ThaumSlime,thaumcraft:spawnegg.thaumslime,spawner_egg,ThaumSlime,not_started,not_tested,,egg_colors=FFC0FF/FF80FF
@@ -379,30 +379,30 @@ Thaumcraft:monster.EntityPech,thaumcraft:monster.entitypech,mob_spawn,EntityPech
 Thaumcraft:monster.EntityFireBat,thaumcraft:monster.entityfirebat,mob_spawn,EntityFireBat,not_started,not_tested,,weight=10 min=1 max=2 type=monster
 Thaumcraft:monster.EntityFireBat,thaumcraft:monster.entityfirebat,mob_spawn,EntityFireBat,not_started,not_tested,,weight=5 min=1 max=2 type=monster
 Thaumcraft:monster.EntityWisp,thaumcraft:monster.entitywisp,mob_spawn,EntityWisp,not_started,not_tested,,weight=5 min=1 max=1 type=monster
-Thaumcraft:iron,thaumcraft:iron,wand_component,iron,not_started,not_tested,,kind=wand_cap const=WAND_CAP_IRON
-Thaumcraft:gold,thaumcraft:gold,wand_component,gold,not_started,not_tested,,kind=wand_cap const=WAND_CAP_GOLD
-Thaumcraft:thaumium,thaumcraft:thaumium,wand_component,thaumium,not_started,not_tested,,kind=wand_cap const=WAND_CAP_THAUMIUM
-Thaumcraft:void,thaumcraft:void,wand_component,void,not_started,not_tested,,kind=wand_cap const=WAND_CAP_VOID
-Thaumcraft:copper,thaumcraft:copper,wand_component,copper,not_started,not_tested,,kind=wand_cap const=WAND_CAP_COPPER
-Thaumcraft:silver,thaumcraft:silver,wand_component,silver,not_started,not_tested,,kind=wand_cap const=WAND_CAP_SILVER
-Thaumcraft:wood,thaumcraft:wood,wand_component,wood,not_started,not_tested,,kind=wand_rod const=WAND_ROD_WOOD
-Thaumcraft:greatwood,thaumcraft:greatwood,wand_component,greatwood,not_started,not_tested,,kind=wand_rod const=WAND_ROD_GREATWOOD
-Thaumcraft:obsidian,thaumcraft:obsidian,wand_component,obsidian,not_started,not_tested,,kind=wand_rod const=WAND_ROD_OBSIDIAN
-Thaumcraft:blaze,thaumcraft:blaze,wand_component,blaze,not_started,not_tested,,kind=wand_rod const=WAND_ROD_BLAZE
-Thaumcraft:ice,thaumcraft:ice,wand_component,ice,not_started,not_tested,,kind=wand_rod const=WAND_ROD_ICE
-Thaumcraft:quartz,thaumcraft:quartz,wand_component,quartz,not_started,not_tested,,kind=wand_rod const=WAND_ROD_QUARTZ
-Thaumcraft:bone,thaumcraft:bone,wand_component,bone,not_started,not_tested,,kind=wand_rod const=WAND_ROD_BONE
-Thaumcraft:reed,thaumcraft:reed,wand_component,reed,not_started,not_tested,,kind=wand_rod const=WAND_ROD_REED
-Thaumcraft:silverwood,thaumcraft:silverwood,wand_component,silverwood,not_started,not_tested,,kind=wand_rod const=WAND_ROD_SILVERWOOD
-Thaumcraft:greatwood,thaumcraft:greatwood,wand_component,greatwood,not_started,not_tested,,kind=staff_rod const=STAFF_ROD_GREATWOOD
-Thaumcraft:obsidian,thaumcraft:obsidian,wand_component,obsidian,not_started,not_tested,,kind=staff_rod const=STAFF_ROD_OBSIDIAN
-Thaumcraft:blaze,thaumcraft:blaze,wand_component,blaze,not_started,not_tested,,kind=staff_rod const=STAFF_ROD_BLAZE
-Thaumcraft:ice,thaumcraft:ice,wand_component,ice,not_started,not_tested,,kind=staff_rod const=STAFF_ROD_ICE
-Thaumcraft:quartz,thaumcraft:quartz,wand_component,quartz,not_started,not_tested,,kind=staff_rod const=STAFF_ROD_QUARTZ
-Thaumcraft:bone,thaumcraft:bone,wand_component,bone,not_started,not_tested,,kind=staff_rod const=STAFF_ROD_BONE
-Thaumcraft:reed,thaumcraft:reed,wand_component,reed,not_started,not_tested,,kind=staff_rod const=STAFF_ROD_REED
-Thaumcraft:silverwood,thaumcraft:silverwood,wand_component,silverwood,not_started,not_tested,,kind=staff_rod const=STAFF_ROD_SILVERWOOD
-Thaumcraft:primal,thaumcraft:primal,wand_component,primal,not_started,not_tested,,kind=staff_rod const=STAFF_ROD_PRIMAL
+Thaumcraft:iron,thaumcraft:iron,wand_component,iron,done,tested,,kind=wand_cap const=WAND_CAP_IRON
+Thaumcraft:gold,thaumcraft:gold,wand_component,gold,done,tested,,kind=wand_cap const=WAND_CAP_GOLD
+Thaumcraft:thaumium,thaumcraft:thaumium,wand_component,thaumium,done,tested,,kind=wand_cap const=WAND_CAP_THAUMIUM
+Thaumcraft:void,thaumcraft:void,wand_component,void,done,tested,,kind=wand_cap const=WAND_CAP_VOID
+Thaumcraft:copper,thaumcraft:copper,wand_component,copper,done,tested,,kind=wand_cap const=WAND_CAP_COPPER
+Thaumcraft:silver,thaumcraft:silver,wand_component,silver,done,tested,,kind=wand_cap const=WAND_CAP_SILVER
+Thaumcraft:wood,thaumcraft:wood,wand_component,wood,done,tested,,kind=wand_rod const=WAND_ROD_WOOD
+Thaumcraft:greatwood,thaumcraft:greatwood,wand_component,greatwood,done,tested,,kind=wand_rod const=WAND_ROD_GREATWOOD
+Thaumcraft:obsidian,thaumcraft:obsidian,wand_component,obsidian,done,tested,,kind=wand_rod const=WAND_ROD_OBSIDIAN
+Thaumcraft:blaze,thaumcraft:blaze,wand_component,blaze,done,tested,,kind=wand_rod const=WAND_ROD_BLAZE
+Thaumcraft:ice,thaumcraft:ice,wand_component,ice,done,tested,,kind=wand_rod const=WAND_ROD_ICE
+Thaumcraft:quartz,thaumcraft:quartz,wand_component,quartz,done,tested,,kind=wand_rod const=WAND_ROD_QUARTZ
+Thaumcraft:bone,thaumcraft:bone,wand_component,bone,done,tested,,kind=wand_rod const=WAND_ROD_BONE
+Thaumcraft:reed,thaumcraft:reed,wand_component,reed,done,tested,,kind=wand_rod const=WAND_ROD_REED
+Thaumcraft:silverwood,thaumcraft:silverwood,wand_component,silverwood,done,tested,,kind=wand_rod const=WAND_ROD_SILVERWOOD
+Thaumcraft:greatwood,thaumcraft:greatwood,wand_component,greatwood,done,tested,,kind=staff_rod const=STAFF_ROD_GREATWOOD
+Thaumcraft:obsidian,thaumcraft:obsidian,wand_component,obsidian,done,tested,,kind=staff_rod const=STAFF_ROD_OBSIDIAN
+Thaumcraft:blaze,thaumcraft:blaze,wand_component,blaze,done,tested,,kind=staff_rod const=STAFF_ROD_BLAZE
+Thaumcraft:ice,thaumcraft:ice,wand_component,ice,done,tested,,kind=staff_rod const=STAFF_ROD_ICE
+Thaumcraft:quartz,thaumcraft:quartz,wand_component,quartz,done,tested,,kind=staff_rod const=STAFF_ROD_QUARTZ
+Thaumcraft:bone,thaumcraft:bone,wand_component,bone,done,tested,,kind=staff_rod const=STAFF_ROD_BONE
+Thaumcraft:reed,thaumcraft:reed,wand_component,reed,done,tested,,kind=staff_rod const=STAFF_ROD_REED
+Thaumcraft:silverwood,thaumcraft:silverwood,wand_component,silverwood,done,tested,,kind=staff_rod const=STAFF_ROD_SILVERWOOD
+Thaumcraft:primal,thaumcraft:primal,wand_component,primal,done,tested,,kind=staff_rod const=STAFF_ROD_PRIMAL
 Thaumcraft:BASICS,thaumcraft:basics,research_category,BASICS,not_started,not_tested,,ResearchCategories.registerCategory
 Thaumcraft:THAUMATURGY,thaumcraft:thaumaturgy,research_category,THAUMATURGY,not_started,not_tested,,ResearchCategories.registerCategory
 Thaumcraft:ALCHEMY,thaumcraft:alchemy,research_category,ALCHEMY,not_started,not_tested,,ResearchCategories.registerCategory
@@ -811,8 +811,8 @@ Thaumcraft:recipe.197.arcane_shapeless,thaumcraft:recipe.197.arcane_shapeless,re
 Thaumcraft:recipe.198.arcane_shapeless,thaumcraft:recipe.198.arcane_shapeless,recipe,"blockTube, 1, 3",done,tested,,type=arcane_shapeless research=TUBEFILTER
 Thaumcraft:recipe.199.arcane_shapeless,thaumcraft:recipe.199.arcane_shapeless,recipe,"blockTube, 1, 5",done,tested,,type=arcane_shapeless research=TUBEFILTER
 Thaumcraft:recipe.200.arcane_shapeless,thaumcraft:recipe.200.arcane_shapeless,recipe,"blockTube, 1, 6",done,tested,,type=arcane_shapeless research=TUBEFILTER
-Thaumcraft:recipe.201.infusion_enchantment,thaumcraft:recipe.201.infusion_enchantment,recipe,Enchantment.field_77331_b[ThaumcraftApi.enchantRepair],not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
-Thaumcraft:recipe.202.infusion_enchantment,thaumcraft:recipe.202.infusion_enchantment,recipe,Enchantment.field_77331_b[ThaumcraftApi.enchantHaste],not_started,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
+Thaumcraft:recipe.201.infusion_enchantment,thaumcraft:recipe.201.infusion_enchantment,recipe,Enchantment.field_77331_b[ThaumcraftApi.enchantRepair],done,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT - slice landed - gated on the merged tree
+Thaumcraft:recipe.202.infusion_enchantment,thaumcraft:recipe.202.infusion_enchantment,recipe,Enchantment.field_77331_b[ThaumcraftApi.enchantHaste],done,not_tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT - slice landed - gated on the merged tree
 Thaumcraft:recipe.203.infusion_enchantment,thaumcraft:recipe.203.infusion_enchantment,recipe,Enchantment.field_77332_c,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
 Thaumcraft:recipe.204.infusion_enchantment,thaumcraft:recipe.204.infusion_enchantment,recipe,Enchantment.field_77329_d,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
 Thaumcraft:recipe.205.infusion_enchantment,thaumcraft:recipe.205.infusion_enchantment,recipe,Enchantment.field_77327_f,done,tested,,type=infusion_enchantment research=INFUSIONENCHANTMENT
@@ -866,7 +866,7 @@ Thaumcraft:recipe.252.multiblock_structure,thaumcraft:recipe.252.multiblock_stru
 Thaumcraft:recipe.253.crafting_shaped,thaumcraft:recipe.253.crafting_shaped,recipe,"blockCosmeticSolid, 4, 7",not_started,not_tested,,type=crafting_shaped research=-
 Thaumcraft:recipe.254.crafting_shaped,thaumcraft:recipe.254.crafting_shaped,recipe,"blockStairsArcaneStone, 4, 0",not_started,not_tested,,type=crafting_shaped research=-
 Thaumcraft:recipe.255.crafting_shaped,thaumcraft:recipe.255.crafting_shaped,recipe,"blockCosmeticSlabStone, 6, 0",not_started,not_tested,,type=crafting_shaped research=-
-Thaumcraft:recipe.256.crafting_shaped,thaumcraft:recipe.256.crafting_shaped,recipe,"ItemResearchNotes, 1, 42",not_started,not_tested,,type=crafting_shaped research=-
+Thaumcraft:recipe.256.crafting_shaped,thaumcraft:recipe.256.crafting_shaped,recipe,"ItemResearchNotes, 1, 42",done,tested,KnowFrag row ships as data/thaumcraft/recipe/recipe.256.crafting_shaped.json - 3x3 itemresource meta 9 into itemresearchnotes meta 42 via the registered neoforge:components Ingredient; gated on neoforge:item_exists for BOTH items since the 1.21.1 CraftingOutput codec resolves the result id at parse time; proven by KnowledgeFragmentRecipeGameTest (3 probes: row loads + the nine-fragment grid crafts the meta-42 blank with an EMPTY note state + the ingredient is meta-precise) and KnowFragRecipeDataTest (5 tests); its KNOWFRAG Thaumonomicon page now draws this row (TC-M3-04-s-iv-b) - research/book/ResearchRecipeLinks joins the ledger's research=KNOWFRAG key (the page names the original's recipes-map key KnowFrag) to this id and the client's book screen paints the grid + label + result from the live RecipeManager; proven by ThaumonomiconRecipePageGameTest (3 probes: the page carries this row's id + its body resolves out of the live RecipeManager into a 3x3 of meta-9 fragments beside the meta-42 blank + every unlinked page carries no body) and ThaumonomiconRecipePageTest (9 tests),type=crafting_shaped research=KNOWFRAG (setAutoUnlock - the original never gates this recipe; its Thaumonomicon page recipe display shipped in TC-M3-04-s-iv-b - BD-19 = BD-64 on main; the page-body DRAW closed at t_79eea20e)
 Thaumcraft:recipe.257.crafting_shaped,thaumcraft:recipe.257.crafting_shaped,recipe,"blockWoodenDevice, 4, 6",not_started,not_tested,,type=crafting_shaped research=-
 Thaumcraft:recipe.258.crafting_shaped,thaumcraft:recipe.258.crafting_shaped,recipe,"blockWoodenDevice, 4, 7",not_started,not_tested,,type=crafting_shaped research=-
 Thaumcraft:recipe.259.crafting_shaped,thaumcraft:recipe.259.crafting_shaped,recipe,"blockStairsGreatwood, 4, 0",not_started,not_tested,,type=crafting_shaped research=-
@@ -906,7 +906,7 @@ Thaumcraft:config.Biomes.magical_forest_biome_weight,thaumcraft:config.biomes.ma
 Thaumcraft:config.Biomes.biome_magical_forest,thaumcraft:config.biomes.biome_magical_forest,config_option,biome_magical_forest,not_started,not_tested,,category=Biomes default=biomeMagicalForestID
 Thaumcraft:config.Biomes.biome_eerie,thaumcraft:config.biomes.biome_eerie,config_option,biome_eerie,not_started,not_tested,,category=Biomes default=biomeEerieID
 Thaumcraft:config.Biomes.biome_eldritch,thaumcraft:config.biomes.biome_eldritch,config_option,biome_eldritch,not_started,not_tested,,category=Biomes default=biomeEldritchID
-Thaumcraft:config.Biomes.outer_lands_dim,thaumcraft:config.biomes.outer_lands_dim,config_option,outer_lands_dim,not_started,not_tested,,category=Biomes default=dimensionOuterId
+Thaumcraft:config.Biomes.outer_lands_dim,thaumcraft:config.biomes.outer_lands_dim,config_option,outer_lands_dim,done,tested,,category=Biomes default=dimensionOuterId
 Thaumcraft:config.Enchantments.ench_haste,thaumcraft:config.enchantments.ench_haste,config_option,ench_haste,not_started,not_tested,,category=Enchantments default=encIdx++
 Thaumcraft:config.Enchantments.ench_repair,thaumcraft:config.enchantments.ench_repair,config_option,ench_repair,not_started,not_tested,,category=Enchantments default=encIdx++
 Thaumcraft:config.World_Generation.generate_aura_nodes,thaumcraft:config.world_generation.generate_aura_nodes,config_option,generate_aura_nodes,not_started,not_tested,,category=World_Generation default=true
@@ -930,7 +930,7 @@ Thaumcraft:config.Monster_Spawning.spawn_angry_zombies,thaumcraft:config.monster
 Thaumcraft:config.Monster_Spawning.spawn_fire_bats,thaumcraft:config.monster_spawning.spawn_fire_bats,config_option,spawn_fire_bats,not_started,not_tested,,category=Monster_Spawning default=true
 Thaumcraft:config.Monster_Spawning.spawn_wisps,thaumcraft:config.monster_spawning.spawn_wisps,config_option,spawn_wisps,not_started,not_tested,,category=Monster_Spawning default=true
 Thaumcraft:config.Monster_Spawning.spawn_taintacles,thaumcraft:config.monster_spawning.spawn_taintacles,config_option,spawn_taintacles,not_started,not_tested,,category=Monster_Spawning default=true
-Thaumcraft:config.Monster_Spawning.spawn_taint_spores,thaumcraft:config.monster_spawning.spawn_taint_spores,config_option,spawn_taint_spores,not_started,not_tested,,category=Monster_Spawning default=true
+Thaumcraft:config.Monster_Spawning.spawn_taint_spores,thaumcraft:config.monster_spawning.spawn_taint_spores,config_option,spawn_taint_spores,done,not_tested,,category=Monster_Spawning default=true - slice landed - gated on the merged tree
 Thaumcraft:config.Monster_Spawning.spawn_pechs,thaumcraft:config.monster_spawning.spawn_pechs,config_option,spawn_pechs,not_started,not_tested,,category=Monster_Spawning default=true
 Thaumcraft:config.Monster_Spawning.spawn_eldercreatures,thaumcraft:config.monster_spawning.spawn_eldercreatures,config_option,spawn_eldercreatures,not_started,not_tested,,category=Monster_Spawning default=true
 Thaumcraft:config.Monster_Spawning.champion_mobs,thaumcraft:config.monster_spawning.champion_mobs,config_option,champion_mobs,not_started,not_tested,,category=Monster_Spawning default=championMobs
@@ -956,31 +956,31 @@ Thaumcraft:config.general.thaumcraft_banker_id,thaumcraft:config.general.thaumcr
 Thaumcraft:config.general.golem_chest_interact,thaumcraft:config.general.golem_chest_interact,config_option,golem_chest_interact,not_started,not_tested,,category=general default=true
 Thaumcraft:config.general.portablehole_blacklist,thaumcraft:config.general.portablehole_blacklist,config_option,portablehole_blacklist,not_started,not_tested,,"category=general default=""iron_door"""
 Thaumcraft:config.general.blue_magical_forest,thaumcraft:config.general.blue_magical_forest,config_option,blue_magical_forest,not_started,not_tested,,category=general default=blueBiome
-Thaumcraft:config.general.biome_taint_from_flux,thaumcraft:config.general.biome_taint_from_flux,config_option,biome_taint_from_flux,not_started,not_tested,,category=general default=taintFromFlux
-Thaumcraft:config.general.biome_taint_spread,thaumcraft:config.general.biome_taint_spread,config_option,biome_taint_spread,not_started,not_tested,,category=general default=taintSpreadRate
+Thaumcraft:config.general.biome_taint_from_flux,thaumcraft:config.general.biome_taint_from_flux,config_option,biome_taint_from_flux,done,not_tested,,category=general default=taintFromFlux - slice landed - gated on the merged tree
+Thaumcraft:config.general.biome_taint_spread,thaumcraft:config.general.biome_taint_spread,config_option,biome_taint_spread,done,not_tested,,category=general default=taintSpreadRate - slice landed - gated on the merged tree
 Thaumcraft:config.general.glowing_taint,thaumcraft:config.general.glowing_taint,config_option,glowing_taint,not_started,not_tested,,category=general default=glowyTaint
 Thaumcraft:config.Runic_Shielding.runic_recharge_speed,thaumcraft:config.runic_shielding.runic_recharge_speed,config_option,runic_recharge_speed,not_started,not_tested,,category=Runic_Shielding default=shieldRecharge
 Thaumcraft:config.Runic_Shielding.runic_recharge_delay,thaumcraft:config.runic_shielding.runic_recharge_delay,config_option,runic_recharge_delay,not_started,not_tested,,category=Runic_Shielding default=shieldWait
 Thaumcraft:config.Runic_Shielding.runic_cost,thaumcraft:config.runic_shielding.runic_cost,config_option,runic_cost,not_started,not_tested,,category=Runic_Shielding default=shieldCost
-Thaumcraft:GUI_GOLEM,thaumcraft:gui_golem,gui,GuiGolem,not_started,not_tested,,gui_id=0 handler=GuiGolem
+Thaumcraft:GUI_GOLEM,thaumcraft:gui_golem,gui,GuiGolem,done,tested,,gui_id=0 handler=GuiGolem; menus/GolemMenu + client/GolemScreen + EntityGolemBase.mobInteract open site - TC-M7-04-m3-a
 Thaumcraft:GUI_PECH,thaumcraft:gui_pech,gui,GuiPech,not_started,not_tested,,gui_id=1 handler=GuiPech
-Thaumcraft:GUI_TRUNK,thaumcraft:gui_trunk,gui,GuiTravelingTrunk,done,tested,,gui_id=2 handler=GuiTravelingTrunk
+Thaumcraft:GUI_TRUNK,thaumcraft:gui_trunk,gui,GuiTravelingTrunk,done,tested,,gui_id=2 handler=GuiTravelingTrunk screen=client/TrunkScreen (cr1 c325fbd)
 Thaumcraft:GUI_THAUMATORIUM,thaumcraft:gui_thaumatorium,gui,GuiThaumatorium,not_started,not_tested,,gui_id=3 handler=GuiThaumatorium
 Thaumcraft:GUI_FOCUS_POUCH,thaumcraft:gui_focus_pouch,gui,GuiFocusPouch,not_started,not_tested,,gui_id=5 handler=GuiFocusPouch
-Thaumcraft:GUI_DECON_TABLE,thaumcraft:gui_decon_table,gui,GuiDeconstructionTable,done,tested,,gui_id=8 handler=GuiDeconstructionTable
+Thaumcraft:GUI_DECON_TABLE,thaumcraft:gui_decon_table,gui,GuiDeconstructionTable,done,tested,,gui_id=8 handler=GuiDeconstructionTable screen=client/DeconstructionTableScreen (46px break bar + collect hitbox at x=64 y=48)
 Thaumcraft:GUI_ALCHEMY_FURNACE,thaumcraft:gui_alchemy_furnace,gui,GuiAlchemyFurnace,not_started,not_tested,,gui_id=9 handler=GuiAlchemyFurnace
-Thaumcraft:GUI_RESEARCH_TABLE,thaumcraft:gui_research_table,gui,GuiResearchTable,not_started,not_tested,,gui_id=10 handler=GuiResearchTable
+Thaumcraft:GUI_RESEARCH_TABLE,thaumcraft:gui_research_table,gui,GuiResearchTable,done,tested,,gui_id=10 handler=GuiResearchTable menu_type=thaumcraft:gui_research_note menu=ResearchNoteMenu slots=scribe+note+36 containerdata=6 TC-M3-04-s-iii hexgrid=NOTE-SCREEN-2 t_32a29c93 @400656d BD-27 (was BD-20 on the branch) BOOK-5 t_569e7f6e integrates menu+window on the BOOK lane 3ca8131 with 3 integration probes
 Thaumcraft:GUI_CHEST_HUNGRY,thaumcraft:gui_chest_hungry,gui,-,not_started,not_tested,,gui_id=11 handler=-
-Thaumcraft:GUI_THAUMONOMICON,thaumcraft:gui_thaumonomicon,gui,GuiResearchBrowser,not_started,not_tested,,gui_id=12 handler=GuiResearchBrowser
+Thaumcraft:GUI_THAUMONOMICON,thaumcraft:gui_thaumonomicon,gui,GuiResearchBrowser,done,tested,"listing from the shipped research graph (BOOK-2 t_10805b95): 6 category tabs in order + 201 entry rows in entries.json order, tab click switches category, row click opens the entry pane, 12 rows per page; NO MenuType realization (BD-22). Differences vs 1.7.10 GuiResearchBrowser (BD-13): a paginated row column instead of a panned 24px node grid, no node icons/art, no GuiResearchPopup hover cards, no GuiResearchRecipe page renderer, no tab click sound (original cameraclack), the graph's own en_US string is drawn (the original's tc.research_* lang keys are not shipped), and all six tabs show from the start - the original gates the ELDRITCH tab on its gate entry. BOOK-4 (t_341117b8) detail panel differences (BD-13 (c)): the graph edges are labelled rows that open the target (the original draws lines between 24px nodes and opens a node on click, GuiResearchBrowser.java:288-333/:711), parentsHidden names are shown where the original renders nothing (:304-316), the essentia pool verdict is the original's tc.research.short / tc.research.purchase line as text with no pulsing aspect icon and no hover card (:611-660), the warp line is plain text, and an aspect with no registered Aspect object shows its tag key. Pixels unverified: runGameTestServer is a dedicated server, so the listing is pinned on the port's own classes (ResearchBrowserModel + 3 probes), D-019","BOOK-1 (t_1e6b18cc): right-clicking thaumcraft:itemthaumonomicon runs the sibling arm, sends thaumcraft:open_thaumonomicon, the client plays thaumcraft:page and shows the containerless ThaumonomiconScreen, ESC closes. BOOK-2 (t_10805b95): the tab strip and the entry listing render from data/thaumcraft/research_graph/{categories,entries}.json - nothing hardcoded, and a unit scan fails if a graph key is hardcoded in the browser sources. BOOK-4 (t_341117b8): the selected entry shows a detail panel - aspect requirements (the entry's tags against the player's essentia pool), unlock state, warp and the parents/parentsHidden/siblings links, which open the linked entry on click. ResearchDetailModel (no Minecraft import) resolves every line from the shipped graph + the synced PLAYER_KNOWLEDGE attachment, the state being ResearchManager.isResearchComplete / doesPlayerHaveRequisites (TC-M3-01/02) so no new store; an entry the graph names nothing is labelled with its key (BOOK-3 posture, not gated on the licensing card). 3 new game probes (176 -> 179 required) + 11 new unit tests (475 -> 486), and the no-hardcoded-key scan now covers ResearchDetailModel.java INTEGRATE-BOOK-LANES (t_ee886c7e): this window is the MERGED book screen - the research lane's node-browser ThaumonomiconScreen and its ThaumonomiconClientHooks open seam are deleted and the note/purchase affordance (BookNoteRequest arm, five-state hover hint, 3000 ms tc.research.popup) hangs off the entry rows; the research lane's BD-17/BD-18/BD-19 rows renumber to BD-23/BD-24/BD-25 on main and BD-25 documents the affordance on this screen; merged gates: 562 unit / 0 failures / 2 pre-existing skips and "All 199 required tests passed :)" on both game-test legs. BOOK-5 (t_569e7f6e): the entry row's note arm mints a generated puzzle note; right-clicking that note opens the registered thaumcraft:gui_research_note window (BD-26 menu / BD-27 hex grid); the window's write arm closes the grid server-side and the note item completes the entry into the PLAYER_KNOWLEDGE attachment this panel resolves - so the panel rewrites the solved entry to COMPLETED and its gated child to AVAILABLE; ThaumonomiconNoteIntegrationGameTest 3 probes (215 -> 218 required); the note-screen half of this row's NI list is closed and BD-13 records it"
 Thaumcraft:GUI_ARCANE_WORKBENCH,thaumcraft:gui_arcane_workbench,gui,GuiArcaneWorkbench,not_started,not_tested,,gui_id=13 handler=GuiArcaneWorkbench
 Thaumcraft:GUI_ARCANE_BORE,thaumcraft:gui_arcane_bore,gui,GuiArcaneBore,not_started,not_tested,,gui_id=15 handler=GuiArcaneBore
-Thaumcraft:GUI_HAND_MIRROR,thaumcraft:gui_hand_mirror,gui,GuiHandMirror,done,tested,,gui_id=16 handler=GuiHandMirror
+Thaumcraft:GUI_HAND_MIRROR,thaumcraft:gui_hand_mirror,gui,GuiHandMirror,done,tested,,gui_id=16 handler=GuiHandMirror screen=client/HandMirrorScreen
 Thaumcraft:GUI_HOVER_HARNESS,thaumcraft:gui_hover_harness,gui,GuiHoverHarness,not_started,not_tested,,gui_id=17 handler=GuiHoverHarness
-Thaumcraft:GUI_MAGIC_BOX,thaumcraft:gui_magic_box,gui,GuiMagicBox,done,tested,,gui_id=18 handler=GuiMagicBox
-Thaumcraft:GUI_SPA,thaumcraft:gui_spa,gui,GuiSpa,done,tested,,gui_id=19 handler=GuiSpa
+Thaumcraft:GUI_MAGIC_BOX,thaumcraft:gui_magic_box,gui,GuiMagicBox,done,tested,,gui_id=18 handler=GuiMagicBox screen=client/MagicBoxScreen (original is a vanilla generic_54 chest screen)
+Thaumcraft:GUI_SPA,thaumcraft:gui_spa,gui,GuiSpa,done,tested,,gui_id=19 handler=GuiSpa screen=client/SpaScreen (tank frame + mix hitbox at x=89 y=35)
 Thaumcraft:GUI_FOCAL_MANUPULATOR,thaumcraft:gui_focal_manupulator,gui,GuiFocalManipulator,not_started,not_tested,,gui_id=20 handler=GuiFocalManipulator
-Thaumcraft:ench_haste,thaumcraft:ench_haste,enchantment,,not_started,not_tested,,class=? config_key=ench_haste registered=yes
-Thaumcraft:ench_repair,thaumcraft:ench_repair,enchantment,,not_started,not_tested,,class=? config_key=ench_repair registered=yes
+Thaumcraft:ench_haste,thaumcraft:ench_haste,enchantment,,done,not_tested,,class=? config_key=ench_haste registered=yes - slice landed - gated on the merged tree
+Thaumcraft:ench_repair,thaumcraft:ench_repair,enchantment,,done,not_tested,,class=? config_key=ench_repair registered=yes - slice landed - gated on the merged tree
 Thaumcraft:EnchantmentFrugal,thaumcraft:enchantmentfrugal,enchantment,EnchantmentFrugal,not_started,not_tested,NOT registered in 4.2.3.5 (dead code),class exists in jar
 Thaumcraft:EnchantmentPotency,thaumcraft:enchantmentpotency,enchantment,EnchantmentPotency,not_started,not_tested,NOT registered in 4.2.3.5 (dead code),class exists in jar
 Thaumcraft:EnchantmentWandFortune,thaumcraft:enchantmentwandfortune,enchantment,EnchantmentWandFortune,not_started,not_tested,NOT registered in 4.2.3.5 (dead code),class exists in jar
@@ -993,11 +993,11 @@ Thaumcraft:potion.deathgaze,thaumcraft:potion.deathgaze,potion,Deadly Gaze,not_s
 Thaumcraft:potion.blurred,thaumcraft:potion.blurred,potion,Blurred Vision,not_started,not_tested,,class=PotionBlurredVision bad=true color=8421504
 Thaumcraft:potion.sunscorned,thaumcraft:potion.sunscorned,potion,Sun Scorned,not_started,not_tested,,class=PotionSunScorned bad=true color=16308330
 Thaumcraft:potion.thaumarhia,thaumcraft:potion.thaumarhia,potion,Thaumarhia,not_started,not_tested,,class=PotionThaumarhia bad=true color=6702199
-Thaumcraft:biome.BiomeGenTaint,thaumcraft:biome.biomegentaint,biome,BiomeGenTaint,not_started,not_tested,,default_id=192 config_key=taint_biome_id
+Thaumcraft:biome.BiomeGenTaint,thaumcraft:biome.biomegentaint,biome,BiomeGenTaint,done,not_tested,,default_id=192 config_key=taint_biome_id - slice landed - gated on the merged tree
 Thaumcraft:biome.BiomeGenMagicalForest,thaumcraft:biome.biomegenmagicalforest,biome,BiomeGenMagicalForest,not_started,not_tested,,default_id=193 config_key=magical_forest_biome_id
 Thaumcraft:biome.BiomeGenEerie,thaumcraft:biome.biomegeneerie,biome,BiomeGenEerie,not_started,not_tested,,default_id=194 config_key=eerie_biome_id
-Thaumcraft:biome.BiomeGenEldritch,thaumcraft:biome.biomegeneldritch,biome,BiomeGenEldritch,not_started,not_tested,,default_id=195 config_key=eldritch_biome_id
-Thaumcraft:dimension.-42,thaumcraft:dimension.-42,dimension,Outer Lands,not_started,not_tested,,WorldProviderOuter; DimensionManager.registerProviderType/registerDimension; default id -42 (outer_lands_dim)
+Thaumcraft:biome.BiomeGenEldritch,thaumcraft:biome.biomegeneldritch,biome,BiomeGenEldritch,done,tested,,default_id=195 config_key=eldritch_biome_id
+Thaumcraft:dimension.-42,thaumcraft:dimension.-42,dimension,Outer Lands,done,tested,,WorldProviderOuter; DimensionManager.registerProviderType/registerDimension; default id -42 (outer_lands_dim)
 Thaumcraft:nodetype.NORMAL,thaumcraft:nodetype.normal,node_type,NORMAL,done,tested,,api/nodes/NodeType enum
 Thaumcraft:nodetype.UNSTABLE,thaumcraft:nodetype.unstable,node_type,UNSTABLE,done,tested,,api/nodes/NodeType enum
 Thaumcraft:nodetype.DARK,thaumcraft:nodetype.dark,node_type,DARK,done,tested,,api/nodes/NodeType enum
@@ -1019,8 +1019,8 @@ Thaumcraft:worldgen.shrine_mounds,thaumcraft:worldgen.shrine_mounds,worldgen_fea
 Thaumcraft:worldgen.eldritch_stone_rings,thaumcraft:worldgen.eldritch_stone_rings,worldgen_feature,Eldritch stone rings,not_started,not_tested,,impl=WorldGenEldritchRing config=genStructure
 Thaumcraft:worldgen.hilltop_stones,thaumcraft:worldgen.hilltop_stones,worldgen_feature,Hilltop stones,not_started,not_tested,,impl=WorldGenHilltopStones config=genStructure
 Thaumcraft:worldgen.nether_totems_wild_nodes,thaumcraft:worldgen.nether_totems_wild_nodes,worldgen_feature,Nether: totems + wild nodes,not_started,not_tested,,impl=generateNether config=genAura / genStructure
-Thaumcraft:worldgen.outer_lands_procedural_maze,thaumcraft:worldgen.outer_lands_procedural_maze,worldgen_feature,Outer Lands procedural maze,not_started,not_tested,,impl=MazeHandler.generateEldritch (dimension -42) config=outer_lands_dim
-Thaumcraft:worldgen.taint_spread_conversion,thaumcraft:worldgen.taint_spread_conversion,worldgen_feature,Taint spread / conversion,not_started,not_tested,,"impl=TaintManager (chunk events, not chunk gen) config=-"
+Thaumcraft:worldgen.outer_lands_procedural_maze,thaumcraft:worldgen.outer_lands_procedural_maze,worldgen_feature,Outer Lands procedural maze,done,tested,,impl=MazeHandler.generateEldritch (dimension -42) config=outer_lands_dim
+Thaumcraft:worldgen.taint_spread_conversion,thaumcraft:worldgen.taint_spread_conversion,worldgen_feature,Taint spread / conversion,done,not_tested,,"impl=TaintManager (chunk events, not chunk gen) config=- - slice landed - gated on the merged tree"
 Thaumcraft:worldgen.wizard_tower_village_house,thaumcraft:worldgen.wizard_tower_village_house,worldgen_feature,Wizard tower village house,not_started,not_tested,,impl=ComponentWizardTower via VillageWizardManager config=villager_wizard spawn
 Thaumcraft:worldgen.banker_house_village_house,thaumcraft:worldgen.banker_house_village_house,worldgen_feature,Banker house village house,not_started,not_tested,,impl=ComponentBankerHome via VillageBankerManager config=villager_banker spawn
 Thaumcraft:oredict.oreCinnabar,thaumcraft:oredict.orecinnabar,oredict,oreCinnabar,not_started,not_tested,,"stack=blockCustomOre, 1, 0)"

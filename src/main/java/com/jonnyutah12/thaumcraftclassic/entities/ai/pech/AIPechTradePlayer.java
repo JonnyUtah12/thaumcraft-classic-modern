@@ -27,7 +27,7 @@ import net.minecraft.world.entity.ai.goal.Goal;
  *
  * <p>The flag it keys off is public on the pech ({@code EntityPech.java:69}) and
  * is written by the trade GUI, i.e. by the client/container lane this card leaves
- * out of scope — so on a headless server the goal can never start. It ships so
+ * out of scope (BD-67: the menu and its screen need content this slice does not own) — so on a headless server the goal can never start. It ships so
  * the goal slot, the mutex bits and the gates are the original's, and a probe
  * drives the flag directly to prove the gate table. Recorded in the row's
  * {@code known_differences}.</p>

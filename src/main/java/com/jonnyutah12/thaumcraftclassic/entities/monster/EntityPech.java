@@ -13,7 +13,7 @@ import com.jonnyutah12.thaumcraftclassic.entities.ai.pech.AIPechTradePlayer;
 import com.jonnyutah12.thaumcraftclassic.entities.projectile.EntityPechBlast;
 import com.jonnyutah12.thaumcraftclassic.items.ItemManaBean;
 import com.jonnyutah12.thaumcraftclassic.items.ItemResource;
-import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEntities;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogPech;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
 import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
 
@@ -77,7 +77,7 @@ import net.minecraft.world.level.biome.Biome;
 import net.neoforged.neoforge.common.Tags;
 
 /**
- * The Pech — {@code thaumcraft:pech} (content-mapping row 321, mod_index 12),
+ * The Pech — {@code thaumcraft:pech} (content-mapping {@code Thaumcraft:Pech}, row 290, mod_index 23),
  * the original's largest mob: 830 lines at
  * {@code thaumcraft.common.entities.monster.EntityPech},
  * {@code extends EntityMob implements IRangedAttackMob}.
@@ -107,13 +107,13 @@ import net.neoforged.neoforge.common.Tags;
  * card's {@code left_out_of_scope}): the trade GUI ({@code :701} opens
  * {@code openGui(Thaumcraft, 1, ...)} — the container/menu lane; the goal, the
  * flags and the rules ship, the window does not); the wand equipment branch
- * (ledger row 207 `Thaumcraft:ItemResource` unregistered, behind a live registry check, BD-21); the boss
- * bar (1.21.1 has no {@code Mob#isBoss()}, BD-22); the 1.7.10 {@code EntityMob}
+ * (ledger row 170 {@code Thaumcraft:WandCasting} unregistered, behind a live registry check, BD-68); the boss
+ * bar (1.21.1 has no {@code Mob#isBoss()}, BD-69); the 1.7.10 {@code EntityMob}
  * random-armour super call (1.21.1 moved it to difficulty-scaled item tags on
  * {@code Zombie}; {@code Monster} has no hook); the village branch of the spawn
- * gate (1.21.1 removed the village-position API, BD-23); the overworld-only
+ * gate (1.21.1 removed the village-position API, BD-70); the overworld-only
  * spawn factor, which in 1.21.1 lives in the spawn-table registration (c6's
- * mob_spawn row 378); and the hooks {@code func_82162_bC} ({@code :181}) and
+ * mob_spawn row 347); and the hooks {@code func_82162_bC} ({@code :181}) and
  * {@code func_98053_h} ({@code :182-183}) — {@code reference/mcp-mappings/}
  * ships only the fields CSV, so their MCP names are unresolvable and no 1.21.1
  * analogue is invented. The original's explicit
@@ -166,7 +166,7 @@ public class EntityPech extends Monster implements RangedAttackMob {
 
     public EntityPech(final EntityType<? extends EntityPech> type, final Level level) {
         super(type, level);
-        // :86 — func_70105_a(0.6F, 1.8F) rides buildType's sized(...)
+        // :92 — func_70105_a(0.6F, 1.8F) rides buildType's sized(...)
         // :87 — this.experiencePoints = 5
         this.xpReward = PechAiLogic.XP;
         // :110 — equipmentDropChances[0] = 0.2F (the mainhand drop chance)
@@ -186,7 +186,7 @@ public class EntityPech extends Monster implements RangedAttackMob {
         return EntityType.Builder.of(EntityPech::new, category)
                 .sized(PechAiLogic.WIDTH, PechAiLogic.HEIGHT)
                 .eyeHeight((float) PechAiLogic.eyeHeight())
-                .clientTrackingRange(PechAiLogic.TRACK_RANGE_BLOCKS)
+                .clientTrackingRange(PechAiLogic.TRACK_RANGE_CHUNKS)  // 64 blocks = 4 chunks
                 .updateInterval(PechAiLogic.UPDATE_INTERVAL)
                 .setShouldReceiveVelocityUpdates(PechAiLogic.VELOCITY_UPDATES)
                 .build("pech");
@@ -335,6 +335,33 @@ public class EntityPech extends Monster implements RangedAttackMob {
         return this.mumble;                                          // :70
     }
 
+    /**
+     * {@code :73-87} — {@code func_70005_c_} (getCommandSenderName): the pech
+     * names ITSELF from its type, not from its entity type. The original reads
+     * {@code entity.Thaumcraft.Pech.name} for type 0 (Pech Forager, {@code :79}
+     * plus the {@code :85} default), {@code ...Pech.1.name} for type 1 (Pech
+     * Mage, the wand pech, {@code :81}) and {@code ...Pech.2.name} for type 2
+     * (Pech Stalker, the bow pech, {@code :83}); a custom name wins over all
+     * three ({@code :74-75}, {@code func_94056_bM} / {@code func_94057_bL}).
+     * 1.21.1 has no per-type entity name, so the same three keys ride this
+     * override: {@code super} already resolves the custom-name case
+     * ({@code Entity#hasCustomName}), leaving only the type switch.
+     */
+    @Override
+    public net.minecraft.network.chat.Component getDisplayName() {
+        if (this.hasCustomName()) {
+            return super.getDisplayName();                                             // :74-75
+        }
+        final int type = this.getPechType();
+        if (type == PechAiLogic.TYPE_WAND) {
+            return net.minecraft.network.chat.Component.translatable("entity.thaumcraft.pech.1");   // :81
+        }
+        if (type == PechAiLogic.TYPE_BOW) {
+            return net.minecraft.network.chat.Component.translatable("entity.thaumcraft.pech.2");   // :83
+        }
+        return net.minecraft.network.chat.Component.translatable("entity.thaumcraft.pech");         // :79, :85
+    }
+
     /** The 9 loot slots ({@code :60}); the probes inspect them. */
     public ItemStack[] lootSlots() {
         return this.loot;
@@ -374,7 +401,7 @@ public class EntityPech extends Monster implements RangedAttackMob {
     }
 
     /** {@code :172-174} — the wand branch's live gate: {@code ItemWandCasting}
-     *  is content-mapping row 207, {@code not_started} (BD-21). */
+     *  is content-mapping row 170 ({@code Thaumcraft:WandCasting}), {@code not_started} (BD-68). */
     private static boolean wandRegistered() {
         return BuiltInRegistries.ITEM.getHolder(PechAiLogic.WAND_ITEM).isPresent();
     }
@@ -452,8 +479,8 @@ public class EntityPech extends Monster implements RangedAttackMob {
      * cap ({@code :193-200}). 1.21.1's seam is
      * {@code Mob#checkSpawnRules(LevelAccessor, MobSpawnType)} — this repo's
      * resolution of that hook. The overworld-only factor ({@code :186}) rides
-     * the spawn-table registration (c6's mob_spawn row 378); the village factor
-     * is BD-23, and 1.21.1's own ground/light rules come from the super call.
+     * the spawn-table registration (c6's mob_spawn row 347); the village factor
+     * is BD-70, and 1.21.1's own ground/light rules come from the super call.
      */
     @Override
     public boolean checkSpawnRules(final LevelAccessor level, final MobSpawnType reason) {
@@ -733,11 +760,21 @@ public class EntityPech extends Monster implements RangedAttackMob {
             // 1.21.1's Arrow has no (level, shooter, velocity, inaccuracy) ctor:
             // the shape is (level, owner, pickupStack, firedFromWeapon)
             // (Arrow.java:34) and the motion is set by shoot(...) below. The
-            // pickup stack is EMPTY — 1.7.10's mob-arrow pickup mode lives in
-            // the vanilla EntityArrow ctor, which is not vendored under
-            // reference/, so no pickup behaviour is invented (recorded).
-            final Arrow arrow = new Arrow(this.level(), this, ItemStack.EMPTY,
-                    this.getMainHandItem());                                    // :466 + the 1.21.1 firedFromWeapon seam
+            // The pickup stack is ONE VANILLA ARROW, not ItemStack.EMPTY. The ctor copies the argument
+            // straight over AbstractArrow's field initializer (AbstractArrow.java:71
+            // `pickupItemStack = this.getDefaultPickupItem()`, :89 `this.pickupItemStack =
+            // pickupItemStack.copy()`) and addAdditionalSaveData serializes it UNCONDITIONALLY
+            // (AbstractArrow.java:544 `compound.put("item", this.pickupItemStack.save(...))`), so an
+            // EMPTY stack throws IllegalStateException("Cannot encode empty ItemStack") at
+            // ItemStack.java:409 the moment a chunk saves the arrow - which is what CI's game-test leg
+            // hit on this card's first run (ServerLevel.save -> EntityStorage.storeEntities ->
+            // AbstractArrow.addAdditionalSaveData). Vanilla's own mob path passes that ctor a real
+            // arrow stack (AbstractSkeleton.java:189 `getProjectile(weapon)`), which is what this mirrors.
+            // Pickup stays at 1.21.1's default Pickup.DISALLOWED (AbstractArrow.java:62), so nothing is
+            // pickable: 1.7.10's mob-arrow canBePickedUp = 1 (creative players only) is NOT invented
+            // here - 1.21.1 mob arrows grant no pickup (BD-68).
+            final Arrow arrow = new Arrow(this.level(), this, new ItemStack(Items.ARROW),
+                    this.getMainHandItem());
             arrow.setBaseDamage(PechAiLogic.arrowDamage(distanceFactor,
                     this.level().random.nextGaussian(), difficulty));                           // :467-471
             arrow.setPos(this.getX(), this.getY() + this.getEyeHeight(), this.getZ());
@@ -758,7 +795,7 @@ public class EntityPech extends Monster implements RangedAttackMob {
                     PechAiLogic.BOW_SOUND_VOLUME,
                     (float) PechAiLogic.bowSoundPitch(this.random.nextFloat()));                // :476
         } else {
-            final EntityPechBlast blast = new EntityPechBlast(CatalogEntities.PECH_BLAST.get(),
+            final EntityPechBlast blast = new EntityPechBlast(CatalogPech.PECH_BLAST.get(),
                     this.level(), this, PechAiLogic.TYPE_WAND, 0,
                     this.random.nextFloat() < PechAiLogic.BLAST_SMOKE_CHANCE);                  // :481
             final double dx = target.getX() - this.getX();                                     // :482
