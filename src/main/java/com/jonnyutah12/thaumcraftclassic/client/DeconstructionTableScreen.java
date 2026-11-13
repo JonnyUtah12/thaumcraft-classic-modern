@@ -1,5 +1,6 @@
 package com.jonnyutah12.thaumcraftclassic.client;
 
+import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.menus.DeconstructionTableMenu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -111,10 +112,28 @@ public class DeconstructionTableScreen extends AbstractContainerScreen<Deconstru
         ScreenPanel.frameArea(guiGraphics, this.leftPos, this.topPos,
                 ContainerLayout.DECON_ASPECT_X, ContainerLayout.DECON_ASPECT_Y,
                 ContainerLayout.DECON_ASPECT_SIZE, ContainerLayout.DECON_ASPECT_SIZE);
+        final Aspect revealed = this.menu.getRevealedAspect();
+        if (revealed != null) {
+            drawAspectTag(guiGraphics, revealed);
+        }
+    }
+
+    /**
+     * The revealed aspect's tag inside the {@code (64,48)} box: the original's
+     * {@code UtilsFX.drawTag(k + 64, l + 48, this.tableInventory.aspect, 0.0F, 0, ...)}
+     * ({@code GuiDeconstructionTable.java:38-39}), the six-argument overload
+     * ({@code UtilsFX.java:802-804}: blend 771, alpha 1.0F, {@code bw = false}),
+     * ported as {@link AspectTagRenderer#drawTag}. It is a method — not the stand-in
+     * the state lane first shipped (a slot sprite plus the aspect's name in scaled
+     * text) — so the BD-17 probe ({@code MenuTypeScreenCoverageTest}) can name the
+     * single draw path, and so the original's null guard is the screen's own: an
+     * empty box draws nothing at all.
+     */
+    private void drawAspectTag(final GuiGraphics guiGraphics, final Aspect aspect) {
         AspectTagRenderer.drawTag(guiGraphics, this.font,
                 this.leftPos + ContainerLayout.DECON_ASPECT_X,
                 this.topPos + ContainerLayout.DECON_ASPECT_Y,
-                this.menu.getRevealedAspect(), 0.0F, 0);
+                aspect, 0.0F, 0);
     }
 
     /**
