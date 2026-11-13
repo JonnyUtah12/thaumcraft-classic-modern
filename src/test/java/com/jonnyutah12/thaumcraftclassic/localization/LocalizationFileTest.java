@@ -178,6 +178,10 @@ class LocalizationFileTest {
             // added where the original drew an unlabelled slot. Neither names a
             // content id, so they are code-authored, not registry keys.
             "container.thaumcraft.insufficient_vis", "container.thaumcraft.wand_slot_hint",
+            // TC-M7-04-m4: the trunk screen's stay-control tooltip, drawn from the
+            // synced stay flag (BD-17 closure). UI-only text on a machine the
+            // content ledger names by block id, so no registry key derives it.
+            "container.thaumcraft.gui_trunk.stay_on", "container.thaumcraft.gui_trunk.stay_off",
             // TC-M6-06-s-c3-a: the pech's per-type names (the original's
             // func_70005_c_, EntityPech.java:70-80). Only the type-0 key is
             // registry-derived; the Mage (type 1) and Stalker (type 2) keys

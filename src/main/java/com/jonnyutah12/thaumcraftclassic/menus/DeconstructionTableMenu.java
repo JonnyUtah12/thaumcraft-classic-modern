@@ -201,6 +201,11 @@ public class DeconstructionTableMenu extends AbstractContainerMenu {
         return stack.copy();
     }
 
+
+    /** The container data slots of this menu, for probes that prove the sync lands. */
+    public ContainerData containerData() {
+        return this.data;
+    }
     @Override
     public boolean stillValid(final Player player) {
         return this.table.stillValid(player);

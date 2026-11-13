@@ -179,6 +179,8 @@
   "container.thaumcraft.gui_spa": "Arcane Spa",
   "container.thaumcraft.thaumonomicon": "Thaumonomicon",
   "container.thaumcraft.gui_trunk": "Traveling Trunk",
+  "container.thaumcraft.gui_trunk.stay_off": "Traveling Trunk: Follow mode",
+  "container.thaumcraft.gui_trunk.stay_on": "Traveling Trunk: Stay mode",
   "container.thaumcraft.magicbox": "Magic Box",
   "container.thaumcraft.spa": "Arcane Spa",
   "death.attack.thaumcraft.dissolve": "%1$s was dissolved",

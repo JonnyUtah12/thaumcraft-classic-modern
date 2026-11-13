@@ -100,6 +100,9 @@ public final class LocalizationGameTest {
             // (GuiResearchBrowser.java:41) and no menu type, so no registry
             // derivation produces this key (BD-22).
             Map.entry("container.thaumcraft.thaumonomicon", "ThaumonomiconScreen.TITLE_KEY"),
+            // stay/follow mode texts on the trunk screen's stay control
+            Map.entry("container.thaumcraft.gui_trunk.stay_on", "TrunkScreen stay tooltip (TC-M7-04-m4)"),
+            Map.entry("container.thaumcraft.gui_trunk.stay_off", "TrunkScreen follow tooltip (TC-M7-04-m4)"),
             // tooltip / action lines
             Map.entry("item.thaumcraft.itemlootbag.tooltip", "ItemLootBag.appendHoverText"),
             Map.entry("item.thaumcraft.trunkspawner.tooltip", "ItemTrunkSpawner.appendHoverText"),
