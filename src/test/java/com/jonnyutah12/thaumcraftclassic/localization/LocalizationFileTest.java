@@ -46,7 +46,11 @@ class LocalizationFileTest {
             "death.attack.thaumcraft.", "fluid.thaumcraft.",
             // TC-M6-04f-m: the vanilla biome description id shape
             // "biome.<namespace>.<path>" (the Eldritch biome).
-            "biome.thaumcraft.");
+            "biome.thaumcraft.",
+            // Screen readout lines (TC-M7-04-m1): the bore's readout rows are
+            // hardcoded English strings in GuiArcaneBore:45-73, localized by
+            // the port, so they carry the 1.21.1 gui.<ns>.<screen>.<row> shape.
+            "gui.thaumcraft.");
 
     /**
      * Keys the shipped code uses with the original 1.7.10 key shape, kept
@@ -136,6 +140,9 @@ class LocalizationFileTest {
             "item.researchnotes.unknown.1", "item.researchnotes.unknown.2",
             "tc.forbidden", "tc.forbidden.level.1", "tc.forbidden.level.2",
             "tc.forbidden.level.3", "tc.forbidden.level.4", "tc.forbidden.level.5",
+            "gui.thaumcraft.arcane_bore.width", "gui.thaumcraft.arcane_bore.speed",
+            "gui.thaumcraft.arcane_bore.other", "gui.thaumcraft.arcane_bore.native",
+            "gui.thaumcraft.arcane_bore.fortune", "gui.thaumcraft.arcane_bore.silk",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
             "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror",
             "tc.visdiscount",

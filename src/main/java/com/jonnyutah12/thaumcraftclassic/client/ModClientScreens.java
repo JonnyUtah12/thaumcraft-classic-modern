@@ -2,6 +2,8 @@ package com.jonnyutah12.thaumcraftclassic.client;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArcaneWorkbench;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogGolems;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogThaumatorium;
@@ -33,33 +35,30 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
  * hazard.</p>
  *
  * <p><b>Coverage.</b> As of this commit every {@code MenuType} the mod
- * registers has a screen here — the eight gui rows whose menus landed with
- * their content: {@code gui_trunk} (TC-M7-04-s-cr1), {@code gui_hand_mirror},
- * {@code gui_decon_table}, {@code gui_magic_box} and {@code gui_spa}
- * (TC-M7-04-s, carried into main by the golem-visual lane, t_17686882),
- * {@code gui_golem} (TC-M7-04-m3-a, over the golem-content branch),
- * {@code gui_research_note} — the hex-grid research-note window
- * (TC-M3-04-s-iii: menu contract BD-44, hex-grid presentation BD-45,
- * NOTE-SCREEN-2 t_32a29c93) — and {@code gui_arcane_workbench} (TC-M7-04-m2,
- * the first crafting-table GUI, landing on the GUI fleet's shared base
- * {@code d6d50e3}). The remaining GUI ids in {@code docs/content-mapping.csv}
- * have no menu type yet (the crucible, alchemy furnace, arcane bore,
- * thaumatorium, pech, focus pouch, hover harness, focal manipulator, research
- * table) or are the book browser (t_547e7ad8), which is payload-opened and
- * containerless (BD-22) and so has no {@code MenuType} to pair; they are
- * separate cards. A new menu type added without a screen fails
+ * registers has a screen here: twelve registrations in
+ * {@link #registerScreens} — {@code gui_trunk} (TC-M7-04-s-cr1),
+ * {@code gui_hand_mirror}, {@code gui_decon_table}, {@code gui_magic_box} and
+ * {@code gui_spa} (TC-M7-04-s, carried into main by the golem-visual lane,
+ * t_17686882), {@code gui_golem} (TC-M7-04-m3-a), {@code gui_research_note} —
+ * the hex-grid research-note window (TC-M3-04-s-iii: menu contract BD-44,
+ * hex-grid presentation BD-45, NOTE-SCREEN-2 t_32a29c93) —
+ * {@code gui_arcane_workbench} (TC-M7-04-m2, the first crafting-table GUI, on
+ * the GUI fleet's shared base {@code d6d50e3}), {@code gui_thaumatorium}
+ * (TC-M7-04-m2c), {@code gui_research_table} (TC-M7-04-m2b) and the two device
+ * machines of TC-M7-04-m1, {@code gui_alchemy_furnace} (the original's
+ * {@code gui_id} 9, registered from the essentia-storage catalog) and
+ * {@code gui_arcane_bore} (the original's {@code gui_id} 15, from the devices
+ * catalog). The crucible needs no screen: the 1.7.10 crucible ships no GUI at
+ * all — no {@code GuiCrucible} in the reference {@code client/gui/}, and both
+ * {@code ClientProxy} and {@code CommonProxy} return null for every crucible
+ * gui id — so it is a direct-manipulation block and its
+ * {@code docs/content-mapping.csv} {@code gui_crucible} row closes on absence,
+ * proved by {@code CrucibleGuiParityTest}. The GUI ids still without a menu
+ * type (pech, focus pouch, hover harness, focal manipulator) are separate
+ * cards, and one — the book's containerless browser (t_547e7ad8) — is opened
+ * by a payload and must never be paired with a menu factory here (BD-22). A
+ * new menu type added without a screen fails
  * {@code MenuTypeScreenCoverageTest}.</p>
- * registers has a screen here — the seven gui rows whose menus landed with
- * their content: {@code gui_trunk} (TC-M7-04-s-cr1); {@code gui_hand_mirror},
- * (TC-M7-04-s); {@code gui_arcane_workbench} (TC-M7-04-m2, the first
- * crafting-table GUI); and {@code gui_thaumatorium} (TC-M7-04-m2c, the
- * thaumatorium queue window). The remaining GUI ids in
- * {@code docs/content-mapping.csv} have no menu type yet (the crucible, alchemy
- * furnace, arcane bore, golem, pech, focus pouch, hover harness, focal
- * manipulator), and one — the book's containerless browser (t_547e7ad8) — is
- * opened by a payload and must not be paired with a menu factory here, so they
- * cannot be wired here; they are separate cards. A new menu type added
- * without a screen fails {@code MenuTypeScreenCoverageTest}.</p>
  */
 @EventBusSubscriber(modid = ThaumcraftClassic.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ModClientScreens {
@@ -93,6 +92,9 @@ public final class ModClientScreens {
         event.register(CatalogThaumatorium.MENU_THAUMATORIUM.get(), ThaumatoriumScreen::new);
         // TC-M7-04-m2b: the research table, gui_research_table (original gui_id 10).
         event.register(CatalogFurniture.MENU_RESEARCH_TABLE.get(), ResearchTableScreen::new);
+        // TC-M7-04-m1, the device machines (gui_id 9 and 15):
+        event.register(CatalogEssentiaStorage.MENU_ALCHEMY_FURNACE.get(), AlchemyFurnaceScreen::new);
+        event.register(CatalogDevices.MENU_ARCANE_BORE.get(), ArcaneBoreScreen::new);
     }
 
     private ModClientScreens() {
