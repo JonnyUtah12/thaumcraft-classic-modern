@@ -9,6 +9,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEntities;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchRealm;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogMindSpider;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogOuterLands;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaTransport;
@@ -256,6 +257,14 @@ public final class ModRegistration {
         // The pipe/machine renderers, particles and sounds stay on TC-M7-01/TC-M7-05 and the
         // per-variant item labels on TC-M7-01b.
         CatalogEssentiaTransport.init(modEventBus);
+
+        // TC-M6-06-s-c3-b: the mind spider — thaumcraft:mindspider
+        // (EntityMindSpider extends the vanilla spider, with its harmless mode,
+        // viewer name, 1200-tick harmless fuse and every drop shut off in
+        // MindSpiderAiLogic). The AI switch is forced ON exactly as the
+        // original's func_145773_az() = true does, so the inherited spider
+        // goals never run. Renderer TC-M7-03-s, spawn egg row TC-M6-06-s-c6.
+        CatalogMindSpider.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-
