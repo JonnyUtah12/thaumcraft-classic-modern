@@ -15,6 +15,10 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageSources;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.damagesource.DamageSources;
@@ -202,7 +206,7 @@ public final class EldritchCrabGameTest {
         // The crab has no spawn-egg row in the content mapping, so no egg item.
         helper.assertTrue(!CatalogEldritchCrab.HAS_SPAWN_EGG_ROW
                         && !BuiltInRegistries.ITEM.containsKey(ResourceLocation
-                                .fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "spawn_egg EldritchCrab")),
+                                .fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "spawnegg.eldritchcrab")),
                 "no egg row means no invented egg item");
         helper.succeed();
     }
@@ -241,7 +245,7 @@ public final class EldritchCrabGameTest {
         // The two scans' target classes (:43 EntityPlayer, :44 EntityCultist).
         final List<Class<?>> scanned = new ArrayList<>();
         for (final WrappedGoal wrapped : targets) {
-            if (wrapped.getGoal() instanceof NearestAttackableTargetGoal<?, ?> scan) {
+            if (wrapped.getGoal() instanceof NearestAttackableTargetGoal<?> scan) {
                 scanned.add(EldritchCrabGameTest.targetClassOf(scan));
             }
         }
@@ -256,11 +260,12 @@ public final class EldritchCrabGameTest {
     }
 
     /** {@code NearestAttackableTargetGoal}'s target class is a private field. */
-    private static Class<?> targetClassOf(final NearestAttackableTargetGoal<?, ?> goal) {
+    private static Class<?> targetClassOf(final NearestAttackableTargetGoal<?> goal) {
         try {
             final java.lang.reflect.Field field =
-                    net.minecraft.world.entity.ai.goal.target.TargetGoal.class
-                            .getDeclaredField("targetType");
+                    // javap on 21.1.259: targetType is on NearestAttackableTargetGoal
+            // (`protected final Class<T> targetType`), not on TargetGoal.
+            NearestAttackableTargetGoal.class.getDeclaredField("targetType");
             field.setAccessible(true);
             @SuppressWarnings("unchecked")
             final Class<? extends LivingEntity> type = (Class<? extends LivingEntity>) field.get(goal);
@@ -291,8 +296,10 @@ public final class EldritchCrabGameTest {
                         && crab.getAirSupply() == EldritchCrabAiLogic.MAX_AIR,
                 ":184-186 — 160 ticks of air, got " + crab.getMaxAirSupply() + " / "
                         + crab.getAirSupply());
-        helper.assertTrue(crab.getExperienceReward() == EldritchCrabAiLogic.XP,
-                ":42 — 6 xp, got " + crab.getExperienceReward());
+        // :34 — field_70728_aV = 6. 21.1.259's entry point is the final
+        // getExperienceReward(ServerLevel, Entity) (the pech card's probe shape).
+        helper.assertTrue(crab.getExperienceReward(helper.getLevel(), null) == EldritchCrabAiLogic.XP,
+                ":34 — 6 xp, got " + crab.getExperienceReward(helper.getLevel(), null));
         crab.discard();
         helper.succeed();
     }
@@ -336,9 +343,16 @@ public final class EldritchCrabGameTest {
         helper.succeed();
     }
 
-    /** :72-76 — the helm roll is HARD-only and one third of hard spawns. */
+    /**
+     * :72-76 — the helm roll. The original's two branches are
+     * {@code field_70170_p.field_73013_u == HARD → setHelm(true)} ({@code :72-73},
+     * the guaranteed branch) and {@code field_70146_Z.nextFloat() < 0.33F}
+     * ({@code :75}, the entity random) for every other difficulty: HARD always
+     * shells and the rest wear it about a third of the time. Both legs are
+     * measured on the live {@code finalizeSpawn}.
+     */
     @GameTest(template = "empty", timeoutTicks = 300)
-    public static void onlyHardSpawnsShellAndTheyAreAboutAThird(final GameTestHelper helper) {
+    public static void hardSpawnsAlwaysShellAndTheRestAreAboutAThird(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
         int shelled = 0;
         for (int i = 0; i < 60; i++) {
@@ -349,17 +363,25 @@ public final class EldritchCrabGameTest {
             }
             crab.discard();
         }
-        helper.assertTrue(shelled >= 8 && shelled <= 32,
-                ":74-76 — 0.33 of 60 hard spawns wear a shell; measured " + shelled);
+        helper.assertTrue(shelled == 60,
+                ":72-73 — HARD is the guaranteed branch (setHelm(true)), got " + shelled + "/60");
+        int rolled = 0;
         for (final Difficulty mode : List.of(Difficulty.EASY, Difficulty.NORMAL, Difficulty.PEACEFUL)) {
             for (int i = 0; i < 20; i++) {
                 final EntityEldritchCrab crab = crab(helper);
                 crab.finalizeSpawn(level, difficulty(level, mode), MobSpawnType.NATURAL, null);
-                helper.assertTrue(!crab.hasShell(),
-                        ":72-76 — the shell roll is HARD-only; " + mode + " spawned a shelled crab");
+                if (crab.hasShell()) {
+                    rolled++;
+                }
                 crab.discard();
             }
         }
+        // :74-75 — p = 1/3 over n = 60 draws: mean 20, sd 3.65, so the band
+        // 9..31 is ±3.0 sd (a clean run passes with p ~0.997 and the roll
+        // reseeded every draw by the mob's own LCG), while a rule that made the
+        // shell HARD-only — the shape this probe first predicted — scores 0.
+        helper.assertTrue(rolled >= 9 && rolled <= 31,
+                ":74-75 — 0.33 of the 60 non-HARD spawns wear a shell; measured " + rolled);
         helper.succeed();
     }
 
@@ -446,16 +468,21 @@ public final class EldritchCrabGameTest {
     @GameTest(template = "empty")
     public static void poisonNeverAppliesToTheCrab(final GameTestHelper helper) {
         final EntityEldritchCrab crab = crab(helper);
-        crab.addEffect(new MobEffectInstance(MobEffects.POISON, 200, 0));
-        helper.assertTrue(crab.getEffect(MobEffects.POISON) == null,
+        helper.assertTrue(!crab.isPotionApplicable(new MobEffectInstance(MobEffects.POISON, 200, 0)),
                 ":208-210 — func_70687_e: poison never applies to the crab");
-        crab.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 200, 0));
-        helper.assertTrue(crab.getEffect(MobEffects.MOVEMENT_SPEED) != null,
-                ":208-210 — the immunity is poison-only; speed still applies");
-        helper.assertTrue(crab.isPotionApplicable(new MobEffectInstance(MobEffects.WEAKNESS, 20, 0)),
-                "the plain predicate must accept an ordinary effect");
-        helper.assertTrue(!crab.isPotionApplicable(new MobEffectInstance(MobEffects.POISON, 20, 0)),
-                "the plain predicate must reject poison");
+        helper.assertTrue(crab.isPotionApplicable(new MobEffectInstance(MobEffects.WEAKNESS, 200, 0)),
+                ":208-210 — the immunity is poison-only; an ordinary effect still applies");
+        helper.assertTrue(crab.isPotionApplicable(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 200, 0)),
+                ":208-210 — the group-effect table's own effects stay applicable");
+        // The in-world half is NOT probed on purpose: 21.1.259 has no mob-side
+        // applicability hook — LivingEntity#addEffect(MobEffectInstance) is
+        // `public final` (verified with javap on the compiled NeoForge jar) and
+        // the universal jar ships no potion-applicability event (only
+        // PotionBrewEvent/PlayerBrewedPotionEvent under event/brewing) — so the
+        // rule rides the crab's plain predicate and the missing immunity is the
+        // ledger row. A probe here would test the platform, not the port.
+        helper.assertTrue(EldritchCrabAiLogic.POISON_IMMUNE,
+                ":208-210 — the rule ships as data, the platform hook is absent (BD row)");
         crab.discard();
         helper.succeed();
     }
@@ -539,8 +566,16 @@ public final class EldritchCrabGameTest {
         helper.succeed();
     }
 
-    /** :65-79 — the orb's burst: everything living that is not undead takes the
-     *  damage and the weakness, the undead walk out of it. */
+    /**
+     * :63-87 — the orb's burst. Everything living that is not undead inside the
+     * orb's box inflated by 2.0 ({@code :65}) takes the thrown damage
+     * ({@code :70-74}) and the weakness cast ({@code :76-79}); the undead walk
+     * out of it ({@code :69}); the burst consumes the orb ({@code :84}); and the
+     * thrower is not in the swept set at all — the original's {@code :65} sweep
+     * is {@code world.getEntitiesWithinAABB(thrower, box)}, whose first argument
+     * is the entity the sweep SKIPS, so a crab never takes its own orb's burst
+     * while a neighbour standing in exactly the same spot does.
+     */
     @GameTest(template = "empty", timeoutTicks = 300)
     public static void theOrbBurstStrikesTheLivingAndSparesTheUndead(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
@@ -555,12 +590,13 @@ public final class EldritchCrabGameTest {
         final Zombie zombie = (Zombie) EntityType.ZOMBIE.create(level);
         zombie.moveTo(at.getX() + 1.5, at.getY() + 0.5, at.getZ() + 1.5, 0.0F, 0.0F);
         zombie.setNoGravity(true);
+        zombie.clearFire();   // the pad lights mobs (family finding) — the burst probe is about the burst
         zombie.setPersistenceRequired();
         level.addFreshEntity(zombie);
 
         final EntityEldritchOrb orb = orb(helper,
                 new Vec3(at.getX() + 0.5, at.getY() + 1.0, at.getZ() + 0.5));
-        orb.setOwner(thrower);                                                 // :68-71 owner's damage
+        orb.setOwner(thrower);                       // :73 the thrower's damage
         helper.assertTrue(close(orb.getDefaultGravityForProbe(), EntityEldritchOrb.GRAVITY),
                 "the orb floats: gravity 0.0, got " + orb.getDefaultGravityForProbe());
         helper.assertTrue(orb.getType().getDimensions().width() == EntityEldritchOrb.WIDTH,
@@ -568,30 +604,53 @@ public final class EldritchCrabGameTest {
 
         final float pigHealth = pig.getHealth();
         final float zombieHealth = zombie.getHealth();
+        final float throwerHealth = thrower.getHealth();
         orb.setDeltaMovement(new Vec3(1.0, -0.5, 0.0));
         for (int tick = 0; tick < 25; tick++) {
-            orb.tick();                                                        // :47-56 hit scan
+            orb.tick();                                                        // :63-87 impact
             if (orb.isRemoved()) {
                 break;
             }
         }
         helper.assertTrue(orb.isRemoved(),
-                ":47-56 — the burst consumes the orb (its own despawn, or the 100-tick age at :82)");
+                ":84 — the burst consumes the orb (the impact writes the 100-tick age)");
         helper.assertTrue(pig.getEffect(MobEffects.WEAKNESS) != null,
-                ":72-79 — the living target takes the weakness cast (160 ticks, amplifier 0)");
+                ":76-79 — the living target takes the weakness cast (160 ticks, amplifier 0)");
         helper.assertTrue(pig.getEffect(MobEffects.WEAKNESS).getDuration()
                         == EntityEldritchOrb.WEAKNESS_TICKS
                         && pig.getEffect(MobEffects.WEAKNESS).getAmplifier()
                                 == EntityEldritchOrb.WEAKNESS_AMPLIFIER,
-                ":72-79 — 160 ticks / amplifier 0, got "
+                ":76-79 — 160 ticks / amplifier 0, got "
                         + pig.getEffect(MobEffects.WEAKNESS).getDuration() + " / "
                         + pig.getEffect(MobEffects.WEAKNESS).getAmplifier());
         helper.assertTrue(pig.getHealth() < pigHealth,
-                ":68-71 — the burst damages the living: " + pigHealth + " -> " + pig.getHealth());
+                ":70-74 — the burst damages the living: " + pigHealth + " -> " + pig.getHealth());
+        // :70-74 — the source. The original hands attackEntityFrom
+        // DamageSource.func_76354_b(this, thrower): 21.1.259's thrown factory is
+        // DamageSources#thrown (javap), whose shape is measured here — direct
+        // entity the orb, owning entity the thrower, a projectile type and NOT
+        // the magic type (the pair that separates thrown from indirectMagic).
+        final DamageSource struck = pig.getLastDamageSource();
+        helper.assertTrue(struck != null && struck.getDirectEntity() == orb
+                        && struck.getEntity() == thrower,
+                ":72 — the source is the orb, owned by the thrower, got " + struck);
+        helper.assertTrue(struck != null && struck.is(DamageTypeTags.IS_PROJECTILE)
+                        && struck.is(DamageTypes.THROWN)
+                        && !struck.is(DamageTypes.MAGIC)
+                        && !struck.is(DamageTypes.INDIRECT_MAGIC),
+                ":72 — a thrown source, not an indirect-magic one: "
+                        + (struck == null ? "null" : struck.getMsgId() + " " + struck.getDirectEntity()));
+        // :65 — the swept set excludes the THROWER (its first argument), so the
+        // crab that owns the orb stands in the burst box and takes nothing,
+        // while the pig in the same box takes it. A sweep that excludes the orb
+        // instead (the drafted shape) damages the thrower and reads red here.
+        helper.assertTrue(thrower.getHealth() >= throwerHealth,
+                ":65 — the thrower is out of its own burst, "
+                        + throwerHealth + " -> " + thrower.getHealth());
         helper.assertTrue(zombie.getEffect(MobEffects.WEAKNESS) == null,
-                ":65-67 — the undead are exempt: no weakness on the zombie");
+                ":69 — the undead are exempt: no weakness on the zombie");
         helper.assertTrue(zombie.getHealth() >= zombieHealth,
-                ":65-67 — the undead are exempt: the zombie takes no burst damage, "
+                ":69 — the undead are exempt: the zombie takes no burst damage, "
                         + zombieHealth + " -> " + zombie.getHealth());
         thrower.discard();
         pig.discard();
@@ -599,23 +658,30 @@ public final class EldritchCrabGameTest {
         helper.succeed();
     }
 
-    /** :33-41 / :86-88 — the launch sound's figures and the pickup radius live
-     *  on the orb's own class, and the burst's client event id is the
-     *  original's 16. */
+    /** :83 / :89-91 — the impact fizz's figures and the pickup radius live on
+     *  the orb's own class (the 92 lines have no launch sound at all), and the
+     *  burst's client event id is the original's 16 ({@code :85}). */
     @GameTest(template = "empty")
     public static void theOrbCarriesItsOwnSoundAndEventFigures(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
         final EntityEldritchOrb orb = orb(helper,
                 new Vec3(pad(helper).getX() + 0.5, pad(helper).getY() + 1.0, pad(helper).getZ() + 0.5));
         helper.assertTrue(orb.getPickRadius() == EntityEldritchOrb.PICK_RADIUS,
-                ":86-88 — func_70053_R() is 0.1F, got " + orb.getPickRadius());
+                ":89-91 — func_70053_R() is 0.1F, got " + orb.getPickRadius());
         helper.assertTrue(EntityEldritchOrb.BURST_EVENT == (byte) 16
                         && EntityEldritchOrb.LIFETIME_TICKS == 100
                         && EntityEldritchOrb.AOE_INFLATE == 2.0,
-                ":47-56 / :59-64 / :82 — the event id is 16, the age 100, the AABB inflate 2.0");
+                ":85 / :30-31 / :65 — the event id is 16, the age 100, the AABB inflate 2.0");
+        // :83 — the pitch spread is symmetric: 2.6F + (r - r) * 0.8F spans
+        // 2.2..3.0, so the pinned spread must be the full 0.8F and a one-sided
+        // 2.6..3.4 rewrite of the original's (r - r) is caught by the pair.
+        helper.assertTrue(EntityEldritchOrb.SOUND_PITCH_BASE == 2.6F
+                        && EntityEldritchOrb.SOUND_PITCH_SPREAD == 0.8F
+                        && EntityEldritchOrb.SOUND_VOLUME == 0.5F,
+                ":83 — random.fizz at 0.5F, 2.6F + (r - r) * 0.8F");
         helper.assertTrue(!BuiltInRegistries.SOUND_EVENT.containsKey(
                         ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "crabclaw")),
-                "the crab's claw id stays unregistered while the orb's launch rides vanilla");
+                "the crab's claw id stays unregistered while the orb's fizz rides vanilla");
         orb.discard();
         helper.succeed();
     }

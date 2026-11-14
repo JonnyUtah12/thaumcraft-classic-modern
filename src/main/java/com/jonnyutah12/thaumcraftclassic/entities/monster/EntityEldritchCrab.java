@@ -309,6 +309,12 @@ public class EntityEldritchCrab extends Monster {
      * {@code startRiding(closestPlayer)} ({@code :128}, the original's
      * {@code func_70078_a}, fired on both sides as the original writes it);
      * and the server-only mount punch: attack timer down →
+     * 21.1.259's {@code Mob} carries no {@code attackTime} field (javap on the
+     * compiled jar: the declared timers are {@code ambientSoundTime} and the
+     * {@code LivingEntity} pair), so the port's carrier for 1.7.10's
+     * {@code field_70724_aR} is {@link LivingEntity#invulnerableTime} — the one
+     * per-tick-decremented timer the platform gives a mob. Its side effect (the
+     * ride also blocks incoming damage for the 10..19 ticks) is the ledger row.
      * {@code attackTime = 10 + nextInt(10)}, {@code doHurtTarget(mount)},
      * 20% dismount ({@code :131-137}).
      */
@@ -449,15 +455,22 @@ public class EntityEldritchCrab extends Monster {
      *  exactly the shipped posture of {@code EntityTaintacle:420-422}. */
 
     /**
-     * {@code :208-210} — {@code func_70687_e}: poison never applies. 21.1.259
-     * has no mob-side effect-applicability hook to override (no
-     * {@code isPotionApplicable} on {@code LivingEntity}, and the shipped code
-     * overrides nothing of the kind), so this is the port's plain predicate
-     * over the original's rule. The original's other half — :160-166,
-     * {@code isSelfEffect} (the crab's own group-effect cast, marker in the
-     * {@code DataWatcher}, never applies to a mob) — has no 1.21.1 hook either;
-     * the rule is pinned as {@link EldritchCrabAiLogic#isSelfEffect} and
-     * recorded as a BD row.
+     * {@code :208-210} — {@code func_70687_e(Potion)} is a one-rule predicate,
+     * {@code return potionID != Potion.field_76436_u} (the poison id): poison
+     * never applies, every other effect does. 21.1.259 has no mob-side
+     * effect-applicability hook to override it on —
+     * {@code LivingEntity#addEffect(MobEffectInstance)} is {@code public final}
+     * (javap on the compiled NeoForge jar) and NeoForge ships no
+     * potion-applicability event — so the crab's plain predicate is the port's
+     * data and the in-world immunity is the ledger row (BD-115), pinned by
+     * {@code EldritchCrabGameTest.poisonNeverAppliesToTheCrab} and
+     * {@code EldritchCrabAiLogicTest.poisonNeverAppliesAndEveryOtherEffectDoes}.
+     *
+     * <p>The 215 reference lines carry no second half: no {@code func_70688_a}
+     * and no self-effect / {@code thaum998} rule anywhere in the reference tree
+     * (grepped). An earlier draft cited ":160-166 isSelfEffect", which is
+     * {@code func_70097_a}, the shell-break hurt; the invented rule is
+     * removed.</p>
      */
     public boolean isPotionApplicable(final MobEffectInstance effect) {
         return EldritchCrabAiLogic.effectApplies(effect.is(MobEffects.POISON));

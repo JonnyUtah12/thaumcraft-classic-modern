@@ -148,12 +148,15 @@ public final class EldritchCrabAiLogic {
         return hard || roll < SHELL_CHANCE;
     }
 
-    /** {@code :78-84} — when no spawn data arrives, a fresh spider GroupData
-     *  is created, and on HARD it picks a potion when
-     *  {@code worldRandom.nextFloat() < 0.1F * localDifficulty} (the local
-     *  difficulty float at the spawn position, {@code :82}). The roll uses the
-     *  WORLD random ({@code field_73012_v}), unlike the helm roll's entity
-     *  random — the two carriers are pinned apart on purpose. */
+    /** {@code :78-85} — when no spawn data arrives, a fresh spider GroupData
+     *  is created ({@code :79}), and on HARD ({@code :80}) it rolls the cast
+     *  when {@code worldRandom.nextFloat() < 0.1F * localDifficulty}
+     *  ({@code :81-82}, the local difficulty at the spawn position), then
+     *  {@code ((GroupData)livingData).func_111104_a(worldRandom)} fills the
+     *  marker ({@code :83}). The roll uses the WORLD random
+     *  ({@code field_73012_v}), unlike the helm roll's entity random
+     *  ({@code field_70146_Z}, {@code :75}) — the two carriers are pinned apart
+     *  on purpose. */
     public static final float GROUP_POTION_BASE_CHANCE = 0.1F;
 
     public static boolean rollsGroupPotion(final boolean hard, final float roll,
@@ -162,8 +165,14 @@ public final class EldritchCrabAiLogic {
     }
 
     /**
-     * {@code :78-92} — the spider buff table, as the ORIGINAL carried it.
-     * 1.7.10 stores a potion ID in {@code GroupData.field_111105_a} and rolls
+     * {@code :78-92} — the spider buff table, as the ORIGINAL carried it. The
+     * carrier is <b>vanilla</b>: the crab imports
+     * {@code net.minecraft.entity.monster.EntitySpider.GroupData} at {@code :16}
+     * and the decompiled TC reference contains no {@code EntitySpider.java}, so
+     * the cascade's table (the coin flip, the three 0.25 re-rolls, the marker
+     * values and the {@code Integer.MAX_VALUE} duration) is a transcription from
+     * the reference reading that cannot be checked in-tree; it ships as pinned
+     * data and the ledger row says so (BD-113). 1.21.1 stores a potion ID in {@code GroupData.field_111105_a} and rolls
      * it through {@code GroupData.func_111104_a}: the speed potion on a
      * coin-flip, then each of strength / regeneration / invisibility on
      * {@code nextFloat() < 0.25F * i} where {@code i} is 1 only if the
@@ -208,7 +217,9 @@ public final class EldritchCrabAiLogic {
         return marker;
     }
 
-    /** {@code :87-92} — a GroupData with potion id &gt; 0 (and a non-null
+    /** {@code :87-92} — {@code int i = ((GroupData)livingData).field_111105_a;}
+     *  {@code if (i > 0 && Potion.field_76425_a[i] != null)} — a GroupData with
+     *  a potion id &gt; 0 whose table slot is non-null (and a non-null
      *  potion in the 1.7.10 id table) is applied with
      *  {@code new PotionEffect(id, Integer.MAX_VALUE)}. The {@code > 0} half is
      *  the "something was picked" test, which is the marker being set; the
@@ -271,11 +282,22 @@ public final class EldritchCrabAiLogic {
                 && distanceSquared < 4.0;
     }
 
-    /** {@code :131-137} — server-only: while the crab rides something and the
-     *  attack timer is down, it punches the mount
-     *  ({@code func_70652_k(field_70154_o)}) and re-arms
-     *  {@code attackTime = 10 + entityRandom.nextInt(10)} ({@code :132});
-     *  with 20% chance it dismounts ({@code :134-135}). */
+    /** {@code :131-137} — server-only ({@code :131} opens with
+     *  {@code !worldObj.isRemote}): while the crab rides something and the
+     *  attack timer ({@code field_70724_aR}) is down, it re-arms
+     *  {@code field_70724_aR = 10 + entityRandom.nextInt(10)} ({@code :132}),
+     *  punches the mount ({@code func_70652_k(field_70154_o)}, {@code :133} —
+     *  the crab's own melee, 4.0 through the attack attribute, {@code :151-158})
+     *  and, on {@code nextFloat() < 0.2} ({@code :134}), dismounts it
+     *  ({@code func_110145_l}, {@code :135}).
+     *
+     *  <p>21.1.259's {@code Mob} declares no melee cooldown field (javap: the
+     *  ints are {@code ambientSoundTime}, {@code headAddRotation},
+     *  {@code headTargetRotation}), so the port carries the timer on
+     *  {@code LivingEntity#invulnerableTime} — the platform's
+     *  per-tick-decremented timer — whose extra effect (incoming damage is
+     *  dropped while it runs, so the crab is briefly damage-resistant while
+     *  riding a player) is the ledger row (BD-114).</p> */
     public static final int PUNCH_COOLDOWN_BASE = 10;
     public static final int PUNCH_COOLDOWN_JITTER = 10;
     public static final float PUNCH_DISMOUNT_CHANCE = 0.2F;
@@ -336,9 +358,12 @@ public final class EldritchCrabAiLogic {
     public static final ResourceLocation SOUND_STEP =
             ResourceLocation.withDefaultNamespace("entity/spider/step");
 
-    /** {@code :160-169} — after any applied damage, if the crab wears a shell
-     *  and its health at or below half, the shell breaks: helm cleared,
-     *  {@code itemChestCultistPlate} dropped, speed back to 0.3. The chest
+    /** {@code :160-169} — {@code func_70097_a} (hurt): after the super pass,
+     *  if the crab wears a shell and {@code func_110143_aJ() / func_110138_aP()
+     *  <= 0.5F} ({@code :162}) the shell breaks — {@code setHelm(false)}
+     *  ({@code :163}), {@code entityDropItem(new ItemStack(ConfigItems
+     *  .itemChestCultistPlate))} ({@code :164}) and the speed attribute back to
+     *  0.3 ({@code :165}). The chest
      *  plate is unregistered content (content-mapping row for
      *  {@code thaumcraft:chestcultistplate}, {@code not_started}), so the drop
      *  is gated on the live registry (BD-68's shape). */
@@ -373,24 +398,33 @@ public final class EldritchCrabAiLogic {
     public static final boolean MOB_TYPE_ARTHROPOD_PINNED_NOT_EXPRESSED = true;
 
     /**
-     * {@code :208-210} — {@code func_70687_e} is a one-rule predicate: a poison
-     * effect never applies ({@code Potion.field_76436_u} = {@code poison},
-     * mapping line 123; 1.21.1's carrier is the {@code MobEffects.POISON}
-     * holder). {@code :160-166} — {@code func_70688_a(List)} adds the second
-     * half: the {@code isSelfEffect} gate, the crab's own group-effect cast
-     * (a mob {@code DataWatcher} has no effect field), never applies. The
-     * platform has no mob-side applicability hook in 21.1.259, so both ride the
-     * crab's plain predicate and the {@link #isSelfEffect} rule (BD rows).
+     * {@code :208-210} — {@code func_70687_e(Potion)} is a one-rule predicate:
+     * {@code return potionID != Potion.field_76436_u} — the poison id, mapping
+     * {@code fields_1.7.10_mcp_stable_11.csv}, so a poison effect never applies
+     * and every other effect does. 1.21.1's poison carrier is the
+     * {@code MobEffects.POISON} holder.
+     *
+     * <p><b>The platform has no hook to carry it on.</b> 1.7.10's
+     * {@code EntityLiving#isPotionApplicable} is not overridable here:
+     * {@code LivingEntity#addEffect(MobEffectInstance)} is {@code public final}
+     * (javap on the compiled NeoForge jar) and NeoForge ships no
+     * potion-applicability event (the brewing package carries only
+     * {@code PotionBrewEvent} and {@code PlayerBrewedPotionEvent}). The rule
+     * therefore ships as this predicate — the data, pinned by the unit test and
+     * the game-test probe — and the in-world immunity is the ledger row
+     * (BD-115). No probe drives the in-world path, because that path is the
+     * platform, not the port.</p>
+     *
+     * <p>The 215 reference lines contain no {@code func_70688_a} and no
+     * self-effect rule, and the string {@code thaum998} appears nowhere in
+     * {@code reference/decompiled} (grepped): an earlier draft of this class
+     * cited a ":160-166 isSelfEffect" half that does not exist — {@code :160-169}
+     * is {@code func_70097_a}, the shell-break hurt. It is removed.</p>
      */
     public static final boolean POISON_IMMUNE = true;
-    public static final String SELF_EFFECT_MARKER = " thaum998";
 
     public static boolean effectApplies(final boolean isPoison) {
         return !isPoison;
-    }
-
-    public static boolean isSelfEffect(final String effectName) {
-        return effectName != null && effectName.contains(SELF_EFFECT_MARKER);
     }
 
     /** {@code :47-49} — sound volume: airborne → 0.5, grounded → 0.0. */

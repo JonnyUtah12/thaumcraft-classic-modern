@@ -41,7 +41,8 @@ class EldritchCrabAiLogicTest {
         assertEquals(EldritchCrabAiLogic.TRACK_RANGE_BLOCKS / 16,
                 EldritchCrabAiLogic.TRACK_RANGE_CHUNKS);
         assertEquals(32, EldritchCrabAiLogic.CRAB_MOD_INDEX);
-        // The ids: thaumcraft:eldritchcrab (content-mapping line 330).
+        // The ids: thaumcraft:eldritchcrab (content-mapping row 296 at this
+        // card's base; registration ConfigEntities.java:121, verified).
         assertEquals(ResourceLocation.fromNamespaceAndPath("thaumcraft", "eldritchcrab"),
                 EntityEldritchCrab.TYPE_ID);
         assertEquals("eldritchcrab", CatalogEldritchCrab.ELDRITCH_CRAB.getKey().location().getPath());
@@ -67,7 +68,7 @@ class EldritchCrabAiLogicTest {
 
     @Test
     void sizeAndXpAreTheOriginals() {
-        // setSize(0.8F, 0.6F) — :41; setExperienceValue(6) — :42.
+        // func_70105_a(0.8F, 0.6F) — :33; field_70728_aV = 6 — :34.
         assertEquals(0.8F, EldritchCrabAiLogic.WIDTH, 1.0E-4F);
         assertEquals(0.6F, EldritchCrabAiLogic.HEIGHT, 1.0E-4F);
         assertEquals(6, EldritchCrabAiLogic.XP);
@@ -96,11 +97,11 @@ class EldritchCrabAiLogicTest {
 
     @Test
     void goalSlotsAndParametersAreTheOriginals() {
-        // taskWriter: Swimming 0 (:37), LeapAtTarget(0.63F) 2 (:38), melee 3
-        // (:39, the crab's own AIEldritchCrab attack goal), Wander(0.8) 7 (:40),
-        // LookIdle 8 (:41). The melee goal's speed 1.0 / long-memory false is
-        // the shipped NearestAttackableTargetGoal-style pair the crab's goal
-        // class carries.
+        // taskWriter: Swimming 0 (:37), EntityAILeapAtTarget(0.63F) 2 (:38),
+        // AIAttackOnCollide(EntityLivingBase.class, 1.0, false) 3 (:39),
+        // EntityAIWander(0.8) 7 (:40), EntityAILookIdle 8 (:41) — the crab calls
+        // the vanilla attack goal, not a class of its own. The melee pair's
+        // speed 1.0 / long-memory false is the shipped MeleeAttackGoal mapping.
         assertEquals(0, EldritchCrabAiLogic.GOAL_SLOT_SWIM);
         assertEquals(2, EldritchCrabAiLogic.GOAL_SLOT_LEAP);
         assertEquals(0.63F, EldritchCrabAiLogic.LEAP_CHANCE, 1.0E-4F);
@@ -144,12 +145,19 @@ class EldritchCrabAiLogicTest {
     }
 
     @Test
-    void shellSpawnRollIsTheOriginalsHardModeThird() {
-        // :78-84 — a shelled crab on hard when worldRandom.nextFloat() < 0.33.
+    void shellSpawnRollIsHardGuaranteedAndAThirdForEverythingElse() {
+        // :72-76 — two branches, not one: HARD calls setHelm(true) with no roll
+        // at all (:72-73), and every other difficulty shells on
+        // field_70146_Z.nextFloat() < 0.33F (:75). A rule that reads the
+        // :72-73 arm as a modifier of the 0.33 roll — "hard AND under a third" —
+        // loses the guaranteed branch, which is what this pin catches.
         assertEquals(0.33F, EldritchCrabAiLogic.SHELL_CHANCE, 1.0E-4F);
-        assertTrue(EldritchCrabAiLogic.rollsShell(true, 0.3299F));
-        assertFalse(EldritchCrabAiLogic.rollsShell(true, 0.33F));
-        assertFalse(EldritchCrabAiLogic.rollsShell(false, 0.0F));
+        assertTrue(EldritchCrabAiLogic.rollsShell(true, 0.999F),
+                ":72-73 — HARD is the setHelm(true) branch, no random");
+        assertTrue(EldritchCrabAiLogic.rollsShell(true, 0.0F));
+        assertTrue(EldritchCrabAiLogic.rollsShell(false, 0.3299F), ":75");
+        assertFalse(EldritchCrabAiLogic.rollsShell(false, 0.33F), ":75 is strict <");
+        assertFalse(EldritchCrabAiLogic.rollsShell(false, 0.999F), ":75");
     }
 
     @Test
@@ -169,8 +177,9 @@ class EldritchCrabAiLogicTest {
 
     @Test
     void groupPotionGateIsHardTimesLocalDifficulty() {
-        // :86-95 — on hard, a 0.1 * localDifficulty chance to cast the group
-        // effect; never on easy / normal, never above the 0.1 base.
+        // :80-83 — HARD (:80) and a 0.1 * localDifficulty roll of the WORLD
+        // random (:81-82) arm the cast; never on easy / normal, and the ceiling
+        // is the 0.1 base times the local difficulty, not the bare 0.1.
         assertEquals(0.1F, EldritchCrabAiLogic.GROUP_POTION_BASE_CHANCE, 1.0E-4F);
         assertTrue(EldritchCrabAiLogic.rollsGroupPotion(true, 0.09F, 1.0F));
         assertFalse(EldritchCrabAiLogic.rollsGroupPotion(true, 0.1F, 1.0F));
@@ -180,7 +189,10 @@ class EldritchCrabAiLogicTest {
 
     @Test
     void theGroupEffectCascadeIsTheOriginalsCoinFlipAndQuarterReroll() {
-        // :96-115 — a coin flip disarms the whole cascade; with the flip won,
+        // :78-92 is the cast site and the vanilla carrier is
+        // net.minecraft.entity.monster.EntitySpider.GroupData (imported at :16,
+        // NOT in the decompiled TC tree — BD-113 pins the table as data);
+        // a coin flip disarms the whole cascade; with the flip won,
         // 0.25 of the picks re-roll before the marker lands.
         int verified = 0;
         int counted = 0;
@@ -231,8 +243,8 @@ class EldritchCrabAiLogicTest {
 
     @Test
     void theCrabIsTargetableAndAttacksOnlyCrabs() {
-        // :212-214 — canAttack is the crab-only rule; :154-157 keeps the crab
-        // attackable (no shell protection in the target test).
+        // :212-214 — func_142014_c is `el instanceof EntityEldritchCrab`, so the
+        // crab targets crabs and nothing else.
         assertTrue(EldritchCrabAiLogic.attacksOnlyCrabs(true));
         assertFalse(EldritchCrabAiLogic.attacksOnlyCrabs(false));
     }
@@ -241,30 +253,34 @@ class EldritchCrabAiLogicTest {
 
     @Test
     void mountTestIsTheOriginalsFullConjunction() {
-        // :118-131 — a free crab, not riding, no shell, a live player not
-        // riding anything, the crab airborne, the crab's feet at least half the
-        // player's height over the player's feet, within 4 (squared).
+        // :120-129 — one clause per case, and every case sits on the base's
+        // PASSING values so exactly the clause named is what fails: free crab
+        // (:120), a player found (:121), that player riding nobody (:122), the
+        // crab off the ground (:123), no shell (:124), the player alive (:125),
+        // the crab's feet at least half the player's height — 1.8 / 2 = 0.9 —
+        // above the player's feet (:126), squared distance under 4.0 (:127).
         final double h = 1.8;
+        final double y = 101.0;                      // 1.0 over the player, over 0.9
         assertTrue(EldritchCrabAiLogic.canMountPlayer(false, true, false, false, false,
-                false, 100.5, 100.0, h, 3.9));
+                false, y, 100.0, h, 3.9));
         assertFalse(EldritchCrabAiLogic.canMountPlayer(true, true, false, false, false,
-                false, 100.5, 100.0, h, 3.9));           // already riding
+                false, y, 100.0, h, 3.9));           // :120 already riding
         assertFalse(EldritchCrabAiLogic.canMountPlayer(false, false, false, false, false,
-                false, 100.5, 100.0, h, 3.9));           // no player
+                false, y, 100.0, h, 3.9));           // :121 no player
         assertFalse(EldritchCrabAiLogic.canMountPlayer(false, true, true, false, false,
-                false, 100.5, 100.0, h, 3.9));           // player rides something
+                false, y, 100.0, h, 3.9));           // :122 player rides something
         assertFalse(EldritchCrabAiLogic.canMountPlayer(false, true, false, true, false,
-                false, 100.5, 100.0, h, 3.9));           // grounded
+                false, y, 100.0, h, 3.9));           // :123 grounded
         assertFalse(EldritchCrabAiLogic.canMountPlayer(false, true, false, false, true,
-                false, 100.5, 100.0, h, 3.9));           // shelled
+                false, y, 100.0, h, 3.9));           // :124 shelled
         assertFalse(EldritchCrabAiLogic.canMountPlayer(false, true, false, false, false,
-                true, 100.5, 100.0, h, 3.9));            // dead player
+                true, y, 100.0, h, 3.9));            // :125 dead player
         assertFalse(EldritchCrabAiLogic.canMountPlayer(false, true, false, false, false,
-                false, 100.8, 100.0, h, 3.9));           // under half height
+                false, 100.8, 100.0, h, 3.9));       // :126 under half height
         assertFalse(EldritchCrabAiLogic.canMountPlayer(false, true, false, false, false,
-                false, 100.5, 100.0, h, 4.0));           // 4.0 is not under 4
+                false, y, 100.0, h, 4.0));           // :127 4.0 is not under 4
         assertFalse(EldritchCrabAiLogic.canMountPlayer(false, true, false, false, false,
-                false, 99.9, 100.0, h, 1.0));            // below the player
+                false, 99.9, 100.0, h, 1.0));        // :126 below the player
     }
 
     // ------------------------------------------------------------- punch
@@ -284,7 +300,7 @@ class EldritchCrabAiLogicTest {
 
     @Test
     void goldenSwordDropIsTheOriginalsModuloAndLootingArm() {
-        // :140-149 — a recently-hit crab drops the sword on nextInt(3)==0, on any
+        // :144-149 — a recently-hit crab drops the sword on nextInt(3)==0, on any
         // looting arm, and never un-hit.
         assertEquals(3, EldritchCrabAiLogic.GOLDEN_SWORD_ROLL_MODULO);
         assertEquals(0, EldritchCrabAiLogic.DROP_LOOTING_BASELINE);
@@ -301,8 +317,8 @@ class EldritchCrabAiLogicTest {
 
     @Test
     void fallImmunityWindowAndAirSupplyAreTheOriginals() {
-        // :116-118 — the first 20 ticks of life take no fall damage;
-        // :184-186 — 160 ticks of air.
+        // :116-118 — func_70071_h_ zeroes fallDistance for the first 20 ticks;
+        // :184-186 — the getMaxAirSupply override is 160.
         assertEquals(20, EldritchCrabAiLogic.FALL_IMMUNE_AGE_TICKS);
         assertEquals(160, EldritchCrabAiLogic.MAX_AIR);
     }
@@ -310,17 +326,16 @@ class EldritchCrabAiLogicTest {
     // --------------------------------------------------------- effects
 
     @Test
-    void poisonNeverAppliesAndTheSelfCastNeverApplies() {
-        // :208-210 — func_70687_e: poison never applies. :160-166 —
-        // func_70688_a: the crab's own group-effect cast (the " thaum998"
-        // marker) never applies to a mob.
+    void poisonNeverAppliesAndEveryOtherEffectDoes() {
+        // :208-210 — func_70687_e is one rule: potionID != poison. The 215
+        // reference lines have no second half (no func_70688_a, and the string
+        // "thaum998" appears nowhere in reference/decompiled — grepped), and
+        // 21.1.259 has no mob-side applicability hook to carry the rule on
+        // (LivingEntity#addEffect is final; BD-115), so this predicate is the
+        // whole port of the rule.
         assertTrue(EldritchCrabAiLogic.POISON_IMMUNE);
         assertFalse(EldritchCrabAiLogic.effectApplies(true));
         assertTrue(EldritchCrabAiLogic.effectApplies(false));
-        assertTrue(EldritchCrabAiLogic.isSelfEffect("thaum998 speed"));
-        assertFalse(EldritchCrabAiLogic.isSelfEffect("thaum998speed"));
-        assertFalse(EldritchCrabAiLogic.isSelfEffect("speed"));
-        assertFalse(EldritchCrabAiLogic.isSelfEffect(null));
     }
 
     @Test
