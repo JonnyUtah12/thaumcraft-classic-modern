@@ -76,7 +76,12 @@ class ParticleSpriteSlicingTest {
             new CellParticle("bore_sparkle", "bore_sparkle", cells(64, 67)),  // FXBoreSparkle.java:56-59
             new CellParticle("vis_sparkle", "vis_sparkle", cells(128, 143)),  // FXVisSparkle.java:49-52 (row 8)
             new CellParticle("essentia_trail", "essentia_trail", new int[] {25}), // FXEssentiaTrail.java:69-70
-            new CellParticle("drop", "drop", cells(112, 114)));               // FXDrop.java:27,52,58,73
+            new CellParticle("drop", "drop", cells(112, 114)),               // FXDrop.java:27,52,58,73
+            // TC-M7-02-c-s-f3: the rune decal draws u = runeIndex%16/16 at
+            // v = 0.375 (FXBlockRunes.java:50-51) — row 6, columns 0..15 of the
+            // sheet grid, i.e. cells 96..111. The ctor's runeIndex roll is
+            // 224..239 (line 34); only its %16 column reaches the texture.
+            new CellParticle("rune", "rune", cells(96, 111)));
 
     /**
      * TC-M7-02-c-s-f1b: the wisp and the arcing wisp draw regions of the
@@ -88,7 +93,7 @@ class ParticleSpriteSlicingTest {
     private static final Map<String, String> SUBSTITUTE_PARTICLES = Map.of(
             "wisp", "sparkle_0",
             "wisp_arcing", "sparkle_0",
-            // TC-M7-02-c-s-f5 (BD-81): FXBurst's strip is the node renderer's own
+            // TC-M7-02-c-s-f5 (BD-84): FXBurst's strip is the node renderer's own
             // sheet, TileNodeRenderer.nodetex (FXBurst.java:26-31), which the
             // reference tree does not ship. The definition stands in on the
             // sliced glow frame; the class's 32-frame count (u = age % 32 / 32)

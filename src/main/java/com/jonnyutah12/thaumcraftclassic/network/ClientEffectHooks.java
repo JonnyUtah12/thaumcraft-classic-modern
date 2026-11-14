@@ -5,6 +5,7 @@ import com.jonnyutah12.thaumcraftclassic.client.fx.TcBeamGeometry;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcBeamParticle;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcEffects;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcFxPlans;
+import com.jonnyutah12.thaumcraftclassic.client.fx.FxClientSettings;
 import com.jonnyutah12.thaumcraftclassic.client.fx.FxWispRules;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXWardBlockPayload;
 import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
@@ -167,7 +168,7 @@ public final class ClientEffectHooks {
      * 1.21.1's {@code ParticleStatus}.
      */
     private static int particleSetting() {
-        return Minecraft.getInstance().options.particles().get().getId();
+        return FxClientSettings.particleSetting();
     }
 
     // --- the wisp family (original ClientProxy.wispFX / wispFXEG / sourceStreamFX) ---

@@ -85,9 +85,17 @@ public final class TcParticleProviders {
         event.registerSpriteSet(ModParticles.SONIC.get(), TcSonicParticle.Provider::new);
         //   drop   cells 112..114 (FXDrop.java:27,52,58,73 indices 112/113/114)
         //   burst  the 32-frame node-sheet strip u = age%32/32 (FXBurst.java:31),
-        //          standing in on the glow sparkle frames (BD-81)
+        //          standing in on the glow sparkle frames (BD-84)
         event.registerSpriteSet(ModParticles.DROP.get(), TcDropParticle.Provider::new);
         event.registerSpriteSet(ModParticles.BURST.get(), TcBurstParticle.Provider::new);
+        // TC-M7-02-c-s-f3: the rune decal. Its JSON frame list is the 16-cell
+        // row the original's uv addresses (FXBlockRunes.java:51-54: u =
+        // runeIndex % 16 / 16, v = 0.375 -> cells 96..111 of the sheet grid),
+        // sliced at build time (D-004) and proven pixel-equal by
+        // ParticleSpriteSlicingTest. The particle picks the frame itself —
+        // sprites.get(frame, 16) — because the original's runeIndex is rolled
+        // once per particle (line 33), not advanced per tick.
+        event.registerSpriteSet(ModParticles.RUNE.get(), TcRuneParticle.Provider::new);
     }
 
     private TcParticleProviders() {

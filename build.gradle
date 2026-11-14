@@ -299,6 +299,11 @@ def originalParticleCells = [
         'vis_sparkle'   : (128..143).toList(),   // FXVisSparkle.java:49-52 part=age%16, v=0.5 -> row 8
         'essentia_trail': [25],                  // FXEssentiaTrail.java:69-70 the trail's single cell
         'drop'          : (112..114).toList(),   // FXDrop.java:27,52,58,73 texture index 112/113/114
+        // TC-M7-02-c-s-f3-a: the rune decal. FXBlockRunes draws u =
+        // runeIndex%16/16 at v = 0.375 (FXBlockRunes.java:51-54) — row 6,
+        // columns 0..15 = cells 96..111 of the sheet grid, all 16 frames,
+        // picked once per particle by the ctor's runeIndex roll (line 33).
+        'rune'        : (96..111).toList(),
 ]
 // TC-M7-02-c-s-f5: the sonic ripple is a whole-file strip, not grid cells —
 // FXSonic draws the OBJ shell textured by models/ripple1..15.png

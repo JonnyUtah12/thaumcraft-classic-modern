@@ -25,7 +25,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * drag). The last branch is the death-in-liquid test (lines 74-84): a mote that
  * enters a non-water liquid below its surface level dies.</p>
  *
- * <p>1.21.1 seam (BD-79): the class overrides {@code moveEntity} with a
+ * <p>1.21.1 seam (BD-82): the class overrides {@code moveEntity} with a
  * hand-rolled collision walk whose only non-vanilla rule is to ignore the
  * jar block's collision (line 89). The port rides the platform's own physics,
  * so that jar exception is not reproduced; everything else in the walk is the

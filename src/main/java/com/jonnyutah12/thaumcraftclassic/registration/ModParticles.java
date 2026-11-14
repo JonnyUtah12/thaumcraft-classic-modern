@@ -19,6 +19,7 @@ import com.jonnyutah12.thaumcraftclassic.client.fx.TcBubbleOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcGlowSparkleOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcGolemBeamOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcParticleType;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcRuneOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcShieldOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcSparkleOptions;
 import com.jonnyutah12.thaumcraftclassic.client.fx.TcWardOptions;
@@ -254,6 +255,19 @@ public final class ModParticles {
             PARTICLE_TYPES.register("burst",
                     () -> new TcParticleType<>(false, TcBurstOptions.MAP_CODEC,
                             TcBurstOptions.STREAM_CODEC));
+
+    /**
+     * TC-M7-02-c-s-f3: the rune decal (the original's {@code FXBlockRunes},
+     * spawned through {@code ClientProxy.blockRunes:974-978}) — the effect the
+     * thaumometer scan, the warding stone's ambient loop, the Eldritch trap and
+     * the running infusion matrix all send. Motion is zeroed by the ctor
+     * (FXBlockRunes.java:25) and integrated by its own {@code onUpdate}, so
+     * velocity is irrelevant, and its 16 frames are the {@code runeIndex % 16}
+     * columns of one sheet row (lines 51-54), sliced at build time (D-004).
+     */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<TcRuneOptions>> RUNE =
+            PARTICLE_TYPES.register("rune",
+                    () -> new TcParticleType<>(false, TcRuneOptions.MAP_CODEC, TcRuneOptions.STREAM_CODEC));
 
     private ModParticles() {
     }

@@ -22,7 +22,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * 0.75. The port reproduces the strip as the frame list, the billboard as
  * {@code quadSize} and the additive blend as the translucent sheet.</p>
  *
- * <p>Art seam (BD-81, shared with the wisp stand-in): the strip's source sheet is
+ * <p>Art seam (BD-84, shared with the wisp stand-in): the strip's source sheet is
  * {@code TileNodeRenderer.nodetex}, which the reference tree does not ship
  * (no {@code nodetex} under reference/assets), so the frames stand in on the
  * Thaumcraft glow sparkle frame; the frame COUNT — 32, indexed by
