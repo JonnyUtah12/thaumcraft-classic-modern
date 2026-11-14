@@ -29,8 +29,9 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  * ({@code MindSpiderAiLogicTest}) and in the world
  * ({@code MindSpiderMobGameTest}).</p>
  *
- * <p>The 0.3 render scale ({@code spiderScaleAmount()}, {@code :67-70}) and the
- * {@code RenderMindSpider} handler are TC-M7-03-s; the
+ * <p>The 0.3 render scale ({@code spiderScaleAmount()}, {@code :67-70}) and this
+ * mob's client renderer ship on TC-M7-03-r (kanban {@code t_32366a27}), which
+ * pairs the mob with its renderer under {@code client/entity/}; the
  * {@code thaumcraft:spawnegg.mindspider} egg row (the ledger's
  * {@code Thaumcraft:spawnegg.MindSpider}) is the spawn-egg card's, so no item
  * lands here. The mind spider owns no spawn placement of its own — the original
