@@ -191,12 +191,19 @@ class EldritchCrabAiLogicTest {
     void theGroupEffectCascadeIsTheOriginalsCoinFlipAndQuarterReroll() {
         // :78-92 is the cast site and the vanilla carrier is
         // net.minecraft.entity.monster.EntitySpider.GroupData (imported at :16,
-        // NOT in the decompiled TC tree — BD-113 pins the table as data);
-        // a coin flip disarms the whole cascade; with the flip won,
+        // NOT in the decompiled TC tree — BD-114 pins the carrier and the table
+        // as port data); a coin flip arms the whole cascade; with the flip won,
         // 0.25 of the picks re-roll before the marker lands.
+        // The seeds are SCATTERED by the golden-ratio constant, not enumerated:
+        // java.util.Random's first nextBoolean() over SEQUENTIAL seeds is
+        // quasi-constant (measured on this platform: seeds 0..3999 all flip the
+        // same way), so a distribution probe that enumerates seeds measures the
+        // LCG's stride, not the cascade — the drafted test's "coin flip split:
+        // 0" is exactly that measurement.
         int verified = 0;
         int counted = 0;
-        for (long seed = 0; seed < 4000; seed++) {
+        for (long i = 0; i < 4000; i++) {
+            final long seed = i * 0x9E3779B97F4A7C15L;
             final boolean flip = RandomSource.create(seed).nextBoolean();
             final int marker = EldritchCrabAiLogic.rollGroupEffect(RandomSource.create(seed));
             if (!flip) {
