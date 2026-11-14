@@ -79,3 +79,7 @@ origin/wt/t_6160444c,7401d0ecd3ee3d5b9b6200352391fdd4fc49bed4,BD-109,BD-109,t_61
 origin/wt/t_6160444c,7401d0ecd3ee3d5b9b6200352391fdd4fc49bed4,BD-110,BD-110,t_6160444c,yes,Energy Orb: the homing step reads the live bounding box
 origin/wt/t_6160444c,7401d0ecd3ee3d5b9b6200352391fdd4fc49bed4,BD-111,BD-111,t_6160444c,yes,Energy Orb: the spawn payload interface and the registration triple
 origin/wt/t_6160444c,c7a7255f4bfaaae36b1acb0f35e5dc62a471e8ee,BD-112,BD-112,t_6160444c,yes,"Crimson cultists: the original's slot-8 goal collision ships as two goals"
+origin/wt/t_fc16890d,be184c5c36977f7868d3ddf6158c73175125a514,BD-113,BD-113,t_23520cdc,yes,"Eldritch Crab: the poison immunity has no mob-side hook, and the drafted self-effect half is an invention"
+origin/wt/t_fc16890d,be184c5c36977f7868d3ddf6158c73175125a514,BD-114,BD-114,t_23520cdc,yes,"Eldritch Crab: the vanilla spider group-data carrier is opaque in 21.1.259, so the port ships its own marker carrier"
+origin/wt/t_fc16890d,be184c5c36977f7868d3ddf6158c73175125a514,BD-115,BD-115,t_23520cdc,yes,"Eldritch Crab: the claw-disarm client id 160 stays unregistered, so the strip's item leg hands out nothing"
+origin/wt/t_fc16890d,be184c5c36977f7868d3ddf6158c73175125a514,BD-116,BD-116,t_23520cdc,yes,"Eldritch Crab: the shell-break hurt rides the family's hurt seam, not vanilla's `hurt`"
