@@ -38,6 +38,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -522,6 +525,38 @@ public final class PechMobGameTest {
         helper.succeed();
     }
 
+    // ------------------------------------------------------------------
+    // The blast's flight, stated from the ORIGINAL's literals. The probe below never
+    // reads blast.getGravity(): a gravity edit has to redden the probe, not take the
+    // probe along with it. 1.7.10 multiplies the motion by 0.99F every tick
+    // (Entity.java:333 motionTo) and 1.21.1 multiplies by the same float in
+    // ThrowableProjectile.java:67-70; Vec3#scale(double) and applyGravity's
+    // add(0.0, -getGravity(), 0.0) widen that float to double, so the recurrence
+    // y(n+1) = y(n) * 0.99F − 0.025F evaluated in double arithmetic is BIT-identical
+    // to the platform. Measured after 6 ticks: y-motion -0.14629963215951283 and the
+    // recurrence -0.14629963215951283; x-motion 0.4707401019085442 and 0.5 * 0.99F^6 =
+    // 0.4707401019085442. (What this probe carried before was a double-0.99 geometric
+    // sum built from PechBlastAiLogic.GRAVITY — the product's own getter — off by
+    // 3.5e-9, which a 1e-5 tolerance hid.)
+    private static final float BLAST_GRAVITY_1710 = 0.025F;      // EntityPechBlast.java:38-40
+    private static final float BLAST_DRAG_1710 = 0.99F;          // ThrowableProjectile.java:67
+    private static final double BLAST_LAUNCH_X_MOTION = 0.5;     // this probe's hand launch
+    private static final int BLAST_SAMPLE_TICKS = 6;
+    private static final double BLAST_MOTION_TOLERANCE = 1.0E-9;
+    // The cells the blast's hit scan can touch while the verdict is still pending, and
+    // therefore the cells this probe claims. On each of its ticks the projectile scans
+    // from position() to position() + deltaMovement (ThrowableProjectile.java:46-50 →
+    // ProjectileUtil.java:24-29, 48-56), so x = 1.5 + 50*(1 − 0.99^n) reaches 12.2 at
+    // n = 24 and y = 3.5 − 0.025*n²/2 reaches 1.4 at n = 16, while the verdict needs
+    // n ≥ 6. The z motion is 0, so the ray never leaves cell z = 1.
+    private static final int BLAST_CORRIDOR_FIRST_X = 1;
+    private static final int BLAST_CORRIDOR_LAST_X = 12;
+    private static final int BLAST_CORRIDOR_FIRST_Y = 1;
+    private static final int BLAST_CORRIDOR_LAST_Y = 4;
+    private static final int BLAST_CORRIDOR_Z = 1;
+    private static final int PAD_SIDE = 24;                      // "empty_24"
+    private static final List<BlockPos> BLAST_CORRIDOR = blastCorridorCells();
+
     @GameTest(template = "empty_24", timeoutTicks = 400)
     public static void pechBlastFliesAtItsOwnSpeedAndDropsAtItsOwnGravity(final GameTestHelper helper) {
         // empty_24, not empty: thaumcraft:empty is a 1x1x1 template (its NBT
@@ -530,11 +565,74 @@ public final class PechMobGameTest {
         // ticks — the first run of this probe read y-motion 0.0 after 6 server
         // ticks. empty_24 (24x24x24) is this repo's template for probes that
         // measure a real tick cadence.
+        //
+        // WHY THIS PROBE IS A CLAIM, NOT A SLEEP. CI run 43623936502 (curios arm,
+        // tip 3c804129) read y-motion -0.02500000037252903 where the local arm read
+        // -0.14629963215951283. That value is the ORIGINAL's gravity applied EXACTLY
+        // once, so the blast had been ticked once and then never again: not a sample
+        // taken too early — a projectile killed on its first tick. The kill runs at
+        // the START of that tick's work: ThrowableProjectile.java:46-50 is
+        // super.tick() (tickCount++) and then the hit scan at the CURRENT position
+        // with the CURRENT motion, and the entity channel is open for a foreign mob
+        // (Projectile.java:257-264 canHitEntity, Entity.java:1663-1665
+        // canBeHitByProjectile, LivingEntity.java:3066-3068 isPickable; only the
+        // owner pech is filtered, as its own root vehicle — Entity.java:3202-3204).
+        // The hit goes to EntityPechBlast#onHit, which scans ±2, damages what is not
+        // a pech and discards the blast (EntityPechBlast.java:95-123). The discard
+        // does not abort the tick, so that tick's drag and gravity complete: y-motion
+        // -0.025F, tickCount 1, isRemoved() true, frozen from then on.
+        //
+        // Reproduced on the shipped probe by planting ONE Cow centred at relative
+        // (2.4, 3, 1.5) — the cell the launch ray (1.5 → 2.0, y 3.5, z 1.5) crosses:
+        // red with the CI line byte-for-byte, the sampler showing blastTick=1,
+        // removed=true, y=-0.02500000037252903 from probe tick 1. Two measured edges
+        // of the same channel, pinned here because they set the claim's shape:
+        //   • a mob standing in the launch cell itself is NOT hit — the entity scan
+        //     this path uses (ProjectileUtil.java:116-135) inflates the target box by
+        //     0.3 and has no start-inside fallback (unlike the shooter variant at
+        //     :68-102, which tests aabb.contains(startVec) at :77-82), and AABB#clip
+        //     returns nothing for a ray with a zero component inside a box. Planted
+        //     at the launch cell, the Cow left the blast flying all 6 ticks.
+        //   • a BLOCK in a path cell is the same kill one tick later: a stone in
+        //     (2,3,1) reddened the probe with y frozen at -0.04975000097975135 (the
+        //     clip is ClipContext.Block.COLLIDER, ProjectileUtil.java:49).
+        //
+        // The pad area is shared, which is what makes the intruder a batch property
+        // and not a product property: the harness reuses one grid area across batches
+        // and clearSpaceForStructure clears only BLOCK space in the current
+        // structure's box (GameTestStructureInfo.java:269-275; measured in
+        // t_b51c488c — a structure block and two mobs from a probe 36 grid cells
+        // away, at the same Y, standing inside this pad). A 1x1x1 probe's stride is
+        // 6 cells, so sixteen of them pack inside this 24-wide footprint, and their
+        // mobs spawn in cells of THIS pad. The curios arm runs 502 probes; that is
+        // the arm dependence the card measured.
+        //
+        // So the probe CLAIMS the cells its flight can touch — swept of foreign
+        // entities, cleared of blocks, watched every tick — and reads the blast's OWN
+        // tickCount for the physics, so no probe-tick budget is part of the arc. The
+        // harness's tick runs after the entity pass (measured: probe tick 1 sees
+        // blast tick 1), so the sweep that matters is the one that runs at setup.
         final ServerLevel level = helper.getLevel();
         @SuppressWarnings("unchecked")
         final EntityType<EntityPechBlast> type = (EntityType<EntityPechBlast>) registered(helper, "pechblast");
+        final BlockPos at = pad(helper, BLAST_CORRIDOR_FIRST_X, 3, BLAST_CORRIDOR_Z);
+        helper.assertTrue(level.isLoaded(at), "the 24³ pad is not loaded at " + show(at));
+        // The layout is claimed, not asserted on: log what the batch handed over, then take
+        // the cells. A block in a cell the hit scan touches ends the flight on that tick
+        // (ThrowableProjectile.java:47-50 → EntityPechBlast#onHit → discard,
+        // EntityPechBlast.java:95-123), and the same is true of a mob (the reproduction
+        // above), so the probe cannot afford to sample a pad it did not clear.
+        final List<String> handedOver = blastCorridorBlocks(helper);
+        if (!handedOver.isEmpty()) {
+            ThaumcraftClassic.LOGGER.info("[t_89eee704] the pad was handed over with blocks in the"
+                    + " pech-blast flight corridor: {}", handedOver);
+        }
+        final int sweptAtSetup = sweepBlastCorridor(helper, List.of());
+        if (sweptAtSetup > 0) {
+            ThaumcraftClassic.LOGGER.info("[t_89eee704] the pech-blast pad was handed over with {}"
+                    + " foreign entities in the flight corridor; they are discarded", sweptAtSetup);
+        }
         final EntityPech pech = pech(helper);
-        final BlockPos at = pad(helper, 1, 3, 1);
         final EntityPechBlast blast = new EntityPechBlast(type, level, pech, 1, 0, false);
         blast.moveTo(at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5, 0.0F, 0.0F);
         blast.setDeltaMovement(new Vec3(0.5, 0.0, 0.0));
@@ -542,29 +640,181 @@ public final class PechMobGameTest {
         helper.assertTrue(blast.strength() == 1 && blast.durationArg() == 0,
                 "the pech's launch is new EntityPechBlast(w, this, 1, 0, roll) (EntityPech.java:481) "
                         + "— strength/duration read " + blast.strength() + "/" + blast.durationArg());
-        helper.runAtTickTime(helper.getTick() + 6L, () -> {
-            // :38-40 — the fall per tick is 0.025, HALF the vanilla arrow's.
-            // ThrowableProjectile multiplies the motion by 0.99 every tick
-            // (ThrowableProjectile.java:67), so after 6 ticks the y-motion is
-            // -0.025 * (1 + 0.99 + ... + 0.99^5), not -6 * 0.025.
-            double drag = 0.0;
-            double term = 1.0;
-            for (int i = 0; i < 6; i++) {
-                drag += term;
-                term *= 0.99;
+        for (final BlockPos cell : BLAST_CORRIDOR) {
+            helper.setBlock(cell, Blocks.AIR);
+        }
+        // Precondition, named before any physics: after the claim the cells have to be air.
+        helper.assertTrue(blastCorridorBlocks(helper).isEmpty(),
+                "the pech blast's flight corridor is not free air after the claim: "
+                        + blastCorridorBlocks(helper));
+        // The standing fixture: a foreign mob in the pad, planted after the sweep — so
+        // the sweep cannot be what removed it — and 3 blocks off the ray, which the
+        // probe measures is outside the scan's reach (see the two edges above). The
+        // verdict passes with this mob alive in the pad, and the census assert below
+        // fails if it is not really there, so a pad that was never contaminated cannot
+        // be what makes this probe green.
+        final Cow fixture = new Cow(EntityType.COW, level);
+        fixture.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 3.5, 0.0F, 0.0F);
+        fixture.setNoGravity(true);
+        level.addFreshEntity(fixture);
+        helper.onEachTick(() -> {
+            // The batch is live in the same area for the whole flight, so an intruder
+            // can arrive after the setup sweep. Re-claim and name it at the tick it shows.
+            final int swept = sweepBlastCorridor(helper, List.of(pech, blast, fixture));
+            if (swept > 0) {
+                ThaumcraftClassic.LOGGER.info("[t_89eee704] re-claimed the pech-blast flight corridor:"
+                        + " {} foreign entities discarded on tick {}", swept, helper.getTick());
             }
-            helper.assertTrue(Math.abs(blast.getDeltaMovement().y + PechBlastAiLogic.GRAVITY * drag) < 1.0E-5,
-                    "after 6 server ticks the blast's y-motion is not -0.025 * (1 + 0.99 + ... + 0.99^5) "
-                            + "(:38-40 with ThrowableProjectile.java:67 drag) — expected "
-                            + (-PechBlastAiLogic.GRAVITY * drag) + ", got " + blast.getDeltaMovement().y);
-            helper.assertTrue(blast.getDeltaMovement().x > 0.4,
-                    "the blast lost its launch motion: x-motion is " + blast.getDeltaMovement().x);
-            helper.assertTrue(!blast.isRemoved(),
-                    "the blast vanished inside 6 ticks — the 500-tick age-out (:79-81) is not the rule");
-            blast.discard();
-            pech.discard();
-            helper.succeed();
+            final List<String> intruders = blastCorridorBlocks(helper);
+            helper.assertTrue(intruders.isEmpty(),
+                    "a block appeared in the pech blast's claimed flight corridor: " + intruders
+                            + " — the hit scan that touches a block ends the flight on that tick"
+                            + " (ThrowableProjectile.java:47-50 → EntityPechBlast#onHit → discard,"
+                            + " EntityPechBlast.java:95-123)");
+            // The sample is read on the blast's OWN tick count, and it is read from a
+            // scheduled task: the harness fails the probe on the spot when a task throws
+            // (GameTestInfo.java:127-136), so a physics red names the physics. Kept in the
+            // success sequence, the same assert is only read at the timeout (
+            // :142-149), where a real gravity defect reports the layout arm that happened
+            // to be throwing last — measured on the gravity mutation, which reddened with
+            // "the blast died on tick 18" instead of the y-motion line.
+            if (blast.tickCount >= BLAST_SAMPLE_TICKS) {
+                assertFlightOnSampleTick(helper, level, blast, fixture);
+            }
         });
+        // The gate, not the measurement: the pad is ticking the blast, the pad is the pad
+        // this probe planted into, the blast is still flying, and it has ticked the sample
+        // count. No probe-tick budget is part of the arc — the blast's own tickCount is.
+        helper.succeedWhen(() -> {
+            helper.assertTrue(level.isPositionEntityTicking(blast.blockPosition()),
+                    "the blast's cell " + show(blast.blockPosition()) + " is not entity-ticking, so no"
+                            + " probe-tick budget can buy the flight — the pad is not vouched at "
+                            + show(helper.absolutePos(new BlockPos(0, 0, 0))));
+            helper.assertTrue(fixture.isAlive() && !fixture.isRemoved(),
+                    "the planted fixture mob is gone from " + show(fixture.blockPosition())
+                            + " — the pad this probe asserted on is not the pad it planted into; census "
+                            + padEntities(helper));
+            helper.assertTrue(!blast.isRemoved(),
+                    "the blast died on tick " + blast.tickCount + " at " + show(blast.blockPosition())
+                            + " — on 1.7.10's table a blast launched into an empty pad hits nothing"
+                            + " (EntityPechBlast.java:95-118 skips EntityPech); the claimed corridor holds "
+                            + blastCorridorBlocks(helper) + " and the pad census is " + padEntities(helper));
+            helper.assertTrue(blast.tickCount >= BLAST_SAMPLE_TICKS,
+                    "the blast has ticked " + blast.tickCount + " of the " + BLAST_SAMPLE_TICKS
+                            + " ticks this sample needs; it is added on the probe's own tick, so its first"
+                            + " tick lands on the next level tick — the pad is not ticking it at "
+                            + show(blast.blockPosition()));
+        });
+    }
+
+    /**
+     * The flight's physics, read on the blast's own tick. Preconditions first and each
+     * one naming what it measured, so a layout failure reads as a layout failure and a
+     * physics failure reads as a physics failure.
+     */
+    private static void assertFlightOnSampleTick(final GameTestHelper helper, final ServerLevel level,
+            final EntityPechBlast blast, final Cow fixture) {
+        final int ticks = blast.tickCount;
+        helper.assertTrue(level.isPositionEntityTicking(blast.blockPosition()),
+                "the blast's cell " + show(blast.blockPosition()) + " is not entity-ticking on its tick "
+                        + ticks + " — the pad is not vouched at " + show(helper.absolutePos(new BlockPos(0, 0, 0))));
+        helper.assertTrue(fixture.isAlive() && !fixture.isRemoved(),
+                "the planted fixture mob is gone from " + show(fixture.blockPosition())
+                        + " — the pad this probe asserted on is not the pad it planted into; census "
+                        + padEntities(helper));
+        helper.assertTrue(!blast.isRemoved(),
+                "the blast died on tick " + ticks + " at " + show(blast.blockPosition())
+                        + " — on 1.7.10's table a blast launched into an empty pad hits nothing"
+                        + " (EntityPechBlast.java:95-118 skips EntityPech); the claimed corridor holds "
+                        + blastCorridorBlocks(helper) + " and the pad census is " + padEntities(helper));
+        final double expectedY = blastFallMotionAfter(ticks);
+        helper.assertTrue(Math.abs(blast.getDeltaMovement().y - expectedY) <= BLAST_MOTION_TOLERANCE,
+                "after " + ticks + " of the blast's own ticks its y-motion is not the original's"
+                        + " recurrence y = y*0.99F − 0.025F (EntityPechBlast.java:38-40 with"
+                        + " ThrowableProjectile.java:67 drag) — expected " + expectedY + ", got "
+                        + blast.getDeltaMovement().y);
+        final double expectedX = BLAST_LAUNCH_X_MOTION * Math.pow(BLAST_DRAG_1710, ticks);
+        helper.assertTrue(Math.abs(blast.getDeltaMovement().x - expectedX) <= BLAST_MOTION_TOLERANCE,
+                "after " + ticks + " of the blast's own ticks its x-motion is not 0.5*0.99F^n"
+                        + " (ThrowableProjectile.java:67) — expected " + expectedX + ", got "
+                        + blast.getDeltaMovement().x);
+    }
+
+    /** A position in failure text, absolute, so a red line can be pasted into a world. */
+    private static String show(final BlockPos pos) {
+        return pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
+    }
+
+    /** The original's fall: y(0) = 0, y(n+1) = y(n) * 0.99F − 0.025F, in double arithmetic. */
+    private static double blastFallMotionAfter(final int ticks) {
+        double motion = 0.0;
+        for (int tick = 0; tick < ticks; tick++) {
+            motion = motion * BLAST_DRAG_1710 - BLAST_GRAVITY_1710;
+        }
+        return motion;
+    }
+
+    private static List<BlockPos> blastCorridorCells() {
+        final List<BlockPos> cells = new ArrayList<>();
+        for (int x = BLAST_CORRIDOR_FIRST_X; x <= BLAST_CORRIDOR_LAST_X; x++) {
+            for (int y = BLAST_CORRIDOR_FIRST_Y; y <= BLAST_CORRIDOR_LAST_Y; y++) {
+                cells.add(new BlockPos(x, y, BLAST_CORRIDOR_Z));
+            }
+        }
+        return List.copyOf(cells);
+    }
+
+    private static AABB blastCorridorBox(final GameTestHelper helper) {
+        final BlockPos origin = helper.absolutePos(new BlockPos(0, 0, 0));
+        return new AABB(origin.getX() + BLAST_CORRIDOR_FIRST_X, origin.getY() + BLAST_CORRIDOR_FIRST_Y,
+                origin.getZ() + BLAST_CORRIDOR_Z,
+                origin.getX() + BLAST_CORRIDOR_LAST_X + 1, origin.getY() + BLAST_CORRIDOR_LAST_Y + 1,
+                origin.getZ() + BLAST_CORRIDOR_Z + 1);
+    }
+
+    /**
+     * Discards everything in the claimed corridor that is not one of this probe's own
+     * entities — exactly what the harness's own clearSpaceForStructure does to BLOCK
+     * space for the current structure's box (GameTestStructureInfo.java:269-275,
+     * measured in t_b51c488c). Players stay: a registered player is a shared fixture
+     * and removing one floods the network system with remove packets.
+     */
+    private static int sweepBlastCorridor(final GameTestHelper helper, final List<Entity> keep) {
+        final List<Entity> strays = helper.getLevel().getEntities((Entity) null, blastCorridorBox(helper),
+                scanned -> !(scanned instanceof Player) && !keep.contains(scanned));
+        for (final Entity stray : strays) {
+            ThaumcraftClassic.LOGGER.info("[t_89eee704] discarding {} at {} from the pech-blast flight corridor",
+                    BuiltInRegistries.ENTITY_TYPE.getKey(stray.getType()).getPath(),
+                    show(stray.blockPosition()));
+            stray.discard();
+        }
+        return strays.size();
+    }
+
+    private static List<String> blastCorridorBlocks(final GameTestHelper helper) {
+        final ServerLevel level = helper.getLevel();
+        final List<String> found = new ArrayList<>();
+        for (final BlockPos cell : BLAST_CORRIDOR) {
+            final BlockPos absolute = helper.absolutePos(cell);
+            final BlockState state = level.getBlockState(absolute);
+            if (!state.isAir()) {
+                found.add(show(absolute) + "=" + BuiltInRegistries.BLOCK.getKey(state.getBlock()));
+            }
+        }
+        return found;
+    }
+
+    private static List<String> padEntities(final GameTestHelper helper) {
+        final BlockPos origin = helper.absolutePos(new BlockPos(0, 0, 0));
+        final List<String> census = new ArrayList<>();
+        for (final Entity entity : helper.getLevel().getEntities((Entity) null,
+                new AABB(origin.getX(), origin.getY(), origin.getZ(),
+                        origin.getX() + PAD_SIDE, origin.getY() + PAD_SIDE, origin.getZ() + PAD_SIDE),
+                scanned -> true)) {
+            census.add(BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).getPath()
+                    + "@" + show(entity.blockPosition()));
+        }
+        return census;
     }
 
     @GameTest(template = "empty_24", timeoutTicks = 400)
