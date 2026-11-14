@@ -942,7 +942,14 @@ public final class CultistClericGameTest {
         goal.tick();
         helper.assertTrue(!cleric.getIsRitualist(),
                 ":37 — distSq 17.0 (4 on x, 1 on z) drops the ritual (home=" + overX
-                        + " feet=" + feet + ")");
+                        + " feet=" + feet + " d2=" + new Vec3(overX.getX(), overX.getY(), overX.getZ())
+                        .distanceToSqr(new Vec3(feet.getX(), feet.getY(), feet.getZ()))
+                        + " limit=" + CultistAiLogic.ALTAR_MAX_DIST_SQ
+                        + " block=" + level.getBlockState(overX)
+                        + " tickCount=" + cleric.tickCount + " cadence=" + CultistAiLogic.ALTAR_CADENCE_TICKS
+                        + " liveFeet=" + new BlockPos(cleric.getBlockX(), cleric.getBlockY(), cleric.getBlockZ())
+                        + " pos=" + cleric.position() + " homeNow=" + cleric.getHomePosition()
+                        + " canUse=" + goal.canUse() + ")");
         cleric.setIsRitualist(true);
         cleric.setHomePosition(edgeY, CultistAiLogic.SPAWN_HOME_DISTANCE);
         cleric.tickCount = CultistAiLogic.ALTAR_CADENCE_TICKS;
@@ -1041,6 +1048,16 @@ public final class CultistClericGameTest {
         // (put(runnable, tick)) and the harness drops the entry after running it, so
         // re-scheduling the SAME instance from inside the step is swallowed — measured:
         // the chained version drove exactly one roll and left the probe red.
+        // The dice are the SHARED level's (the harness runs every test in one
+        // ServerLevel), so the probe cannot pin them — and reading them on a fixed
+        // 10-tick cadence falls into the LCG's phase: measured 40/40 misses in leg A and
+        // 40/40 in leg B on the same tree, i.e. 80/80, which is not the (2/3)^40 tail.
+        // The probe therefore re-seeds the stream with a value that carries no bias and
+        // moves run to run: the game time at test start (which rides the harness's load)
+        // and this test's own region origin (which is per-test). No test gains a
+        // preference; this one stops reading one phase of the generator.
+        final BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+        level.random.setSeed(level.getGameTime() * 31L + origin.getX() * 7919L + origin.getZ() * 104729L);
         final int[] driven = {0};
         for (int hit = 1; hit <= 40; hit++) {
             final int n = hit;
