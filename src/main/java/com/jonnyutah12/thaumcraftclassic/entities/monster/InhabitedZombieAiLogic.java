@@ -203,12 +203,16 @@ public final class InhabitedZombieAiLogic {
      * getExperiencePoints(attackingPlayer); while (i > 0) { int j =
      * EntityXPOrb.getXPSplit(i); i -= j; world.spawnEntityInWorld(new
      * EntityXPOrb(this, x, y, z, j)); }}. The split is 1.7.10's static {@code
-     * EntityXPOrb.func_70527_a} (getOrbValue / roundToOrbSize), name-mapped
-     * onto 1.21.1's public static {@code ExperienceOrb.getExperienceValue},
-     * whose table the probe pins: 2477, 1237, 617, 307, 149, 73, 37, 17, 7, 3,
-     * 1. The loop is deterministic - 1.7.10's split draws NO random - so the
-     * orb count is measured, not inherited, and a 5-point reward (the plain
-     * zombie's) lands as orbs of 3 then 2 (BD-122).
+     * EntityXPOrb.func_70527_a} — a MINECRAFT class, and {@code reference/}
+     * carries the Thaumcraft classes only, so the original's per-orb table is
+     * NOT measurable from the reference tree. The port rides 1.21.1's public
+     * static {@code ExperienceOrb.getExperienceValue}, whose table the probe
+     * pins: 2477, 1237, 617, 307, 149, 73, 37, 17, 7, 3, 1. The loop is
+     * deterministic - the split draws NO random - so the orb count is
+     * measured, not inherited: a 5-point reward (the plain zombie's) lands as
+     * orbs 3, 1, 1 (measured on 21.1.259, and pinned by {@code
+     * InhabitedZombieAiLogicTest#theExperienceSplitIsThePlatformOrbTable}).
+     * Recorded as BD-121; the death pass that calls the loop is BD-122.
      */
     public static java.util.List<Integer> experienceOrbValues(final int total) {
         final java.util.List<Integer> values = new java.util.ArrayList<>();

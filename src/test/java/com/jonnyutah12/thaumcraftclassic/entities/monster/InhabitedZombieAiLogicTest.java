@@ -161,18 +161,43 @@ class InhabitedZombieAiLogicTest {
     }
 
     @Test
-    void theExperienceSplitIsThe1710Table() {
-        // :64-70 — the loop walks 1.7.10's EntityXPOrb.getOrbValue (73/17/7/3/1
-        // with the < 7 / < 37 / < 167 floors) for the zombie's five points,
-        // name-mapped onto 1.21.1's ExperienceOrb.getExperienceValue (BD-121).
-        assertEquals(List.of(3, 2), InhabitedZombieAiLogic.experienceOrbValues(5));
+    void theExperienceSplitIsThePlatformOrbTable() {
+        // :64-70 — the loop's split seam. The reference calls 1.7.10's {@code
+        // EntityXPOrb.func_70527_a} (getXPSplit), a MINECRAFT class the
+        // reference/ tree does not carry (it ships the Thaumcraft classes
+        // only), so the original's per-orb table is not measurable from
+        // reference/. The port rides 1.21.1's public static {@code
+        // ExperienceOrb.getExperienceValue} and the sequence below is
+        // MEASURED on 21.1.259 (BD-121). The zombie's five points land as
+        // 3 + 1 + 1 — NOT the 3 + 2 the draft asserted.
+        assertEquals(List.of(3, 1, 1), InhabitedZombieAiLogic.experienceOrbValues(5));
         assertEquals(List.of(), InhabitedZombieAiLogic.experienceOrbValues(0));
         assertEquals(List.of(1), InhabitedZombieAiLogic.experienceOrbValues(1));
+        assertEquals(List.of(1, 1), InhabitedZombieAiLogic.experienceOrbValues(2));
         assertEquals(List.of(3), InhabitedZombieAiLogic.experienceOrbValues(3));
         assertEquals(List.of(7), InhabitedZombieAiLogic.experienceOrbValues(7));
         assertEquals(List.of(7, 3), InhabitedZombieAiLogic.experienceOrbValues(10));
         assertEquals(List.of(73, 17, 7, 3), InhabitedZombieAiLogic.experienceOrbValues(100));
         assertEquals(List.of(2477), InhabitedZombieAiLogic.experienceOrbValues(2477));
+        // The loop's invariants, measured the same way: it terminates, throws
+        // the WHOLE reward, never throws a zero-value orb, draws NO random
+        // (the sequence is deterministic), and every orb is a value off the
+        // platform's own table — 2477, 1237, 617, 307, 149, 73, 37, 17, 7, 3, 1.
+        int[] totals = {1, 2, 3, 4, 5, 6, 7, 8, 10, 16, 17, 20, 36, 37, 38, 72, 73,
+                100, 148, 149, 2476, 2477, 3000};
+        java.util.Set<Integer> table =
+                java.util.Set.of(2477, 1237, 617, 307, 149, 73, 37, 17, 7, 3, 1);
+        for (int total : totals) {
+            java.util.List<Integer> orbs = InhabitedZombieAiLogic.experienceOrbValues(total);
+            int sum = orbs.stream().mapToInt(Integer::intValue).sum();
+            assertEquals(total, sum, "the loop must throw the whole reward of " + total + ": " + orbs);
+            for (int orb : orbs) {
+                assertTrue(table.contains(orb), "orb " + orb + " is off the table for " + total);
+                assertTrue(orb > 0, "a zero-value orb for " + total);
+            }
+            assertEquals(orbs, InhabitedZombieAiLogic.experienceOrbValues(total),
+                    "the split must draw no random, total " + total);
+        }
     }
 
     // ---------------------------------------------------------- misc

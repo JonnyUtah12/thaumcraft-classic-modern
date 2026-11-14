@@ -194,16 +194,24 @@ class EldritchGuardianAiLogicTest {
 
     @Test
     void theBurnRollScalesWithDifficulty() {
-        // :139 - :141 — an empty main hand, on the ground, a roll under
-        // difficulty * 0.3F, and 2 * difficulty seconds of fire.
-        assertTrue(EldritchGuardianAiLogic.setsFire(1, true, true, 0.29F));
-        assertFalse(EldritchGuardianAiLogic.setsFire(1, true, true, 0.3F));
-        assertTrue(EldritchGuardianAiLogic.setsFire(2, true, true, 0.59F));
-        assertFalse(EldritchGuardianAiLogic.setsFire(2, true, true, 0.6F));
-        assertTrue(EldritchGuardianAiLogic.setsFire(3, true, true, 0.89F));
-        assertFalse(EldritchGuardianAiLogic.setsFire(3, true, true, 0.9F));
+        // :135-141 — an empty main hand, on the ground, and nextFloat() <
+        // difficultyId * 0.3F, then func_70015_d(2 * difficultyId) seconds.
+        // The boundary is the reference's OWN float expression, not a decimal
+        // literal: measured on 21.1.259, 3 * 0.3F = 0.90000004 while 0.9F =
+        // 0.89999998, so a 0.9F roll sits BELOW the product and IS a fire roll.
+        // Math.nextDown pins the exact just-below neighbour at each step.
+        assertTrue(EldritchGuardianAiLogic.setsFire(1, true, true, Math.nextDown(1 * 0.3F)));
+        assertFalse(EldritchGuardianAiLogic.setsFire(1, true, true, 1 * 0.3F));
+        assertTrue(EldritchGuardianAiLogic.setsFire(2, true, true, Math.nextDown(2 * 0.3F)));
+        assertFalse(EldritchGuardianAiLogic.setsFire(2, true, true, 2 * 0.3F));
+        assertTrue(EldritchGuardianAiLogic.setsFire(3, true, true, Math.nextDown(3 * 0.3F)));
+        assertFalse(EldritchGuardianAiLogic.setsFire(3, true, true, 3 * 0.3F));
+        // The float artefact the literals used to hide, pinned so a later edit
+        // cannot re-invent a 0.9 boundary: 0.9F is a TRUE roll at difficulty 3.
+        assertTrue(EldritchGuardianAiLogic.setsFire(3, true, true, 0.9F));
         assertFalse(EldritchGuardianAiLogic.setsFire(3, false, true, 0.0F));   // held item
         assertFalse(EldritchGuardianAiLogic.setsFire(3, true, false, 0.0F));   // airborne
+        assertEquals(0, EldritchGuardianAiLogic.fireSecondsFor(0));            // peaceful: no roll fires
         assertEquals(2, EldritchGuardianAiLogic.fireSecondsFor(1));
         assertEquals(4, EldritchGuardianAiLogic.fireSecondsFor(2));
         assertEquals(6, EldritchGuardianAiLogic.fireSecondsFor(3));
