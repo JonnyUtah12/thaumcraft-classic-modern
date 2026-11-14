@@ -483,6 +483,8 @@
   "entity.thaumcraft.taintspore": "Taint Spore",
   "entity.thaumcraft.taintswarmer": "Taint Spore Swarmer",
   "entity.thaumcraft.taintswarm": "Taint Swarm",
+  "entity.thaumcraft.eldritchcrab": "Eldritch Crab",
+  "entity.thaumcraft.eldritchorb": "Eldritch Orb",
   "container.thaumcraft.gui_arcane_workbench": "Arcane Workbench",
   "container.thaumcraft.gui_research_table": "Research Table",
   "container.thaumcraft.gui_thaumatorium": "Thaumatorium",

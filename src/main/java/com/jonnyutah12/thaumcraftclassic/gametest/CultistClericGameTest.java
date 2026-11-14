@@ -463,10 +463,12 @@ public final class CultistClericGameTest {
         for (int i = 0; i < 40; i++) {
             cleric.dropAllLoot();                                                     // :61 through :92-94
         }
-        helper.assertTrue(level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box)
-                        .isEmpty(),
+        final java.util.List<net.minecraft.world.entity.item.ItemEntity> padItems =
+                level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box);
+        helper.assertTrue(padItems.isEmpty(),
                 ":92-94 — a cleric mid-ritual drops nothing, so the gate closed every one of 40 calls;"
-                        + " an item appeared on the pad");
+                        + " an item appeared on the pad: "
+                        + padItems.stream().map(it -> it.getItem() + " @" + it.position()).toList());
         cleric.setIsRitualist(false);
         helper.assertTrue(cleric.isLootingGateOpen(), ":94 — out of the ritual the gate opens");
         final int before = level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box)
