@@ -455,14 +455,32 @@ public final class EldritchMobGameTest {
             // FloatGoal of :55 drifts the mob a block or two, so the column is
             // wider than the entity box; the pad has no floor, so the probe
             // lays its own water and takes it back down).
+            //
+            // GameTestHelper#setBlock(BlockPos, BlockState) applies absolutePos
+            // to its argument ITSELF (framework GameTestHelper.java:345-347 =
+            // getLevel().setBlock(this.absolutePos(pos), state, 3)), so the
+            // position handed to it is TEMPLATE-RELATIVE. Handing it the mob's
+            // absolute blockPosition() — as this probe did — puts every block
+            // twice the grid offset away from the pad (measured red: the air
+            // never drained, 500 stayed 500, and the mob showed no buoyancy
+            // because no water existed at its cell). Convert once, then work in
+            // relative space.
             final BlockPos cell = mob.blockPosition();
+            final BlockPos rel = helper.relativePos(cell);
+            final BlockPos eyeCell = BlockPos.containing(mob.getEyePosition());
             for (int dy = -1; dy <= 3; dy++) {
                 for (int dx = -1; dx <= 1; dx++) {
                     for (int dz = -1; dz <= 1; dz++) {
-                        helper.setBlock(cell.offset(dx, dy, dz), Blocks.WATER.defaultBlockState());
+                        helper.setBlock(rel.offset(dx, dy, dz), Blocks.WATER.defaultBlockState());
                     }
                 }
             }
+            helper.assertTrue(
+                    helper.getLevel().getFluidState(eyeCell).is(net.minecraft.tags.FluidTags.WATER),
+                    "the probe's own water must reach the mob's eye cell " + eyeCell.toShortString()
+                            + " (feet " + cell.toShortString() + ", relative base "
+                            + rel.toShortString() + "): the state there is "
+                            + helper.getLevel().getBlockState(eyeCell));
             mob.setAirSupply(mob.getMaxAirSupply());
             helper.runAfterDelay(10, () -> {
                 final boolean eyeInWater = mob.isEyeInFluid(net.minecraft.tags.FluidTags.WATER);
@@ -481,7 +499,7 @@ public final class EldritchMobGameTest {
                     for (int dy = -1; dy <= 3; dy++) {
                         for (int dx = -1; dx <= 1; dx++) {
                             for (int dz = -1; dz <= 1; dz++) {
-                                helper.setBlock(cell.offset(dx, dy, dz), Blocks.AIR.defaultBlockState());
+                                helper.setBlock(rel.offset(dx, dy, dz), Blocks.AIR.defaultBlockState());
                             }
                         }
                     }
@@ -718,21 +736,43 @@ public final class EldritchMobGameTest {
      * evaluated on the ambient census, with the census quoted in the message)
      * or a delta the rule predicts when the probe's own neighbour lands inside
      * the box.</p>
+     *
+     * <p>Measured at this tip, and pinned as written: the two census shapes are
+     * NOT the same in the shipped code, and the guardian's is the faithful one.
+     * 1.7.10's {@code func_72872_a(MyClass.class, bb)} passes NO entity to
+     * exclude, so the mob's own body is inside its own expanded box and counts
+     * ({@code EntityEldritchGuardian.java:253-256}); the port mirrors that with
+     * {@code world.getEntitiesOfClass(EntityEldritchGuardian.class, box)} at
+     * {@code EntityEldritchGuardian.java:460}, so a live guardian's verdict is
+     * ALWAYS false — the gate can never open for it, which is why the original
+     * spawns guardians through events, never naturally. The zombie's port
+     * ({@code EntityInhabitedZombie.java:359-366}) walks
+     * {@code level.getEntities(this, box)} and skips {@code this}, so the
+     * zombie's gate DOES open and close on the census. That asymmetry against
+     * {@code EntityInhabitedZombie.java:104-113} is BD-123; the probe pins each
+     * shipped shape on its own census, never one shared helper.</p>
      */
     @GameTest(template = "empty", setupTicks = 2L)
-    public static void theEldritchSpawnGateScansItsOwnKindInsideTheThirtyTwoBox(
+    public static void theEldritchSpawnGateCensusIsPerKindAndTheGuardiansCountsItself(
             final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
         final EntityEldritchGuardian guardianMob = guardian(helper, 0, 0);
         final EntityInhabitedZombie zombieMob = zombie(helper, 6, 0);
         helper.runAfterDelay(2, () -> {
-            final int guardianKind = kindInGate(level, guardianMob, EntityEldritchGuardian.class);
+            final int guardianKind = kindInGateInclusive(level, guardianMob,
+                    EntityEldritchGuardian.class);
             final int zombieKind = kindInGate(level, zombieMob, EntityInhabitedZombie.class);
             helper.assertTrue(guardianMob.checkSpawnRules(level, MobSpawnType.NATURAL)
                             == (guardianKind == 0),
-                    ":259-260 — the guardian's verdict is its own class in the 32/16/32 box (census "
+                    ":253-260 — the guardian's verdict is its own class in the 32/16/32 box, and that "
+                            + "census counts the mob itself (1.7.10 func_72872_a(Class, AABB) excludes "
+                            + "no entity; the port ships getEntitiesOfClass at :460), so a live "
+                            + "guardian refuses (census "
                             + guardianKind + ", verdict " + guardianMob.checkSpawnRules(level,
                                     MobSpawnType.NATURAL) + ", box " + gateBox(guardianMob) + ")");
+            helper.assertTrue(guardianKind >= 1,
+                    ":253-256 — the guardian is inside its own expanded box, so the shipped census is "
+                            + "at least 1 (census " + guardianKind + ", box " + gateBox(guardianMob) + ")");
             helper.assertTrue(zombieMob.checkSpawnRules(level, MobSpawnType.NATURAL)
                             == (zombieKind == 0),
                     ":105-113 — the zombie's verdict is its own class in the 32/16/32 box (census "
@@ -751,11 +791,16 @@ public final class EldritchMobGameTest {
                             + "(reference :47) and the golem — so 'every IEldritchMob refuses' never "
                             + "applied to a crab in any reading of :251-261");
             helper.runAfterDelay(2, () -> {
+                final int withCrab = kindInGateInclusive(level, guardianMob,
+                        EntityEldritchGuardian.class);
+                helper.assertTrue(withCrab == guardianKind,
+                        ":253-256 — the census is the mob's OWN class: a crab is EntityEldritchCrab, so "
+                                + "it never enters the guardian's census (census " + guardianKind
+                                + " before the crab, " + withCrab + " with it in the box)");
                 helper.assertTrue(guardianMob.checkSpawnRules(level, MobSpawnType.NATURAL)
-                                == (kindInGate(level, guardianMob, EntityEldritchGuardian.class) == 0),
+                                == (withCrab == 0),
                         ":253-260 — a crab (IEldritchMob, not EntityEldritchGuardian) inside the box "
-                                + "does not refuse a guardian; census "
-                                + kindInGate(level, guardianMob, EntityEldritchGuardian.class));
+                                + "does not move the guardian's verdict; census " + withCrab);
                 // The delta: a same-kind neighbour 2 blocks away is inside both
                 // boxes and refuses, and the verdict returns when it is removed.
                 final EntityInhabitedZombie neighbour = zombie(helper, 8, 0);
@@ -789,12 +834,33 @@ public final class EldritchMobGameTest {
                 EldritchGuardianAiLogic.SPAWN_BOX_XZ_EXPAND);
     }
 
-    /** The mob's own class in the gate box, self excluded ({@code :253-256}). */
+    /**
+     * The mob's own class in the gate box, SELF EXCLUDED — the shape the
+     * zombie's port ships ({@code EntityInhabitedZombie.java:359-366},
+     * {@code level.getEntities(this, box)} + {@code entity != this}).
+     */
     private static <T extends Mob> int kindInGate(final Level level, final T mob,
             final Class<T> kind) {
         int n = 0;
         for (final Entity other : level.getEntities((Entity) null, gateBox(mob),
                 e -> kind.isInstance(e) && e != mob)) {
+            n++;
+        }
+        return n;
+    }
+
+    /**
+     * The same box, SELF INCLUDED — the shape 1.7.10's census has
+     * ({@code func_72872_a(MyClass.class, bb)} excludes no entity,
+     * guardian {@code :253-256}) and the shape the guardian's port ships
+     * ({@code EntityEldritchGuardian.java:460}, {@code getEntitiesOfClass}).
+     * A live mob is always >= 1 here, so its gate never opens (BD-123).
+     */
+    private static <T extends Mob> int kindInGateInclusive(final Level level, final T mob,
+            final Class<T> kind) {
+        int n = 0;
+        for (final Entity other : level.getEntities((Entity) null, gateBox(mob),
+                e -> kind.isInstance(e))) {
             n++;
         }
         return n;
