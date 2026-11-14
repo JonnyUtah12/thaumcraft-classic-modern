@@ -209,12 +209,24 @@ public final class EldritchMobGameTest {
         helper.assertTrue(CatalogEldritchGuardian.INHABITED_ZOMBIE.get() == zombie,
                 "the catalog's INHABITED_ZOMBIE holder is not the registered type");
 
-        // The host: both rows now resolve, so the warp lane's mist band summons
-        // the real guardian and the ledger's claim is live.
+        // The host seam: the guardian row now resolves, so the warp lane's
+        // mist band summons the real guardian (the live summon itself is
+        // pinned by WarpEventsGameTest's mist-band probe). The inhabited
+        // zombie is NOT a structure summon: EldritchMobHost's roster is
+        // exactly the original's seven tile summons — GUARDIAN / CULTIST /
+        // CLERIC / KNIGHT / BOBO / CRAB / FIRE_MOTH (EldritchRealmValuesParityTest
+        // pins the ids) — and 1.7.10's EntityInhabitedZombie arrives from the
+        // night-spawn path, never from an eldritch tile. So the zombie's claim
+        // is the registry + catalog holders above, and the host seam must stay
+        // UNCLAIMED for it: wiring it there would move the structures'
+        // countFamily census and has to re-open this probe.
         helper.assertTrue(EldritchMobHost.isAvailable(EldritchMobHost.GUARDIAN),
                 "the guardian row still reports not_started to the host");
-        helper.assertTrue(EldritchMobHost.isAvailable(EldritchMobHost.INHABITED),
-                "the inhabited zombie row still reports not_started to the host");
+        helper.assertTrue(EldritchMobHost.isAvailable("inhabitedzombie") == false
+                        && EldritchMobHost.spawn("inhabitedzombie", helper.getLevel(), pad(helper)) == false,
+                "the host seam claims thaumcraft:inhabitedzombie, which none of the original's "
+                        + "eldritch structures ever summon (roster: guardian/cultist/cleric/"
+                        + "knight/bobo/crab/firemoth)");
 
         // The slice's append-only tail: the roster landed before it is intact.
         registered(helper, "eldritchcrab");
@@ -377,7 +389,10 @@ public final class EldritchMobGameTest {
     public static void theGuardianNeverDrownsAndAlwaysBurns(final GameTestHelper helper) {
         final EntityEldritchGuardian mob = guardian(helper, 0, 0);
         mob.setAirSupply(-20);
-        mob.setSecondsOnFire(10);
+        // 1.21.1's seam for 1.7.10's func_70015_d(seconds) is NeoForge's
+        // Entity#igniteForSeconds (the same seam the guardian's own hit uses at
+        // :139); the read stays getRemainingFireTicks.
+        mob.igniteForSeconds(10.0F);
         helper.runAfterDelay(4, () -> {
             helper.assertTrue(mob.getAirSupply() >= 1,
                     ":303-305 — the air supply must stay above zero, got " + mob.getAirSupply());

@@ -251,11 +251,19 @@ class EldritchGuardianAiLogicTest {
 
     @Test
     void magicDamageIsHalved() {
-        // :218 - :221 — the Int cast truncates every magic hit (BD-117).
-        assertEquals(5, EldritchGuardianAiLogic.damageAfterMagicHalve(10.0F));
-        assertEquals(2, EldritchGuardianAiLogic.damageAfterMagicHalve(5.0F));
-        assertEquals(0, EldritchGuardianAiLogic.damageAfterMagicHalve(1.0F));
-        assertEquals(0, EldritchGuardianAiLogic.damageAfterMagicHalve(0.5F));
+        // :96-102 — func_70097_a(DamageSource,float): if (source.func_82725_o())
+        // damage /= 2.0F; then super. The halving is EXACT on both engines —
+        // 1.7.10's damage argument is already a float, so there is no Int cast
+        // to truncate (the 5.0 case below is the proof), and 1.21.1's
+        // hurt(DamageSource,float) returns the float to the caller unchanged.
+        assertEquals(5.0, EldritchGuardianAiLogic.damageAfterMagicHalve(true, 10.0F), T);
+        assertEquals(2.5, EldritchGuardianAiLogic.damageAfterMagicHalve(true, 5.0F), T);
+        assertEquals(0.5, EldritchGuardianAiLogic.damageAfterMagicHalve(true, 1.0F), T);
+        assertEquals(0.25, EldritchGuardianAiLogic.damageAfterMagicHalve(true, 0.5F), T);
+        // The gate is func_82725_o() (isMagicDamage) alone: a non-magic hit
+        // rides super untouched.
+        assertEquals(10.0, EldritchGuardianAiLogic.damageAfterMagicHalve(false, 10.0F), T);
+        assertEquals(0.5, EldritchGuardianAiLogic.damageAfterMagicHalve(false, 0.5F), T);
     }
 
     @Test
