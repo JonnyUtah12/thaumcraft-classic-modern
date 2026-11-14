@@ -176,24 +176,20 @@ class CultistAiLogicTest {
     }
 
     @Test
-    void theTargetSelectorExcludesTheThreeCultistsByName() {
+    void theTargetSelectorExcludesTheShippedCultistsByClassAndTheLeaderByName() {
         // EntityCultist.java:105-107 — false for EntityCultistCleric,
-        // EntityCultistLeader and EntityCultistKnight. The Cleric is card
-        // t_6160444c's and the Leader is card c5's, so the exclusion carries
-        // their NAMES (BD-87); the pins below use stand-in classes with the
-        // original's simple names to prove the name-carried arms.
-        assertTrue(CultistAiLogic.targetClassExcluded(EntityCultistKnight.class), ":106");
-        assertTrue(CultistAiLogic.targetClassExcluded(EntityCultistCleric.class), ":106 (name-carried)");
-        assertTrue(CultistAiLogic.targetClassExcluded(EntityCultistLeader.class), ":106 (name-carried)");
+        // EntityCultistLeader and EntityCultistKnight. t_6160444c landed the
+        // Cleric class, so its arm runs on the CLASS exactly as the original
+        // writes it (`!(el instanceof EntityCultistCleric)`); the Leader is card
+        // c5's and is not in this tree, so its arm stays the name-carried one
+        // (BD-90 — the D-012 slice's carrier). The stand-in below carries only
+        // the Leader's simple name, and the Cleric pin names the real class.
+        assertTrue(CultistAiLogic.targetClassExcluded(EntityCultistKnight.class), ":105");
+        assertTrue(CultistAiLogic.targetClassExcluded(EntityCultistCleric.class),
+                ":106 — class-carried since t_6160444c landed the class");
+        assertTrue(CultistAiLogic.targetClassExcluded(EntityCultistLeader.class), ":107 (name-carried)");
         assertFalse(CultistAiLogic.targetClassExcluded(net.minecraft.world.entity.monster.Zombie.class));
-        assertEquals("EntityCultistCleric", CultistAiLogic.CLERIC_CLASS_NAME);
         assertEquals("EntityCultistLeader", CultistAiLogic.LEADER_CLASS_NAME);
-    }
-
-    /** A stand-in whose simple name is the Cleric's, for the name-carried arm. */
-    static final class EntityCultistCleric {
-        private EntityCultistCleric() {
-        }
     }
 
     /** A stand-in whose simple name is the Leader's, for the name-carried arm. */
@@ -432,6 +428,36 @@ class CultistAiLogicTest {
         assertEquals(10.0F, CultistAiLogic.RITUAL_LOOK_PITCH_STEP, F, ":155");
     }
 
+    @Test
+    void theRitualStareStepsTenDegreesPerTickToItsTarget() {
+        // EntityCultistCleric.java:160-171 — updateRotation(current, target, step):
+        // f = wrap180(target - current) (:161), clamped to +-step (:162-168), added
+        // to current (:170, unwrapped). The stare calls this seam, not
+        // Mth#rotateIfNecessary, whose target-minus-clamped-delta shape freezes a
+        // head short of its target (measured on the pad: pitch pinned at -80.0).
+        final float F = 1.0E-4F;
+        assertEquals(-10.0F, CultistAiLogic.updateRotation(0.0F, -90.0F, 10.0F), F,
+                ":155 — one tick of the pitch step is the original's 10.0F, not a jump");
+        assertEquals(-20.0F, CultistAiLogic.updateRotation(-10.0F, -90.0F, 10.0F), F,
+                ":161-170 — the limiter walks the current value toward the target");
+        assertEquals(-90.0F, CultistAiLogic.updateRotation(-85.0F, -90.0F, 10.0F), F,
+                ":162-168 — inside the step the delta is the raw wrapped delta, so the "
+                        + "stare lands ON the target and stays");
+        // :161 wraps the DELTA, so a 350-degree gap turns the head the short way;
+        // :170 adds to the current value and does NOT wrap it (the original does
+        // not), so 350 + 10 is 360 on the nose.
+        assertEquals(360.0F, CultistAiLogic.updateRotation(350.0F, 0.0F, 10.0F), F,
+                ":161/:170 — wrapDegrees(0 - 350) = +10, added unwrapped to 350");
+        assertEquals(-30.0F, CultistAiLogic.updateRotation(0.0F, -90.0F, 30.0F), F,
+                ":156 — the yaw arm runs the same limiter at the mob's rotation limit");
+        // Convergence: the original's 10.0F/tick from 0.0 reaches -90 in nine ticks.
+        float pitch = 0.0F;
+        for (int i = 0; i < 9; i++) {
+            pitch = CultistAiLogic.updateRotation(pitch, -90.0F, CultistAiLogic.RITUAL_LOOK_PITCH_STEP);
+        }
+        assertEquals(-90.0F, pitch, F, ":155 — nine steps of 10.0F converge on the altar pitch");
+    }
+
     // ------------------------------------------------------------ the shipped shape
 
     @Test
@@ -444,5 +470,37 @@ class CultistAiLogicTest {
         assertTrue(CultistAiLogic.CULTIST_TYPE_PATHS.contains("cultistknight"));
         assertTrue(EntityCultist.class.isAssignableFrom(EntityCultistKnight.class),
                 "the knight is the base's subclass, and the base is the shared class");
+    }
+
+    /**
+     * {@code AICultistHurtByTarget:48-53} (BD-105) — the gang call's mid-ritual arm:
+     * {@code world.rand.nextInt(3) == 0} (the port reads it as
+     * {@code level.getRandom()}, the original's {@code world.rand}) is the whole rule,
+     * carried through {@link CultistAiLogic#ritualistBreaks(int)}. The dice are one draw
+     * per gang call on the LEVEL's RandomSource, so this rule — the 1-in-3 shape, which
+     * value of the draw breaks the ritual and which do not — is pinned here, where the
+     * input is controllable; the in-world arm (the roll landing on a live gang call) is
+     * the cleric card's {@code CultistClericGameTest} probe, which drives 60 fresh-phase
+     * attempts and carries the (2/3)^60 bound.
+     */
+    @Test
+    void theMidRitualBreakRollIsTheZeroOfAThreeSidedDie() {
+        org.junit.jupiter.api.Assertions.assertEquals(3, CultistAiLogic.RITUALIST_BREAK_ROLL,
+                ":51 — the die is nextInt(3), three sides");
+        org.junit.jupiter.api.Assertions.assertTrue(CultistAiLogic.ritualistBreaks(0),
+                ":51-52 — the 0 draw breaks the ritual (the original's `world.rand.nextInt(3) == 0`)");
+        org.junit.jupiter.api.Assertions.assertFalse(CultistAiLogic.ritualistBreaks(1),
+                ":51 — a 1 draw leaves the ritualist alone");
+        org.junit.jupiter.api.Assertions.assertFalse(CultistAiLogic.ritualistBreaks(2),
+                ":51 — a 2 draw leaves the ritualist alone");
+        int breaks = 0;
+        for (int side = 0; side < CultistAiLogic.RITUALIST_BREAK_ROLL; side++) {
+            if (CultistAiLogic.ritualistBreaks(side)) {
+                breaks++;
+            }
+        }
+        org.junit.jupiter.api.Assertions.assertEquals(1, breaks,
+                ":51 — exactly one side of the three breaks the ritual, so the gang call spares a"
+                        + " mid-ritual cleric with probability 2/3 per call");
     }
 }

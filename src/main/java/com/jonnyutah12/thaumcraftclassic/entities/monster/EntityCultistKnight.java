@@ -147,6 +147,15 @@ public class EntityCultistKnight extends EntityCultist {
      * slot and keeps slot 5's {@code closeDoor=true} form. Both share the
      * movement flag exactly as the original's pair contended for {@code MOVE},
      * so the higher slot wins while it can run. Recorded deviation (BD-92).</p>
+     *
+     * <p>Slots 8 and 9 are the original's collision at {@code :32}/{@code :33}:
+     * 1.7.10's {@code GoalSelect} is a {@code TreeMap} keyed by priority, so the
+     * {@code EntityAIWatchClosest} of {@code :32} is REPLACED by the
+     * {@code EntityAILookIdle} of {@code :33} and the knight nets seven movement
+     * goals on top of the swim goal. 1.21.1's {@code GoalSelector} keeps every
+     * goal, so the port installs the pair at distinct slots and the family ships
+     * both. Recorded deviation (BD-112), measured on the cleric's goal set by
+     * {@code CultistClericGameTest.theClericGoalSetIsTheFamilySetPlusTheAltarAndRangedGoals}.</p>
      */
     @Override
     protected void registerGoals() {
