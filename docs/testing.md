@@ -402,3 +402,13 @@ restores both and `diff -q` reports byte-identical.
   removed=false` (the impact landed, the entity's own survival walk had not reached the clamp), the same
   signature as the shipped Energy Orb probe's planted E2b. The consumption is polled
   (`helper.succeedWhen`) and every write of the impact stays asserted synchronously.
+  Teeth on the FIXED tree, legs in this card's keep dir: the P2 plant moved AFTER the sweep — a
+  resident the sweep cannot remove — reddens the climb probe with the disclosed line (`Q1`); the P1
+  spider plant, also post-sweep, leaves climb + orb green (`Q2`); and the tick-budget mutation
+  `runAfterDelay(0, …)` on the consumption arm, which fires before any real server tick, reddens the
+  burst probe 3 of 3 legs naming `:84 … age=100 removed=false` with the climb probe green 3/3
+  (`Q6d`). The 2-real-tick budget's natural rate is 1/11, so three legs of the exact pre-fix budget
+  show no teeth (measured: 0 of 3) — the deterministic delay-0 mutation is the teeth leg, the 1/11
+  natural rate is the motivation. Plant-script lesson from the failed first pass: plant anchors pin
+  the probe's setup text, so a probe refactor silently UNPLANTS the script and the legs run clean —
+  a planted leg must print its plant line, and every leg verdict is read, never assumed.
