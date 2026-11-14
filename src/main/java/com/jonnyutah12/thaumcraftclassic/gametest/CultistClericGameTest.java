@@ -1058,13 +1058,18 @@ public final class CultistClericGameTest {
         // and this test's own region origin (which is per-test). No test gains a
         // preference; this one stops reading one phase of the generator.
         final BlockPos origin = helper.absolutePos(BlockPos.ZERO);
-        level.random.setSeed(level.getGameTime() * 31L + origin.getX() * 7919L + origin.getZ() * 104729L);
         final int[] driven = {0};
-        for (int hit = 1; hit <= 40; hit++) {
-            final int n = hit;
-            helper.runAtTickTime(10L * n, () -> {
+        for (int attempt = 1; attempt <= 60; attempt++) {
+            final int n = attempt;
+            helper.runAtTickTime(5L * n, () -> {
+                // A FRESH phase per attempt: one seed is one phase of the generator and
+                // one phase of a 1-in-3 dice can be all-misses (measured: one seed gave
+                // 40/40 misses, then 80/80 across legs — 1.3e-7 tails do not fire twice).
+                // Reseeding the shared stream per attempt is unbiased (no test prefers an
+                // outcome); it just stops this probe reading one phase of it.
+                level.random.setSeed(0x5DEECE66DL * n + origin.getX() * 31L + origin.getZ());
                 hurt.setHealth(hurt.getMaxHealth());                                  // fixture: the caller lives
-                fireTheHit.run();                                                     // :29
+                fireTheHit.run();                                                     // :29 — the hit that arms the goal
                 driven[0] = n;
             });
         }
@@ -1074,10 +1079,11 @@ public final class CultistClericGameTest {
                     ":49-50 — a cleric with no ritual in the help box takes the attacker (target = "
                             + plain.getTarget() + ")");
             helper.assertTrue(ritualist.getIsRitualist() == false,
-                    ":52 — the roll must have cleared the ritualist's ritual within the probe window:"
-                            + " " + driven[0] + " of 40 gang calls driven (one level-RNG nextInt(3)"
-                            + " draw each), miss bound (2/3)^40 = 1.3e-7, probeTick="
-                            + helper.getTick());
+                    ":52 — the roll must have cleared the ritualist's ritual: " + driven[0]
+                            + " of 60 attempts driven (each attempt re-seeds the shared level RNG at a"
+                            + " fresh phase and drives one gang call = one nextInt(3) draw; the rule"
+                            + " itself is pinned deterministically in CultistAiLogicTest),"
+                            + " miss bound (2/3)^60 = 2.7e-11, probeTick=" + helper.getTick());
             helper.assertTrue(ritualist.getTarget() == player,
                     ":53 — the cleric whose ritual broke joins the gang (target = "
                             + ritualist.getTarget() + ")");

@@ -471,4 +471,36 @@ class CultistAiLogicTest {
         assertTrue(EntityCultist.class.isAssignableFrom(EntityCultistKnight.class),
                 "the knight is the base's subclass, and the base is the shared class");
     }
+
+    /**
+     * {@code AICultistHurtByTarget:48-53} (BD-105) — the gang call's mid-ritual arm:
+     * {@code world.rand.nextInt(3) == 0} (the port reads it as
+     * {@code level.getRandom()}, the original's {@code world.rand}) is the whole rule,
+     * carried through {@link CultistAiLogic#ritualistBreaks(int)}. The dice are one draw
+     * per gang call on the LEVEL's RandomSource, so this rule — the 1-in-3 shape, which
+     * value of the draw breaks the ritual and which do not — is pinned here, where the
+     * input is controllable; the in-world arm (the roll landing on a live gang call) is
+     * the cleric card's {@code CultistClericGameTest} probe, which drives 60 fresh-phase
+     * attempts and carries the (2/3)^60 bound.
+     */
+    @Test
+    void theMidRitualBreakRollIsTheZeroOfAThreeSidedDie() {
+        org.junit.jupiter.api.Assertions.assertEquals(3, CultistAiLogic.RITUALIST_BREAK_ROLL,
+                ":51 — the die is nextInt(3), three sides");
+        org.junit.jupiter.api.Assertions.assertTrue(CultistAiLogic.ritualistBreaks(0),
+                ":51-52 — the 0 draw breaks the ritual (the original's `world.rand.nextInt(3) == 0`)");
+        org.junit.jupiter.api.Assertions.assertFalse(CultistAiLogic.ritualistBreaks(1),
+                ":51 — a 1 draw leaves the ritualist alone");
+        org.junit.jupiter.api.Assertions.assertFalse(CultistAiLogic.ritualistBreaks(2),
+                ":51 — a 2 draw leaves the ritualist alone");
+        int breaks = 0;
+        for (int side = 0; side < CultistAiLogic.RITUALIST_BREAK_ROLL; side++) {
+            if (CultistAiLogic.ritualistBreaks(side)) {
+                breaks++;
+            }
+        }
+        org.junit.jupiter.api.Assertions.assertEquals(1, breaks,
+                ":51 — exactly one side of the three breaks the ritual, so the gang call spares a"
+                        + " mid-ritual cleric with probability 2/3 per call");
+    }
 }
