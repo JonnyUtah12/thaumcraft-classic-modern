@@ -349,3 +349,26 @@ runGameTestServer` **exit 1**, "8 required tests failed" (this gate's 3 ore prob
 probes, all zero-drop); put a bare `return;` at the top of `ModCreativeTabs`' `displayItems` lambda → **exit
 1**, "4 required tests failed" (this gate's 2 tab probes + `CreativeTabGameTest`'s 2). `git checkout --`
 restores both and `diff -q` reports byte-identical.
+
+- **A scan-spawn probe driving a scripted `RandomSource` must own the pad it scans into.**
+  The harness REUSES one grid area across batches: `StructureGridSpawner#onBatchStart` rewinds the
+  walk to the batch corner and `StructureUtils#clearSpaceForStructure` clears only BLOCK space, and
+  `GameTestInfo#succeed` discards only the entities inside the finished probe's own inflated box (+1).
+  Mobs that strolled out of a pad, stacks that skidded out, and every entity of a FAILED probe (a
+  failed probe never cleans at all) survive into the next batch, where a 24-tall pad now lands on
+  top of them. A stray standing on a scripted landing cell rejects the floor check
+  (`WarpEvents.java:298`), and an exact positional script desyncs on the FIRST unmarked rejection:
+  the spider reads the NEXT spider's window, every landing shifts, and the run dies naming
+  "the warp event drew beyond the scripted queue". Measured on this tree:
+  `theIllusionBandSpawnsTheWarpCappedHarmlessViewerBoundSwarm` went red 2 of 3 CI runs of
+  `3ad8a69e` (502 probes, with-Curios arm only — the no-Curios arm packs a smaller grid that left
+  the sweep box clean) and green on the third re-run; local runs 2/2 green, so the rate lives in
+  batch composition and runner timing, not in the product. Two conventions fix it: SWEEP the pad's
+  census box at probe setup (discard non-player entities — the scan is synchronous in one tick, so
+  the sweep holds for the whole scan, `WarpEventsGameTest.sweepPad`), and script the supply
+  PER SPAWN, not per slot: every scripted spider carries a window for each landing its scan cell
+  can reach (y = 1, 8, 15), so a rejection spends a scripted window instead of a random draw, and
+  the tolerance is BOUNDED by that supply — the queue clock (`consumed == 2 + 6·Σ(landing k + 1)`)
+  keeps the draw-order contract exact, so absorbing a layout rejection never absorbs a product
+  defect. An exact positional stream over a shared world is a packing bet: the sweep removes what
+  the last batch left, the per-spawn supply removes what arrives on the shared tick.
