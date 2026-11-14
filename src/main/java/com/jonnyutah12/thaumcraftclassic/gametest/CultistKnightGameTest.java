@@ -454,7 +454,28 @@ public final class CultistKnightGameTest {
         helper.assertTrue(hurt.position().distanceToSqr(gang.position()) < range * range,
                 "the probe expects its gang inside the follow-range box (range " + range + ")");
         hurt.clearFire();
-        hurt.hurt(level.damageSources().playerAttack(player), 3.0F);                             // :29
+        // Harness timing, not behaviour. `LivingEntity#setLastHurtByMob` stamps the
+        // hit with the MOBS OWN tickCount, and a freshly spawned mob is at 0 — which
+        // is exactly the goal's initial `timestamp`. Vanilla's gate (`stamp ==
+        // timestamp` → already consumed; the original's own mob-tick gate at :20)
+        // then reads the hit as consumed for the whole probe and no target is ever
+        // shared. Real play never hurts a mob that has never ticked, so the probe
+        // fires the hit once the mob's own clock is live.
+        final Runnable fireTheHit = () -> {
+            hurt.clearFire();
+            hurt.hurt(level.damageSources().playerAttack(player), 3.0F);               // :29
+            helper.assertTrue(hurt.getLastHurtByMob() != null
+                            && hurt.getLastHurtByMobTimestamp() > 0,
+                    "the probe's hit must land on a live mob clock, or the goal's :20 gate reads it"
+                            + " as already consumed (lastHurtByMob = " + hurt.getLastHurtByMob()
+                            + ", timestamp = " + hurt.getLastHurtByMobTimestamp()
+                            + ", mob tickCount = " + hurt.tickCount + ")");
+        };
+        if (hurt.tickCount <= 0) {
+            helper.runAfterDelay(20, fireTheHit);
+        } else {
+            fireTheHit.run();
+        }
         // The gang call lives in the goal's start(), and GoalSelector only reaches
         // start() from the mob's OWN AI cadence — the Mind Spider card's finding
         // (driving mob.tick() in a loop inside one probe tick exercises the engine
