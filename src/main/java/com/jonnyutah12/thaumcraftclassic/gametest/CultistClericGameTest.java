@@ -1078,19 +1078,19 @@ public final class CultistClericGameTest {
         plain.setIsRitualist(false);
         ritualist.setIsRitualist(true);
         final Player player = attackerAt(helper, hurt);
+        // The gang call, driven by hand: the knight's own goal stays RUNNING once the
+        // first start() gives it target == attacker (canContinueToUse keeps answering
+        // true), so the selector never consults the not-running canUse that leads back
+        // to start()/callTheGang — every mob-driven attempt buys the same ONE draw. See
+        // the in-loop note for the measured rates. The slot-1 wiring itself (the stamp
+        // gate, the selector, the alert box on the mob) is the knight card's probes
+        // (BD-90/BD-100); this probe answers for :48-53, the cleric arm of the call.
+        final AICultistHurtByTarget gangCall = new AICultistHurtByTarget(hurt, true);
         helper.assertTrue(ritualist.getIsRitualist(), "PROBE BROKEN: the cleric is not mid-ritual");
-        // The hit must land on a live mob clock (the knight card's finding):
-        // setLastHurtByMob stamps with the mob's OWN tickCount, and a hit at 0 sits
-        // on the goal's initial timestamp, so vanilla's stamp==timestamp gate reads
-        // it consumed for the whole probe.
-        final Runnable fireTheHit = () -> {
-            hurt.clearFire();
-            hurt.hurt(level.damageSources().playerAttack(player), 3.0F);               // :29
-            helper.assertTrue(hurt.getLastHurtByMob() != null && hurt.getLastHurtByMobTimestamp() > 0,
-                    "the probe's hit must land on a live mob clock (lastHurtByMob = "
-                            + hurt.getLastHurtByMob() + ", timestamp = "
-                            + hurt.getLastHurtByMobTimestamp() + ", tickCount = " + hurt.tickCount + ")");
-        };
+        // setLastHurtByMob stamps with the mob's OWN tickCount (the knight card's
+        // finding), and the pad's mob ticks from the harness's own clock, so the stamp
+        // is > 0 and distinct per attempt — the :20 stamp gate is what the mob-driven
+        // probes pin; here it only has to be non-consumed.
         // :51 is `world.rand.nextInt(3) == 0` — and the port reads it as
         // `level.getRandom()` (AICultistHurtByTarget:152), the original's `world.rand`:
         // ONE draw per gang call, and the goal re-arms only when the hurt stamp moves
@@ -1139,17 +1139,21 @@ public final class CultistClericGameTest {
                 level.random.setSeed((0x5DEECE66DL * n + origin.getX() * 31L + origin.getZ())
                         ^ System.nanoTime());
                 hurt.setHealth(hurt.getMaxHealth());                                  // fixture: the caller lives
-                // One hit bought ONE gang call, not 60: the goal's FIRST start() gives
-                // the knight target == attacker, HurtByTargetGoal#canContinueToUse then
-                // reads that as "still chasing the attacker" and the goal runs forever —
-                // canUse (the only path to start/callTheGang, and the only place the
-                // :51 roll is drawn) is never consulted again. Measured: 3/8 legs green
-                // at 9d4b882a (the fixed-seed phase, 1/3 per leg) then 4/4 legs red at
-                // 60/60-miss with the entropy seed — (2/3)^60 does not fire, ~1 draw per
-                // leg does. Dropping the target re-opens canContinueToUse -> canUse ->
-                // start -> callTheGang, so every attempt is a real 1-in-3 draw.
-                hurt.setTarget(null);                                                 // the goal may re-arm
-                fireTheHit.run();                                                     // :29 — the hit that arms the goal
+                // One mob hit bought ONE gang call, not 60, and no fixture twist on the
+                // mob's selector changes that: the goal's FIRST start() leaves the
+                // knight with target == attacker, canContinueToUse reads that as "still
+                // chasing", the goal runs forever, and the not-running canUse pass — the
+                // only path back to start()/callTheGang and the :51 roll — sits behind
+                // the selector's rebuild cadence. Measured, one draw per leg every time:
+                // 3/8 legs green at 9d4b882a under the fixed-seed phase (1/3 per leg),
+                // then 4/4 legs red at 60/60-miss under entropy seeds, and CI red at
+                // a26f465e with the target cleared per attempt — (2/3)^60 does not fire;
+                // ONE draw does. So each attempt stamps the attacker and calls start()
+                // on the standalone goal: :29-30 plus the help-box scan :33-54, the dice
+                // still the shared level's, the clerics still real entities in the
+                // shared level, and every attempt one real unbiased 1-in-3 draw.
+                hurt.setLastHurtByMob(player);                                        // :29-30 — stamp on the live clock
+                gangCall.start();                                                     // :33-54 — the gang call
                 driven[0] = n;
             });
         }
