@@ -56,3 +56,14 @@ origin/wt/m7-fx-decal,238238f20c055ae56cb061e94dfd96a4960ac563,BD-47,BD-86,t_93a
 origin/wt/t_32366a27,e378872f9daf63e71fc63dfd66f80e6f795f8c14,BD-79,BD-87,t_32366a27,yes,Mind spider renderer GL state fade cap and eye pass deltas
 origin/wt/t_28b5588f,3c27622e3ec096af7c13a593f9a788a13e5cd01a,BD-88,BD-88,t_28b5588f,yes,Pech dungeonChest pool rows and the loot-table engine seam
 origin/wt/t_982f53d5,24c3454decefd2346a96d71d01f9cbb55852252c,BD-87,BD-89,t_982f53d5,yes,thaumaturgy/essentia
+origin/wt/t_c59f137b,6814759415504bc2192239a4e782d283fc823e70,BD-88,BD-90,t_c59f137b,yes,Crimson cultist family: the Cleric's half lands carried by name and registry id
+origin/wt/t_c59f137b,6814759415504bc2192239a4e782d283fc823e70,BD-89,BD-91,t_c59f137b,yes,Cultist death drop: the 1.21.1 hook carries no looting parameter
+origin/wt/t_c59f137b,6814759415504bc2192239a4e782d283fc823e70,BD-90,BD-92,t_c59f137b,yes,Cultist creative-kill gift (Crimson Rites) ships as an unwired seam
+origin/wt/t_c59f137b,6814759415504bc2192239a4e782d283fc823e70,BD-91,BD-93,t_c59f137b,yes,Knight goal slot 4: `EntityAIRestrictOpenDoor` has no 1.21.1 twin
+origin/wt/t_c59f137b,6814759415504bc2192239a4e782d283fc823e70,BD-92,BD-94,t_c59f137b,yes,Knight weapon enchantment: `enchantItem` is not `addRandomEnchantment`
+origin/wt/t_c59f137b,6814759415504bc2192239a4e782d283fc823e70,BD-93,BD-95,t_c59f137b,yes,Cultist pickup item (id 0 / air) has no 1.21.1 hook
+origin/wt/t_c59f137b,6814759415504bc2192239a4e782d283fc823e70,BD-94,BD-96,t_c59f137b,yes,"Cultist gang call: the faction test is the original's predicate, not `Mob#canAttack`"
+origin/wt/t_c59f137b,6814759415504bc2192239a4e782d283fc823e70,BD-95,BD-97,t_c59f137b,yes,"Knight armour is the platform living baseline, not 1.7.10's mob figure"
+origin/wt/t_c59f137b,6814759415504bc2192239a4e782d283fc823e70,BD-96,BD-98,t_c59f137b,yes,"Knight equipment passes run from the mob's own `finalizeSpawn`, not the base's"
+origin/wt/t_c59f137b,6814759415504bc2192239a4e782d283fc823e70,BD-97,BD-99,t_c59f137b,yes,"The knight's `NearestAttackableTargetGoal<Player>` arms through `ServerLevel#getNearestPlayer`, which the game-test harness cannot populate"
+origin/wt/t_c59f137b,6814759415504bc2192239a4e782d283fc823e70,BD-98,BD-100,t_c59f137b,yes,`AICultistHurtByTarget` runs the original's pair and skips 21.1.259's `universal_anger` player clause

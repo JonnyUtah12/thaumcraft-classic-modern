@@ -3,6 +3,7 @@ package com.jonnyutah12.thaumcraftclassic.registration;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArcaneWorkbench;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArmor;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCultists;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogThaumatorium;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
@@ -266,6 +267,15 @@ public final class ModRegistration {
         // goals never run. Renderer TC-M7-03-r (t_32366a27, shipped here), spawn
         // egg row TC-M6-06-s-c6.
         CatalogMindSpider.init(modEventBus);
+
+        // TC-M6-06-s-c4a-1: the crimson cultist family — thaumcraft:cultistknight
+        // (EntityCultistKnight over the shared, deliberately UNREGISTERED
+        // EntityCultist base: the original registers Knight/Cleric/Leader/Portal
+        // and no base, and this lane ships the knight alone — the Cleric +
+        // GolemOrb half is t_6160444c). Plate + weapon roll + light-gated
+        // enchantment and the family goal set ride CultistAiLogic. Renderer
+        // TC-M7-03-s, spawn egg row TC-M6-06-s-c6.
+        CatalogCultists.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-
