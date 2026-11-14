@@ -3,6 +3,8 @@ package com.jonnyutah12.thaumcraftclassic.menus;
 import com.jonnyutah12.thaumcraftclassic.client.ContainerLayout;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityPech;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.PechAiLogic;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.PechTradeInventory;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.PechTradeRoll;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogPech;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
@@ -62,16 +64,16 @@ import net.minecraft.world.item.component.CustomData;
  * server's answer, the screen never touches the entity, and a dedicated-server
  * probe can measure the same bit (BD-73).</p>
  *
- * <p><b>The trade roll itself is not implemented, and no stand-in is
- * invented.</b> The original's dice click ({@code ContainerPech.java:64-70} →
- * {@code :83-159}) runs {@code generateContents} over the
- * {@code common/crafting/ChestGenHooks.java} loot-table engine (1304 lines,
- * D-007) with the per-type {@code EntityPech.tradeInventory} table
- * ({@code EntityPech.java:746-830}), the pech's 9-slot loot pack
- * ({@code :73-81} reads it), the scam roll that untames the pech
- * ({@code :92-96}) and {@code EntityPech.payToChest}. None of that is ported, so
- * {@link #clickMenuButton} accepts no button and the output grid stays manual
- * (BD-73). The 25x25 dice overlay ships as a framed vanilla-toned well — the
+ * <p><b>The dice roll landed with TC-M7-04-m3-b-followup:</b>
+ * {@link #clickMenuButton} carries button id 0 into {@link #generateContents()}
+ * ({@code ContainerPech.java:83-159}) — the value, the scam roll, the jitter,
+ * the payout loop, the loot-pack draw and the trade table — over the
+ * registry-gated port of {@code EntityPech.tradeInventory}
+ * ({@code entities/monster/PechTradeInventory.java}) and the pure roll planner
+ * ({@code entities/monster/PechTradeRoll.java}). The {@code ChestGenHooks}
+ * "dungeonChest" branch keeps its gate and takes its failure arm (BD-75), the
+ * table search is bounded (BD-74) and the {@code potionitem} metas ride as data
+ * (BD-76). The 25x25 dice overlay ships as a framed vanilla-toned well — the
  * original's {@code gui_pech.png} (176,0) sprite is an asset-overlay-only sheet
  * (D-004 / BD-37).</p>
  */
@@ -189,17 +191,161 @@ public class PechMenu extends AbstractContainerMenu {
     }
 
     /**
-     * The original's dice click ({@code ContainerPech.java:64-70} →
-     * {@code :83-159}) runs the {@code ChestGenHooks} loot-table engine (D-007)
-     * over {@code EntityPech.tradeInventory} ({@code EntityPech.java:746-830}),
-     * pays out of the pech's loot pack and can untame the pech on the scam roll.
-     * None of that is ported, so no button is accepted and no roll is invented
-     * (BD-73). The client screen still plays the pech_dice cue the original plays
-     * client-side ({@code GuiPech.java:63,67-80}).
+     * The window's button: {@code GuiPech.java:62} sends
+     * {@code window_click(container, 0, -1, 0)} from the dice rect and
+     * {@code ContainerPech.java:64-70} runs {@code generateContents()} for
+     * {@code id == 0} and returns true. Button 0 is accepted ONLY while the
+     * original's roll gate stands ({@link #rollGateOk}, {@code :84-90}) —
+     * {@code GuiPech.java:60} only draws the dice when its own predicate
+     * ({@code :34-39}) holds, so the client cannot reach a roll it cannot show,
+     * and the server re-checks it. The client screen plays the pech_dice cue on
+     * the accepted answer ({@code GuiPech.java:63,67-80}); the roll's own
+     * {@code thaumcraft:pech_trade} cue is server-side, on the pech
+     * ({@code :95}).
      */
     @Override
     public boolean clickMenuButton(final Player player, final int buttonId) {
-        return false;
+        if (buttonId != 0) {
+            return false;                                                                   // :64-66
+        }
+        if (!rollGateOk()) {
+            return false;                                                                   // :84-90
+        }
+        generateContents();                                                                 // :67
+        return true;                                                                        // :68
+    }
+
+    /**
+     * The original's roll gate, {@code ContainerPech.java:84-90}: the server,
+     * slot 0 non-null, slots 1..4 ALL null, and {@code pech.isValued(offer)}
+     * (the valued table / rich-aspects check, {@code EntityPech.java:707-722}).
+     * {@code world.isRemote} is the 1.7.10 client flag
+     * ({@code world.field_72995_K}); the menu is built server-side (the client
+     * copy's {@code pech} is null), so a null pech is the client arm.
+     */
+    private boolean rollGateOk() {
+        if (this.pech == null || this.pech.level().isClientSide()) {
+            return false;                                                                   // :84
+        }
+        return diceReady();                                 // :85-90 — the same predicate
+    }
+
+    /**
+     * The roll: {@code ContainerPech.java:83-159}, the arm the original's button
+     * 0 runs. The arithmetic is the pure planner
+     * ({@link PechTradeRoll#plan}) so a unit test pins the exact
+     * value→payout sequence over a seeded stream; the draws, the scam,
+     * the loot-pack decrement and the trade-table lookup happen here.
+     *
+     * <p>The pech is the RNG: the original draws on {@code pech.getRandom()}
+     * ({@code :92,98-102,107,110,118,138,142,151}) — the entity's
+     * {@code RandomSource}, NOT the world's and NOT {@code RandomSource.create()}
+     * (which is 1.21.1's thread-safe factory and does not exist in 1.7.10). The
+     * offer loses exactly ONE item at the end ({@code :158}), whatever the roll
+     * paid, and an unvalued offer never gets here at all (the gate,
+     * {@link #rollGateOk}).</p>
+     */
+    private void generateContents() {
+        final net.minecraft.world.level.Level level = this.pech.level();
+        final ItemStack offer = this.inventory.getItem(0);                                   // :85
+        int value = this.pech.getValue(offer);                                               // :91
+        if (PechTradeRoll.scams(level.getRandom().nextInt(PechTradeRoll.SCAM_ROLL_BOUND), value)) {
+            this.pech.setTamed(false);                                                       // :94
+            this.pech.flagAiUpdate();                                                        // :95
+            this.pech.playTradeCue();                                                        // :95
+        }
+        value = PechTradeRoll.jitteredValue(value, level.getRandom());                        // :98-102
+        final int[] packSlots = PechTradeRoll.packSlotsOf(this.pech.lootSlots());             // :73-81
+        final java.util.List<PechTradeInventory.TradeRow> liveRows =
+                PechTradeInventory.liveRows(this.pech.getPechType(), level.registryAccess());  // :150
+        final PechTradeRoll.Plan plan =
+                PechTradeRoll.plan(value, level.getRandom(), liveRows, packSlots);            // :106-157
+        for (final PechTradeRoll.Outcome outcome : plan.outcomes()) {
+            if (outcome instanceof PechTradeRoll.FromPack fromPack) {                         // :110-124
+                payFromLootPack(fromPack.packSlot());
+            } else if (outcome instanceof PechTradeRoll.FromTable fromTable) {                // :150-155
+                final ItemStack payout = PechTradeInventory.resolve(fromTable.row(), level.registryAccess());
+                if (!payout.isEmpty()) {
+                    payToOutputRange(payout);                                                 // :153-155
+                }
+            }
+        }
+        this.inventory.removeItem(0, 1);                                                      // :158
+    }
+
+    /**
+     * {@code ContainerPech.java:118-124} — copy ONE item out of the pech's loot
+     * pack into the output grid, then decrement the pack slot. The reference cuts
+     * the copy first: {@code ItemStack is = pech.loot[r].copy(); is.field_77994_a
+     * = 1;} ({@code :118-119}) before {@code func_75135_a(is, 1, 5, false)}
+     * ({@code :120}), so a 5-stack of gold pays a single gold, not the stack;
+     * {@code :121-123} then decrements the slot and nulls it at zero
+     * ({@code InventoryPech.java:57-67} {@code decStack}), which
+     * {@code ItemStack#shrink} reaches at empty.
+     */
+    private void payFromLootPack(final int packSlot) {
+        final ItemStack stack = this.pech.lootSlots()[packSlot];
+        if (stack.isEmpty()) {
+            return;
+        }
+        final ItemStack paid = stack.copy();
+        paid.setCount(1);                                                                     // :118-119
+        payToOutputRange(paid);                                                               // :120
+        final ItemStack left = stack.copy();
+        left.shrink(1);
+        this.pech.setLootSlot(packSlot, left.isEmpty() ? ItemStack.EMPTY : left);             // :121-123
+    }
+
+    /**
+     * The insertion the original does through {@code EntityPech.payToChest}
+     * (vanilla 1.7.10 code, not in this repo's reference tree): a
+     * {@code mergeItem}-style pass over the cells first (matching item AND
+     * components, room left), then the first empty cell. It lands on the menu's
+     * 2x2 grid — slots 1..4, NOT the player inventory, which is what the
+     * name would suggest (BD-73 records the seam; the original's GUI reads the
+     * container, so the cells are the only place the payout can show).
+     *
+     * <p>{@code Slot#mayPlace} is false on these cells
+     * ({@code SlotOutput.java:12-14}) — that rule gates PLAYER insertion,
+     * and the original's roll bypasses it because the container writes the slot
+     * directly. This method is that direct write: it does NOT consult
+     * {@code mayPlace}, and the probe pins both halves.</p>
+     */
+    private void payToOutputRange(final ItemStack payout) {
+        final int max = payout.getMaxStackSize();                                             // :221
+        for (int a = 1; a < 5; a++) {                                                         // :223-232
+            final ItemStack current = this.slots.get(a).getItem();
+            if (!current.isEmpty()
+                    && ItemStack.isSameItemSameComponents(current, payout)
+                    && current.getCount() < max) {
+                final int moved = Math.min(payout.getCount(), max - current.getCount());     // :228-230
+                current.grow(moved);
+                payout.shrink(moved);
+                this.slots.get(a).set(current);
+                this.slots.get(a).setChanged();
+                if (payout.isEmpty()) {
+                    return;
+                }
+            }
+        }
+        for (int a = 1; a < 5; a++) {                                                         // :233-240
+            if (this.slots.get(a).getItem().isEmpty()) {
+                this.slots.get(a).set(payout.copy());
+                this.slots.get(a).setChanged();
+                return;
+            }
+        }
+    }
+
+    /** The roll's table draw space for this pech type — the live rows
+     *  ({@link PechTradeInventory#liveRows}); the probe measures it. */
+    public java.util.List<PechTradeInventory.TradeRow> tradeTable() {
+        return PechTradeInventory.liveRows(this.pech.getPechType(), this.pech.level().registryAccess());
+    }
+
+    /** The pech this window is bound to ({@code ContainerPech.java:27-29}). */
+    public EntityPech pech() {
+        return this.pech;
     }
 
     /**

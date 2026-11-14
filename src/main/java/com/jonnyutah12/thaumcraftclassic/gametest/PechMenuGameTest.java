@@ -214,19 +214,31 @@ public final class PechMenuGameTest {
         helper.succeed();
     }
 
-    /** BD-73 — the dice click invents nothing: no roll, no contents, no consumption. */
+    /**
+     * The dice click. This probe pinned the SHIPPED DEFECT ("no button is
+     * accepted") while the roll sat behind the unported loot engine; the roll
+     * landed with TC-M7-04-m3-b-followup, so the accepted arm is what the
+     * contract now pins: the window's gate is the original's
+     * ({@code ContainerPech.java:84-90}) and the offer loses exactly one item
+     * ({@code :158}). BD-73 keeps the parts that are still true — the
+     * {@code ChestGenHooks} "dungeonChest" pool is not ported, so branch (b)
+     * takes its failure arm (BD-75) — and the payout itself is measured probe by
+     * probe in {@code PechTradeRollGameTest} (the grid contents, the scam arm,
+     * the loot pack, the bounded search). The number of items in the grid is
+     * deliberately not asserted here: the default level seed draws the roll's own
+     * sequence, and the gated melee table can exhaust it.
+     */
     @GameTest(template = "empty")
-    public static void pechDiceClickInventsNothing(final GameTestHelper helper) {
+    public static void pechDiceClickRunsTheRoll(final GameTestHelper helper) {
         final EntityPech pech = tamedPech(helper);
         final Player player = fakePlayer(helper);
         final PechMenu menu = new PechMenu(0, player.getInventory(), pech);
         menu.slots.get(0).set(new ItemStack(Items.DIAMOND, 4));
-        helper.assertTrue(!menu.clickMenuButton(player, PechMenu.DICE_BUTTON),
-                "the roll is the unported ChestGenHooks engine — no button is accepted (BD-73)");
-        helper.assertTrue(menu.getItems().get(0).getCount() == 4, "the offer is not consumed");
-        for (int a = 1; a < 5; a++) {
-            helper.assertTrue(menu.getItems().get(a).isEmpty(), "no contents are invented into the output grid");
-        }
+        helper.assertTrue(menu.clickMenuButton(player, PechMenu.DICE_BUTTON),
+                "button 0 is accepted while the roll gate stands (GuiPech.java:62 -> ContainerPech.java:64-70)");
+        helper.assertTrue(menu.getItems().get(0).getCount() == 3,
+                "the roll consumes exactly one offer item (:158), got " + menu.getItems().get(0).getCount());
+        helper.assertTrue(!menu.clickMenuButton(player, 1), "no other button exists (:64-66)");
         helper.succeed();
     }
 
