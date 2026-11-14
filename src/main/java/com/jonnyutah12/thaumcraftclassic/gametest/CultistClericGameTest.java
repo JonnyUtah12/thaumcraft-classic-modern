@@ -916,6 +916,23 @@ public final class CultistClericGameTest {
         // feet sit at home-(1,0,1) (cleric(): offset(1,3,1), moveTo +0.5 on x/z, y whole),
         // so every home below is placed at an exact offset FROM THE FEET: 16.0 keeps (the
         // strict >), 17.0 drops (the threshold, one over), on both axes.
+        final java.util.function.BiConsumer<BlockPos, String> live = (spot, why) -> helper.assertTrue(
+                level.getBlockState(spot).is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())
+                        && new net.minecraft.world.phys.Vec3(spot.getX(), spot.getY(), spot.getZ())
+                        .distanceToSqr(new net.minecraft.world.phys.Vec3(
+                                cleric.getBlockX(), cleric.getBlockY(), cleric.getBlockZ()))
+                        <= CultistAiLogic.ALTAR_MAX_DIST_SQ,
+                "PROBE BROKEN (" + why + "): the arm under test needs a home that is"
+                        + " thaumcraft:blockeldritch AND inside the distance clamp, so the drop"
+                        + " arms can only answer for the figure named in the assert; home=" + spot
+                        + " reading=" + level.getBlockState(spot)
+                        + " d2=" + new net.minecraft.world.phys.Vec3(spot.getX(), spot.getY(), spot.getZ())
+                        .distanceToSqr(new net.minecraft.world.phys.Vec3(
+                                cleric.getBlockX(), cleric.getBlockY(), cleric.getBlockZ()))
+                        + " limit=" + CultistAiLogic.ALTAR_MAX_DIST_SQ
+                        + " liveFeet=" + new BlockPos(cleric.getBlockX(), cleric.getBlockY(), cleric.getBlockZ())
+                        + " pos=" + cleric.position() + " tickCount=" + cleric.tickCount
+                        + " region=" + helper.absolutePos(BlockPos.ZERO));
         final BlockPos feet = new BlockPos(cleric.getBlockX(), cleric.getBlockY(), cleric.getBlockZ());
         helper.assertTrue(feet.equals(home.offset(-1, 0, -1)),
                 "PROBE BROKEN: this arm's arithmetic assumes the cleric's truncated feet sit at"
@@ -932,6 +949,7 @@ public final class CultistClericGameTest {
                             + " (reading=" + level.getBlockState(spot) + ")");
         }
         cleric.setHomePosition(edgeX, CultistAiLogic.SPAWN_HOME_DISTANCE);
+        live.accept(edgeX, "edgeX keeps");
         cleric.tickCount = CultistAiLogic.ALTAR_CADENCE_TICKS;
         goal.tick();
         helper.assertTrue(cleric.getIsRitualist(),
@@ -953,6 +971,7 @@ public final class CultistClericGameTest {
                         + " canUse=" + goal.canUse() + ")");
         cleric.setIsRitualist(true);
         cleric.setHomePosition(edgeY, CultistAiLogic.SPAWN_HOME_DISTANCE);
+        live.accept(edgeY, "edgeY keeps");
         cleric.tickCount = CultistAiLogic.ALTAR_CADENCE_TICKS;
         goal.tick();
         helper.assertTrue(cleric.getIsRitualist(),
@@ -969,6 +988,10 @@ public final class CultistClericGameTest {
         // Arm 2: the home block, with the home back inside the distance clamp.
         cleric.setHomePosition(edgeX, CultistAiLogic.SPAWN_HOME_DISTANCE);
         level.setBlock(edgeX, Blocks.STONE.defaultBlockState(), net.minecraft.world.level.block.Block.UPDATE_ALL);
+        helper.assertTrue(level.getBlockState(edgeX).is(Blocks.STONE),
+                "PROBE BROKEN (stone home): the :38-43 arm needs a NON-eldritch block at the home;"
+                        + " reading=" + level.getBlockState(edgeX) + " home=" + edgeX
+                        + " region=" + helper.absolutePos(BlockPos.ZERO));
         cleric.tickCount = CultistAiLogic.ALTAR_CADENCE_TICKS;
         goal.tick();
         helper.assertTrue(!cleric.getIsRitualist(),
