@@ -228,9 +228,19 @@ class MindSpiderRendererRegistrationTest {
         final String catalog = readSource("registration/catalog/CatalogMindSpider.java");
         assertTrue(entity.contains(".sized(MindSpiderAiLogic.WIDTH, MindSpiderAiLogic.HEIGHT)"),
                 "the box is the same 0.3, registered once");
-        assertTrue(!entity.contains("GENERIC_SCALE") && !catalog.contains("GENERIC_SCALE"),
-                "generic.scale must stay at its 1.0 default: the renderer owns the 0.3, so a second "
-                        + "0.3 on the attribute would shrink the spider twice");
+        // The grep token is the API's real name, read out of the decompiled MC
+        // sources: the attribute is Attributes#SCALE (id "generic.scale"), read by
+        // LivingEntity.getScale() (:552-554) and multiplied into the pose at
+        // LivingEntityRenderer.java:97-98. Grepping only "GENERIC_SCALE" — the
+        // pre-1.20.5 name — stays GREEN straight through the real mutation, because
+        // the builder call in this API is `.add(Attributes.SCALE, 0.3)`. Proven by
+        // mutation: with that line added to createAttributes(), the old assertion
+        // passed and the double-shrink shipped.
+        for (final String source : List.of(entity, catalog)) {
+            assertTrue(!source.contains("Attributes.SCALE") && !source.contains("GENERIC_SCALE"),
+                    "generic.scale must stay at its 1.0 default: the renderer owns the 0.3, so a second "
+                            + "0.3 on the attribute would shrink the spider twice");
+        }
     }
 
     @Test
