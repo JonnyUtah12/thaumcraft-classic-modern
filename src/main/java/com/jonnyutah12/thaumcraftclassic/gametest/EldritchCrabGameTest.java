@@ -695,9 +695,15 @@ public final class EldritchCrabGameTest {
                         .getDeclaredFields().length == 1,
                 ":78-92 — the carrier is the marker alone, got "
                         + EntityEldritchCrab.EldritchCrabGroupData.class.getDeclaredFields().length);
-        helper.assertTrue(java.lang.reflect.Modifier.isPublic(
-                        EntityEldritchCrab.EldritchCrabGroupData.class
-                                .getDeclaredField("marker").getModifiers()),
+        int markerMods;
+        try {
+            markerMods = EntityEldritchCrab.EldritchCrabGroupData.class
+                    .getDeclaredField("marker").getModifiers();
+        } catch (NoSuchFieldException absent) {
+            helper.fail(":78-92 — the carrier must expose its marker field: " + absent);
+            return;
+        }
+        helper.assertTrue(java.lang.reflect.Modifier.isPublic(markerMods),
                 ":78-92 — 1.7.10's GroupData potion id is public; the port's marker is too");
         helper.assertTrue(EldritchCrabAiLogic.GROUP_EFFECT_MAX_AGE == Integer.MAX_VALUE
                         && EldritchCrabAiLogic.GROUP_POTION_BASE_CHANCE == 0.1F,

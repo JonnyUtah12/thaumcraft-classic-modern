@@ -25,10 +25,10 @@ class EntityEldritchOrbTest {
     void registrationArgsAreTheOriginals() {
         // registerModEntity(EntityEldritchOrb.class, "EldritchOrb", id++,
         // Thaumcraft.instance, 64, 20, true) — ConfigEntities.java:87, the row
-        // whose content-mapping mod_index is 11. (intValue: MOD_INDEX is an
-        // Integer, and JUnit 5's assertEquals overloads make (int, Integer)
-        // ambiguous — the platform's own compile error, not a style choice.)
-        assertEquals(11, EntityEldritchOrb.MOD_INDEX.intValue());
+        // whose content-mapping mod_index is 11. MOD_INDEX is a plain int
+        // constant, so the (int, int) assertEquals overload is exact — no
+        // boxing, no ambiguity.
+        assertEquals(11, EntityEldritchOrb.MOD_INDEX);
         assertEquals(64, EntityEldritchOrb.TRACK_RANGE_BLOCKS);
         // 1.21.1's clientTrackingRange counts CHUNKS (BrainyZombieAiLogicTest:38).
         assertEquals(EntityEldritchOrb.TRACK_RANGE_BLOCKS / 16,
