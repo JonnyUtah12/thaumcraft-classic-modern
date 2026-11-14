@@ -114,6 +114,13 @@ public class EntityEldritchCrab extends Monster {
     /** The original's registration args are {@code (64, 3, true)} —
      *  {@code ConfigEntities.java:121}; 64 blocks = 4 chunks
      *  ({@code BrainyZombieAiLogicTest:38}). */
+    /** Neither the original (its 215 lines set no {@code isImmuneToFire}) nor
+     *  this port makes the crab fire-immune — pinned so a later "make the
+     *  eldritch mob family fireproof" sweep has to turn this test red. The
+     *  1.21.1 carrier would be {@code EntityType.Builder#fireImmune()}, which
+     *  {@link #buildType} deliberately does not call. */
+    public static final boolean FIRE_IMMUNE = false;
+
     public static EntityType<EntityEldritchCrab> buildType(final MobCategory category) {
         return EntityType.Builder.<EntityEldritchCrab>of(EntityEldritchCrab::new, category)
                 .sized(EldritchCrabAiLogic.WIDTH, EldritchCrabAiLogic.HEIGHT)  // :33
@@ -155,9 +162,11 @@ public class EntityEldritchCrab extends Monster {
         this.targetSelector.addGoal(EldritchCrabAiLogic.TARGET_SLOT_HURT,
                 new HurtByTargetGoal(this));                                                  // :42 (this, true)
         this.targetSelector.addGoal(EldritchCrabAiLogic.TARGET_SLOT_PLAYER,
-                new NearestAttackableTargetGoal<>(this, Player.class, true));                 // :43
+                new NearestAttackableTargetGoal<>(this,
+                        EldritchCrabAiLogic.TARGET_CLASS_PLAYER, true));                       // :43
         this.targetSelector.addGoal(EldritchCrabAiLogic.TARGET_SLOT_CULTIST,
-                new NearestAttackableTargetGoal<>(this, EntityCultist.class, true));          // :44
+                new NearestAttackableTargetGoal<>(this,
+                        EldritchCrabAiLogic.TARGET_CLASS_CULTIST, true));                      // :44
     }
 
     // ------------------------------------------------------------------ shell

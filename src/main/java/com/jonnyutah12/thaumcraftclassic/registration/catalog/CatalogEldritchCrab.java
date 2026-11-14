@@ -55,6 +55,12 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  */
 public final class CatalogEldritchCrab {
 
+    /** The crab has no spawn-egg row in the content mapping (no {@code
+     *  thaumcraft:spawn_egg} line names {@code eldritchcrab}), so this slice
+     *  registers no egg item for it — the family's rule (a row the mapping does
+     *  not carry is not invented). Pinned for the unit test. */
+    public static final boolean HAS_SPAWN_EGG_ROW = false;
+
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
             DeferredRegister.create(Registries.ENTITY_TYPE, ThaumcraftClassic.MOD_ID);
 
@@ -68,7 +74,7 @@ public final class CatalogEldritchCrab {
             ENTITY_TYPES.register("eldritchorb", () -> EntityType.Builder
                     .<EntityEldritchOrb>of(EntityEldritchOrb::new, MobCategory.MISC)
                     .sized(EntityEldritchOrb.WIDTH, EntityEldritchOrb.HEIGHT)
-                    .clientTrackingRange(EntityEldritchOrb.TRACK_RANGE_CHUNKS)
+                    .clientTrackingRange(EntityEldritchOrb.TRACK_RANGE_CHUNKS)   // 64 blocks
                     .updateInterval(EntityEldritchOrb.UPDATE_INTERVAL)
                     .build("eldritchorb"));
 

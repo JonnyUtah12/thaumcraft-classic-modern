@@ -83,8 +83,18 @@ public class EntityEldritchOrb extends ThrowableProjectile {
             ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "eldritchorb");
 
     /** {@code ConfigEntities.java:87} — {@code registerModEntity(..., 64, 20, true)}. */
+    /** The original's 92 lines set no {@code isImmuneToFire}, and a 1.21.1
+     *  projectile needs none; pinned with the {@code build} pass that calls no
+     *  {@code EntityType.Builder#fireImmune()}. */
+    public static final boolean FIRE_IMMUNE = false;
+
     public static final int MOD_INDEX = 11;
-    public static final int TRACK_RANGE_CHUNKS = 64;
+    // registerModEntity(..., 64, 20, true) — ConfigEntities.java:87. The
+    // original's tracking range is 64 BLOCKS; 1.21.1's clientTrackingRange
+    // counts CHUNKS, so the builder gets 4 (the family's rule,
+    // BrainyZombieAiLogicTest:38 — a raw 64 would track a kilometre).
+    public static final int TRACK_RANGE_BLOCKS = 64;
+    public static final int TRACK_RANGE_CHUNKS = 4;
     public static final int UPDATE_INTERVAL = 20;
     /** 1.7.10's {@code EntityThrowable} default box — the original sets none. */
     public static final float WIDTH = 0.25F;

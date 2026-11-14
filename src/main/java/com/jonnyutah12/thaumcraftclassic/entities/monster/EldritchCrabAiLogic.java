@@ -120,6 +120,17 @@ public final class EldritchCrabAiLogic {
      *  {@code EntityCultistKnight}/{@code EntityCultistCleric} match). */
     public static final int TARGET_SLOT_CULTIST = 3;
 
+    /** The target classes of the two {@code NearestAttackableTargetGoal}s —
+     *  {@code EntityPlayer.class} at :43 (21.1.259's carrier of the legacy
+     *  {@code EntityPlayer}, the shipped goal uses {@code Player}) and {@code
+     *  EntityCultist.class} at :44 (the abstract cultist base, so the knight
+     *  and the cleric both match — {@code EntityCultistKnight}/{@code
+     *  EntityCultistCleric}). Pinned so a unit test can name the classes the
+     *  goals are built with. */
+    public static final Class<net.minecraft.world.entity.player.Player> TARGET_CLASS_PLAYER =
+            net.minecraft.world.entity.player.Player.class;
+    public static final Class<EntityCultist> TARGET_CLASS_CULTIST = EntityCultist.class;
+
     // ---------------------------------------------------------------- shell
 
     /** {@code :60} — the synched Flags byte (watcher index 22; 1.21.1
