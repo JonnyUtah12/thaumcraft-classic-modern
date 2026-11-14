@@ -218,15 +218,17 @@ public final class CultistAiLogic {
         return "thaumcraft".equals(id.getNamespace()) && CULTIST_TYPE_PATHS.contains(id.getPath());
     }
     /**
-     * {@code EntityCultistCleric:167-169} — {@code func_70719_l}: the look angles of
-     * the ritual look target, as {@code (yaw, pitch, 0)} in the order the original’s
-     * {@code updateRotation} pair takes them. 1.7.10 computes them in radians
-     * ({@code atan2(dz, dx) - pi/2}, {@code -atan2(dy, sqrt(dx^2+dy^2))});
-     * {@code rotationYaw}/{@code rotationPitch} are degrees, so the conversion is the
-     * platform’s, not a tuning figure.
+     * {@code EntityCultistCleric.java:152-154} — the ritual look angles inside
+     * {@code func_70071_h_}, returned as {@code (yaw, pitch, 0)} in the order the
+     * original’s {@code updateRotation} pair takes them. The original writes
+     * {@code d3 = sqrt(d0*d0 + d2*d2)} ({@code :152}, the HORIZONTAL plane),
+     * {@code f = atan2(d2, d0) * 180/PI - 90} ({@code :153}) and
+     * {@code f1 = -(atan2(d1, d3) * 180/PI)} ({@code :154}) — degrees in, degrees
+     * out — so the yaw's -90 and the pitch's negation are the original's own, not
+     * a platform conversion.
      */
     public static Vec3 clericLookAngles(final double dx, final double dy, final double dz) {
-        final double flat = Math.sqrt(dx * dx + dy * dy);
+        final double flat = Math.sqrt(dx * dx + dz * dz);                              // :152
         final float yaw = Mth.wrapDegrees((float) Math.toDegrees(Math.atan2(dz, dx)) - 90.0F);
         final float pitch = Mth.wrapDegrees((float) (-Math.toDegrees(Math.atan2(dy, flat))));
         return new Vec3(yaw, pitch, 0.0);

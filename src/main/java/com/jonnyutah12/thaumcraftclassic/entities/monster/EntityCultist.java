@@ -55,7 +55,7 @@ import net.minecraft.world.level.Level;
  * as the pickup item — 1.21.1 has no such hook, and its pickup path
  * ({@code Mob#getPickupItem}/{@code canPickUpLoot}) is pinned false by
  * {@code :35-37}, so the pickup branch is unreachable by construction (recorded
- * deviation); {@code func_70650_aV()} ({@code :39-41}) is the boss flag, and
+ * deviation, BD-92); {@code func_70650_aV()} ({@code :39-41}) is the boss flag, and
  * 1.21.1 has no {@code Mob#isBoss()} — boss bars are {@code ServerBossEvent}s and
  * the cultists draw no bar, so the flag ships inert (BD-69's shape, reused
  * verbatim from the pech).</p>
@@ -169,7 +169,7 @@ public abstract class EntityCultist extends Monster {
      * The drop is a real world drop when the item is registered; the unit test
      * pins the roll table on {@link CultistAiLogic#dropMetaFor(int, int)}.
      */
-    protected final void rollCultistDrops(final ServerLevel level, final int looting) {
+    public final void rollCultistDrops(final ServerLevel level, final int looting) {
         final int roll = this.random.nextInt(CultistAiLogic.DROP_ROLL_MODULO);    // :48
         final int meta = CultistAiLogic.dropMetaFor(roll, looting);               // :50/:52/:54
         if (meta < 0) {
