@@ -48,4 +48,4 @@ origin/wt/t_f2184302,04bcd0ccf7ed2672c4016946669b5e390accf9de,BD-75,BD-75,t_f218
 origin/wt/t_f2184302,04bcd0ccf7ed2672c4016946669b5e390accf9de,BD-76,BD-76,t_f2184302,yes,Mind spider goal set transcribed from the 1.21.1 parent
 origin/wt/t_f2184302,04bcd0ccf7ed2672c4016946669b5e390accf9de,BD-77,BD-77,t_f2184302,yes,Mind spider 12.0 target hook has no 1.21.1 counterpart
 origin/wt/t_f2184302,04bcd0ccf7ed2672c4016946669b5e390accf9de,BD-78,BD-78,t_f2184302,yes,Mind spider viewer seam and 0.3 render scale
-origin/wt/t_32366a27,e378872f9daf63e71fc63dfd66f80e6f795f8c14,BD-79,BD-79,t_32366a27,yes,Mind spider renderer GL state fade cap and eye pass deltas
+origin/wt/t_32366a27,e378872f9daf63e71fc63dfd66f80e6f795f8c14,BD-79,BD-82,t_32366a27,yes,Mind spider renderer GL state fade cap and eye pass deltas

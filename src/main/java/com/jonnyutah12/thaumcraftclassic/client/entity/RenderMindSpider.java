@@ -82,7 +82,7 @@ import net.minecraft.resources.ResourceLocation;
  * fragment shader tests {@code color.a < 0.1} against the <b>texture</b> alpha
  * <i>before</i> multiplying in the vertex colour ({@code
  * shaders/core/rendertype_entity_translucent.fsh}, read out of the pinned 1.21.1
- * client jar), so a 0.1 body alpha blends rather than being discarded. BD-79
+ * client jar), so a 0.1 body alpha blends rather than being discarded. BD-82
  * carries the deltas: the depth-mask pair ({@code :61}, {@code :69}) is a
  * property of the render type in 1.21.1 and not a per-call state, the alpha
  * floor is 1/10 and not 1/255, and the blend factors are the platform's
@@ -108,7 +108,7 @@ import net.minecraft.resources.ResourceLocation;
  * model an explicit white, the {@code :95-96} {@code glColor4f(1,1,1,1)}. The
  * {@code :85-89} depth-mask switch on the spider's hidden flag has no twin (the
  * eye state never writes depth), so a hidden spider's eyes no longer show through
- * walls — BD-79.</p>
+ * walls — BD-82.</p>
  *
  * <p><b>The name gate of {@code :34-53}.</b> All three {@code doRender}
  * overloads carry the same test: draw when {@code getViewer().length() == 0}
@@ -139,7 +139,7 @@ import net.minecraft.resources.ResourceLocation;
  * different skeleton and the reference's own texture path ({@code
  * textures/models/}, not the modern {@code textures/entity/spider/}) proves the
  * sheets do not match, so no part-by-part geometry parity is claimed. All of it
- * is BD-79.</p>
+ * is BD-82.</p>
  *
  * <p><b>Textures are referenced by path only (D-004).</b> {@code :19} and {@code
  * :80} are rows 1035/1036 of {@code docs/asset-mapping.csv}
