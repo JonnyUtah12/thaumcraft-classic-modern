@@ -2,7 +2,7 @@ package com.jonnyutah12.thaumcraftclassic.entities.monster;
 
 import javax.annotation.Nullable;
 
-import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchMobs;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchCrab;
 import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
 
 import net.minecraft.core.BlockPos;
@@ -26,14 +26,13 @@ import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
-import net.minecraft.world.entity.animal.IronGolem;
-import net.minecraft.world.entity.animal.Turtle;
-import net.minecraft.world.entity.monster.ZombifiedPiglin;
+import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.ai.goal.ZombieAttackGoal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 
@@ -62,13 +61,13 @@ import net.minecraft.world.level.LevelAccessor;
  * 3 replaces vanilla's villager goal. 1.21.1's {@code GoalSelector} keys on the
  * goal, so a slot write cannot replace. The port ships the original's net set
  * explicitly (no {@code super.registerGoals()}): the vanilla 1.21.1 movement
- * goals the 1.7.10 parent had, and the target set {hurt 1, player 2, CULTIST 3,
- * iron golem 4} — the turtle goal at 5 is 1.21.1-only growth, kept under the
- * family's vanilla-shape rule, and the turtle-egg goal (1.21.1 slot 4) and the
- * villager goal (replaced by the original at 3) are stripped. Census: 5
- * movement + 5 target goals, asserted by {@code EldritchMobGameTest}
- * ({@link InhabitedZombieAiLogic#SHIPPED_GOAL_COUNT}). The slot-3 replacement
- * is recorded as BD-119.</p>
+ * goals the 1.7.10 parent had, and the target set {hurt 1 (alert-same-type),
+ * player 2, CULTIST 3}: the villager and iron golem goals (both evicted by the
+ * original's slot-3 write on 1.7.10's slot-keyed map), the slot-5 turtle goal
+ * and the turtle-egg goal (all 1.21.1-only growths with no 1.7.10 counterpart)
+ * are stripped. Census: 5 movement + 3 target goals, asserted by {@code
+ * EldritchMobGameTest} ({@link InhabitedZombieAiLogic#SHIPPED_GOAL_COUNT}).
+ * The slot-3 replacement is recorded as BD-119.</p>
  *
  * <p>Deviations in {@code docs/BEHAVIORAL_DEVIATIONS.md}: BD-119 (the {@code
  * :30} slot-3 replacement has no 1.21.1 seam), BD-118 (the {@code :50-52} {@code
@@ -113,8 +112,10 @@ public class EntityInhabitedZombie extends Zombie {
     /**
      * The original's net goal set, written out (see the class javadoc's
      * reconciliation). The movement goals are the 1.7.10 vanilla zombie's at the
-     * slots 1.21.1's parent uses; the target set is the original's constructor
-     * ({@code :29}/{@code :30}) merged onto the vanilla slots.
+     * slots 1.21.1's parent uses; the target set is the original's net set —
+     * {hurt 1 (alert-same-type), player 2, CULTIST 3} — with every vanilla goal
+     * the slot writes evicted in 1.7.10 stripped (the villager, iron golem and
+     * turtle goals).
      */
     @Override
     protected void registerGoals() {
@@ -132,21 +133,27 @@ public class EntityInhabitedZombie extends Zombie {
         this.goalSelector.addGoal(InhabitedZombieAiLogic.GOAL_SLOT_LOOK_IDLE,
                 new RandomLookAroundGoal(this));
 
-        // :29 — EntityAIHurtByTarget(this, true): the alert-others flag the
-        // vanilla 1.21.1 goal already sets for its own kind plus ZombifiedPiglin.
+        // :29 — EntityAIHurtByTarget(this, true): 1.7.10's `true` is
+        // alert-SAME-TYPE, whose 1.21.1 shape is the EMPTY-varargs
+        // setAlertOthers() — HurtByTargetGoal#alertOthers then reinforces only
+        // the mob's own class. The vanilla 1.21.1 slot 1 adds
+        // ZombifiedPiglin.class (Zombie.java:113), a 1.21.1 growth with no
+        // 1.7.10 counterpart (1.7.10's zombie alerts only zombies), so the
+        // original's own goal ships without the piglin arm (BD-119).
         this.targetSelector.addGoal(InhabitedZombieAiLogic.TARGET_SLOT_HURT,
-                new HurtByTargetGoal(this).setAlertOthers(ZombifiedPiglin.class));
+                new HurtByTargetGoal(this).setAlertOthers());
         this.targetSelector.addGoal(InhabitedZombieAiLogic.TARGET_SLOT_PLAYER,
                 new NearestAttackableTargetGoal<>(this, Player.class, true));
-        // :30 — the Cultist goal replaces the vanilla villager goal at slot 3
-        // (1.7.10's slot-keyed map, 1.21.1's goal-keyed set: BD-119).
+        // :30 — the Cultist goal at target slot 3. 1.7.10 keys its goal map on
+        // the SLOT, and TC's constructor runs after the parent's, so this write
+        // evicts the vanilla zombie's slot-3 goals (the villager goal, then the
+        // iron golem goal that had overwritten it): the original's net target
+        // set is exactly {hurt 1, player 2, CULTIST 3}. 1.21.1's GoalSelector
+        // keys on the GOAL, so a slot write cannot evict — the vanilla slot-3
+        // pair and the slot-5 turtle goal (1.21.1-only; turtles and the turtle
+        // goal arrived in 1.8) are STRIPPED here, not inherited (BD-119).
         this.targetSelector.addGoal(InhabitedZombieAiLogic.TARGET_SLOT_CULTIST,
                 new NearestAttackableTargetGoal<>(this, EntityCultist.class, true));
-        this.targetSelector.addGoal(InhabitedZombieAiLogic.TARGET_SLOT_IRON_GOLEM,
-                new NearestAttackableTargetGoal<>(this, IronGolem.class, true));
-        this.targetSelector.addGoal(InhabitedZombieAiLogic.TARGET_SLOT_TURTLE,
-                new NearestAttackableTargetGoal<>(this, Turtle.class, 10, true, false,
-                        Turtle.BABY_ON_LAND_SELECTOR));
     }
 
     /**
@@ -228,23 +235,56 @@ public class EntityInhabitedZombie extends Zombie {
      * crab takes the zombie's place: {@code setDead()} is 1.21.1's own death
      * state, which the parent sets.
      *
-     * <p>The XP loop is the original's own ({@code :63-71}): the guard is
-     * {@code (attackTime > 0 || isPlayer) && canDropLoot() && doMobLoot} — the
-     * player arm is inert for a zombie, so the live term is "recently hurt",
-     * and 1.21.1's built-in guard is "a player landed the last hit within 600
-     * ticks" ({@code lastHurtByPlayerTime}), a narrower rule. The port ships
-     * the ORIGINAL's loop by suppressing the parent's whole death-drop pass
-     * (the reference's empty {@code func_70645_a(DamageSource)} of {@code
-     * :93-94}) and re-throwing the XP through 1.21.1's splitter, so the orb
-     * figure is the original's and a mob kill throws XP as it did in 1.7.10
-     * (BD-122).</p>
+     * <p>The XP loop is the original's own ({@code :63-71}), shipped as that
+     * loop and not as 1.21.1's {@code dropExperience}: the reference's guard is
+     * the "hit by the player, then decrements" counter (1.21.1's {@code
+     * lastHurtByPlayerTime}), its split is 1.7.10's {@code
+     * EntityXPOrb.getXPSplit} = 1.21.1's public static {@code
+     * ExperienceOrb.getExperienceValue}, and its value is {@code
+     * getExperiencePoints(attackingPlayer)}. 1.21.1's built-in drop applies
+     * vanilla's own guard pair and {@code ExperienceOrb.award}'s split, so it
+     * is not the reference's loop (BD-122).</p>
      */
     @Override
     public void die(final DamageSource source) {
         super.die(source);
         if (this.level() instanceof ServerLevel serverLevel) {
             spawnCrab(serverLevel);                                                     // :58-62
-            this.dropExperience(source.getEntity());                                    // :63-71 (field_70717_bb)
+            // :63-71 - the ORIGINAL's own XP loop. The reference's func_70609_aI()
+            // IS the death update, and the empty func_70645_a(DamageSource) of
+            // :93-94 suppresses vanilla's drop pass, so this loop is the mob's
+            // only XP. The guard is (field_70718_bc > 0 || func_70684_aJ()) &&
+            // func_146066_aG() && doMobLoot: field_70718_bc is "set to 60 when
+            // hit by the player or the player's wolf, then decrements; used to
+            // determine whether the entity should drop items on death", whose
+            // 1.21.1 counterpart is lastHurtByPlayerTime > 0 (set to 100 on a
+            // player hit, decrements, gates dropAllDeathLoot), and the isPlayer
+            // arm is inert for a zombie - a kill by a non-player throws nothing,
+            // exactly as on 1.7.10. The value is func_70693_a(field_70717_bb =
+            // attackingPlayer) = getExperiencePoints, i.e. 1.21.1's
+            // getExperienceReward(ServerLevel, lastHurtByPlayer): xpReward 5 +
+            // Mob#getBaseExperienceReward's 1..3 per equipped plate + looting
+            // (BD-122).
+            if (InhabitedZombieAiLogic.dropsExperience(this.lastHurtByPlayerTime > 0,
+                    // :63 func_70684_aJ() (isPlayer) - "is THIS mob a player". A
+                    // zombie can never be one (1.21.1 rejects the cast as
+                    // provably disjoint), so the arm ships as the constant the
+                    // expression can only ever take; the live arm is the
+                    // recently-hit term above.
+                    false,
+                    // func_146066_aG() (canDropLoot) is the mobGriefing gamerule read
+                    // on 1.7.10; 1.21.1 has no Mob#canDropLoot, so the rule is read
+                    // directly (BD-122).
+                    serverLevel.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING),
+                    serverLevel.getGameRules().getBoolean(GameRules.RULE_DOMOBLOOT))) {
+                final int total = this.getExperienceReward(serverLevel,
+                        this.lastHurtByPlayer);                                         // :64
+                for (final int value
+                        : InhabitedZombieAiLogic.experienceOrbValues(total)) {          // :66-70
+                    serverLevel.addFreshEntity(new ExperienceOrb(serverLevel,
+                            this.getX(), this.getY(), this.getZ(), value));             // :69
+                }
+            }
             for (int i = 0; i < InhabitedZombieAiLogic.DEATH_PARTICLES; i++) {
                 final RandomSource r = serverLevel.getRandom();
                 serverLevel.sendParticles(
@@ -256,6 +296,10 @@ public class EntityInhabitedZombie extends Zombie {
                         InhabitedZombieAiLogic.DEATH_PARTICLE_JITTER,
                         InhabitedZombieAiLogic.DEATH_PARTICLE_JITTER, 0.0);             // :74-88
             }
+            // :90 - func_70106_y() (setDead): the death update removes the zombie
+            // at once. 1.21.1's die() keeps the corpse for 20 deathTime ticks
+            // (LivingEntity#tickDeath), so the removal is explicit.
+            this.discard();
         }
     }
 
@@ -292,7 +336,7 @@ public class EntityInhabitedZombie extends Zombie {
     /** {@code :58-62} — the crab, split out as the probe seam. */
     public void spawnCrab(final ServerLevel level) {
         final EntityEldritchCrab crab =
-                new EntityEldritchCrab(CatalogEldritchMobs.ELDRITCH_CRAB.get(), level);
+                new EntityEldritchCrab(CatalogEldritchCrab.ELDRITCH_CRAB.get(), level);
         crab.setPos(this.getX(),
                 InhabitedZombieAiLogic.crabSpawnY(this.getY(), this.getEyeHeight()),    // :60
                 this.getZ());

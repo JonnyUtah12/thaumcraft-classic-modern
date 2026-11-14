@@ -263,7 +263,11 @@ public final class WarpEvents {
                         && level.getEntities(guardian, box).isEmpty()               // :270 func_72945_a
                         && level.getEntities((Entity) null, box,
                                 e -> !(e instanceof Player)).isEmpty()) {           // :271 !func_72953_d
-                    guardian.lookAt(player);                                        // :272 func_70784_b
+                    // :272 — func_70784_b(player) (point the mob at the player).
+                    // 1.21.1 dropped Entity#lookAt(Entity); the family's
+                    // look-controller seam is setLookAt(entity, 30, 30)
+                    // (LookAtLivingGoal.java:70).
+                    guardian.getLookControl().setLookAt(player, 30.0F, 30.0F);
                     guardian.setTarget(player);                                     // :273 func_70624_b
                     level.addFreshEntity(guardian);                                 // :274 spawnEntityInWorld
                     return;                                                         // :275 break

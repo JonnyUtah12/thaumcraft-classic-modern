@@ -61,12 +61,13 @@ public final class InhabitedZombieAiLogic {
     /**
      * {@code :29} — the original's own target goal at slot 1: {@code
      * EntityAIHurtByTarget(this, true)}. 1.7.10's {@code true} is
-     * alert-same-type; 1.21.1's shape is {@code setAlertOthers()}. The vanilla
-     * 1.21.1 zombie's slot 1 is the same goal with {@code setAlertOthers(
-     * ZombifiedPiglin.class)} (1.7.10's vanilla zombie slot 1 alerts pigmen,
-     * {@code EntityZombie:96}), so the shipped slot 1 keeps the vanilla pair:
-     * the original's {@code true} is the alert-others flag the vanilla goal
-     * already sets.
+     * alert-same-type, and 1.21.1's shape for that is the EMPTY-varargs {@code
+     * setAlertOthers()}: the goal's {@code alertOthers} reinforces only the
+     * mob's own class, skipping every foreign class. 1.21.1's vanilla zombie
+     * adds {@code ZombifiedPiglin.class} to that arm ({@code Zombie.java:113}),
+     * a growth with no 1.7.10 counterpart (1.7.10's zombie alerts only
+     * zombies), so the shipped slot 1 is {@code HurtByTargetGoal(this)
+     * .setAlertOthers()} with no piglin.
      */
     public static final int TARGET_SLOT_HURT = 1;
 
@@ -80,20 +81,17 @@ public final class InhabitedZombieAiLogic {
      * slot 3 too ({@code EntityAINearestAttackableTarget(EntityVillager)}), and
      * the original's constructor runs AFTER the parent's, so on 1.7.10's
      * {@code TreeMap} of priority→goal the Cultist goal REPLACES the villager
-     * goal and the zombie nets a target map of {1 hurt, 2 player, 3 cultist, 4
-     * iron golem}. 1.21.1's {@code GoalSelector} keys on the goal, not the
-     * slot, so a slot write cannot replace: the port ships the vanilla 1.21.1
-     * set minus the goals 1.7.10's vanilla zombie does not have, plus the
-     * Cultist goal at slot 3, and the villager goal is stripped (its class
-     * predicate, {@link #stripsTargetGoal}). Shipped target set: {1 hurt, 2
-     * player, 3 cultist, 4 iron golem, 5 turtle} — the original's map plus the
-     * 1.21.1-only turtle goal, which the family keeps (vanilla-shape rule for
-     * goals the original's parent had in 1.7.10 form and 1.21.1 grew).</p>
+     * goal and the iron golem goal that had overwritten it, so the zombie nets
+     * a target map of {1 hurt, 2 player, 3 CULTIST}. 1.21.1's {@code
+     * GoalSelector} keys on the goal, not the slot, so a slot write cannot
+     * evict: the port writes the original's net set and STRIPS the goals 1.7.10
+     * evicted (villager, iron golem) plus the 1.21.1-only turtle goal at slot 5
+     * (turtles arrived in 1.8) - the family's goal rule is the original's set,
+     * not the platform's growth. Shipped target set: {1 hurt, 2 player, 3
+     * cultist}, asserted by the probe's goal census.</p>
      */
     public static final int TARGET_SLOT_CULTIST = 3;
     public static final int TARGET_SLOT_PLAYER = 2;
-    public static final int TARGET_SLOT_IRON_GOLEM = 4;
-    public static final int TARGET_SLOT_TURTLE = 5;
 
     /** The vanilla 1.21.1 movement goals, at the original's parent's slots. */
     public static final int GOAL_SLOT_MELEE = 2;
@@ -119,9 +117,9 @@ public final class InhabitedZombieAiLogic {
         return true;
     }
 
-    /** The census the probe asserts: 5 movement goals, 5 target goals. */
+    /** The census the probe asserts: 5 movement goals, 3 target goals. */
     public static final int SHIPPED_GOAL_COUNT = 5;
-    public static final int SHIPPED_TARGET_COUNT = 5;
+    public static final int SHIPPED_TARGET_COUNT = 3;
 
     // ------------------------------------------------------------- equipment
 
@@ -183,34 +181,45 @@ public final class InhabitedZombieAiLogic {
     }
 
     /**
-     * {@code :67-69} — the XP orb split (1.7.10's {@code EntityXPOrb.getXPSplit}):
-     * the vanilla split table, so the port reuses 1.21.1's own
-     * {@code ExperienceOrb#getXpSplitValue}? No — 1.21.1's split helper is
-     * private; the port ships the original's table, pinned here.
+     * {@code :63} - the drop guard, verbatim: {@code (this.field_70718_bc > 0
+     * || this.func_70684_aJ()) && this.func_146066_aG() && this.world
+     * .func_82736_K().func_82766_b("doMobLoot")}. {@code field_70718_bc} is
+     * "Set to 60 when hit by the player or the player's wolf, then decrements.
+     * Used to determine whether the entity should drop items on death", whose
+     * 1.21.1 counterpart is {@code lastHurtByPlayerTime > 0}; {@code
+     * func_70684_aJ()} (isPlayer) is inert for a zombie and shipped as the
+     * parameter; {@code func_146066_aG()} (canDropLoot) is 1.7.10's mobGriefing
+     * gamerule read, and 1.21.1 has no {@code Mob#canDropLoot} to ride, so the
+     * port reads {@code GameRules.RULE_MOBGRIEFING} at the call site. A kill by
+     * a non-player throws nothing, exactly as on 1.7.10.
      */
-    public static int xpSplit(final int count, final net.minecraft.util.RandomSource random) {
-        if (count <= 0) {
-            return 0;
-        }
-        final int tier = splitTier(count, random.nextInt(3));
-        return tier == 0 ? 1 : tier;
+    public static boolean dropsExperience(final boolean recentlyHitByPlayer,
+            final boolean isPlayer, final boolean canDropLoot, final boolean doMobLoot) {
+        return (recentlyHitByPlayer || isPlayer) && canDropLoot && doMobLoot;
     }
 
     /**
-     * 1.7.10's {@code EntityXPOrb.getXPSplit} table: a 0/1/2 roll picks 2, 4,
-     * 8, doubling while {@code count} exceeds the candidate. The port ships the
-     * table as the pure function the probe pins (the same math 1.21.1's private
-     * {@code ExperienceOrb#assignExpValue} runs; kept explicit so the orb count
-     * is measured, not inherited).
+     * {@code :64-70} - the loop's value sequence: {@code int i =
+     * getExperiencePoints(attackingPlayer); while (i > 0) { int j =
+     * EntityXPOrb.getXPSplit(i); i -= j; world.spawnEntityInWorld(new
+     * EntityXPOrb(this, x, y, z, j)); }}. The split is 1.7.10's static {@code
+     * EntityXPOrb.func_70527_a} (getOrbValue / roundToOrbSize), name-mapped
+     * onto 1.21.1's public static {@code ExperienceOrb.getExperienceValue},
+     * whose table the probe pins: 2477, 1237, 617, 307, 149, 73, 37, 17, 7, 3,
+     * 1. The loop is deterministic - 1.7.10's split draws NO random - so the
+     * orb count is measured, not inherited, and a 5-point reward (the plain
+     * zombie's) lands as orbs of 3 then 2 (BD-122).
      */
-    static int splitTier(final int count, final int roll) {
-        int value = 2 << roll;
-        int half = value << 1;
-        while (count < half) {
-            value = roll == 0 ? 1 : value >> 1;
-            half = value << 1;
+    public static java.util.List<Integer> experienceOrbValues(final int total) {
+        final java.util.List<Integer> values = new java.util.ArrayList<>();
+        int remaining = total;
+        while (remaining > 0) {
+            final int value = net.minecraft.world.entity.ExperienceOrb
+                    .getExperienceValue(remaining);                                     // :67
+            remaining -= value;
+            values.add(value);
         }
-        return Math.min(value, count);
+        return values;
     }
 
     // ------------------------------------------------------------------- spawn

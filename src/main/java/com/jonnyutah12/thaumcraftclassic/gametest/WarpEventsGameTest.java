@@ -28,6 +28,8 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityEldritchGuardian;
+
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -219,28 +221,52 @@ public final class WarpEventsGameTest {
     /**
      * eff 30 ∈ the mist band (29..32, {@code :106}): {@code spawnMist(warp, 1)}
      * ({@code :228-240}) sends the mist FX, summons min(8, 1) = 1 eldritch
-     * guardian and chats warp.text.6. The guardian is not registered, so the
-     * summon runs as the {@link EldritchMobHost} documented no-op (the same
-     * seam {@code TileEldritchCrabSpawner} uses): the probe asserts the seam
-     * ran without producing an entity, the pass decayed the counter, and NO
-     * spider spawned (the mist arm is not the spider arm).
+     * guardian and chats warp.text.6. {@code CatalogEldritchGuardian} now
+     * claims the id (TC-M6-06-s-c4b-2), so the summon is the REAL {@code :257-280}
+     * scan, not the {@link EldritchMobHost} no-op this probe narrated before
+     * that card landed: the probe builds a fitting 5x5 platform under the
+     * player (the pad has no floor), asserts the band produced exactly one
+     * guardian whose target is the player, the counter decayed, the scripted
+     * queue drained (the scan draws on the {@code level.random}, never the
+     * band's gates) and NO spider spawned (the mist arm is not the spider arm).
      */
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
     public static void theMistBandFiresTheFxAndTheGuardianSeamAsDocumentedNoOps(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
         final ServerPlayer player = warpPlayer(helper, 90, 0, 30, COUNTER);
 
-        helper.assertTrue(!EldritchMobHost.isAvailable(EldritchMobHost.GUARDIAN),
-                "this probe narrates the guardian as unregistered; if it became available, re-measure the summon");
+        helper.assertTrue(EldritchMobHost.isAvailable(EldritchMobHost.GUARDIAN),
+                "TC-M6-06-s-c4b-2 landed the guardian row, so the band's summon is the real :257-280 scan");
+
+        // The scan of :263-275 needs a cell where a 0.8 x 2.25 box fits: solid
+        // below, air for the height, no collision, no non-player occupant. The
+        // "empty_24" pad has no floor (the family's standing finding), so the
+        // probe lays its own platform centred on the player's foot cell.
+        final BlockPos foot = helper.absolutePos(BlockPos.ZERO).offset(1, 0, 1);
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                helper.setBlock(foot.offset(dx, 0, dz), Blocks.STONE.defaultBlockState());
+                helper.setBlock(foot.offset(dx, 1, dz), Blocks.AIR.defaultBlockState());
+                helper.setBlock(foot.offset(dx, 2, dz), Blocks.AIR.defaultBlockState());
+            }
+        }
+
         final List<EntityMindSpider> baseline = padSpiders(helper, level);
         final Scripted random = scriptedGate(30);
         WarpEvents.checkWarpEvent(player, random);
 
         helper.assertTrue(spawnedSince(baseline, padSpiders(helper, level)).isEmpty(),
                 "the mist arm (:106) spawned spiders — only the spider arms (:158/:195) call suddenlySpiders");
-        helper.assertTrue(countGuardians(helper, level) == 0,
-                "a thaumcraft:eldritchguardian entity exists — the unregistered guardian must summon as the "
-                        + "EldritchMobHost no-op, and its registered card must own the :257-280 scan");
+        final List<Entity> guardians = guardianEntities(helper, level);
+        helper.assertTrue(guardians.size() == 1,
+                ":230-235 — the band summons min(8, 1) = 1 guardian through the :257-280 scan, found "
+                        + guardians.size() + " on a pad with a fitting cell");
+        final EntityEldritchGuardian summoned = (EntityEldritchGuardian) guardians.get(0);
+        helper.assertTrue(summoned.getTarget() == player,
+                ":273 — the scan points the guardian at the player (func_70624_b = setAttackTarget)");
+        for (final Entity stray : guardians) {
+            stray.discard();                        // keep the shared pad clean
+        }
         final PlayerWarpData after = player.getData(ModAttachments.PLAYER_WARP);
         helper.assertTrue(after.warpCounter() == DECAYED,
                 "the mist pass did not decay the counter to " + DECAYED + " (:48-49)");
@@ -467,6 +493,14 @@ public final class WarpEventsGameTest {
     private static List<EntityMindSpider> spawnedSince(final List<EntityMindSpider> baseline,
                                                        final List<EntityMindSpider> census) {
         return census.stream().filter(e -> !baseline.contains(e)).toList();
+    }
+
+    private static List<Entity> guardianEntities(final GameTestHelper helper, final ServerLevel level) {
+        return padEntities(helper, level, e -> {
+            final ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType());
+            return ThaumcraftClassic.MOD_ID.equals(key.getNamespace())
+                    && key.getPath().equals(EldritchMobHost.GUARDIAN);
+        });
     }
 
     private static int countGuardians(final GameTestHelper helper, final ServerLevel level) {

@@ -12,7 +12,7 @@ import com.jonnyutah12.thaumcraftclassic.aspect.AspectList;
 import com.jonnyutah12.thaumcraftclassic.aspect.IEssentiaContainerItem;
 import com.jonnyutah12.thaumcraftclassic.network.payload.MiscEventPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.SyncWarpPayload;
-import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchMobs;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchCrab;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
 import com.jonnyutah12.thaumcraftclassic.research.ResearchManager;
 import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
@@ -125,10 +125,12 @@ public class EntityEldritchGuardian extends Monster implements RangedAttackMob, 
         // :1235) — the seam the cultist family pinned as
         // CultistAiLogic.CAN_PICK_UP_LOOT — so the field rides (BD-117).
         this.setCanPickUpLoot(EldritchGuardianAiLogic.CAN_PICK_UP_LOOT);
-        // :54 — getNavigator().setAvoidsWater(true) (the pathfinder seam).
-        ((net.minecraft.world.entity.ai.navigation.GroundPathNavigation)
-                this.getNavigation()).setAvoidsWater(
-                        EldritchGuardianAiLogic.NAVIGATOR_AVOIDS_WATER);
+        // :54 — getNavigator().setAvoidsWater(true) is INERT on 1.21.1: the
+        // GroundPathNavigation has no such setter (water avoidance lives in the
+        // path evaluator, whose ground evaluator never accepts a water node), so
+        // the original's explicit `true` is 1.21.1's default. The figure stays
+        // pinned as NAVIGATOR_AVOIDS_WATER — the contract the probe quotes — and
+        // no call is shipped (BD-117).
     }
 
     /** {@code ConfigEntities.java:107} — tracking 64 blocks (4 chunks) and
@@ -411,10 +413,13 @@ public class EntityEldritchGuardian extends Monster implements RangedAttackMob, 
             return;
         }
         final boolean hard = serverLevel.getDifficulty() == Difficulty.HARD;
+        // :120 — func_70170_p.field_73013_u != EnumDifficulty.EASY: the ONLY
+        // excluded difficulty. Peaceful is not excluded on 1.7.10 (a hostile
+        // mob cannot live there anyway — Monster#checkDespawn discards on
+        // peaceful), so no peaceful arm is added.
         if (!EldritchGuardianAiLogic.sendsWhisper(
                 OuterLands.isOuterLands(this.level()), this.tickCount,
-                serverLevel.getDifficulty() == Difficulty.PEACEFUL
-                        || serverLevel.getDifficulty() == Difficulty.EASY)) {
+                serverLevel.getDifficulty() == Difficulty.EASY)) {
             return;
         }
         final double radiusSq = EldritchGuardianAiLogic.whisperRadiusSq(hard);         // :121
@@ -506,7 +511,7 @@ public class EntityEldritchGuardian extends Monster implements RangedAttackMob, 
         }
         if (EldritchGuardianAiLogic.firesOrb(this.random.nextFloat())) {              // :272
             final EntityEldritchOrb blast =
-                    new EntityEldritchOrb(CatalogEldritchMobs.ELDRITCH_ORB.get(), level, this);
+                    new EntityEldritchOrb(CatalogEldritchCrab.ELDRITCH_ORB.get(), level, this);
             this.lastBlast = !this.lastBlast;                                         // :274
             this.level().broadcastEntityEvent(this, this.lastBlast
                     ? EldritchGuardianAiLogic.EVENT_ARM_RIGHT

@@ -93,7 +93,7 @@ public final class CatalogEldritchGuardian {
                     guardian.setPos(pos.getX(), pos.getY(), pos.getZ());
                     return level.addFreshEntity(guardian);
                 },
-                () -> ELDRITCH_GUARDIAN.isPresent());
+                () -> ELDRITCH_GUARDIAN.isBound());
     }
 
     private static void onAttributeCreation(final EntityAttributeCreationEvent event) {
