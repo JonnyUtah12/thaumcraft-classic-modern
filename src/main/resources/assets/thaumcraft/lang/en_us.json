@@ -487,5 +487,8 @@
   "container.thaumcraft.gui_thaumatorium": "Thaumatorium",
   "container.thaumcraft.insufficient_vis": "Insufficient vis",
   "container.thaumcraft.research_table_from_table": "From the table: %s",
-  "container.thaumcraft.wand_slot_hint": "Wand slot: the workbench pays its vis from here"
+  "container.thaumcraft.wand_slot_hint": "Wand slot: the workbench pays its vis from here",
+  "warp.text.6": "A thick fog appears from nowhere. Something stirs in its depths.",
+  "warp.text.7": "They're everywhere! Run!",
+  "warp.text.14": "You have a moment of clarity."
 }
