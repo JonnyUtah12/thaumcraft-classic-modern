@@ -692,24 +692,53 @@ public final class CultistClericGameTest {
                 * EntityGolemOrb.HOMING_HEIGHT_FACTOR;
         helper.assertTrue(Math.abs(aimY - (target.getY() + target.getBbHeight() * 0.6)) < 1.0E-6,
                 ":92 — the aim point is BB.minY + height * 0.6");
-        // Lifetime: the red orb dies past 240, the plain one past 160.
-        final EntityGolemOrb plain = orb(helper, cleric, target, false);
-        plain.setPos(cleric.getX(), cleric.getY(), cleric.getZ());
-        plain.tickCount = EntityGolemOrb.LIFETIME;                                    // :85
-        plain.tick();
-        helper.assertTrue(plain.isRemoved(),
-                ":85 — a plain orb at age 161 (> 160) discards; red=" + plain.isRed());
-        final EntityGolemOrb red = orb(helper, cleric, target, true);
-        red.setPos(cleric.getX(), cleric.getY(), cleric.getZ());
-        red.tickCount = EntityGolemOrb.LIFETIME;                                      // 160 < 240
-        red.tick();
-        helper.assertTrue(!red.isRemoved(),
-                ":85 — a red orb at age 161 is inside its 240-tick clamp and must survive");
-        red.tickCount = EntityGolemOrb.LIFETIME_RED;
-        red.tick();
-        helper.assertTrue(red.isRemoved(), ":85 — a red orb at age 241 (> 240) discards");
         cleric.discard();
         helper.succeed();
+    }
+
+    /**
+     * {@code EntityGolemOrb:85} — the lifetime clamp: {@code tickCount > (red ? 240 :
+     * 160)} → {@code discard()}. The pair runs as entities ADDED TO THE LEVEL, because
+     * a detached instance has no removal path to observe (measured: the clamp's
+     * {@code discard()} left a level-less orb readable, so the first cut of this probe
+     * asserted an unobservable state) and {@code GameTestHelper} has no synchronous
+     * tick step — the pad's own tick loop is the age step, and the poll reads the pair
+     * at the tick where the plain orb is gone, then pushes the red one to its own edge.
+     *
+     * <p>The clamp is what 1.7.10 wrote on the plain orb (20 ticks of flight at
+     * 0.32/block ≈ 6 blocks of reach); the red arm's 240 is the homing orb's budget.
+     * Both edges are pinned: 160/161 for the plain, 240/241 for the red.</p>
+     */
+    @GameTest(template = "empty", timeoutTicks = 300)
+    public static void theOrbLifetimeClampDiesAtSixteenForPlainAndTwoFortyForRed(
+            final GameTestHelper helper) {
+        final ServerLevel level = helper.getLevel();
+        final EntityCultistCleric cleric = cleric(helper);
+        final Player target = attackerAt(helper, cleric);
+        final EntityGolemOrb plain = orb(helper, cleric, target, false);
+        final EntityGolemOrb red = orb(helper, cleric, target, true);
+        plain.setPos(cleric.getX(), cleric.getY(), cleric.getZ());
+        red.setPos(cleric.getX(), cleric.getY(), cleric.getZ());
+        plain.tickCount = EntityGolemOrb.LIFETIME;                                    // :85 plain edge
+        red.tickCount = EntityGolemOrb.LIFETIME;                                      // :85 inside the red clamp
+        level.addFreshEntity(plain);
+        level.addFreshEntity(red);
+        final int[] phase = {0};
+        helper.succeedWhen(() -> {
+            if (phase[0] == 0) {
+                helper.assertTrue(plain.isRemoved(),
+                        ":85 — a plain orb past 160 discards; age=" + plain.tickCount
+                                + " red=" + plain.isRed());
+                helper.assertTrue(red.tickCount > EntityGolemOrb.LIFETIME && !red.isRemoved(),
+                        ":85 — a red orb past 160 sits inside its 240-tick clamp and survives; age="
+                                + red.tickCount);
+                red.tickCount = EntityGolemOrb.LIFETIME_RED;                          // :85 red edge
+                phase[0] = 1;
+            } else {
+                helper.assertTrue(red.isRemoved(),
+                        ":85 — a red orb past 240 discards; age=" + red.tickCount);
+            }
+        });
     }
 
     /**
@@ -856,7 +885,13 @@ public final class CultistClericGameTest {
         final ServerLevel level = helper.getLevel();
         final EntityCultistCleric cleric = cleric(helper);
         final BlockPos home = helper.absolutePos(BlockPos.ZERO).offset(2, 3, 2);
-        helper.setBlock(home, CatalogEldritchRealm.BLOCK_ELDRITCH.get().defaultBlockState());
+        // The block goes in through the LEVEL: GameTestHelper#setBlock reads its position
+        // as TEMPLATE-RELATIVE (it adds absoluteVec), so an absolute BlockPos lands
+        // millions of blocks away in an unloaded chunk and the write is a silent no-op —
+        // measured: the pad read Block{minecraft:air} at the home just written. The
+        // house's own precedent for an absolute write is GolemCombatAiGameTest.java:1486.
+        level.setBlock(home, CatalogEldritchRealm.BLOCK_ELDRITCH.get().defaultBlockState(),
+                net.minecraft.world.level.block.Block.UPDATE_ALL);
         helper.assertTrue(level.getBlockState(home).is(CatalogEldritchRealm.BLOCK_ELDRITCH.get()),
                 "PROBE BROKEN: the pad must hold a thaumcraft:blockeldritch at the home for :38-43;"
                         + " home=" + home + " origin=" + helper.absolutePos(BlockPos.ZERO)
@@ -885,13 +920,15 @@ public final class CultistClericGameTest {
                 ":37 — the comparison is a strict >, so exactly 16.0 (4 blocks, truncated feet) keeps");
         cleric.setIsRitualist(true);
         // Arm 2: the home block.
-        helper.setBlock(home.offset(4, 0, 0), Blocks.STONE.defaultBlockState());
+        level.setBlock(home.offset(4, 0, 0), Blocks.STONE.defaultBlockState(),
+                net.minecraft.world.level.block.Block.UPDATE_ALL);
         cleric.tickCount = CultistAiLogic.ALTAR_CADENCE_TICKS;
         goal.tick();
         helper.assertTrue(!cleric.getIsRitualist(),
                 ":38-43 — a home block that is not thaumcraft:blockeldritch drops the ritual");
         // The cadence gate: off the 40-tick beat, nothing is checked.
-        helper.setBlock(home.offset(4, 0, 0), CatalogEldritchRealm.BLOCK_ELDRITCH.get().defaultBlockState());
+        level.setBlock(home.offset(4, 0, 0), CatalogEldritchRealm.BLOCK_ELDRITCH.get().defaultBlockState(),
+                net.minecraft.world.level.block.Block.UPDATE_ALL);
         cleric.setIsRitualist(true);
         cleric.tickCount = CultistAiLogic.ALTAR_CADENCE_TICKS + 7;
         goal.tick();
@@ -943,10 +980,30 @@ public final class CultistClericGameTest {
                             + hurt.getLastHurtByMob() + ", timestamp = "
                             + hurt.getLastHurtByMobTimestamp() + ", tickCount = " + hurt.tickCount + ")");
         };
-        if (hurt.tickCount <= 0) {
-            helper.runAfterDelay(20, fireTheHit);
+        // :51 is `world.rand.nextInt(3) == 0` — ONE draw per gang call, and the goal
+        // re-arms only when the hurt stamp moves again (canUse: stamp != this.timestamp).
+        // A single hit therefore recruits the ritualist with probability 1/3, which is
+        // exactly how flaky this probe was leg to leg. The probe pins the RNGs (the roll
+        // is the ritualist's own RandomSource, so the draw sequence is fixed) and drives
+        // a hit every 10 ticks: 40 rolls, the caller healed between them so it survives
+        // the window, and (2/3)^40 = 1.3e-7 is the honest miss bound.
+        ritualist.getRandom().setSeed(20261114L);
+        plain.getRandom().setSeed(20261113L);
+        hurt.getRandom().setSeed(20261112L);
+        final int[] rolls = {0};
+        final Runnable[] chain = new Runnable[1];
+        chain[0] = () -> {
+            hurt.setHealth(hurt.getMaxHealth());                                      // fixture: the caller lives
+            fireTheHit.run();                                                         // :29
+            rolls[0]++;
+            if (rolls[0] < 40) {
+                helper.runAfterDelay(10, chain[0]);
+            }
+        };
+        if (hurt.tickCount <= 1) {
+            helper.runAfterDelay(20, chain[0]);
         } else {
-            fireTheHit.run();
+            helper.runAfterDelay(1, chain[0]);
         }
         helper.succeedWhen(() -> {
             hurt.clearFire();
@@ -954,9 +1011,9 @@ public final class CultistClericGameTest {
                     ":49-50 — a cleric with no ritual in the help box takes the attacker (target = "
                             + plain.getTarget() + ")");
             helper.assertTrue(ritualist.getIsRitualist() == false,
-                    ":52 — the roll must have cleared the ritualist's ritual within the probe window"
-                            + " (nextInt(3) per gang call; the probe drives the call on every tick the"
-                            + " goal re-arms, so (2/3)^n over the window is the miss chance)");
+                    ":52 — the roll must have cleared the ritualist's ritual within the probe window:"
+                            + " " + rolls[0] + " gang calls driven (one nextInt(3) draw each, the"
+                            + " ritualist's RNG seeded 20261114L), miss bound (2/3)^40 = 1.3e-7");
             helper.assertTrue(ritualist.getTarget() == player,
                     ":53 — the cleric whose ritual broke joins the gang (target = "
                             + ritualist.getTarget() + ")");
