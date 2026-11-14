@@ -373,3 +373,32 @@ restores both and `diff -q` reports byte-identical.
   a positional stream and per-spawn tolerance are mutually exclusive. Prove the causal lever by PLANTING
   the stray: planted before the sweep the fixed probe is GREEN, planted after the sweep (or on the
   unswept tree) it goes RED naming the queue overrun — the CI signature, on demand.
+
+- **The sweep's hazard set is the GATE's scan set, and a probe that registers into a level-wide list has
+  to tear down on the RED path.** The rule above sweeps non-player entities and LEAVES players, because the
+  warp event's scan is a BLOCK scan and no player rejects a cell. A gate that scans ENTITIES has to size
+  the set to its own scan: `EntityEldritchCrab#tick`'s mount asks `level.getNearestPlayer(this, -1.0)` —
+  distance-UNBOUNDED, target list `level.players()` — so a registered player resident is IN the set, and
+  the grid re-gives a pad the coordinates of the pad that leaked it. Measured on this tree:
+  `anunshelledCrabInMidAirClimbsOnAPlayerAndPunchesHimOff` went red **1 of 12** full-grid legs
+  (`:120-129 — a free mid-air unshelled crab mounts the nearest player`, the parent's disclosed CI line),
+  and a planted co-located **registered** `ServerPlayer` reproduces that line **byte-for-byte** on the
+  base tree (`P2`) and on the fixed tree (`Q1`), while 10 mid-air mind spiders (`P1`) and a roaming
+  unshelled crab (`P3`) leave the probe green (3 legs each) — mob residents are not this gate's hazard,
+  player residents are. `EldritchCrabGameTest.sweepPad` deregisters player residents from
+  `level.players()` and discards them; the box (2,-4,-2 .. 13,15,13) is provably big enough because the
+  mount needs `distanceSquared < 4.0` and the scan keeps the strict minimum. Second half of the rule:
+  `level.players().add(player)` is a LEVEL-WIDE registration, the harness's box cleanup cleans entities
+  and not the players list, and a probe that throws an assert reaches NO tail code — so a tail-only
+  teardown leaks the registered player exactly on the leg that goes red, and the next pad is re-given
+  those coordinates: the flake manufactures its own next trigger. That fixture is also a bare-connection
+  `ServerPlayer` whose first payload send throws (`Payload thaumcraft:biome_change may not be sent to the
+  client!`, measured on the c4b-1 card), and the throw rides the shared level tick into the NEIGHBOUR
+  probe. Teardowns of level-wide registrations belong in a `finally` (the crab fixtures ride a list so the
+  red path discards them too). Third: `runAfterDelay(N, …)` is `runAtTickTime(getTick() + N)` — the
+  TEST sequence's clock, not the entity's — so the line-192 rule ("assert the outcome, never a tick
+  budget") applies to it verbatim: `theOrbBurstStrikesTheLivingAndSparesTheUndead` pinned the impact's
+  consumption to 2 real ticks and went red on a **clean** pad **1 of 11** legs with `age=100
+  removed=false` (the impact landed, the entity's own survival walk had not reached the clamp), the same
+  signature as the shipped Energy Orb probe's planted E2b. The consumption is polled
+  (`helper.succeedWhen`) and every write of the impact stays asserted synchronously.
