@@ -906,34 +906,78 @@ public final class CultistClericGameTest {
         goal.tick();
         helper.assertTrue(cleric.getIsRitualist(),
                 ":37-43 — a cleric standing at its eldritch home keeps the ritual on the 40-tick check");
-        // Arm 1: the distance, measured to the cleric's integer feet.
-        cleric.setHomePosition(home.offset(5, 0, 0), CultistAiLogic.SPAWN_HOME_DISTANCE);
-        cleric.tickCount = CultistAiLogic.ALTAR_CADENCE_TICKS;
-        goal.tick();
-        helper.assertTrue(!cleric.getIsRitualist(),
-                ":37 — squared distance over 16.0F (4 blocks) drops the ritual; the home was 5 away");
-        cleric.setIsRitualist(true);
-        cleric.setHomePosition(home.offset(4, 0, 0), CultistAiLogic.SPAWN_HOME_DISTANCE);
+        // Arm 1: the distance, measured to the cleric's block-truncated feet. The
+        // figure is exact arithmetic, not a tolerance: the port's :37 is
+        // {@code new Vec3(home).distanceToSqr(feet) > 16.0F} with feet the (int) casts of
+        // :37, and 1.7.10's {@code func_71569_e(int,int,int)} is {@code BlockPos#distSqr}
+        // over ALL THREE axes, so the y term is inside the figure (measured on
+        // reference/decompiled/.../ai/misc/AIAltarFocus.java:37). The fixture's truncated
+        // feet sit at home-(1,0,1) (cleric(): offset(1,3,1), moveTo +0.5 on x/z, y whole),
+        // so every home below is placed at an exact offset FROM THE FEET: 16.0 keeps (the
+        // strict >), 17.0 drops (the threshold, one over), on both axes.
+        final BlockPos feet = new BlockPos(cleric.getBlockX(), cleric.getBlockY(), cleric.getBlockZ());
+        helper.assertTrue(feet.equals(home.offset(-1, 0, -1)),
+                "PROBE BROKEN: this arm's arithmetic assumes the cleric's truncated feet sit at"
+                        + " home-(1,0,1) — feet=" + feet + " home=" + home
+                        + " origin=" + helper.absolutePos(BlockPos.ZERO));
+        final BlockPos edgeX = feet.offset(4, 0, 0);                                   // distSq 16.0
+        final BlockPos overX = feet.offset(4, 0, 1);                                   // distSq 17.0
+        final BlockPos edgeY = feet.offset(0, 4, 0);                                   // distSq 16.0
+        final BlockPos overY = feet.offset(0, 4, 1);                                   // distSq 17.0
+        for (final BlockPos spot : new BlockPos[]{edgeX, overX, edgeY, overY}) {
+            level.setBlock(spot, CatalogEldritchRealm.BLOCK_ELDRITCH.get().defaultBlockState(), net.minecraft.world.level.block.Block.UPDATE_ALL);
+            helper.assertTrue(level.getBlockState(spot).is(CatalogEldritchRealm.BLOCK_ELDRITCH.get()),
+                    "PROBE BROKEN: the pad must hold thaumcraft:blockeldritch at " + spot
+                            + " (reading=" + level.getBlockState(spot) + ")");
+        }
+        cleric.setHomePosition(edgeX, CultistAiLogic.SPAWN_HOME_DISTANCE);
         cleric.tickCount = CultistAiLogic.ALTAR_CADENCE_TICKS;
         goal.tick();
         helper.assertTrue(cleric.getIsRitualist(),
-                ":37 — the comparison is a strict >, so exactly 16.0 (4 blocks, truncated feet) keeps");
+                ":37 — distSq exactly 16.0 (4 blocks on x from the truncated feet) KEEPS the ritual,"
+                        + " so the comparison is a strict > (home=" + edgeX + " feet=" + feet + ")");
         cleric.setIsRitualist(true);
-        // Arm 2: the home block.
-        level.setBlock(home.offset(4, 0, 0), Blocks.STONE.defaultBlockState(),
-                net.minecraft.world.level.block.Block.UPDATE_ALL);
+        cleric.setHomePosition(overX, CultistAiLogic.SPAWN_HOME_DISTANCE);
         cleric.tickCount = CultistAiLogic.ALTAR_CADENCE_TICKS;
         goal.tick();
         helper.assertTrue(!cleric.getIsRitualist(),
-                ":38-43 — a home block that is not thaumcraft:blockeldritch drops the ritual");
-        // The cadence gate: off the 40-tick beat, nothing is checked.
-        level.setBlock(home.offset(4, 0, 0), CatalogEldritchRealm.BLOCK_ELDRITCH.get().defaultBlockState(),
-                net.minecraft.world.level.block.Block.UPDATE_ALL);
+                ":37 — distSq 17.0 (4 on x, 1 on z) drops the ritual (home=" + overX
+                        + " feet=" + feet + ")");
+        cleric.setIsRitualist(true);
+        cleric.setHomePosition(edgeY, CultistAiLogic.SPAWN_HOME_DISTANCE);
+        cleric.tickCount = CultistAiLogic.ALTAR_CADENCE_TICKS;
+        goal.tick();
+        helper.assertTrue(cleric.getIsRitualist(),
+                ":37 — the y axis is inside distSqr (the original's distSqr(int,int,int)): distSq"
+                        + " exactly 16.0 straight UP keeps (home=" + edgeY + " feet=" + feet + ")");
+        cleric.setIsRitualist(true);
+        cleric.setHomePosition(overY, CultistAiLogic.SPAWN_HOME_DISTANCE);
+        cleric.tickCount = CultistAiLogic.ALTAR_CADENCE_TICKS;
+        goal.tick();
+        helper.assertTrue(!cleric.getIsRitualist(),
+                ":37 — distSq 17.0 straight up (4 up, 1 over) drops the ritual (home=" + overY
+                        + " feet=" + feet + ")");
+        cleric.setIsRitualist(true);
+        // Arm 2: the home block, with the home back inside the distance clamp.
+        cleric.setHomePosition(edgeX, CultistAiLogic.SPAWN_HOME_DISTANCE);
+        level.setBlock(edgeX, Blocks.STONE.defaultBlockState(), net.minecraft.world.level.block.Block.UPDATE_ALL);
+        cleric.tickCount = CultistAiLogic.ALTAR_CADENCE_TICKS;
+        goal.tick();
+        helper.assertTrue(!cleric.getIsRitualist(),
+                ":38-43 — a home block that is not thaumcraft:blockeldritch drops the ritual (home="
+                        + edgeX + " reading=" + level.getBlockState(edgeX) + ")");
+        // The cadence gate: the SAME drop condition is inert off the beat (47 % 40 = 7)
+        // and live on it (40 % 40 = 0) — the check runs on ticksExisted % 40 only.
         cleric.setIsRitualist(true);
         cleric.tickCount = CultistAiLogic.ALTAR_CADENCE_TICKS + 7;
         goal.tick();
         helper.assertTrue(cleric.getIsRitualist(),
-                ":36 — the check runs on ticksExisted % 40 only; at 47 it must be inert");
+                ":36 — at ticksExisted 47 the drop arms never run, stone home included");
+        cleric.tickCount = CultistAiLogic.ALTAR_CADENCE_TICKS;
+        goal.tick();
+        helper.assertTrue(!cleric.getIsRitualist(),
+                ":36 — at ticksExisted 40 the same stone home drops the ritual");
+        level.setBlock(edgeX, CatalogEldritchRealm.BLOCK_ELDRITCH.get().defaultBlockState(), net.minecraft.world.level.block.Block.UPDATE_ALL);
         // The gate pair, once the ritual is gone.
         cleric.setIsRitualist(false);
         helper.assertTrue(!goal.canUse() && !goal.canContinueToUse(),
@@ -980,30 +1024,31 @@ public final class CultistClericGameTest {
                             + hurt.getLastHurtByMob() + ", timestamp = "
                             + hurt.getLastHurtByMobTimestamp() + ", tickCount = " + hurt.tickCount + ")");
         };
-        // :51 is `world.rand.nextInt(3) == 0` — ONE draw per gang call, and the goal
-        // re-arms only when the hurt stamp moves again (canUse: stamp != this.timestamp).
-        // A single hit therefore recruits the ritualist with probability 1/3, which is
-        // exactly how flaky this probe was leg to leg. The probe pins the RNGs (the roll
-        // is the ritualist's own RandomSource, so the draw sequence is fixed) and drives
-        // a hit every 10 ticks: 40 rolls, the caller healed between them so it survives
-        // the window, and (2/3)^40 = 1.3e-7 is the honest miss bound.
-        ritualist.getRandom().setSeed(20261114L);
-        plain.getRandom().setSeed(20261113L);
-        hurt.getRandom().setSeed(20261112L);
-        final int[] rolls = {0};
-        final Runnable[] chain = new Runnable[1];
-        chain[0] = () -> {
-            hurt.setHealth(hurt.getMaxHealth());                                      // fixture: the caller lives
-            fireTheHit.run();                                                         // :29
-            rolls[0]++;
-            if (rolls[0] < 40) {
-                helper.runAfterDelay(10, chain[0]);
-            }
-        };
-        if (hurt.tickCount <= 1) {
-            helper.runAfterDelay(20, chain[0]);
-        } else {
-            helper.runAfterDelay(1, chain[0]);
+        // :51 is `world.rand.nextInt(3) == 0` — and the port reads it as
+        // `level.getRandom()` (AICultistHurtByTarget:152), the original's `world.rand`:
+        // ONE draw per gang call, and the goal re-arms only when the hurt stamp moves
+        // again (canUse: stamp != this.timestamp). A single hit therefore recruits the
+        // ritualist with probability 1/3, which is exactly how this probe went red in
+        // one leg and green in the next on the same tree. The dice cannot be pinned:
+        // the harness runs every test in ONE shared ServerLevel, so seeding
+        // `level.random` would steer the other tests' dice. So the probe drives them:
+        // 40 hits at 10-tick spacing (400 of the 500-tick window), the caller healed
+        // before each so it survives the window, and (2/3)^40 = 1.3e-7 is the honest
+        // miss bound on the ritualist staying unsaved.
+        //
+        // The hits are scheduled UP FRONT with one Runnable per hit:
+        // GameTestInfo#setRunAtTickTime keys its map by the RUNNABLE
+        // (put(runnable, tick)) and the harness drops the entry after running it, so
+        // re-scheduling the SAME instance from inside the step is swallowed — measured:
+        // the chained version drove exactly one roll and left the probe red.
+        final int[] driven = {0};
+        for (int hit = 1; hit <= 40; hit++) {
+            final int n = hit;
+            helper.runAtTickTime(10L * n, () -> {
+                hurt.setHealth(hurt.getMaxHealth());                                  // fixture: the caller lives
+                fireTheHit.run();                                                     // :29
+                driven[0] = n;
+            });
         }
         helper.succeedWhen(() -> {
             hurt.clearFire();
@@ -1012,8 +1057,9 @@ public final class CultistClericGameTest {
                             + plain.getTarget() + ")");
             helper.assertTrue(ritualist.getIsRitualist() == false,
                     ":52 — the roll must have cleared the ritualist's ritual within the probe window:"
-                            + " " + rolls[0] + " gang calls driven (one nextInt(3) draw each, the"
-                            + " ritualist's RNG seeded 20261114L), miss bound (2/3)^40 = 1.3e-7");
+                            + " " + driven[0] + " of 40 gang calls driven (one level-RNG nextInt(3)"
+                            + " draw each), miss bound (2/3)^40 = 1.3e-7, probeTick="
+                            + helper.getTick());
             helper.assertTrue(ritualist.getTarget() == player,
                     ":53 — the cleric whose ritual broke joins the gang (target = "
                             + ritualist.getTarget() + ")");
