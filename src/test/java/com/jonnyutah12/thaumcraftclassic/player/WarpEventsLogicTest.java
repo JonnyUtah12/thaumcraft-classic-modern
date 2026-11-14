@@ -46,7 +46,8 @@ class WarpEventsLogicTest {
     void theEventWarpIsTheDoubledThirdWithCap100() {
         // :47 — warp = min(100, (warp + warp + warpCounter) / 3), int division
         assertEquals(70, WarpEventsLogic.eventWarp(90, 30));    // (90+90+30)/3 = 70
-        assertEquals(90, WarpEventsLogic.eventWarp(120, 30));   // (120+120+30)/3 = 90 — the probe config
+        assertEquals(90, WarpEventsLogic.eventWarp(120, 30));   // (120+120+30)/3 = 90 — the real-band probe (90 perm + 0 temp + 30 sticky)
+        assertEquals(93, WarpEventsLogic.eventWarp(125, 30));   // (125+125+30)/3 = 93 — the illusion probe (90 + 5 temp + 30)
         assertEquals(100, WarpEventsLogic.eventWarp(100, 100)); // (100+100+100)/3 = 100, capped
         assertEquals(3, WarpEventsLogic.eventWarp(3, 3));       // 9/3 = 3
         assertEquals(8, WarpEventsLogic.eventWarp(10, 6));      // 26/3 = 8 (truncating)
@@ -65,7 +66,7 @@ class WarpEventsLogicTest {
 
     @Test
     void theFortressHelmDiscountsTwoPlusARollOfFour() {
-        // :57-58 — eff -= 2 + rand.nextInt(4)
+        // :57 — eff -= 2 + rand.nextInt(4)
         assertEquals(2, WarpEventsLogic.fortressHelmDiscount(0));
         assertEquals(3, WarpEventsLogic.fortressHelmDiscount(1));
         assertEquals(5, WarpEventsLogic.fortressHelmDiscount(3));
@@ -116,7 +117,7 @@ class WarpEventsLogicTest {
         assertEquals(WarpEventsLogic.Arm.STICKY_RELIEF, WarpEventsLogic.armFor(76));  // :169 equality arm
         assertEquals(WarpEventsLogic.Arm.UNHUNGER_6000, WarpEventsLogic.armFor(77));  // :177 — 77..80
         assertEquals(WarpEventsLogic.Arm.UNHUNGER_6000, WarpEventsLogic.armFor(80));
-        assertEquals(WarpEventsLogic.Arm.GRANT_RESEARCH_TEN, WarpEventsLogic.armFor(81)); // :189
+        assertEquals(WarpEventsLogic.Arm.GRANT_RESEARCH_TEN, WarpEventsLogic.armFor(81)); // :190
         assertEquals(WarpEventsLogic.Arm.GRANT_RESEARCH_TEN, WarpEventsLogic.armFor(84));
         assertEquals(WarpEventsLogic.Arm.NONE, WarpEventsLogic.armFor(85));           // :193 eff > 88 gate
         assertEquals(WarpEventsLogic.Arm.NONE, WarpEventsLogic.armFor(88));
@@ -157,7 +158,7 @@ class WarpEventsLogicTest {
 
     @Test
     void spiderSpawnsAreTheWarpCappedAtFifty() {
-        // :283 — int spawns = Math.min(50, warp)
+        // :282 — int spawns = Math.min(50, warp)
         assertEquals(50, WarpEventsLogic.MAX_SPAWNS);
         assertEquals(50, WarpEventsLogic.spiderSpawns(90));
         assertEquals(30, WarpEventsLogic.spiderSpawns(30));
@@ -167,7 +168,7 @@ class WarpEventsLogicTest {
 
     @Test
     void theScanIsFiftyAttemptsOfSevenToTwentyFourTimesASign() {
-        // :244/:286 (50 attempts), :248-252/:292-297 (func_76136_a(rand, 7, 24)
+        // :263/:291 (50 attempts), :264-266/:292-297 (func_76136_a(rand, 7, 24)
         // * func_76136_a(rand, -1, 1) per axis)
         assertEquals(50, WarpEventsLogic.SCAN_ATTEMPTS);
         assertEquals(7, WarpEventsLogic.OFFSET_MIN);
@@ -185,7 +186,7 @@ class WarpEventsLogicTest {
 
     @Test
     void theChatKeysAreTheOriginals() {
-        // :241 (warp.text.6), :321 (warp.text.7), :175 (warp.text.14) —
+        // :238 (warp.text.6), :321 (warp.text.7), :176 (warp.text.14) —
         // reference en_US.lang
         assertEquals("warp.text.6", WarpEventsLogic.KEY_MIST);
         assertEquals("warp.text.7", WarpEventsLogic.KEY_SPIDERS);

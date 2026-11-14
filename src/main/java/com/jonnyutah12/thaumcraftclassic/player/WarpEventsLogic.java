@@ -51,7 +51,7 @@ public final class WarpEventsLogic {
 
     // ---- fortress helm discount (WarpEvents.java:51-58) ----
     /**
-     * {@code :57-58} — with a Fortress helm wearing its {@code mask == 0} NBT,
+     * {@code :57} — with a Fortress helm wearing its {@code mask == 0} NBT,
      * {@code eff -= 2 + rand.nextInt(4)}. The discount term is
      * {@code 2 + nextInt(4)} ∈ [2, 5]; the helm item itself ships on TC-M6-07.
      */
@@ -68,8 +68,8 @@ public final class WarpEventsLogic {
      * the live seam ({@link WarpEvents}) wires today: the mob arms, the mist FX
      * and the sticky relief. The potion arms need MobEffects no card has
      * registered; the research arms (GRANT_RESEARCH/GRANT_RESEARCH_TEN,
-     * {@code :62-65}, {@code :189-194}) feed the research grant lane
-     * (grantResearch {@code :244-261}: random primal aspect pools);
+     * {@code :62-65}, {@code :190-194}) feed the research grant lane
+     * (grantResearch {@code :241-255}: random primal aspect pools);
      * the chat-only arms ship keys the lang file does not carry yet.
      */
     public enum Arm {
@@ -92,8 +92,8 @@ public final class WarpEventsLogic {
         MIST_W30,             // :162    eff 65..68 spawnMist(warp, warp / 30)
         SLOWNESS,             // :165-168 eff 69..72 min(32000, 5*warp)
         STICKY_RELIEF,        // :169-176 eff == 76  addWarpSticky(-1) + sync + warp.text.14
-        UNHUNGER_6000,        // :177-188 eff 73..75 and 77..80, 6000 t
-        GRANT_RESEARCH_TEN,   // :189-194 eff 81..84 grantResearch(warp / 10) + warp.text.3
+        UNHUNGER_6000,        // :177-189 eff 73..75 and 77..80, 6000 t
+        GRANT_RESEARCH_TEN,   // :190-194 eff 81..84 grantResearch(warp / 10) + warp.text.3
         SPIDERS_REAL,         // :195    eff 89..92 suddenlySpiders(warp, true)
         MIST_W15,             // :197    eff 93..   spawnMist(warp, warp / 15)
     }
@@ -198,29 +198,29 @@ public final class WarpEventsLogic {
         };
     }
 
-    /** {@code :231} — {@code guardian = Math.min(8, guardian)} (only when {@code > 0}, :231). */
+    /** {@code :231} — {@code guardian = Math.min(8, guardian)} (only when {@code > 0}, :230). */
     public static int guardianCount(final Arm arm, final int warp) {
         final int rolled = guardianRoll(arm, warp);
         return rolled > 0 ? Math.min(8, rolled) : 0;
     }
 
-    // ---- spider spawn count (WarpEvents.java:283) ----
-    /** {@code suddenlySpiders} — {@code int spawns = Math.min(50, warp)}. */
+    // ---- spider spawn count (WarpEvents.java:282) ----
+    /** {@code :282} — {@code int spawns = Math.min(50, warp)} (inside {@code suddenlySpiders}). */
     public static final int MAX_SPAWNS = 50;
 
     public static int spiderSpawns(final int warp) {
         return Math.min(MAX_SPAWNS, warp);
     }
 
-    // ---- spawn-scan arithmetic (WarpEvents.java:244-280 spawnGuardian, :282-322 suddenlySpiders) ----
-    /** {@code :244/:286} — {@code for (int l = 0; l < 50; l++)} — attempts per mob. */
+    // ---- spawn-scan arithmetic (WarpEvents.java:257-280 spawnGuardian, :281-322 suddenlySpiders) ----
+    /** {@code :263/:291} — {@code for (int l = 0; l < 50; l++)} — attempts per mob. */
     public static final int SCAN_ATTEMPTS = 50;
 
-    /** {@code :248-252/:292-297} — {@code MathHelper.func_76136_a(rand, 7, 24)} per axis. */
+    /** {@code :264-266/:292-297} — {@code MathHelper.func_76136_a(rand, 7, 24)} per axis. */
     public static final int OFFSET_MIN = 7;
     public static final int OFFSET_MAX = 24;
 
-    /** {@code :248-252/:292-297} — the sign term, {@code func_76136_a(rand, -1, 1)}. */
+    /** {@code :264-266/:292-297} — the sign term, {@code func_76136_a(rand, -1, 1)}. */
     public static final int SIGN_MIN = -1;
     public static final int SIGN_MAX = 1;
 
@@ -232,11 +232,11 @@ public final class WarpEventsLogic {
     public static final int STICKY_RELIEF_DELTA = -1;
 
     // ---- chat keys (the original's StatCollector keys, shipped by the wired arms) ----
-    /** {@code :241} — the mist line, {@code warp.text.6}. */
+    /** {@code :238} — the mist line, {@code warp.text.6}. */
     public static final String KEY_MIST = "warp.text.6";
     /** {@code :321} — the spider line, {@code warp.text.7}. */
     public static final String KEY_SPIDERS = "warp.text.7";
-    /** {@code :175} — the sticky relief line, {@code warp.text.14}. */
+    /** {@code :176} — the sticky relief line, {@code warp.text.14}. */
     public static final String KEY_RELIEF = "warp.text.14";
 
     private WarpEventsLogic() {

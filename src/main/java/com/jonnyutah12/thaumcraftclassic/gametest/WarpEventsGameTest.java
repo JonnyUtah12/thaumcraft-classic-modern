@@ -79,16 +79,18 @@ public final class WarpEventsGameTest {
 
     /** The probe pad: 24×24 air, player scripted at (1, 1, 1) inside it. */
     private static final String TEMPLATE = "empty_24";
-    // eventWarp(perm 90 + sticky 30, counter 30) = (120+120+30)/3 = 90 (:47)
+    // warp total = perm 90 + temp 5 + sticky 30 = 125, so the illusion probe's
+    // eventWarp is (125+125+30)/3 = 93 (:47); the real band runs temp 0 -> total
+    // 120 -> eventWarp 90, and the scripted event rolls (57, 89) sit inside both.
     private static final int COUNTER = 30;
     private static final int DECAYED = 19;   // (int)(30 - max(5, sqrt(30)*2)) = 19 — WarpEvents.java:48
 
     /**
      * eff 57 ∈ the illusion band (57..60, {@code :158}):
      * {@code suddenlySpiders(warp, false)} spawns min(50, warp) = 50 spiders
-     * ({@code :283}), each targeted at the player ({@code :314-315}) and
+     * ({@code :282}), each targeted at the player ({@code :310-311}) and
      * marked {@code harmless = true} with the player as viewer
-     * ({@code :316-319}). Asserts the 50 new entities (delta over the ambient
+     * ({@code :312-315}). Asserts the 50 new entities (delta over the ambient
      * census), their harmless/viewer/target state, the counter decay
      * ({@code :48-49}) and the tail temp decay ({@code :224}).
      */
@@ -104,15 +106,15 @@ public final class WarpEventsGameTest {
         final List<EntityMindSpider> spawned = spawnedSince(baseline, padSpiders(helper, level));
         helper.assertTrue(spawned.size() == 50,
                 "the illusion band (eff 57, WarpEvents.java:158) produced " + spawned.size()
-                        + " new mind spiders, not the original's min(50, warp=90) = 50 (:283)");
+                        + " new mind spiders, not the original's min(50, warp) = 50 (:282)");
         for (final EntityMindSpider spider : spawned) {
             helper.assertTrue(spider.isHarmless(),
-                    "an illusion spider (real == false, :316-318) is not harmless — it would bite the player");
+                    "an illusion spider (real == false, :312-314) is not harmless — it would bite the player");
             helper.assertTrue(player.getScoreboardName().equals(spider.getViewer()),
                     "an illusion spider's viewer is \"" + spider.getViewer() + "\", not the warping player ("
-                            + ":317 setViewer(player.getCommandSenderName()))");
+                            + ":313 setViewer(player.getCommandSenderName()))");
             helper.assertTrue(spider.getTarget() == player,
-                    "a warp spider does not target the warping player (:314 setAttackTarget)");
+                    "a warp spider does not target the warping player (:310 setAttackTarget)");
         }
         final PlayerWarpData after = player.getData(ModAttachments.PLAYER_WARP);
         helper.assertTrue(after.warpCounter() == DECAYED,
@@ -125,11 +127,14 @@ public final class WarpEventsGameTest {
     }
 
     /**
-     * The draw-order contract, robust to batch contention: every spider lands
-     * on one of its three scripted cells ({@link #landingAttempt}) and the
-     * unconsumed queue equals the 900 scan draws minus 6 per spent attempt.
-     * A port that draws per attempt in the original's shape passes whatever
-     * cells the batch happens to share; any other draw shape fails.
+     * The draw-order contract: every spider must land in a cell the script
+     * offers ({@link #landingAttempt} >= 0) and the queue must be drained by
+     * exactly 2 + 6 draws per spent attempt — the original spends 6 draws per
+     * scan attempt ({@code :292-297}) and the script emits one window per
+     * attempt, so a port that draws the axes in the original's order
+     * ({@code :45}, {@code :50}, then offset/sign per axis) drains the queue
+     * to zero; any other draw shape (per-attempt count, axis order, sign
+     * term) leaves a residue and fails.
      */
     private static void assertQueueArithmetic(final GameTestHelper helper, final Scripted random,
                                               final List<EntityMindSpider> spawned) {
@@ -141,21 +146,21 @@ public final class WarpEventsGameTest {
                     "a warp spider landed off-script at rel (" + ((int) Math.floor(spider.getX()) - o.getX())
                             + ", " + ((int) Math.floor(spider.getY()) - o.getY()) + ", "
                             + ((int) Math.floor(spider.getZ()) - o.getZ()) + ") — the scan drew cells the "
-                            + "scripted order never offers (x=8+2(a%8), z=8+2(a/8), y=1,8,15)");
+                            + "scripted order never offers (x=8+2(a%8), z=8+2(a/8), y=1,8)");
             spent += idx + 1;
         }
-        helper.assertTrue(random.unconsumed() == 900 - 6 * spent,
-                "the event consumed " + (2 + 6 * spent) + " scripted draws by landing cells (" + spent
-                        + " attempts x 6 scan draws) but the queue clock says " + random.consumed
-                        + " (left " + random.unconsumed() + " of the 902 scripted) — the "
-                        + "original spends 6 draws per scan attempt (:292-297) in this exact order "
-                        + "(:45, :50)");
+        helper.assertTrue(random.isExhausted() && random.consumed == 2 + 6 * spent,
+                "the landing cells add up to " + spent + " scan attempts = " + (2 + 6 * spent)
+                        + " draws, but the queue clock says consumed=" + random.consumed + " of "
+                        + random.length() + " scripted (unconsumed=" + random.unconsumed() + ") — the"
+                        + " original spends 6 draws per scan attempt (:292-297) in this exact order"
+                        + " (:45 gate roll, :50 event roll, then offset/sign per axis)");
     }
 
     /**
      * eff 89 ∈ the real band (89..92, {@code :195}): the same
      * {@code suddenlySpiders} call with {@code real == true} — the spiders are
-     * NOT harmless and carry no viewer ({@code :316} skips the marking).
+     * NOT harmless and carry no viewer ({@code :312} skips the marking).
      */
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
     public static void theRealBandSpawnsTheWarpCappedHostileSwarm(final GameTestHelper helper) {
@@ -169,15 +174,15 @@ public final class WarpEventsGameTest {
         final List<EntityMindSpider> spawned = spawnedSince(baseline, padSpiders(helper, level));
         helper.assertTrue(spawned.size() == 50,
                 "the real band (eff 89, WarpEvents.java:195) produced " + spawned.size()
-                        + " new mind spiders, not the original's min(50, warp=90) = 50 (:283)");
+                        + " new mind spiders, not the original's min(50, warp) = 50 (:282)");
         for (final EntityMindSpider spider : spawned) {
             helper.assertTrue(!spider.isHarmless(),
-                    "a real warp spider (real == true, :316) must not be harmless");
+                    "a real warp spider (real == true, :312) must not be harmless");
             helper.assertTrue(spider.getViewer().isEmpty(),
                     "a real warp spider carries viewer \"" + spider.getViewer() + "\" — only illusions "
-                            + "are marked (:317)");
+                            + "are marked (:313)");
             helper.assertTrue(spider.getTarget() == player,
-                    "a warp spider does not target the warping player (:314 setAttackTarget)");
+                    "a warp spider does not target the warping player (:310 setAttackTarget)");
         }
         assertQueueArithmetic(helper, random, spawned);
         helper.succeed();
@@ -213,7 +218,7 @@ public final class WarpEventsGameTest {
 
     /**
      * eff 30 ∈ the mist band (29..32, {@code :106}): {@code spawnMist(warp, 1)}
-     * ({@code :229-242}) sends the mist FX, summons min(8, 1) = 1 eldritch
+     * ({@code :228-240}) sends the mist FX, summons min(8, 1) = 1 eldritch
      * guardian and chats warp.text.6. The guardian is not registered, so the
      * summon runs as the {@link EldritchMobHost} documented no-op (the same
      * seam {@code TileEldritchCrabSpawner} uses): the probe asserts the seam
@@ -235,13 +240,13 @@ public final class WarpEventsGameTest {
                 "the mist arm (:106) spawned spiders — only the spider arms (:158/:195) call suddenlySpiders");
         helper.assertTrue(countGuardians(helper, level) == 0,
                 "a thaumcraft:eldritchguardian entity exists — the unregistered guardian must summon as the "
-                        + "EldritchMobHost no-op, and its registered card must own the :264-280 scan");
+                        + "EldritchMobHost no-op, and its registered card must own the :257-280 scan");
         final PlayerWarpData after = player.getData(ModAttachments.PLAYER_WARP);
         helper.assertTrue(after.warpCounter() == DECAYED,
                 "the mist pass did not decay the counter to " + DECAYED + " (:48-49)");
         helper.assertTrue(random.isExhausted(),
                 "the mist pass left " + random.unconsumed() + " scripted draws unused — the guardian scan "
-                        + "draws (:264-280) belong to the registered guardian's own card");
+                        + "draws (:257-280) belong to the registered guardian's own card");
         helper.succeed();
     }
 
@@ -300,7 +305,7 @@ public final class WarpEventsGameTest {
         helper.setBlock(new BlockPos(12, 0, 8), Blocks.STONE);
 
         final List<EntityMindSpider> baseline = padSpiders(helper, level);
-        final Scripted random = scriptedSwarm(57);
+        final Scripted random = scriptedSwarm(57, 0, 1, 2);
         WarpEvents.checkWarpEvent(player, random);
 
         final List<EntityMindSpider> spawned = spawnedSince(baseline, padSpiders(helper, level));
@@ -329,31 +334,57 @@ public final class WarpEventsGameTest {
     }
 
     /**
-     * The 50-spider scan script, contention-hardened: per spider a, THREE
-     * scripted attempts — A1 at (8+2·(a%8), 1, 8+2·(a/8)), A2 one block
-     * above, A3 two above (x and z identical; slots 2 apart so swarm boxes
-     * never touch). 6 draws per attempt ({@code :292-297}), gate + event roll
-     * first ({@code :45, :50}): 902 draws. The batch packs pads by the
-     * biggest template (hazard {@code t_44055375}), so a spider whose cell is
-     * occupied spends the scripted attempt for it, never a random draw; the
-     * probes assert the landing cells and the queue arithmetic.
+     * The 50-spider scan script: window (a, k) offers the cell
+     * (8 + 2·(a%8), 1 + 7·k, 8 + 2·(a/8)) — 6 draws per attempt
+     * ({@code :292-297}, offset {@code func_76136_a(rand, 7, 24)} then the
+     * sign {@code func_76136_a(rand, -1, 1)} per axis), gate + event roll
+     * first ({@code :45, :50}).
+     *
+     * <p>The stream is consumed in order, SIX draws per scan attempt, so a
+     * spider lands on the window it is currently reading: with an empty pad
+     * every spider lands on its FIRST window (k = 0) and the event spends
+     * exactly 2 + 6·50 = 302 draws. `secondAttemptFor` lists the slots whose
+     * first cell the probe blocks, and the builder emits the k = 1 window
+     * immediately after that slot's k = 0 window, so the blocked spider reads
+     * it as its second attempt and lands one block above. The arithmetic
+     * assert (queue clock == 2 + 6·Σ(landing k + 1), queue fully drained)
+     * therefore has exactly one satisfying landing pattern per probe: the
+     * measured run of this design spends 302 (empty) / 320 (three blocked
+     * slots) draws.
      */
-    private static Scripted scriptedSwarm(final int eff) {
+    private static Scripted scriptedSwarm(final int eff, final int... secondAttemptFor) {
         final Scripted random = scriptedGate(eff);
         for (int a = 0; a < 50; a++) {
-            final int x = 2 * (a % 8);
-            final int z = 2 * (a / 8);
-            random.offer(x, 2, 0, 1, z, 2);          // A1: y = 1 + 7·0
-            random.offer(x, 2, 0, 2, z, 2);          // A2: y = 1 + 7·1 = 8
-            random.offer(x, 2, 7, 2, z, 2);          // A3: y = 1 + 14·1 = 15
+            window(random, a, 0);
+            if (isMarked(secondAttemptFor, a)) {
+                window(random, a, 1);
+            }
         }
         return random;
     }
 
+    /** The 6 draws that offer cell (8 + 2·(a%8), 1 + 7·k, 8 + 2·(a/8)). */
+    private static void window(final Scripted random, final int a, final int k) {
+        final int x = 2 * (a % 8);
+        final int z = 2 * (a / 8);
+        // offset = 7 + nextInt(18); sign = -1 + nextInt(3): 1 -> 0 (y = j),
+        // 2 -> +1 (y = j + 7k with the 7 + 7(k-1) offset for k = 1, 2)
+        random.offer(x, 2, k == 0 ? 0 : 7 * (k - 1), k == 0 ? 1 : 2, z, 2);
+    }
+
+    private static boolean isMarked(final int[] marks, final int a) {
+        for (final int mark : marks) {
+            if (mark == a) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
-     * The scripted attempt index a spider landed on: 0 (A1, y=1), 1 (A2,
-     * y=8 = 1+7), 2 (A3, y=15 = 1+14), or -1 for any cell the script never
-     * offered (the scan offset is 7..24, so y=2 is NOT reachable).
+     * The scripted window index k a spider landed on: 0 (y = 1, sign 0), 1
+     * (y = 8 = 1+7) — or -1 for any cell the script never offers (the scan
+     * offset is 7..24, so y = 2 and y = 9 are NOT reachable).
      */
     private static int landingAttempt(final GameTestHelper helper, final EntityMindSpider spider) {
         final BlockPos o = helper.absolutePos(BlockPos.ZERO);
@@ -367,7 +398,7 @@ public final class WarpEventsGameTest {
             return -1;
         }
         final int a = (rx - 8) / 2 + 8 * ((rz - 8) / 2);
-        final int idx = ry == 1 ? 0 : ry == 8 ? 1 : ry == 15 ? 2 : -1;
+        final int idx = ry == 1 ? 0 : ry == 8 ? 1 : -1;
         if (a > 49 || idx < 0) {
             return -1;
         }
@@ -495,6 +526,11 @@ public final class WarpEventsGameTest {
 
         int unconsumed() {
             return draws.size();
+        }
+
+        /** The draws this script was built with. */
+        int length() {
+            return consumed + draws.size();
         }
 
         private IllegalStateException unused() {

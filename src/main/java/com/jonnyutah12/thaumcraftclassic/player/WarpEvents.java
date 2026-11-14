@@ -33,9 +33,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * The warp-event seam: the mind spider's real spawn source and the eldritch
  * mist FX (TC-M6-06-s-c3-b's spawn half / t_1a83f0db, closing BD-75's warp
  * side). Port of {@code thaumcraft.common.lib.WarpEvents} — the event entry
- * {@code checkWarpEvent} ({@code :32-226}), the spider swarm
- * {@code suddenlySpiders} ({@code :282-322}) and the mist {@code spawnMist}
- * ({@code :229-242}) — driven from the player tick exactly as the original
+ * {@code checkWarpEvent} ({@code :39-226}), the spider swarm
+ * {@code suddenlySpiders} ({@code :281-322}) and the mist {@code spawnMist}
+ * ({@code :228-240}) — driven from the player tick exactly as the original
  * drives it ({@code EventHandlerEntity.java:235-237}).
  *
  * <p>All constants and rules live on {@link WarpEventsLogic} (unit-pinned);
@@ -49,7 +49,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
  *
  * <p>Documented inert arms (BD-75 records them): the potion arms (no
  * thaumcraft MobEffect is registered — the TC-M4-03 lane), the research-grant
- * arms (the grant lane, {@code :203-221} / {@code grantResearch :244-261}),
+ * arms (the grant lane, {@code :203-221} / {@code grantResearch :241-255}),
  * and the chat-only arms (their lang keys ship with the potions lane). The
  * guardians run through {@link EldritchMobHost} — the guardian is not
  * registered, so each summon is the host's documented no-op, the same pattern
@@ -86,18 +86,18 @@ public final class WarpEvents {
     }
 
     /**
-     * The original's public entry ({@code WarpEvents.java:32}); the random is a
+     * The original's public entry ({@code WarpEvents.java:39}); the random is a
      * parameter so the game-test probes can script the draw order ({@code :45},
      * {@code :50} and the per-attempt scan draws) — the production call site
      * passes the level's random, exactly {@code player.field_70170_p.field_73012_v}.
      */
     public static void checkWarpEvent(final ServerPlayer player, final RandomSource random) {
         PlayerWarpData data = player.getData(ModAttachments.PLAYER_WARP);
-        // :34-36 — warp = total (perm+temp+sticky) + gear warp. `actualwarp`
-        // (perm+sticky, :35-36) only feeds the research-grant block (:203-221),
+        // :40-43 — warp = total (perm+temp+sticky) + gear warp. `actualwarp`
+        // (perm+sticky, :41-42) only feeds the research-grant block (:203-221),
         // which is the documented inert arm.
         int warp = data.total() + getWarpFromGear(player);
-        int warpCounter = data.warpCounter();                                      // :37
+        int warpCounter = data.warpCounter();                                      // :44
 
         final int roll = random.nextInt(WarpEventsLogic.ROLL_BOUND);              // :45
         if (WarpEventsLogic.gatePasses(warp, warpCounter, roll)) {                // :46
@@ -106,7 +106,7 @@ public final class WarpEvents {
             player.setData(ModAttachments.PLAYER_WARP, data);                     // :49
             int eff = random.nextInt(warp);                                       // :50
             if (fortressMaskActive(player.getItemBySlot(EquipmentSlot.HEAD))) {   // :51-56
-                eff -= WarpEventsLogic.fortressHelmDiscount(random.nextInt(4));   // :57-58
+                eff -= WarpEventsLogic.fortressHelmDiscount(random.nextInt(4));   // :57
             }
             // :60 — the warp-event screen FX, to the client hooks lane
             PacketDistributor.sendToPlayer(player, new MiscEventPayload(MiscEventPayload.EVENT_WARP));
@@ -145,23 +145,23 @@ public final class WarpEvents {
     }
 
     /**
-     * {@code WarpEvents.suddenlySpiders} ({@code :282-322}):
+     * {@code WarpEvents.suddenlySpiders} ({@code :281-322}):
      * {@code min(50, warp)} spiders, each placed by a 50-attempt offset scan
      * around the player, each targeted at the player (attack target +
-     * revenge target, {@code :314-315}); illusion spiders ({@code real ==
-     * false}) carry the viewer and {@code harmless = true} ({@code :316-319}),
+     * revenge target, {@code :310-311}); illusion spiders ({@code real ==
+     * false}) carry the viewer and {@code harmless = true} ({@code :312-315}),
      * the chat line at {@code :321} closes the swarm.
      */
     private static void suddenlySpiders(final ServerPlayer player, final int warp,
                                         final boolean real, final RandomSource random) {
         final ServerLevel level = (ServerLevel) player.level();                    // :281 worldObj cast
-        final int spawns = WarpEventsLogic.spiderSpawns(warp);                     // :283
+        final int spawns = WarpEventsLogic.spiderSpawns(warp);                     // :282
         for (int a = 0; a < spawns; a++) {                                         // :284
             final EntityMindSpider spider =
                     new EntityMindSpider(CatalogMindSpider.MIND_SPIDER.get(), level);
-            final int i = Mth.floor(player.getX());                                // :287
-            final int j = Mth.floor(player.getY());                                // :288
-            final int k = Mth.floor(player.getZ());                                // :289
+            final int i = Mth.floor(player.getX());                                // :286
+            final int j = Mth.floor(player.getY());                                // :287
+            final int k = Mth.floor(player.getZ());                                // :288
             boolean success = false;
             for (int l = 0; l < WarpEventsLogic.SCAN_ATTEMPTS; l++) {              // :291
                 final int i1 = i + scanOffset(random) * scanSign(random);          // :292-293
@@ -182,45 +182,45 @@ public final class WarpEvents {
                 }
             }
             if (success) {
-                // :314-315 setAttackTarget + setRevengeTarget. 1.21.1 removed
+                // :310-311 setAttackTarget + setRevengeTarget. 1.21.1 removed
                 // the revenge-target field from LivingEntity (measured on the
                 // decompiled jar: no setRevengeTarget symbol); Mob#setTarget is
                 // the single surviving seam. The swarm is NoAi by construction
                 // (BD-74, the original's :90-92 switch), so this is the
                 // target-on-AI-activation shape, not a live bite.
-                spider.setTarget(player);                                          // :314 func_70784_b
+                spider.setTarget(player);                                          // :310 func_70784_b
                 if (!real) {                                                       // :316
-                    spider.setViewer(player.getScoreboardName());                  // :317 setViewer(player.getCommandSenderName())
-                    spider.setHarmless(true);                                      // :318
+                    spider.setViewer(player.getScoreboardName());                  // :313 setViewer(player.getCommandSenderName())
+                    spider.setHarmless(true);                                      // :314
                 }
-                level.addFreshEntity(spider);                                      // :320 spawnEntityInWorld
+                level.addFreshEntity(spider);                                      // :317 spawnEntityInWorld
             }
         }
         chat(player, WarpEventsLogic.KEY_SPIDERS);                                 // :321 warp.text.7
     }
 
     /**
-     * {@code WarpEvents.spawnMist} ({@code :229-242}): the mist FX, then up to
+     * {@code WarpEvents.spawnMist} ({@code :228-240}): the mist FX, then up to
      * {@code min(8, guardian)} eldritch guardians, then the chat line.
      */
     private static void spawnMist(final ServerPlayer player, final int guardian) {
-        PacketDistributor.sendToPlayer(player, new MiscEventPayload(MiscEventPayload.EVENT_MIST)); // :230 PacketMiscEvent(1)
-        if (guardian > 0) {                                                        // :231
+        PacketDistributor.sendToPlayer(player, new MiscEventPayload(MiscEventPayload.EVENT_MIST)); // :229 PacketMiscEvent(1)
+        if (guardian > 0) {                                                        // :230
             for (int a = 0; a < guardian; a++) {                                   // :233-235
                 summonGuardian(player);                                            // :234
             }
         }
-        chat(player, WarpEventsLogic.KEY_MIST);                                    // :241 warp.text.6
+        chat(player, WarpEventsLogic.KEY_MIST);                                    // :238 warp.text.6
     }
 
     /**
-     * {@code WarpEvents.spawnGuardian} ({@code :264-280}): an
+     * {@code WarpEvents.spawnGuardian} ({@code :257-280}): an
      * {@code EntityEldritchGuardian} placed by a 50-attempt offset scan and
      * set on the player. The guardian is not registered, so the summon runs
      * through {@link EldritchMobHost} — the documented no-op until the
      * guardian card claims it, the same seam {@code TileEldritchCrabSpawner}
      * and {@code TileEldritchAltar} use; when it lands, the host's spawner
-     * owns the {@code :264-280} scan (the scan needs the registered entity
+     * owns the {@code :257-280} scan (the scan needs the registered entity
      * type to build the box, so it cannot precede registration).
      */
     private static void summonGuardian(final ServerPlayer player) {
@@ -232,7 +232,7 @@ public final class WarpEvents {
      * {@code WarpEvents.getWarpFromGear} ({@code :353-367}): warp from the
      * main-hand stack, the four armor slots and the baubles slots (the port's
      * accessory worn set, TC-M8-01), each through {@link IWarpingGear}
-     * ({@code EventHandlerRunic.getFinalWarp}, {@code :356-363}).
+     * ({@code EventHandlerRunic.getFinalWarp}, {@code :354-364}).
      */
     static int getWarpFromGear(final Player player) {
         int w = 0;
@@ -241,13 +241,13 @@ public final class WarpEvents {
             w += gear.getWarp(mainHand, player);
         }
         for (final EquipmentSlot slot : new EquipmentSlot[] {
-                EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET }) { // :355-358
+                EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET }) { // :356-358
             final ItemStack armor = player.getItemBySlot(slot);
             if (armor.getItem() instanceof IWarpingGear gear) {
                 w += gear.getWarp(armor, player);
             }
         }
-        for (final ItemStack worn : AccessoryService.wornStacks(player)) {         // :359-363 BaublesApi slots
+        for (final ItemStack worn : AccessoryService.wornStacks(player)) {         // :360-364 BaublesApi slots
             if (!worn.isEmpty() && worn.getItem() instanceof IWarpingGear gear) {
                 w += gear.getWarp(worn, player);
             }

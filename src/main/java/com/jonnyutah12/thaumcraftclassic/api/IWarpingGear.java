@@ -12,7 +12,7 @@ import net.minecraft.world.item.ItemStack;
  * the original summed {@code getWarp} over the current main-hand stack, the
  * four armor slots and the four baubles slots in
  * {@code WarpEvents.getWarpFromGear} ({@code common/lib/WarpEvents.java:353-367}
- * via {@code EventHandlerRunic.getFinalWarp}, {@code :356-363}); the port's
+ * via {@code EventHandlerRunic.getFinalWarp}, {@code :354-364}); the port's
  * aggregation lives in {@code player/WarpEvents}. No shipped item implements
  * it yet — TC-M6-07 runic gear and the foci join through this contract.</p>
  */
