@@ -1139,6 +1139,16 @@ public final class CultistClericGameTest {
                 level.random.setSeed((0x5DEECE66DL * n + origin.getX() * 31L + origin.getZ())
                         ^ System.nanoTime());
                 hurt.setHealth(hurt.getMaxHealth());                                  // fixture: the caller lives
+                // One hit bought ONE gang call, not 60: the goal's FIRST start() gives
+                // the knight target == attacker, HurtByTargetGoal#canContinueToUse then
+                // reads that as "still chasing the attacker" and the goal runs forever —
+                // canUse (the only path to start/callTheGang, and the only place the
+                // :51 roll is drawn) is never consulted again. Measured: 3/8 legs green
+                // at 9d4b882a (the fixed-seed phase, 1/3 per leg) then 4/4 legs red at
+                // 60/60-miss with the entropy seed — (2/3)^60 does not fire, ~1 draw per
+                // leg does. Dropping the target re-opens canContinueToUse -> canUse ->
+                // start -> callTheGang, so every attempt is a real 1-in-3 draw.
+                hurt.setTarget(null);                                                 // the goal may re-arm
                 fireTheHit.run();                                                     // :29 — the hit that arms the goal
                 driven[0] = n;
             });
