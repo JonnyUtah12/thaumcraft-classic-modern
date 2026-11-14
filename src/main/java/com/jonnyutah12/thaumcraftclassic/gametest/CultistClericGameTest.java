@@ -725,8 +725,17 @@ public final class CultistClericGameTest {
         level.addFreshEntity(plain);
         level.addFreshEntity(red);
         final int[] phase = {0};
+        // The pad's success poll can run BEFORE the level has ticked the pair, and an
+        // orb sitting ON its clamp edge has not been discarded yet. Measured on CI's
+        // no-Curios job at 9d4b882a: the first phase read age=160 red=false — the
+        // clamp tick had not run — and the removal assert reddened a probe that was
+        // green on every local leg. An orb at its edge is therefore keep-polling, not
+        // a failure; the removal is asserted once the age has actually crossed.
         helper.succeedWhen(() -> {
             if (phase[0] == 0) {
+                if (plain.tickCount <= EntityGolemOrb.LIFETIME) {
+                    return;  // the plain orb has not crossed its 160 edge: poll again
+                }
                 helper.assertTrue(plain.isRemoved(),
                         ":85 — a plain orb past 160 discards; age=" + plain.tickCount
                                 + " red=" + plain.isRed());
@@ -736,6 +745,9 @@ public final class CultistClericGameTest {
                 red.tickCount = EntityGolemOrb.LIFETIME_RED;                          // :85 red edge
                 phase[0] = 1;
             } else {
+                if (red.tickCount <= EntityGolemOrb.LIFETIME_RED) {
+                    return;  // the red orb has not crossed its 240 edge: poll again
+                }
                 helper.assertTrue(red.isRemoved(),
                         ":85 — a red orb past 240 discards; age=" + red.tickCount);
             }
@@ -880,11 +892,19 @@ public final class CultistClericGameTest {
      *  the cleric's {@code ticksExisted % 40} cadence and drops the ritual when
      *  the squared distance from the home to the cleric's <b>block-truncated</b>
      *  position exceeds 16.0F, or when the home block is no longer
-     *  {@code thaumcraft:blockeldritch}. */
+     *  {@code thaumcraft:blockeldritch}.
+     *
+     *  <p>The truncation is the original's {@code (int)} casts — TOWARD ZERO — not the
+     *  floor-based BlockPos the harness getters build. The fixture's feet are read with
+     *  the goal's own casts; the in-body note carries the measured sign flip.</p> */
     @GameTest(template = "empty_24")
     public static void theAltarFocusGoalKeepsTheRitualAndDropsItOnItsTwoArms(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
         final EntityCultistCleric cleric = cleric(helper);
+        // The probe's whole case is exact feet arithmetic, so the cleric's own goals
+        // (RandomStroll) must not walk it off the figures; the goal under test is a
+        // standalone instance the probe ticks by hand, so no AI is needed to drive it.
+        cleric.setNoAi(true);
         final BlockPos home = helper.absolutePos(BlockPos.ZERO).offset(2, 3, 2);
         // The block goes in through the LEVEL: GameTestHelper#setBlock reads its position
         // as TEMPLATE-RELATIVE (it adds absoluteVec), so an absolute BlockPos lands
@@ -916,11 +936,33 @@ public final class CultistClericGameTest {
         // feet sit at home-(1,0,1) (cleric(): offset(1,3,1), moveTo +0.5 on x/z, y whole),
         // so every home below is placed at an exact offset FROM THE FEET: 16.0 keeps (the
         // strict >), 17.0 drops (the threshold, one over), on both axes.
+        // :37 truncation is the JAVA (int) CAST — it truncates TOWARD ZERO — while the
+        // harness getters (getBlockX/getBlockY/getBlockZ) build a FLOOR-based BlockPos.
+        // The harness parks every pad at a random region origin, negative on each axis
+        // about half the time, and on a negative axis the two conventions disagree by
+        // one block. Measured at 9d4b882a with the guards: the pad at origin
+        // x=-12702163 z=-4830762 read pos=(-12702161.5, -57.0, -4830762.5); the goal's
+        // feet are then (-12702161, -57, -4830762) while the floor-based fixture feet
+        // said (-12702162, -57, -4830763). The "distSq 16.0" keep arm computed 17.0 for
+        // the goal (dropped, red) and the "distSq 17.0" drop arm computed 9.0 (kept,
+        // red) on the SAME tree, run after run. Every figure below is built with the
+        // goal's own casts, so distSq is exact on both sign halves.
+        final BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+        final BlockPos feet = new BlockPos((int) cleric.getX(), (int) cleric.getY(),
+                (int) cleric.getZ());
+        final BlockPos expectedFeet = new BlockPos((int) (origin.getX() + 1 + 0.5),
+                origin.getY() + 3, (int) (origin.getZ() + 1 + 0.5));
+        helper.assertTrue(feet.equals(expectedFeet),
+                "PROBE BROKEN: the arms' arithmetic pins the goal's (int)-cast feet to the"
+                        + " cleric() fixture's placement at origin+(1,3,1) plus 0.5 on x/z — if"
+                        + " the mob drifted, no distSq figure in this probe means anything;"
+                        + " feet=" + feet + " expected=" + expectedFeet + " origin=" + origin
+                        + " pos=" + cleric.position() + " tickCount=" + cleric.tickCount);
         final java.util.function.BiConsumer<BlockPos, String> live = (spot, why) -> helper.assertTrue(
                 level.getBlockState(spot).is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())
                         && new net.minecraft.world.phys.Vec3(spot.getX(), spot.getY(), spot.getZ())
                         .distanceToSqr(new net.minecraft.world.phys.Vec3(
-                                cleric.getBlockX(), cleric.getBlockY(), cleric.getBlockZ()))
+                                feet.getX(), feet.getY(), feet.getZ()))
                         <= CultistAiLogic.ALTAR_MAX_DIST_SQ,
                 "PROBE BROKEN (" + why + "): the arm under test needs a home that is"
                         + " thaumcraft:blockeldritch AND inside the distance clamp, so the drop"
@@ -928,16 +970,10 @@ public final class CultistClericGameTest {
                         + " reading=" + level.getBlockState(spot)
                         + " d2=" + new net.minecraft.world.phys.Vec3(spot.getX(), spot.getY(), spot.getZ())
                         .distanceToSqr(new net.minecraft.world.phys.Vec3(
-                                cleric.getBlockX(), cleric.getBlockY(), cleric.getBlockZ()))
+                                feet.getX(), feet.getY(), feet.getZ()))
                         + " limit=" + CultistAiLogic.ALTAR_MAX_DIST_SQ
-                        + " liveFeet=" + new BlockPos(cleric.getBlockX(), cleric.getBlockY(), cleric.getBlockZ())
-                        + " pos=" + cleric.position() + " tickCount=" + cleric.tickCount
-                        + " region=" + helper.absolutePos(BlockPos.ZERO));
-        final BlockPos feet = new BlockPos(cleric.getBlockX(), cleric.getBlockY(), cleric.getBlockZ());
-        helper.assertTrue(feet.equals(home.offset(-1, 0, -1)),
-                "PROBE BROKEN: this arm's arithmetic assumes the cleric's truncated feet sit at"
-                        + " home-(1,0,1) — feet=" + feet + " home=" + home
-                        + " origin=" + helper.absolutePos(BlockPos.ZERO));
+                        + " liveFeet=" + feet + " pos=" + cleric.position()
+                        + " tickCount=" + cleric.tickCount + " region=" + origin);
         final BlockPos edgeX = feet.offset(4, 0, 0);                                   // distSq 16.0
         final BlockPos overX = feet.offset(4, 0, 1);                                   // distSq 17.0
         final BlockPos edgeY = feet.offset(0, 4, 0);                                   // distSq 16.0
@@ -966,7 +1002,7 @@ public final class CultistClericGameTest {
                         + " limit=" + CultistAiLogic.ALTAR_MAX_DIST_SQ
                         + " block=" + level.getBlockState(overX)
                         + " tickCount=" + cleric.tickCount + " cadence=" + CultistAiLogic.ALTAR_CADENCE_TICKS
-                        + " liveFeet=" + new BlockPos(cleric.getBlockX(), cleric.getBlockY(), cleric.getBlockZ())
+                        + " liveFeet=" + feet
                         + " pos=" + cleric.position() + " homeNow=" + cleric.getHomePosition()
                         + " canUse=" + goal.canUse() + ")");
         cleric.setIsRitualist(true);
@@ -1089,8 +1125,19 @@ public final class CultistClericGameTest {
                 // one phase of a 1-in-3 dice can be all-misses (measured: one seed gave
                 // 40/40 misses, then 80/80 across legs — 1.3e-7 tails do not fire twice).
                 // Reseeding the shared stream per attempt is unbiased (no test prefers an
-                // outcome); it just stops this probe reading one phase of it.
-                level.random.setSeed(0x5DEECE66DL * n + origin.getX() * 31L + origin.getZ());
+                // outcome); it just stops this probe reading one phase of it. The
+                // DETERMINISTIC part of the seed, though, pins the phase, not the dice:
+                // the roll is drawn a fixed number of consumers after the reseed, so one
+                // (seed, phase) pair answers all 60 attempts the same way. Measured at
+                // 9d4b882a: 60/60 misses on CI's curios job (pad x=-11222658) and on the
+                // local no-Curios leg (pad x=-13340463), green on the local curios legs
+                // of the same tree — 2 reds in 5 local legs, not the (2/3)^60 tail.
+                // XOR-ing System.nanoTime() puts one run-entropy bit in front of the
+                // phase per attempt: each attempt becomes a fresh unbiased 1-in-3 draw
+                // (the seed is not chosen for an outcome, so no test gains a preference)
+                // and the probe's (2/3)^60 miss bound is the honest one.
+                level.random.setSeed((0x5DEECE66DL * n + origin.getX() * 31L + origin.getZ())
+                        ^ System.nanoTime());
                 hurt.setHealth(hurt.getMaxHealth());                                  // fixture: the caller lives
                 fireTheHit.run();                                                     // :29 — the hit that arms the goal
                 driven[0] = n;
