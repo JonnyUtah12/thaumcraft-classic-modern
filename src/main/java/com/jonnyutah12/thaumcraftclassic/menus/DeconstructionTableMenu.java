@@ -1,14 +1,18 @@
 package com.jonnyutah12.thaumcraftclassic.menus;
 
+import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.player.ModAttachments;
 import com.jonnyutah12.thaumcraftclassic.player.PlayerKnowledgeData;
+import com.jonnyutah12.thaumcraftclassic.registration.ModAspects;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileDeconstructionTable;
+import net.minecraft.core.Registry;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Deconstruction table menu (content-mapping.csv {@code thaumcraft:gui_decon_table},
@@ -19,6 +23,16 @@ import net.minecraft.world.item.ItemStack;
  * original's "collect the revealed aspect into your research pool" action —
  * it adds the aspect to the player's aspect pool via the knowledge
  * attachment (original {@code PlayerKnowledge.addAspectPool}).</p>
+ *
+ * <p><b>Two data slots, both in the original's channel.</b> 1.7.10's
+ * {@code GuiDeconstructionTable} drew its tag as {@code UtilsFX.drawTag(64, 48,
+ * this.table.getData().getRevealedAspect())} — line 39 — because the screen held
+ * the tile, whose {@code aspect} field is server-side state. 1.21.1 hands a screen
+ * only its menu, and the tile's {@code getUpdatePacket} carries only the item
+ * stacks, so the revealed aspect travels in the menu's container data (BD-17):
+ * index 0 the break timer, index 1 the aspect's index in
+ * {@link Aspect#getPrimalAspects()} (the tile picks from that list, so the index is
+ * total, and {@code -1} is the empty box).</p>
  */
 public class DeconstructionTableMenu extends AbstractContainerMenu {
 
@@ -27,17 +41,24 @@ public class DeconstructionTableMenu extends AbstractContainerMenu {
     private final ContainerData data = new ContainerData() {
         @Override
         public int get(final int index) {
+            if (index == DATA_ASPECT) {
+                return encodeAspectIndex(DeconstructionTableMenu.this.table.aspect);
+            }
             return DeconstructionTableMenu.this.table.breaktime;
         }
 
         @Override
         public void set(final int index, final int value) {
-            DeconstructionTableMenu.this.table.breaktime = value;
+            if (index == DATA_ASPECT) {
+                DeconstructionTableMenu.this.table.aspect = decodeAspectIndex(value);
+            } else {
+                DeconstructionTableMenu.this.table.breaktime = value;
+            }
         }
 
         @Override
         public int getCount() {
-            return 1;
+            return 2;
         }
     };
 
@@ -78,8 +99,103 @@ public class DeconstructionTableMenu extends AbstractContainerMenu {
         return this.table.breaktime;
     }
 
-    /** The menu's container data slot carrying the break timer (original's own channel). */
-    static final int DATA_BREAK_TIME = 0;
+    /**
+     * The menu's container data slot carrying the break timer (original's own
+     * channel), now index 0 of two.
+     */
+    public static final int DATA_BREAK_TIME = 0;
+
+    /**
+     * The menu's second container data slot: the revealed aspect, as its index in
+     * {@link Aspect#getPrimalAspects()}, or {@code -1} for an empty box. The tile
+     * chose it with {@code primals.getAspects().get(random.nextInt(size))} over that
+     * same list, so the index is total over everything the box can show.
+     */
+    public static final int DATA_ASPECT = 1;
+
+    /**
+     * How many container data slots this menu syncs. The screen's whole view of
+     * tile state is this channel, which is why the tag needs slot 1 to exist at all
+     * (BD-17); {@code AspectTagGameTest} pins the count so a third value cannot
+     * silently drop the aspect.
+     */
+    public int dataSlotCount() {
+        return this.data.getCount();
+    }
+
+    /**
+     * The wire value one data slot carries — the number the client's
+     * {@code ContainerData#set} receives and writes back into the client's tile.
+     * Probed by {@code AspectTagGameTest}; reading it is read-only.
+     */
+    public int dataValue(final int index) {
+        return this.data.get(index);
+    }
+
+    /**
+     * The aspect sitting in the table's box, ready to be collected. On the server
+     * this is the tile's own field; on the client it is the value the data slot
+     * above wrote back, which is why the screen can finally draw the original's tag
+     * (BD-17). {@code null} is the original's empty box.
+     */
+    @Nullable
+    public Aspect getRevealedAspect() {
+        return this.table.aspect;
+    }
+
+    /**
+     * The wire value for a revealed aspect: its aspect-registry id + 1, restricted to
+     * the primal domain the deconstruction table's tile can roll, or {@code 0} for
+     * none. The +1 is not decoration: a 1.21.1 client builds its
+     * {@code ContainerData} with every slot at {@code 0} BEFORE the server's first
+     * sync lands, so 0 must decode to the empty box — an encoding that put the first
+     * primal at 0 would open the window with a phantom aspect tag drawn in it. The
+     * domain stays the primal list because a composite's registry id would decode to
+     * a primal on the client side. Compared by tag, not by reference — the registry
+     * interns its instances, but the channel's contract is the tag, and a tag
+     * comparison cannot be broken by a future registry that hands out copies.
+     */
+    public static int encodeAspectIndex(@Nullable final Aspect aspect) {
+        if (aspect == null) {
+            return 0;
+        }
+        final Registry<Aspect> registry = ModAspects.registry();
+        if (registry == null) {
+            return 0;
+        }
+        for (final Aspect primal : Aspect.getPrimalAspects()) {
+            if (primal.getTag().equals(aspect.getTag())) {
+                final int id = registry.getId(primal);
+                return id < 0 ? 0 : id + 1;
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * The aspect for a wire value; {@code 0}, anything out of range and any id outside
+     * the tile's primal roll domain are the empty box.
+     */
+    @Nullable
+    public static Aspect decodeAspectIndex(final int index) {
+        if (index <= 0) {
+            return null;
+        }
+        final Registry<Aspect> registry = ModAspects.registry();
+        if (registry == null) {
+            return null;
+        }
+        final Aspect registered = registry.byId(index - 1);
+        if (registered == null) {
+            return null;
+        }
+        for (final Aspect primal : Aspect.getPrimalAspects()) {
+            if (primal.getTag().equals(registered.getTag())) {
+                return primal;
+            }
+        }
+        return null;
+    }
 
     // MC 1.21.1 declares clickMenuButton as boolean (true = the button did something).
     @Override
@@ -113,6 +229,11 @@ public class DeconstructionTableMenu extends AbstractContainerMenu {
         return stack.copy();
     }
 
+
+    /** The container data slots of this menu, for probes that prove the sync lands. */
+    public ContainerData containerData() {
+        return this.data;
+    }
     @Override
     public boolean stillValid(final Player player) {
         return this.table.stillValid(player);

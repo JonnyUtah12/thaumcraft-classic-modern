@@ -100,6 +100,18 @@ public final class LocalizationGameTest {
             // (GuiResearchBrowser.java:41) and no menu type, so no registry
             // derivation produces this key (BD-22).
             Map.entry("container.thaumcraft.thaumonomicon", "ThaumonomiconScreen.TITLE_KEY"),
+            // stay/follow mode texts on the trunk screen's stay control
+            Map.entry("container.thaumcraft.gui_trunk.stay_on", "TrunkScreen stay tooltip (TC-M7-04-m4)"),
+            Map.entry("container.thaumcraft.gui_trunk.stay_off", "TrunkScreen follow tooltip (TC-M7-04-m4)"),
+            // Screen readout rows (TC-M7-04-m1): the original GuiArcaneBore
+            // draws hardcoded English strings (GuiArcaneBore:45-73); the port
+            // localizes them, so the keys ride the code-translatable rule.
+            Map.entry("gui.thaumcraft.arcane_bore.width", "ArcaneBoreScreen readout row"),
+            Map.entry("gui.thaumcraft.arcane_bore.speed", "ArcaneBoreScreen readout row"),
+            Map.entry("gui.thaumcraft.arcane_bore.other", "ArcaneBoreScreen readout row"),
+            Map.entry("gui.thaumcraft.arcane_bore.native", "ArcaneBoreScreen readout row"),
+            Map.entry("gui.thaumcraft.arcane_bore.fortune", "ArcaneBoreScreen readout row"),
+            Map.entry("gui.thaumcraft.arcane_bore.silk", "ArcaneBoreScreen readout row"),
             // tooltip / action lines
             Map.entry("item.thaumcraft.itemlootbag.tooltip", "ItemLootBag.appendHoverText"),
             Map.entry("item.thaumcraft.trunkspawner.tooltip", "ItemTrunkSpawner.appendHoverText"),
@@ -178,8 +190,6 @@ public final class LocalizationGameTest {
             // from en_US.lang) and the copy-cost header the RESEARCHDUPE plate
             // draws. All three are read by the note GUI, not by a registry id,
             // so they are code-authored like the container titles.
-            Map.entry("tile.researchtable.noink.0", "ResearchNoteMenu ink gate (GuiResearchTable tooltip)"),
-            Map.entry("tile.researchtable.noink.1", "ResearchNoteMenu ink gate (GuiResearchTable tooltip)"),
             Map.entry("tc.research.copy", "ResearchNoteMenu copy-cost header (GuiResearchTable)"),
             Map.entry("item.thaumcraft.wandcasting.iron", "ItemWandCasting.getName fragment (original item.Wand.iron.cap/.rod/.obj), TC-M6-01"),
             Map.entry("item.thaumcraft.wandcasting.gold", "ItemWandCasting.getName fragment (original item.Wand.gold.cap/.rod/.obj), TC-M6-01"),
@@ -213,6 +223,30 @@ public final class LocalizationGameTest {
                     "RecipePageDisplay.station().labelKey() (original GuiResearchRecipe.java:821-823 key)"),
             Map.entry("recipe.type.workbenchshapeless",
                     "RecipePageDisplay.station().labelKey() (original GuiResearchRecipe.java:887-890 key)"),
+            // Arcane workbench GUI (TC-M7-04-m2): the vis notice the original
+            // hardcoded as "Insufficient vis" (GuiArcaneWorkbench.java:105) and
+            // the wand-slot hint the port added where the original drew an
+            // unlabelled slot.
+            Map.entry("container.thaumcraft.gui_arcane_workbench",
+                    "TileArcaneWorkbench.getDisplayName — the open menu's title (TC-M7-04-m2)"),
+            Map.entry("container.thaumcraft.research_table_from_table",
+                    "TC-M7-04-m2b UI-only research-table line: the slot under the combine "
+                            + "plate names its source (no content id)"),
+            Map.entry("container.thaumcraft.insufficient_vis",
+                    "GuiArcaneWorkbench insufficient-vis notice"),
+            Map.entry("container.thaumcraft.wand_slot_hint",
+                    "ArcaneWorkbenchScreen wand-slot tooltip"),
+            // Research table GUI (TC-M7-04-m2b): the menu title key is the menu
+            // type's own id, the "from the table" line marks the tile's bonus
+            // pool (the original showed that state as a second, dimmer tag), and
+            // the two out-of-ink lines are the original's verbatim strings at the
+            // original's key shape (GuiResearchTable.java:213-228).
+            Map.entry("container.thaumcraft.gui_research_table",
+                    "TileResearchTable.getDisplayName — the open menu's title (TC-M7-04-m2b)"),
+            Map.entry("tile.researchtable.noink.0",
+                    "ResearchTableScreen out-of-ink notice (original key shape kept)"),
+            Map.entry("tile.researchtable.noink.1",
+                    "ResearchTableScreen out-of-ink notice (original key shape kept)"),
             // TC-M6-06-s-c3-a: the pech names itself by type (the original's
             // func_70005_c_, EntityPech.java:70-80) — the wand pech is the
             // Mage, the bow pech the Stalker. Only type 0 is the registry

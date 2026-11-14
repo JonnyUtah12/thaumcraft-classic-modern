@@ -46,7 +46,11 @@ class LocalizationFileTest {
             "death.attack.thaumcraft.", "fluid.thaumcraft.",
             // TC-M6-04f-m: the vanilla biome description id shape
             // "biome.<namespace>.<path>" (the Eldritch biome).
-            "biome.thaumcraft.");
+            "biome.thaumcraft.",
+            // Screen readout lines (TC-M7-04-m1): the bore's readout rows are
+            // hardcoded English strings in GuiArcaneBore:45-73, localized by
+            // the port, so they carry the 1.21.1 gui.<ns>.<screen>.<row> shape.
+            "gui.thaumcraft.");
 
     /**
      * Keys the shipped code uses with the original 1.7.10 key shape, kept
@@ -115,6 +119,9 @@ class LocalizationFileTest {
 
     /** Every translation key the shipped code passes to Component.translatable that is not registry-derived. */
     private static final List<String> CODE_AUTHORED_KEYS = List.of(
+            // TC-M7-04-m2b: a UI-only line in the research table window (the slot under
+            // the combine plate names its source); no content id, so it is authored here.
+            "container.thaumcraft.research_table_from_table",
             "container.thaumcraft.chesthungry", "container.thaumcraft.deconstructiontable",
             "container.thaumcraft.magicbox", "container.thaumcraft.spa",
             // BOOK-1 (t_1e6b18cc): the Thaumonomicon browser is containerless
@@ -138,6 +145,9 @@ class LocalizationFileTest {
             "item.researchnotes.unknown.1", "item.researchnotes.unknown.2",
             "tc.forbidden", "tc.forbidden.level.1", "tc.forbidden.level.2",
             "tc.forbidden.level.3", "tc.forbidden.level.4", "tc.forbidden.level.5",
+            "gui.thaumcraft.arcane_bore.width", "gui.thaumcraft.arcane_bore.speed",
+            "gui.thaumcraft.arcane_bore.other", "gui.thaumcraft.arcane_bore.native",
+            "gui.thaumcraft.arcane_bore.fortune", "gui.thaumcraft.arcane_bore.silk",
             "tc.discount", "tc.resonator1", "tc.resonator2", "tc.resonator3",
             "tc.handmirrorlinkedto", "tc.handmirrorlinked", "tc.handmirrorerror", "tc.researcherror",
             "tc.visdiscount",
@@ -174,6 +184,16 @@ class LocalizationFileTest {
             // TC-M3-04-s-iv-b: the Thaumonomicon crafting-page station labels, read by
             // RecipePageDisplay.station().labelKey() (original recipe.type.* keys).
             "recipe.type.workbench", "recipe.type.workbenchshapeless",
+            // The arcane workbench window's own labels (TC-M7-04-m2): the vis
+            // notice the original hardcoded as "Insufficient vis"
+            // (GuiArcaneWorkbench.java:105) and the wand-slot tooltip the port
+            // added where the original drew an unlabelled slot. Neither names a
+            // content id, so they are code-authored, not registry keys.
+            "container.thaumcraft.insufficient_vis", "container.thaumcraft.wand_slot_hint",
+            // TC-M7-04-m4: the trunk screen's stay-control tooltip, drawn from the
+            // synced stay flag (BD-17 closure). UI-only text on a machine the
+            // content ledger names by block id, so no registry key derives it.
+            "container.thaumcraft.gui_trunk.stay_on", "container.thaumcraft.gui_trunk.stay_off",
             // TC-M6-06-s-c3-a: the pech's per-type names (the original's
             // func_70005_c_, EntityPech.java:70-80). Only the type-0 key is
             // registry-derived; the Mage (type 1) and Stalker (type 2) keys

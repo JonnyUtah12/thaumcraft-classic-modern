@@ -89,7 +89,11 @@ class ContentMappingIdContractTest {
     @Test
     void everyNewIdIsALegalThaumcraftResourceLocation() throws IOException {
         List<ContentMappingCsv.Row> rows = rows();
-        assertEquals(1048, rows.size(),
+        // 1049 rows: the 1048 of the frozen inventory plus the gui_crucible
+        // row TC-M7-04-m1 added (the FEATURE_MATRIX gui_crucible label had no
+        // csv row; the row records the measured reference finding - the
+        // 1.7.10 crucible ships no GUI - and CrucibleGuiParityTest pins it).
+        assertEquals(1049, rows.size(),
                 "content-mapping.csv row count changed — the id contract is frozen; update this count only with an inventory re-run (TC-M0-04)");
 
         List<String> problems = new ArrayList<>();

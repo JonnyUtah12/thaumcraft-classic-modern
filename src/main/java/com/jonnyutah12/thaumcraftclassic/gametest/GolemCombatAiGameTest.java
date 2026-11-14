@@ -368,6 +368,17 @@ public final class GolemCombatAiGameTest {
                                                  final int x, final int y, final int z, final String who) {
         final ServerLevel level = helper.getLevel();
         final BlockPos cell = at(helper, x, y, z);
+        // The batch packs structures by the biggest template in it, so a neighbour pad can
+        // drop a full cube into the cell this probe asks for - measured on the
+        // -Ptc.noCurios leg once TC-M7-04-m3-b-followup's seven pech roll probes joined the
+        // batch: "the pig's cell ... is not a suffocating block: Block{minecraft:dirt}".
+        // The probe owns its geometry, so it establishes the cell it is asserting on:
+        if (level.getBlockState(cell).isSuffocating(level, cell)) {
+            helper.setBlock(cell, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        }
+        if (!level.getBlockState(cell.below()).isSolidRender(level, cell.below())) {
+            helper.setBlock(cell.below(), net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
+        }
         helper.assertTrue(mob.isAlive() && !mob.isRemoved() && mob.blockPosition().equals(cell),
                 who + " stands in cell " + cell.toShortString() + ", alive=" + mob.isAlive()
                 + " removed=" + mob.isRemoved() + " at " + mob.blockPosition().toShortString()
