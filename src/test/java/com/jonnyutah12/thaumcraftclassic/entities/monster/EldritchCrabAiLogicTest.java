@@ -216,7 +216,11 @@ class EldritchCrabAiLogicTest {
             }
         }
         assertTrue(verified > 1800 && verified < 2200, "coin flip split: " + verified);
-        assertTrue(counted > 300, "strength never fired: " + counted);
+        // Strength survives to the end only when #2 fires and BOTH later
+        // re-rolls decline: 0.5 x 0.25 x 0.75 x 0.75 = 7.03 % ~ 281 +- 16
+        // over 4000 scattered seeds (measured 292). The drafted >300 bound
+        // assumed the two later overwrites did not exist.
+        assertTrue(counted > 200 && counted < 380, "strength band: " + counted);
         assertEquals(0, EldritchCrabAiLogic.GROUP_EFFECT_NONE);
         assertEquals(4, EldritchCrabAiLogic.GROUP_EFFECT_INVISIBILITY);
         assertEquals(0.25F, EldritchCrabAiLogic.GROUP_EFFECT_REROLL_CHANCE, 1.0E-4F);
