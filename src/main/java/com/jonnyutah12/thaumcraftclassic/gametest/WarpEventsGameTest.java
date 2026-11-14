@@ -26,6 +26,7 @@ import net.minecraft.server.network.CommonListenerCookie;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
@@ -60,18 +61,33 @@ import java.util.function.Predicate;
  * ({@code :45}), the event roll ({@code :50}) and the 6 draws per scan
  * attempt ({@code :292-297}) are consumed in the original's exact order.
  * Spider slots are scripted 2 blocks apart (offsets 7, 9, 11, … on two axes)
- * so the swarm's boxes cannot overlap each other — the original's scan
- * rejects an occupied box ({@code :300-302}). Per spider the script carries
- * THREE attempts: its slot at y=1, then y=8 and y=15 above the same column
- * (the scan offset is 7..24, so those are the near landings), and slots stay
- * 2 apart so swarm boxes never touch — a pad that
- * shares cells with a sibling probe's entities (the batch packs by the
- * biggest template, the standing gate hazard {@code t_44055375}) costs a
- * spider its scripted FIRST attempt and never a random draw. The probes
- * assert the arithmetic: every spider lands on one of its scripted cells and
- * the unconsumed queue equals the scripted draws minus 6 per spent attempt —
- * a port that draws more, fewer, or in a different sequence than the
- * original fails.</p>
+ * so the swarm's boxes (0.3 wide, {@code EntityMindSpider} size) cannot
+ * overlap each other — the original's scan rejects an occupied box
+ * ({@code :300-302}). The swarm probes SWEEP the pad first
+ * ({@link #sweepPad}): the harness reuses one grid area across batches
+ * ({@code StructureGridSpawner#onBatchStart} resets the walk to the batch
+ * corner and clears only BLOCK space) and {@code GameTestInfo#succeed}
+ * discards only the entities inside each finished probe's own inflated box,
+ * so a walker that left an earlier batch's pad — the roaming crabs of the
+ * c4b-1 pads do exactly this — can be standing on a scripted cell when a
+ * later batch's pad lands on that area, rejecting its floor cell
+ * ({@code :298}) in an UNMARKED attempt (the post-c4b-1 502-probe CI flake
+ * of 3ad8a69e, 2 reds / 3 runs). The script stays POSITIONAL — spider a
+ * reads its own window, k = 0 at y = 1, plus marked k = 1 windows at y = 8
+ * (the scan offset is 7..24, so that is the near landing above) — because a
+ * positional stream cannot absorb an unmarked rejection: the landing spider
+ * takes the NEXT spider's window and every later spider lands shifted
+ * (measured in the t_b51c488c mutation sweep: supply 3 windows per spider
+ * put 49 spiders at y = 8 on a clean pad). Isolation is the sweep, not
+ * tolerance: the sweep leaves every k = 0 window free (the 0.3-wide boxes,
+ * 2 apart, cannot collide with the swarm itself), and the scan is
+ * synchronous inside one server tick, so between the sweep and the queue
+ * assert the only entities entering the pad are the probe's own swarm and
+ * fixtures. The probes assert the arithmetic: every spider lands on one of
+ * its scripted cells and the queue is drained to exactly 2 + 6 draws per
+ * spent attempt — a port that draws more, fewer, or in a different
+ * sequence than the original fails, and on a swept pad "drew beyond the
+ * scripted queue" is a product anomaly, never layout.</p>
  */
 @GameTestHolder(ThaumcraftClassic.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -97,6 +113,7 @@ public final class WarpEventsGameTest {
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
     public static void theIllusionBandSpawnsTheWarpCappedHarmlessViewerBoundSwarm(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
+        sweepPad(helper, level);
         final ServerPlayer player = warpPlayer(helper, 90, 5, 30, COUNTER);
 
         final List<EntityMindSpider> baseline = padSpiders(helper, level);
@@ -134,7 +151,12 @@ public final class WarpEventsGameTest {
      * attempt, so a port that draws the axes in the original's order
      * ({@code :45}, {@code :50}, then offset/sign per axis) drains the queue
      * to zero; any other draw shape (per-attempt count, axis order, sign
-     * term) leaves a residue and fails.
+     * term) leaves a residue and fails. The stream is POSITIONAL (spider a
+     * reads window a, plus the marked k = 1 windows) and the pad is
+     * {@link #sweepPad swept} at setup, so the satisfying pattern is unique;
+     * "drew beyond the scripted queue" on a swept pad means the world put
+     * something into a scan cell mid-tick, which the sweep rules out — that
+     * is a real product anomaly, not layout.
      */
     private static void assertQueueArithmetic(final GameTestHelper helper, final Scripted random,
                                               final List<EntityMindSpider> spawned) {
@@ -165,6 +187,7 @@ public final class WarpEventsGameTest {
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
     public static void theRealBandSpawnsTheWarpCappedHostileSwarm(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
+        sweepPad(helper, level);
         final ServerPlayer player = warpPlayer(helper, 90, 0, 30, COUNTER);
 
         final List<EntityMindSpider> baseline = padSpiders(helper, level);
@@ -283,13 +306,15 @@ public final class WarpEventsGameTest {
      * ({@code World.func_147466_a}), and the spiders whose scripted FIRST
      * cells are blocked (slots 0, 1, 2 — witnesses at (8,1,8)/(10,1,8), stone
      * under (12,1,8)) spend their scripted attempts ABOVE and never land in a
-     * blocked cell; all 50 land. Batch contention can block other slots the
-     * same way, and the arithmetic assert absorbs that (each extra attempt
-     * costs exactly 6 scripted draws).
+     * blocked cell; all 50 land. The pad is swept first so the ONLY blocked
+     * cells are the probe's own fixtures, and the script marks exactly those
+     * three slots with a k = 1 window — the positional stream then has one
+     * satisfying landing pattern (queue clock 2 + 6·53 = 320 draws).
      */
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
     public static void theScanRejectsOccupiedAndFlooredCellsAndSpendsItsSecondAttempt(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
+        sweepPad(helper, level);
         final ServerPlayer player = warpPlayer(helper, 90, 0, 30, COUNTER);
         final BlockPos origin = helper.absolutePos(BlockPos.ZERO);
 
@@ -340,17 +365,23 @@ public final class WarpEventsGameTest {
      * sign {@code func_76136_a(rand, -1, 1)} per axis), gate + event roll
      * first ({@code :45, :50}).
      *
-     * <p>The stream is consumed in order, SIX draws per scan attempt, so a
-     * spider lands on the window it is currently reading: with an empty pad
-     * every spider lands on its FIRST window (k = 0) and the event spends
-     * exactly 2 + 6·50 = 302 draws. `secondAttemptFor` lists the slots whose
-     * first cell the probe blocks, and the builder emits the k = 1 window
-     * immediately after that slot's k = 0 window, so the blocked spider reads
-     * it as its second attempt and lands one block above. The arithmetic
-     * assert (queue clock == 2 + 6·Σ(landing k + 1), queue fully drained)
-     * therefore has exactly one satisfying landing pattern per probe: the
-     * measured run of this design spends 302 (empty) / 320 (three blocked
-     * slots) draws.
+     * <p>The stream is consumed in order, SIX draws per scan attempt, and it
+     * is POSITIONAL: spider a reads its own k = 0 window first, so on the
+     * swept pad ({@link #sweepPad} — no foreign entity in any scan cell, and
+     * the 0.3-wide boxes 2 apart cannot collide with the swarm itself) every
+     * spider lands on its k = 0 window and the event spends exactly
+     * 2 + 6·50 = 302 draws. Tolerance is NOT scripted — a positional stream
+     * cannot absorb an unmarked rejection (the landing spider takes the NEXT
+     * spider's window and every later spider lands shifted; measured in the
+     * t_b51c488c mutation sweep) — so every rejection the probe intends must
+     * be MARKED: {@code secondAttemptFor} lists the slots whose k = 0 cell
+     * the probe blocks, and the builder emits that slot's k = 1 window right
+     * after its k = 0, so the blocked spider reads it as its second attempt
+     * and lands one block above. The arithmetic assert (queue clock ==
+     * 2 + 6·Σ(landing k + 1), queue fully drained) then has exactly one
+     * satisfying landing pattern per probe: the measured run spends 302
+     * (swept, unblocked) / 320 (probe 4's three blocked slots) draws, and a
+     * queue overrun on a swept pad is a product anomaly, never layout.</p>
      */
     private static Scripted scriptedSwarm(final int eff, final int... secondAttemptFor) {
         final Scripted random = scriptedGate(eff);
@@ -363,15 +394,6 @@ public final class WarpEventsGameTest {
         return random;
     }
 
-    /** The 6 draws that offer cell (8 + 2·(a%8), 1 + 7·k, 8 + 2·(a/8)). */
-    private static void window(final Scripted random, final int a, final int k) {
-        final int x = 2 * (a % 8);
-        final int z = 2 * (a / 8);
-        // offset = 7 + nextInt(18); sign = -1 + nextInt(3): 1 -> 0 (y = j),
-        // 2 -> +1 (y = j + 7k with the 7 + 7(k-1) offset for k = 1, 2)
-        random.offer(x, 2, k == 0 ? 0 : 7 * (k - 1), k == 0 ? 1 : 2, z, 2);
-    }
-
     private static boolean isMarked(final int[] marks, final int a) {
         for (final int mark : marks) {
             if (mark == a) {
@@ -381,8 +403,17 @@ public final class WarpEventsGameTest {
         return false;
     }
 
+    /** The 6 draws that offer cell (8 + 2·(a%8), 1 + 7·k, 8 + 2·(a/8)). */
+    private static void window(final Scripted random, final int a, final int k) {
+        final int x = 2 * (a % 8);
+        final int z = 2 * (a / 8);
+        // offset = 7 + nextInt(18); sign = -1 + nextInt(3): 1 -> 0 (y = j),
+        // 2 -> +1 (y = j + 7k with the 7 + 7(k-1) offset for k = 1, 2)
+        random.offer(x, 2, k == 0 ? 0 : 7 * (k - 1), k == 0 ? 1 : 2, z, 2);
+    }
+
     /**
-     * The scripted window index k a spider landed on: 0 (y = 1, sign 0), 1
+     * The scripted window index k a spider landed on: 0 (y = 1, sign 0) or 1
      * (y = 8 = 1+7) — or -1 for any cell the script never offers (the scan
      * offset is 7..24, so y = 2 and y = 9 are NOT reachable).
      */
@@ -483,6 +514,32 @@ public final class WarpEventsGameTest {
         return level.getEntitiesOfClass(Entity.class,
                 new AABB(o.getX() - 1, o.getY() - 3, o.getZ() - 1, o.getX() + 25, o.getY() + 27, o.getZ() + 25),
                 filter);
+    }
+
+    /**
+     * Discard every non-player entity in the pad's census box before the event
+     * fires. The harness reuses one grid area across batches
+     * ({@code StructureGridSpawner#onBatchStart} rewinds the walk to the batch
+     * corner and {@code StructureUtils#clearSpaceForStructure} clears BLOCK
+     * space only) and {@code GameTestInfo#succeed} discards only the entities
+     * inside the FINISHED probe's own inflated box — so a walker that strolled
+     * out of its pad (the c4b-1 crabs do; a probe that fails never cleans up at
+     * all) can be standing on a scripted landing when a later batch's pad lands
+     * on that area, rejecting the cell under it ({@code :298}) in an unmarked
+     * scan attempt. The whole scan runs synchronously inside one tick — no
+     * other probe's body, mob tick, or payload handler executes between the
+     * sweep and the queue assert — so the sweep is full isolation: after it,
+     * the only entities entering the pad are the probe's own swarm and
+     * fixtures, and the positional script's landing pattern is unique. The
+     * probe's own witnesses (probe 4) are placed after the sweep, and the
+     * baseline census runs after both, so the delta stays exact.
+     */
+    private static void sweepPad(final GameTestHelper helper, final ServerLevel level) {
+        for (final Entity stray : padEntities(helper, level, e -> true)) {
+            if (!(stray instanceof Player)) {
+                stray.discard();
+            }
+        }
     }
 
     /**
