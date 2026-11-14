@@ -17,6 +17,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcEffects;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcFxPlans;
 
 /**
  * Block Eldritch (content-mapping.csv {@code thaumcraft:blockeldritch}) — the
@@ -161,5 +163,23 @@ public class BlockEldritch extends BlockDeviceBase {
         }
         living.hurt(DamageSourcesThaumcraft.source(level, DamageSourcesThaumcraft.TENTACLE), damage);
         entity.setDeltaMovement(entity.getDeltaMovement().x, 0.25F, 0.25F);
+    }
+
+    /**
+     * TC-M7-02-c-s-f3: the trap's floating rune — the original's
+     * {@code randomDisplayTick} meta-10 branch
+     * ({@code BlockEldritch.java:295-313}): roll a cell at ±1 on each axis
+     * (three draws, always consumed) and, if that cell is air, put one rune at
+     * a random point inside it, colour (0.5+r*0.5, r*0.3, 0.9+r*0.1),
+     * {@code dur = 16 + nextInt(4)}, gravity 0.
+     */
+    @Override
+    public void animateTick(final BlockState state, final Level level, final BlockPos pos,
+            final net.minecraft.util.RandomSource random) {
+        if (state.getValue(VARIANT) != EldritchRealmValues.ELDRITCH_TRAP) {
+            return;
+        }
+        TcEffects.spawn(level, TcFxPlans.eldritchTrapRunes(pos, random,
+                cell -> level.isEmptyBlock(cell)));
     }
 }
