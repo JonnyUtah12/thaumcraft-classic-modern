@@ -4,7 +4,9 @@ import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.entities.golems.EntityGolemBase;
 import com.jonnyutah12.thaumcraftclassic.entities.golems.EntityGolemBobber;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityEldritchGolem;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityMindSpider;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogGolems;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogMindSpider;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.world.entity.EntityType;
 import net.neoforged.api.distmarker.Dist;
@@ -65,6 +67,19 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
  * class name by design — one mod has one renderer seam — so merging the two
  * branches means unioning the two {@code register} bodies into this class, not
  * keeping both files.</p>
+ *
+ * <p><b>The mind spider (TC-M7-03-r, kanban {@code t_32366a27}).</b> The fourth
+ * renderer registered here is {@link RenderMindSpider} for
+ * {@code thaumcraft:mindspider}, the reference's own pairing at
+ * {@code ClientProxy.java:450} ({@code registerEntityRenderingHandler(
+ * EntityMindSpider.class, new RenderMindSpider())}). It has its own seam, {@link
+ * #registerMindSpider}, so the golem trio's seam and the golem card's test of it
+ * stay untouched. Its geometry is <b>not</b> registered in {@link
+ * #registerLayers}: the reference bakes its own {@code ModelSpider} at {@code
+ * RenderMindSpider.java:22-23} and the port self-bakes the platform's
+ * {@code SpiderModel.createBodyLayer()}, because that geometry's layer id is
+ * vanilla's own ({@code SpiderModel.LAYER == ModelLayers.SPIDER}) — a mod
+ * registering it would collide with the vanilla layer registration.</p>
  */
 @EventBusSubscriber(modid = ThaumcraftClassic.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public final class ModEntityRenderers {
@@ -87,6 +102,7 @@ public final class ModEntityRenderers {
     public static void onRegisterRenderers(final EntityRenderersEvent.RegisterRenderers event) {
         register(event, CatalogGolems.GOLEM.get(), CatalogGolems.ELDRITCH_GOLEM.get(),
                 CatalogGolems.GOLEM_BOBBER.get());
+        registerMindSpider(event, CatalogMindSpider.MIND_SPIDER.get());
     }
 
     /** The layer seam — all four layers, including the eldritch geometry. */
@@ -115,6 +131,24 @@ public final class ModEntityRenderers {
         event.registerEntityRenderer(eldritch, RenderEldritchGolem::new);
         // ClientProxy.java:411 — new RenderGolemBobber()
         event.registerEntityRenderer(bobber, RenderGolemBobber::new);
+    }
+
+    /**
+     * The mind spider seam (TC-M7-03-r). {@code ClientProxy.java:450} pairs
+     * {@code EntityMindSpider.class} with {@code new RenderMindSpider()} — one
+     * renderer, no shadow-model argument to hand it, because 1.7.10's
+     * {@code RenderLiving} constructor takes the radius and bakes its own model
+     * ({@code RenderMindSpider.java:21-24}). 1.21.1 binds the renderer to the
+     * type its entity parameter names, and the port registered
+     * {@code thaumcraft:mindspider} as {@code EntityType<EntityMindSpider>}
+     * ({@code CatalogMindSpider.MIND_SPIDER}), so the {@code MobRenderer} of
+     * {@link RenderMindSpider} binds exactly as the reference's {@code
+     * RenderLiving} did.
+     */
+    static void registerMindSpider(final EntityRenderersEvent.RegisterRenderers event,
+            final EntityType<EntityMindSpider> mindspider) {
+        // ClientProxy.java:450 — new RenderMindSpider()
+        event.registerEntityRenderer(mindspider, RenderMindSpider::new);
     }
 
     private ModEntityRenderers() {

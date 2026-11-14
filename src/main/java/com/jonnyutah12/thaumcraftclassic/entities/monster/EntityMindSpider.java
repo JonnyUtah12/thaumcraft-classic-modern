@@ -82,7 +82,8 @@ public class EntityMindSpider extends Spider {
      * updates ON. The 0.3x0.3 box is the constructor's own
      * {@code func_70105_a(0.3F, 0.3F)} ({@code :18}); the 1.7.10 client hook
      * {@code spiderScaleAmount() = 0.3F} ({@code :67-70}) is a RENDER scale and
-     * belongs to the renderer (TC-M7-03-s), so {@code generic.scale} stays 1.0
+     * ships in the client renderer (TC-M7-03-r, kanban {@code t_32366a27}), so
+     * {@code generic.scale} stays 1.0
      * here and the box is not double-shrunk. The tracking figure is handed over
      * in CHUNKS because 1.21.1's builder measures it in chunks (64 blocks = 4).
      */
