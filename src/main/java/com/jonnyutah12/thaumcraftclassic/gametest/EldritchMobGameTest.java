@@ -482,33 +482,68 @@ public final class EldritchMobGameTest {
                             + rel.toShortString() + "): the state there is "
                             + helper.getLevel().getBlockState(eyeCell));
             mob.setAirSupply(mob.getMaxAirSupply());
-            helper.runAfterDelay(10, () -> {
-                final boolean eyeInWater = mob.isEyeInFluid(net.minecraft.tags.FluidTags.WATER);
-                helper.assertTrue(mob.getAirSupply() == 500 - 10,
-                        ":155-157 — with the eye in water the air drains 1/tick (LivingEntity:436/584), "
-                                + "so a full 500 reads 490 after 10 ticks (eye in water: " + eyeInWater
-                                + ", at " + mob.blockPosition() + " from " + cell + "), got "
-                                + mob.getAirSupply());
-                mob.setAirSupply(-19);
-                helper.runAfterDelay(2, () -> {
-                    helper.assertTrue(mob.getHealth() < 50.0F,
-                            ":155-157 — the breath runs out: the drown trigger (LivingEntity:437-448) "
-                                    + "hit a 500-breath guardian, health " + mob.getHealth()
-                                    + " (eye in water: " + mob.isEyeInFluid(
-                                            net.minecraft.tags.FluidTags.WATER) + ")");
-                    for (int dy = -1; dy <= 3; dy++) {
-                        for (int dx = -1; dx <= 1; dx++) {
-                            for (int dz = -1; dz <= 1; dz++) {
-                                helper.setBlock(rel.offset(dx, dy, dz), Blocks.AIR.defaultBlockState());
+            // The drain leg, measured at this tip: with the eye in water the
+            // platform walks the air down 1/tick (LivingEntity:436 +
+            // decreaseAirSupply :584-592 = air - 1, no OXYGEN_BONUS attribute),
+            // and out of water it walks back min(air + 4, max) (:455-457,
+            // :596-597). A probe tick is NOT a clock (the skill's rule): the
+            // only measurement that is a real tick step is a callback fired by
+            // helper.runAfterDelay, which runs after the entity list has
+            // ticked. So the drain is asserted as ONE tick: 500 -> 499, the
+            // first in-water tick after the probe fills the breath.
+            helper.runAfterDelay(1, () -> {
+                helper.assertTrue(mob.isEyeInFluid(net.minecraft.tags.FluidTags.WATER),
+                        "the probe's water must still cover the eye one tick later (feet "
+                                + cell.toShortString() + ", relative base " + rel.toShortString()
+                                + ", eye " + BlockPos.containing(mob.getEyePosition()).toShortString()
+                                + "): air " + mob.getAirSupply());
+                helper.assertTrue(mob.getAirSupply() == 500 - 1,
+                        ":155-157 + LivingEntity:436/584-592 — a 500-breath guardian in water loses "
+                                + "exactly 1 air on its first in-water tick (maxAirSupply 500 is the "
+                                + "whole breath; the drain is 1/tick, the out-of-water restore is "
+                                + "min(air+4, 500) at :455-457); got " + mob.getAirSupply()
+                                + " at " + mob.blockPosition());
+                helper.runAfterDelay(6, () -> {
+                    helper.assertTrue(mob.isAlive(), "the fixture guardian must stay alive for the fire leg");
+                    helper.assertTrue(mob.getRemainingFireTicks() > 0,
+                            ":92-94 — the guardian burns (no immunity on the type, and the fire survives "
+                                    + "the wet leg), fire ticks " + mob.getRemainingFireTicks());
+                    // The drown trigger, pinned the way the platform reaches it:
+                    // the drain needs 501 in-water ticks to walk 500 -> -20, far
+                    // past the probe budget, so the probe walks the last tick of
+                    // that ramp — air -19, one in-water tick, and the trigger at
+                    // LivingEntity:437-448 fires (setAirSupply(0) + hurt(drown, 2)).
+                    mob.setAirSupply(-19);
+                    helper.runAfterDelay(2, () -> {
+                        helper.assertTrue(mob.getHealth() < 50.0F,
+                                ":155-157 — the breath runs out: the drown trigger (LivingEntity:437-448) "
+                                        + "hit a 500-breath guardian, health " + mob.getHealth()
+                                        + " (eye in water: " + mob.isEyeInFluid(
+                                                net.minecraft.tags.FluidTags.WATER) + ")");
+                        final float drownedHealth = mob.getHealth();
+                        helper.assertTrue(mob.getAirSupply() >= 0,
+                                ":437-448 — the trigger resets the air to 0 (setAirSupply(0) at :438), "
+                                        + "got " + mob.getAirSupply());
+                        for (int dy = -1; dy <= 3; dy++) {
+                            for (int dx = -1; dx <= 1; dx++) {
+                                for (int dz = -1; dz <= 1; dz++) {
+                                    helper.setBlock(rel.offset(dx, dy, dz), Blocks.AIR.defaultBlockState());
+                                }
                             }
                         }
-                    }
-                    mob.setAirSupply(300);
-                    helper.runAfterDelay(4, () -> {
-                        helper.assertTrue(mob.getAirSupply() == 300 + 16,
-                                "LivingEntity:455-457 — out of water again the air walks +4/tick, got "
-                                        + mob.getAirSupply());
-                        helper.succeed();
+                        mob.setAirSupply(300);
+                        mob.setNoGravity(true);
+                        helper.runAfterDelay(4, () -> {
+                            mob.setNoGravity(false);
+                            helper.assertTrue(mob.getAirSupply() == 300 + 16,
+                                    "LivingEntity:455-457 — out of water again the air walks +4/tick, "
+                                            + "got " + mob.getAirSupply() + " (eye in water: "
+                                            + mob.isEyeInFluid(
+                                                    net.minecraft.tags.FluidTags.WATER) + ")");
+                            helper.assertTrue(mob.getHealth() <= drownedHealth,
+                                    "the dry legs cost the mob no health, health " + mob.getHealth());
+                            helper.succeed();
+                        });
                     });
                 });
             });
