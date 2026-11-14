@@ -63,12 +63,14 @@ import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * World probes for the Eldritch Crab and its orb (TC-M6-06-s-c4b-1,
@@ -122,6 +124,58 @@ public final class EldritchCrabGameTest {
 
     private static BlockPos pad(final GameTestHelper helper) {
         return helper.absolutePos(BlockPos.ZERO).offset(1, 3, 1);
+    }
+
+    /**
+     * The pad's census box — the template footprint plus the margin the warp lane
+     * uses ({@code WarpEventsGameTest.padEntities}: ±1 in x/z, the pad height +3
+     * in y). A census, not a claim: the harness reuses one grid area across
+     * batches and clears only BLOCK space, so whatever a previous batch's pad
+     * left standing in this box is what this probe measures through the world.
+     */
+    private static List<Entity> padEntities(final GameTestHelper helper, final ServerLevel level,
+                                            final Predicate<Entity> filter) {
+        final BlockPos o = helper.absolutePos(BlockPos.ZERO);
+        return level.getEntitiesOfClass(Entity.class,
+                new AABB(o.getX() - 2, o.getY() - 4, o.getZ() - 2,
+                        o.getX() + 13, o.getY() + 15, o.getZ() + 13),
+                filter);
+    }
+
+    /**
+     * The mount gate's inputs, named, plus the pad census. The gate is
+     * {@code EldritchCrabAiLogic#canMountPlayer} (six booleans, a y window and a
+     * distance bound) and its target list is {@code level.getNearestPlayer(this,
+     * -1.0)} — a PLAYER scan, distance-unbounded — so a red leg has to say which
+     * arm refused and who was in the scan set: the grid-contamination class on
+     * this suite is layout-dependent, and self-identifying beats re-deriving it
+     * (the c4b-1 cleric probe set that pattern).
+     */
+    private static String climbGateCensus(final GameTestHelper helper, final ServerLevel level,
+                                          final EntityEldritchCrab crab, final ServerPlayer fixture) {
+        final Player nearest = level.getNearestPlayer(crab, -1.0);
+        final StringBuilder scan = new StringBuilder();
+        for (final ServerPlayer p : level.players()) {
+            scan.append(p.getGameProfile().getName())
+                    .append(p == fixture ? "=fixture" : (p.isRemoved() ? "=removed" : "=RESIDENT"))
+                    .append("(dSqr=").append(String.format("%.2f", crab.distanceToSqr(p))).append(") ");
+        }
+        final StringBuilder census = new StringBuilder();
+        for (final Entity stray : padEntities(helper, level, e -> true)) {
+            census.append(BuiltInRegistries.ENTITY_TYPE.getKey(stray.getType()).getPath())
+                    .append(stray.onGround() ? ":grounded " : ":midair ");
+        }
+        return "vehicle=" + (crab.getVehicle() == null ? "null"
+                        : BuiltInRegistries.ENTITY_TYPE.getKey(crab.getVehicle().getType()).getPath())
+                + ", nearest=" + (nearest == null ? "null" : nearest.getGameProfile().getName())
+                + ", fixtureRemoved=" + fixture.isRemoved()
+                + ", fixturePassengers=" + fixture.getPassengers().size()
+                + ", crabOnGround=" + crab.onGround()
+                + ", shell=" + crab.hasShell()
+                + ", yDelta=" + String.format("%.2f", crab.getY() - fixture.getY()) + " (need >= 0.90)"
+                + ", distSqr=" + String.format("%.2f, need < 4.00", crab.distanceToSqr(fixture))
+                + ", players=[" + scan + "]"
+                + ", padCensus=[" + census + "]";
     }
 
     private static EntityEldritchCrab crab(final GameTestHelper helper) {
@@ -604,7 +658,8 @@ public final class EldritchCrabGameTest {
         helper.assertTrue(!airborne.onGround(), ":123 — the climb needs the crab off the ground");
         airborne.tick();                                                     // :120-129
         helper.assertTrue(airborne.getVehicle() == player,
-                ":120-129 — a free mid-air unshelled crab mounts the nearest player");
+                ":120-129 — a free mid-air unshelled crab mounts the nearest player (gate census: "
+                        + climbGateCensus(helper, level, airborne, player) + ")");
 
         final EntityEldritchCrab shelled = crab(helper);
         shelled.setNoGravity(true);
@@ -612,12 +667,14 @@ public final class EldritchCrabGameTest {
         shelled.setPos(player.getX(), player.getY() + 1.4, player.getZ());
         shelled.tick();                                                      // :124
         helper.assertTrue(shelled.getVehicle() == null,
-                ":124 — a shelled crab never climbs");
+                ":124 — a shelled crab never climbs (gate census: "
+                        + climbGateCensus(helper, level, shelled, player) + ")");
 
         // :131-137 — the punch on the ride: the mount takes the hit and 0.2 of
         // punches throw the rider, so the dismount band is measured on the rule.
         final int mounted = player.getPassengers().size();
-        helper.assertTrue(mounted == 1, ":128 — the rider sits on the player, got " + mounted);
+        helper.assertTrue(mounted == 1, ":128 — the rider sits on the player, got " + mounted
+                + " (gate census: " + climbGateCensus(helper, level, airborne, player) + ")");
         int dismounts = 0;
         for (int i = 0; i < 400; i++) {
             if (EldritchCrabAiLogic.dismountsAfterPunch(((float) i % 100F) / 100F)) {
