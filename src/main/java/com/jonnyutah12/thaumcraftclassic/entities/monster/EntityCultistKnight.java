@@ -30,7 +30,7 @@ import net.minecraft.world.level.Level;
 
 import javax.annotation.Nullable;
 
-import net.minecraft.server.level.ServerLevelAccessor;
+import net.minecraft.world.level.ServerLevelAccessor;
 
 import com.jonnyutah12.thaumcraftclassic.entities.ai.cultist.AICultistHurtByTarget;
 

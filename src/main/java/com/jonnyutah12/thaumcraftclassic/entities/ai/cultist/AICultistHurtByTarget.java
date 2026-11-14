@@ -64,13 +64,36 @@ public class AICultistHurtByTarget extends HurtByTargetGoal {
         this.callsForHelp = callsForHelp;
     }
 
-    /** {@code :23-25} — the timestamp moved and the attacker passes the
-     *  suitability test. The parent's {@code canUse} is exactly that
-     *  ({@code getLastHurtByMobTimestamp()} against the cached timestamp, then
-     *  {@code canAttack(attacker, HURT_BY_TARGETING)}). */
+    /** The original's suitability helper, 1.21.1's form: {@code EntityAITarget}
+     *  {@code isSuitableTarget(attacker, false)} — {@code checkSight} false is the
+     *  ctor's {@code super(p_i1660_1_, false)} ({@code :16-19}). The platform's own
+     *  {@code HURT_BY_TARGETING} ({@code HurtByTargetGoal}:20) is the same triple. */
+    private static final net.minecraft.world.entity.ai.targeting.TargetingConditions SUITABLE =
+            net.minecraft.world.entity.ai.targeting.TargetingConditions.forCombat()
+                    .ignoreLineOfSight()
+                    .ignoreInvisibilityTesting();
+
+    /**
+     * {@code :20-23} — {@code int i = owner.getHurtByTargetTime(); return i !=
+     * this.field_142052_b && this.isSuitableTarget(owner.getHurtByTarget(), false);}
+     *
+     * <p>The platform's {@code HurtByTargetGoal#canUse} (target jar, decompiled
+     * {@code :28-50}) runs the same timestamp test and the same suitability helper,
+     * then adds a gate 1.7.10 does not have: {@code :33-35} refuses whenever the
+     * attacker's type is {@code EntityType.PLAYER} and the {@code universal_anger}
+     * gamerule is set — and it ships SET on 21.1.259 (measured in the game-test
+     * harness, where it silenced the gang call against a player attacker, which is
+     * the common attacker the call exists for). The port runs the original's pair
+     * and skips that clause (recorded deviation BD-98).</p>
+     */
     @Override
     public boolean canUse() {
-        return super.canUse();
+        final int stamp = this.mob.getLastHurtByMobTimestamp();                         // :20
+        final LivingEntity attacker = this.mob.getLastHurtByMob();
+        if (stamp == this.timestamp || attacker == null) {
+            return false;                                                               // :21
+        }
+        return this.canAttack(attacker, SUITABLE);                                      // :21-23
     }
 
     /**
@@ -83,7 +106,8 @@ public class AICultistHurtByTarget extends HurtByTargetGoal {
      */
     @Override
     public void start() {
-        super.start();                                                                  // :29-32
+        super.start();                                                                  // :29-30
+        this.timestamp = this.mob.getLastHurtByMobTimestamp();                          // :31
         if (this.callsForHelp) {
             callTheGang();                                                              // :33-54
         }

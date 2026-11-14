@@ -376,40 +376,37 @@ public final class CultistKnightGameTest {
         helper.assertTrue(a.getHealth() < before,
                 "a player hit did not damage the knight (health " + before + " -> " + a.getHealth() + ")");
 
-        // :35 — the player target goal, MEASURED on the mob's own AI cadence.
-        // 1.21.1's NearestAttackableTargetGoal#canUse (target jar, decompiled) is
-        // `this.randomInterval > 0 && this.mob.getRandom().nextInt(this.randomInterval)
-        // != 0 -> false`, then findTarget(), and findTarget selects through
-        // TargetingConditions over the LEVEL's players. Two consequences the
-        // pre-fix probe ignored: the goal is throttled to a 1-in-20 roll per tick
-        // (the ctor's `true` = randomInterval 20), and a makeMockPlayer player is
-        // NOT in the level's player list, so calling canUse() on demand answers
-        // false for reasons that have nothing to do with :35. The harness's runner
-        // player IS level-resident (the Mind Spider card's finding), so the arm is
-        // measured by letting the mob's own cadence acquire it (BD-97).
-        final List<Player> inLevel = level.getPlayers();
-        helper.assertTrue(!inLevel.isEmpty(),
-                "PROBE SHAPE: the harness has no level-resident player, so :35's target selection "
-                        + "cannot be measured here (the goal PRESENCE is asserted in "
-                        + "knightGoalSetIsTheOriginalSlots)");
-        final Player harness = inLevel.get(0);
-        helper.assertTrue(a.distanceToSqr(harness)
-                        <= CultistAiLogic.FOLLOW_RANGE * CultistAiLogic.FOLLOW_RANGE,
-                "PROBE SHAPE: the harness player is " + a.distanceTo(harness)
-                        + " blocks away, outside the 32-block follow range the :35 goal selects with");
-        a.setTarget(null);
-        helper.succeedWhen(() -> {
-            a.clearFire();
-            b.clearFire();
-            final LivingEntity acquired = a.getTarget();
-            helper.assertTrue(acquired == harness,
-                    ":35 — the knight's own player target goal did not acquire the harness's "
-                            + "level-resident player (target = " + acquired + ", players in level = "
-                            + inLevel.size() + ", distance = " + a.distanceTo(harness)
-                            + ", probeTick = " + helper.getTick() + ")");
-            a.discard();
-            b.discard();
-        });
+        // :35 — the live arm is NOT measurable in this harness, and the probe says
+        // so rather than passing vacuously. 1.21.1's NearestAttackableTargetGoal#findTarget
+        // (target jar, decompiled :58-75) routes a Player-typed goal to
+        // `level.getNearestPlayer(conditions, mob, x, eyeY, z)` (:74), and
+        // ServerLevel#getNearestPlayer walks the ServerPlayer list. The game-test
+        // server has no connected player and GameTestHelper.makeMockPlayer never
+        // joins one — the fleet's Outer Lands row records the same wall for the
+        // portal's travel leg (BD-97) — so the scan below is EMPTY and the goal can
+        // never arm here, whatever the mob does. What the harness CAN measure is
+        // asserted; the arm itself is pinned at rule and goal-shape level, and
+        // CultistAiLogicTest pins the selection rule world-free.
+        final List<Player> inLevel = level.getEntitiesOfClass(Player.class,
+                new net.minecraft.world.phys.AABB(a.position(), a.position())
+                        .inflate(CultistAiLogic.FOLLOW_RANGE));
+        helper.assertTrue(inLevel.isEmpty(),
+                "PROBE SHAPE: the harness now has a level-resident player, so the :35 arm became "
+                        + "measurable — move this probe to measure the acquisition (BD-97)");
+        helper.assertTrue(a.canAttack(player),
+                ":101-103 — the knight must be attackable-targetable by the player the :35 goal hunts, "
+                        + "or the goal's own TargetGoal#canAttack leg would refuse it");
+        helper.assertTrue(a.getAttributeValue(Attributes.FOLLOW_RANGE) == CultistAiLogic.FOLLOW_RANGE,
+                ":32-33 — the :35 goal selects inside the follow range (the ctor builds "
+                        + "`forCombat().range(getFollowDistance())`, decompiled :42), so 32.0 must stand; got "
+                        + a.getAttributeValue(Attributes.FOLLOW_RANGE));
+        helper.assertTrue(goals(a, true).stream()
+                        .anyMatch(g -> g.getGoal() instanceof NearestAttackableTargetGoal),
+                ":35 — the player target goal must sit in the goal selector (its presence is the "
+                        + "measurable half of this line on this harness)");
+        a.discard();
+        b.discard();
+        helper.succeed();
     }
 
     /**
@@ -438,13 +435,15 @@ public final class CultistKnightGameTest {
         other.setNoGravity(true);
         level.addFreshEntity(other);
         final Player player = helper.makeMockPlayer(GameType.SURVIVAL);
-        // The house pattern (the pech card): makeMockPlayer does NOT place the player.
-        // 1.21.1's HurtByTargetGoal#canUse (target jar, decompiled :20-38) tests the
-        // attacker with HURT_BY_TARGETING = TargetingConditions.forCombat() — a
-        // 10-block combat range (TargetGoal#canAttack) — so an unplaced mock player
-        // sits outside the gate and the goal never arms. The original's shouldExecute
-        // (:20-23) has no range term at all (recorded deviation BD-97), so the probe
-        // puts the attacker at the hurt knight's feet, where the gate is inert.
+        // The house pattern (the pech card): makeMockPlayer does NOT place the player,
+        // and the goal's suitability test runs inside TargetGoal#canAttack, whose
+        // conditions carry the mob's FOLLOW RANGE (the target jar's decompiled
+        // HurtByTargetGoal:42 builds `forCombat().range(getFollowDistance())`), so an
+        // unplaced mock player sits 44 blocks away in the template's void and the goal
+        // never arms. The probe puts the attacker at the hurt knight's feet, where the
+        // range leg is inert. What the range leg never explained is the other gate:
+        // the platform's `universal_anger` clause (BD-98) refused a PLAYER attacker
+        // outright, which is exactly the attacker this call exists for.
         player.setPos(hurt.getX() + 0.5, hurt.getY(), hurt.getZ() + 0.5);
         // :45-47 — a cultist that already has a target does not join.
         busy.setTarget(other);
@@ -664,41 +663,79 @@ public final class CultistKnightGameTest {
                 CultistAiLogic.DROP_ITEM + " must be registered for the :50 drop to be a real drop");
         final var box = new net.minecraft.world.phys.AABB(
                 knight.position(), knight.position()).inflate(8.0);
-        int drops = 0;
+        // The pad is shared with the batch's other probes, so the counts below are
+        // DELTAS of a baseline scan, and stacks are counted by COUNT not by entity:
+        // 160 drops of one item merge into 64-stacks, so an entity count under-reads.
+        final int[] before = lootBagMetas(level, box);
         for (int i = 0; i < 400; i++) {
-            final int before = level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
-                    box).size();
             knight.rollCultistDrops(level, CultistAiLogic.DROP_LOOTING_BASELINE);              // :48-55
-            drops += Math.max(0, level.getEntitiesOfClass(
-                    net.minecraft.world.entity.item.ItemEntity.class, box).size() - before);
         }
-        int lootBags = 0;
-        int metaCarrying = 0;
+        final int[] after = lootBagMetas(level, box);
+        final int m9 = after[0] - before[0];
+        final int m17 = after[1] - before[1];
+        final int m18 = after[2] - before[2];
+        final int other = after[3] - before[3];
+        final int drops = m9 + m17 + m18 + other;
         for (final net.minecraft.world.entity.item.ItemEntity item
                 : level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box)) {
-            if (item.getItem().is(BuiltInRegistries.ITEM.get(CultistAiLogic.DROP_ITEM))) {
-                lootBags++;
-                final Integer meta = item.getItem().get(
-                        com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents.ITEM_META);
-                if (java.util.Objects.equals(meta, CultistAiLogic.DROP_META_FIRST)) {
-                    metaCarrying++;
-                }
-            }
             item.discard();
         }
-        helper.assertTrue(lootBags == drops,
-                "the roll produced " + drops + " drops and " + lootBags + " "
-                        + CultistAiLogic.DROP_ITEM + " stacks — the drop is not the original's item");
-        helper.assertTrue(metaCarrying == lootBags,
-                lootBags - metaCarrying + " of the " + lootBags + " drops carry no meta "
-                        + CultistAiLogic.DROP_META_FIRST + " (1.7.10's damage value rides the port's "
-                        + "thaumcraft:item_meta component)");
-        // 400 rolls at the original's 1-in-10: mean 40, sd 6, so the band is ~5 sd
-        // wide on the floor and ~8 on the ceiling — a roll-table change shows up here.
-        helper.assertTrue(drops >= 10 && drops <= 90,
-                "the :50 drop fired " + drops + " times in 400 rolls — the original's nextInt(10) gate"
-                        + " puts it at ~40 (mean 40, sd 6, so 10..90 is a ~5 sd band)");
+        // The roll table is ONE nextInt(10) read top-down: r == 0 → meta 9 (:50),
+        // r <= 1 → meta 17 (:52), r <= 3 + looting → meta 18 (:54), else nothing.
+        // At the shipped looting baseline (0) that is 10% / 10% / 20%, i.e. means
+        // 40 / 40 / 80 in 400 rolls (sd 6.0 / 6.0 / 8.0). The bands below are ~4 sd
+        // wide, so a table change — a merged branch, a shifted meta, a re-scaled
+        // roll — reddens the probe, and nothing is asserted that the arithmetic
+        // does not support.
+        helper.assertTrue(other == 0,
+                other + " drops carry a meta outside {" + CultistAiLogic.DROP_META_FIRST + ", "
+                        + CultistAiLogic.DROP_META_SECOND + ", " + CultistAiLogic.DROP_META_THIRD
+                        + "} — the roll table of :50/:52/:54 has no fourth meta");
+        helper.assertTrue(m9 >= 16 && m9 <= 64,
+                "meta " + CultistAiLogic.DROP_META_FIRST + " fired " + m9 + " times in 400 rolls — the"
+                        + " original's `r == 0` branch is 10% (mean 40, sd 6, so 16..64 is a ~4 sd band)");
+        helper.assertTrue(m17 >= 16 && m17 <= 64,
+                "meta " + CultistAiLogic.DROP_META_SECOND + " fired " + m17 + " times in 400 rolls — the"
+                        + " original's `r <= 1` branch is 10% (mean 40, sd 6, so 16..64 is a ~4 sd band)");
+        helper.assertTrue(m18 >= 48 && m18 <= 112,
+                "meta " + CultistAiLogic.DROP_META_THIRD + " fired " + m18 + " times in 400 rolls — the"
+                        + " original's `r <= 3 + looting` branch at looting " + CultistAiLogic.DROP_THIRD_BASE
+                        + " is 20% (mean 80, sd 8, so 48..112 is a ~4 sd band)");
+        helper.assertTrue(drops >= 120 && drops <= 200,
+                "the :48-54 roll produced " + drops + " drops in 400 rolls — the table's total is 40%"
+                        + " (mean 160, sd 9.8, so 120..200 is a ~4 sd band)");
         knight.discard();
         helper.succeed();
+    }
+
+    /**
+     * Count the pad's {@code thaumcraft:itemresource} drops, bucketed by the port's
+     * {@code thaumcraft:item_meta} component (the carrier of 1.7.10's damage value):
+     * {@code {meta 9, meta 17, meta 18, anything else}}, summed by stack COUNT because
+     * drops of one meta merge into 64-stacks.
+     */
+    private static int[] lootBagMetas(final net.minecraft.server.level.ServerLevel level,
+            final net.minecraft.world.phys.AABB box) {
+        final net.minecraft.world.item.Item drop =
+                BuiltInRegistries.ITEM.get(CultistAiLogic.DROP_ITEM);
+        final int[] out = new int[4];
+        for (final net.minecraft.world.entity.item.ItemEntity item
+                : level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box)) {
+            if (!item.getItem().is(drop)) {
+                continue;
+            }
+            final Integer meta = item.getItem().get(
+                    com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents.ITEM_META);
+            if (java.util.Objects.equals(meta, CultistAiLogic.DROP_META_FIRST)) {
+                out[0] += item.getItem().getCount();
+            } else if (java.util.Objects.equals(meta, CultistAiLogic.DROP_META_SECOND)) {
+                out[1] += item.getItem().getCount();
+            } else if (java.util.Objects.equals(meta, CultistAiLogic.DROP_META_THIRD)) {
+                out[2] += item.getItem().getCount();
+            } else {
+                out[3] += item.getItem().getCount();
+            }
+        }
+        return out;
     }
 }
