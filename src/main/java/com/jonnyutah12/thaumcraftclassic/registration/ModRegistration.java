@@ -264,7 +264,8 @@ public final class ModRegistration {
         // viewer name, 1200-tick harmless fuse and every drop shut off in
         // MindSpiderAiLogic). The AI switch is forced ON exactly as the
         // original's func_145773_az() = true does, so the inherited spider
-        // goals never run. Renderer TC-M7-03-s, spawn egg row TC-M6-06-s-c6.
+        // goals never run. Renderer TC-M7-03-r (t_32366a27, shipped here), spawn
+        // egg row TC-M6-06-s-c6.
         CatalogMindSpider.init(modEventBus);
 
         // TC-M6-06-s-c4a-1: the crimson cultist family — thaumcraft:cultistknight
