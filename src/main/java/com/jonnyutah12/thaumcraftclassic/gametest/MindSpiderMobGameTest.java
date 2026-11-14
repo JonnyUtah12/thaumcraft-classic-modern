@@ -582,16 +582,19 @@ public final class MindSpiderMobGameTest {
      * THE SPAWN QUESTION, MEASURED. The mind spider has no spawn placement of its
      * own: the original has no biome spawn-list entry and no
      * {@code func_70601_bi}/{@code checkSpawnRules} override. It appears from the
-     * warp event ({@code WarpEvents.java:281-315}, not ported — the port has no
-     * warp-events class at all) and from the Outer Lands passage's mob spawner
+     * warp event ({@code WarpEvents.java:281-315} — ported by t_1a83f0db as
+     * {@code player/WarpEvents}, its swarm asserted on entities by
+     * {@code WarpEventsGameTest}) and from the Outer Lands passage's mob spawner
      * ({@code GenPassage.java:271}: {@code setEntityId("Thaumcraft.MindSpider")}).
      *
      * <p>This probe measures the shipped half of that: the id the port's passage
      * seam resolves through the registry, proved on a real spawner block with the
      * same {@code setEntityId} call, and the count of shipped biome definitions
-     * that spawn the mind spider — zero, so in a shipped world today no mind
-     * spider appears, and the maze feature that would place the spawner is not
-     * routed into {@code MazeHandler} (its own class javadoc records that gap).</p>
+     * that spawn the mind spider — zero, and it must stay zero: this card ships
+     * no spawn-table entry (the original has none). In a shipped world a mind
+     * spider today appears through the warp event, not naturally; the maze
+     * feature that would place the spawner is still not routed into
+     * {@code MazeHandler} ({@code t_cc6182ca}'s lane).</p>
      */
     @GameTest(template = "empty")
     public static void thePassageSpawnerSeamResolvesAndNoShippedBiomeSpawnsTheMindSpider(
@@ -646,8 +649,9 @@ public final class MindSpiderMobGameTest {
                         + " spawn entries) — the original has no spawn-list entry, so this probe's plain"
                         + " statement (it does not spawn naturally) is stale and must be re-measured");
         ThaumcraftClassic.LOGGER.info("[mindspider] shipped thaumcraft biomes scanned: {} ({}), natural"
-                + " spawn entries naming thaumcraft:mindspider: 0; the only shipped spawn seam is the "
-                + "Outer Lands passage spawner, whose maze feature is not routed into MazeHandler",
+                + " spawn entries naming thaumcraft:mindspider: 0; the live spawn seam is the warp event"
+                + " (player/WarpEvents, t_1a83f0db — WarpEventsGameTest), the Outer Lands passage spawner"
+                + " stays unrouted (t_cc6182ca)",
                 shippedBiomes, scanned);
         helper.succeed();
     }
