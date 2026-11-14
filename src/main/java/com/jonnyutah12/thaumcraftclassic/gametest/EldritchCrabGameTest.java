@@ -14,7 +14,26 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
+import com.jonnyutah12.thaumcraftclassic.network.payload.BiomeChangePayload;
+import com.jonnyutah12.thaumcraftclassic.network.payload.MiscEventPayload;
+import com.jonnyutah12.thaumcraftclassic.network.payload.SyncWarpPayload;
+import com.jonnyutah12.thaumcraftclassic.network.payload.WarpMessagePayload;
+import com.mojang.authlib.GameProfile;
+import io.netty.channel.embedded.EmbeddedChannel;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.CommonListenerCookie;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.neoforged.neoforge.network.connection.ConnectionType;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.PacketFlow;
+import net.neoforged.neoforge.network.payload.SyncAttachmentsPayload;
+import net.neoforged.neoforge.network.registration.ChannelAttributes;
+import net.minecraft.world.level.GameType;
+
+import java.util.UUID;
+import io.netty.channel.Channel;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageSources;
@@ -42,6 +61,7 @@ import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.animal.Pig;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -157,7 +177,15 @@ public final class EldritchCrabGameTest {
     }
 
     private static DifficultyInstance difficulty(final ServerLevel level, final Difficulty mode) {
-        return new DifficultyInstance(mode, level.getDayTime(), 0L, 0.0F);
+        // DifficultyInstance#isHard() reads the EFFECTIVE difficulty —
+        // id * (0.75 + f1(levelTime) + f2(inhabited)) — not the base mode. A fresh-time
+        // HARD instance is 3 * 0.75 = 2.25 and NOT hard (vanilla's day-1 behaviour, and
+        // the crab's shell roll rides isHard): the guaranteed leg needs dayTime 1512000
+        // (f1 = 0.25 -> 3 * 1.0 = 3.0). The band legs ride dayTime 0, where EASY 0.75,
+        // NORMAL 1.5 and PEACEFUL 0 all stay under 3.0. (Measured: the drafted
+        // (mode, dayTime, 0, 0) shape made HARD roll, 18/60, and the fix flips it to
+        // the guaranteed branch.)
+        return new DifficultyInstance(mode, mode == Difficulty.HARD ? 1512000L : 0L, 0L, 0.0F);
     }
 
     // ------------------------------------------------------------------ roster
@@ -425,7 +453,10 @@ public final class EldritchCrabGameTest {
         final ServerLevel level = helper.getLevel();
         final EntityEldritchCrab crab = crab(helper);
         crab.setShell(true);
-        crab.setHealth(19.0F);
+        // Measured: the shelled crab's 5.0 armour scales an 8.0 hit to 7.68, so from
+        // 19.0 the hit lands at 11.32 — ABOVE the 10.0 half-health break line, and the
+        // drafted 19.0 fixture never armed the break. 17.0 lands at ~9.3, below half.
+        crab.setHealth(17.0F);
         crab.hurt(level.damageSources().mobAttack(null), 8.0F);          // :160-162
         helper.assertTrue(crab.getHealth() <= 11.0F,
                 "the probe needs the crab at or below half health, got " + crab.getHealth());
@@ -487,10 +518,13 @@ public final class EldritchCrabGameTest {
         helper.succeed();
     }
 
-    /** :151-158 — a landed melee hit asks for the claw screech; the id is
-     *  unregistered (D-004) so the seam is observed, not a sound. */
+    /** :151-158 — a landed melee hit asks for the claw screech. The id the
+     *  port pins is the original's {@code thaumcraft:crabclaw}; the audio lane
+     *  shipped that id on main, so on this tree the seam fires a REGISTERED
+     *  sound — the drafted probe pinned the pre-audio-lane world where the id
+     *  was absent, and that premise is now stale by design. */
     @GameTest(template = "empty")
-    public static void aLandedPunchAsksForTheClawSeamAndTheIdStaysUnregistered(
+    public static void aLandedPunchAsksForTheClawSeamAndTheIdResolvesRegistered(
             final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
         final EntityEldritchCrab crab = crab(helper);
@@ -503,9 +537,9 @@ public final class EldritchCrabGameTest {
         crab.doHurtTarget(pig);                                              // :152
         helper.assertTrue(crab.wasClawFxRequested(),
                 ":151-158 — a landed hit runs the claw-sound site");
-        helper.assertTrue(!BuiltInRegistries.SOUND_EVENT.containsKey(EldritchCrabAiLogic.SOUND_CLAW),
-                ":153 — thaumcraft:crabclaw is not registered (the audio lane owns the registry,"
-                        + " D-004), so the port pins the id and fires nothing");
+        helper.assertTrue(BuiltInRegistries.SOUND_EVENT.containsKey(EldritchCrabAiLogic.SOUND_CLAW),
+                ":153 — the audio lane shipped thaumcraft:crabclaw on main, so the id the port"
+                        + " pins resolves to a registered sound on this tree");
         crab.discard();
         pig.discard();
         helper.succeed();
@@ -517,8 +551,50 @@ public final class EldritchCrabGameTest {
     public static void anUnshelledCrabInMidAirClimbsOnAPlayerAndPunchesHimOff(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
         final BlockPos at = pad(helper);
-        final Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        // GameTestHelper#makeMockPlayer returns a helper-internal ANONYMOUS Player
+        // (GameTestHelper$1) on 21.1.259 — not a ServerPlayer, invisible to the
+        // players-list scan Level#getNearestPlayer runs, and a ClassCastException to
+        // any cast that tries to register it. The shipped mechanism for a player the
+        // LEVEL sees is the warp-events construction (WarpEventsGameTest.warpPlayer):
+        // a real ServerPlayer over the login cookie with an EmbeddedChannel connection.
+        final MinecraftServer server = level.getServer();
+        final CommonListenerCookie cookie = CommonListenerCookie.createInitial(
+                new GameProfile(UUID.randomUUID(),
+                        "tc-crabclimb-" + UUID.randomUUID().toString().substring(0, 8)), false);
+        final ServerPlayer player =
+                new ServerPlayer(server, level, cookie.gameProfile(), cookie.clientInformation());
+        final Channel nettyChannel = new EmbeddedChannel();
+        final Connection connection = new Connection(PacketFlow.SERVERBOUND) {
+            @Override
+            public Channel channel() {
+                return nettyChannel;
+            }
+        };
+        ChannelAttributes.setConnectionType(connection, ConnectionType.NEOFORGE);
+        // A ServerPlayer on a bare EmbeddedChannel dies on the FIRST payload its
+        // tick sends (measured: the swarmer lane's crash 'Payload thaumcraft:
+        // biome_change may not be sent to the client!' — a registered ServerPlayer
+        // ticks, its biome-change/warp/attachment sends hit the channel check, the
+        // throw rides the shared level tick and fails NEIGHBOUR probes). The
+        // WarpEvents rule: declare every payload the tick can put on the wire as
+        // an ad-hoc channel on THIS connection.
+        final var adHoc = ChannelAttributes.getOrCreateAdHocChannels(connection);
+        adHoc.add(SyncAttachmentsPayload.TYPE.id());
+        adHoc.add(BiomeChangePayload.TYPE.id());
+        adHoc.add(MiscEventPayload.TYPE.id());
+        adHoc.add(SyncWarpPayload.TYPE.id());
+        adHoc.add(WarpMessagePayload.TYPE.id());
+        player.connection = new ServerGamePacketListenerImpl(server, connection, player, cookie);
+        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+            player.getInventory().setItem(slot, ItemStack.EMPTY);        // harness kit (family rule)
+        }
         player.setPos(at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5);
+        player.setHealth(20.0F);
+        player.setNoGravity(true);
+        player.setInvulnerable(true);   // the ride's punches must not kill the fixture
+        // ServerLevel#players() is the live player list Level#getNearestPlayer scans
+        // (addPlayer is private on 21.1.259) — joining it is the registration.
+        level.players().add(player);
 
         final EntityEldritchCrab airborne = crab(helper);
         airborne.setNoGravity(true);
@@ -563,6 +639,7 @@ public final class EldritchCrabGameTest {
         airborne.stopRiding();
         airborne.discard();
         shelled.discard();
+        level.players().remove(player);
         helper.succeed();
     }
 
@@ -608,12 +685,12 @@ public final class EldritchCrabGameTest {
         orb.setDeltaMovement(new Vec3(1.0, -0.5, 0.0));
         for (int tick = 0; tick < 25; tick++) {
             orb.tick();                                                        // :63-87 impact
-            if (orb.isRemoved()) {
-                break;
+            if (pig.getEffect(MobEffects.WEAKNESS) != null) {
+                break;   // the burst has fired (measured: the impact lands on the first tick)
             }
         }
-        helper.assertTrue(orb.isRemoved(),
-                ":84 — the burst consumes the orb (the impact writes the 100-tick age)");
+        helper.assertTrue(pig.getEffect(MobEffects.WEAKNESS) != null,
+                ":63-87 — the manual drive reached the impact");
         helper.assertTrue(pig.getEffect(MobEffects.WEAKNESS) != null,
                 ":76-79 — the living target takes the weakness cast (160 ticks, amplifier 0)");
         helper.assertTrue(pig.getEffect(MobEffects.WEAKNESS).getDuration()
@@ -652,10 +729,24 @@ public final class EldritchCrabGameTest {
         helper.assertTrue(zombie.getHealth() >= zombieHealth,
                 ":69 — the undead are exempt: the zombie takes no burst damage, "
                         + zombieHealth + " -> " + zombie.getHealth());
-        thrower.discard();
-        pig.discard();
-        zombie.discard();
-        helper.succeed();
+        // :84 — the consumption. The impact writes the 100-tick age (:84) and
+        // :27-29 discards once it is past. On 21.1.259 tickCount is incremented by
+        // the SERVER's entity tick (ServerLevel#tickNonPassenger, javap), NOT by
+        // Entity#tick — a hand-driven tick() loop freezes the age at 100 (measured:
+        // age=100 forever under manual ticks), so the consumption is measured on
+        // two REAL server ticks. Everything the burst writes is asserted on the
+        // impact tick itself: real ticks decay the weakness duration (measured:
+        // 2 server ticks burn 160 to 158).
+        helper.runAfterDelay(2, () -> {
+            helper.assertTrue(orb.isRemoved(),
+                    ":84 — the burst consumes the orb (the impact writes the 100-tick age, the "
+                            + "server's next ticks walk it past the clamp), age=" + orb.tickCount
+                            + " removed=" + orb.isRemoved());
+            thrower.discard();
+            pig.discard();
+            zombie.discard();
+            helper.succeed();
+        });
     }
 
     /** :83 / :89-91 — the impact fizz's figures and the pickup radius live on
@@ -679,9 +770,10 @@ public final class EldritchCrabGameTest {
                         && EntityEldritchOrb.SOUND_PITCH_SPREAD == 0.8F
                         && EntityEldritchOrb.SOUND_VOLUME == 0.5F,
                 ":83 — random.fizz at 0.5F, 2.6F + (r - r) * 0.8F");
-        helper.assertTrue(!BuiltInRegistries.SOUND_EVENT.containsKey(
+        helper.assertTrue(BuiltInRegistries.SOUND_EVENT.containsKey(
                         ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "crabclaw")),
-                "the crab's claw id stays unregistered while the orb's fizz rides vanilla");
+                "the crab's claw id is registered (the audio lane shipped it on main) while the"
+                        + " orb's impact fizz rides the vanilla random.fizz figures");
         orb.discard();
         helper.succeed();
     }
