@@ -9,6 +9,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeB
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEntities;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchCrab;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchRealm;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogMindSpider;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogOuterLands;
@@ -276,6 +277,18 @@ public final class ModRegistration {
         // enchantment and the family goal set ride CultistAiLogic. Renderer
         // TC-M7-03-s, spawn egg row TC-M6-06-s-c6.
         CatalogCultists.init(modEventBus);
+
+        // TC-M6-06-s-c4b-1: the eldritch crab lane — thaumcraft:eldritchcrab
+        // (EntityEldritchCrab over Monster: the shell flag that carries armour
+        // 5 / speed 0.275 and breaks at half health into a cultist chest plate,
+        // the climb onto a bareheaded player, the 10..19-tick mount punch, the
+        // spider GroupData spawn pass, the crab-only canAttackTarget and the
+        // poison immunity) and thaumcraft:eldritchorb (EntityEldritchOrb, the
+        // gravity-free 100-tick orb that bursts on ANY impact for 0.666x the
+        // thrower's attack damage plus 160 ticks of weakness). Renderer
+        // TC-M7-03, spawn egg row TC-M6-06-s-c6; the guardian and the inhabited
+        // zombie are card c4b-2's.
+        CatalogEldritchCrab.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

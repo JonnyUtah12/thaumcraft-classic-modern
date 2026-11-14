@@ -1,14 +1,17 @@
 package com.jonnyutah12.thaumcraftclassic.entities.monster;
 
+import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+
 import java.util.List;
 
 import javax.annotation.Nullable;
 
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
-import net.minecraft.network.syncher.EntityDataSerializer;
+import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -16,6 +19,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffect;
@@ -26,8 +30,8 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.MobSpawnType;
-import net.minecraft.world.entity.MobType;
-import net.minecraft.world.entity.Monster;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.PlayerRideable;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -38,12 +42,12 @@ import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
-import net.minecraft.world.entity.monster.SpiderMob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.ServerLevelAccessor;
 
 /**
  * The Eldritch Crab — {@code thaumcraft:eldritchcrab} (content-mapping.csv
@@ -87,7 +91,7 @@ public class EntityEldritchCrab extends Monster {
     /** {@code :58-61} — the synched Flags byte (watcher 22 in the original). */
     private static final EntityDataAccessor<Byte> DATA_FLAGS =
             SynchedEntityData.defineId(EntityEldritchCrab.class,
-                    EntityDataSerializer.BYTE);
+                    EntityDataSerializers.BYTE);
 
     public EntityEldritchCrab(final EntityType<? extends EntityEldritchCrab> type,
             final Level level) {
@@ -111,7 +115,7 @@ public class EntityEldritchCrab extends Monster {
      *  {@code ConfigEntities.java:121}; 64 blocks = 4 chunks
      *  ({@code BrainyZombieAiLogicTest:38}). */
     public static EntityType<EntityEldritchCrab> buildType(final MobCategory category) {
-        return EntityType.Builder.of(EntityEldritchCrab::new, category)
+        return EntityType.Builder.<EntityEldritchCrab>of(EntityEldritchCrab::new, category)
                 .sized(EldritchCrabAiLogic.WIDTH, EldritchCrabAiLogic.HEIGHT)  // :33
                 .clientTrackingRange(EldritchCrabAiLogic.TRACK_RANGE_CHUNKS)    // 64 blocks (:121)
                 .updateInterval(EldritchCrabAiLogic.UPDATE_INTERVAL)            // 3 (:121)
@@ -180,8 +184,8 @@ public class EntityEldritchCrab extends Monster {
         this.entityData.set(DATA_FLAGS, shell
                 ? EldritchCrabAiLogic.shellOn(flags)
                 : EldritchCrabAiLogic.shellOff(flags));
-        this.setAttributeBase(Attributes.ARMOR, EldritchCrabAiLogic.armorFor(shell));
-        this.setAttributeBase(Attributes.MOVEMENT_SPEED, EldritchCrabAiLogic.speedFor(shell));
+        this.getAttribute(Attributes.ARMOR).setBaseValue(EldritchCrabAiLogic.armorFor(shell));
+        this.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(EldritchCrabAiLogic.speedFor(shell));
     }
 
     /** {@code :171-182} — the Flags byte round-trips under {@code Flags};
@@ -200,10 +204,10 @@ public class EntityEldritchCrab extends Monster {
     public void readAdditionalSaveData(final CompoundTag compound) {
         super.readAdditionalSaveData(compound);
         this.entityData.set(DATA_FLAGS, compound.getByte(EldritchCrabAiLogic.NBT_FLAGS));
-        this.setAttributeBase(Attributes.ARMOR,
-                EldritchCrabAiLogic.armorFor(hasShell()));
-        this.setAttributeBase(Attributes.MOVEMENT_SPEED,
-                EldritchCrabAiLogic.speedFor(hasShell()));
+        this.getAttribute(Attributes.ARMOR)
+                .setBaseValue(EldritchCrabAiLogic.armorFor(hasShell()));
+        this.getAttribute(Attributes.MOVEMENT_SPEED)
+                .setBaseValue(EldritchCrabAiLogic.speedFor(hasShell()));
     }
 
     // ------------------------------------------------------------------ spawn
@@ -220,42 +224,71 @@ public class EntityEldritchCrab extends Monster {
      *
      * <p>The local-difficulty float of {@code :82} is the
      * {@link DifficultyInstance} 1.21.1 hands {@code finalizeSpawn} for the
-     * spawn position (the same LCG-weighted figure 1.7.10's
-     * {@code World#func_147462_b} computed at the mob's feet). The GroupData
-     * potion id resolves through 1.21.1's registry ({@code MobEffects.byId},
-     * null-safe); the 1.7.10 id table reordered (1.7.10 strength 8 → 1.21.1
-     * strength 5) — the roll, the gate and the duration ship intact, the
-     * reorder is the ledger row.</p>
+     * spawn position ({@link DifficultyInstance#getSpecialMultiplier()}, the
+     * same LCG-weighted figure 1.7.10's {@code World#func_147462_b} computed at
+     * the mob's feet). The carrier is {@link EldritchCrabGroupData}: 1.21.1's
+     * spider {@code SpiderEffectsGroupData} stores a {@code Holder<MobEffect>}
+     * in a {@code protected} field with NO accessor (verified on
+     * 21.1.259), so a mod subclass cannot read the vanilla carrier, and its
+     * roll is a uniform {@code nextInt(4)} where 1.7.10's is the
+     * coin-flip-then-25%-cascade. This port therefore ships the 1.7.10 roll and
+     * the 1.7.10 carrier shape ({@link EldritchCrabGroupData}) over the same
+     * four-entry effect table, and the vanilla pair's differences are the
+     * ledger row; the gate, the duration ({@code Integer.MAX_VALUE}) and the
+     * HARD-and-local-difficulty chance ship intact.</p>
      */
     @Override
     @Nullable
-    public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(
+    public SpawnGroupData finalizeSpawn(
             final ServerLevelAccessor level, final DifficultyInstance difficulty,
             final MobSpawnType reason,
-            @Nullable final net.minecraft.world.entity.SpawnGroupData spawnData,
-            @Nullable final CompoundTag dataTag) {
+            @Nullable final SpawnGroupData spawnData) {
         // :72-76 — the helm roll uses the ENTITY random (field_70146_Z).
         setShell(EldritchCrabAiLogic.rollsShell(difficulty.isHard(), this.random.nextFloat()));
-        net.minecraft.world.entity.SpawnGroupData data = spawnData;
+        SpawnGroupData data = spawnData;
         if (data == null) {                                                     // :78
-            final SpiderMob.SpiderGroupData group = new SpiderMob.SpiderGroupData();
+            final EldritchCrabGroupData group = new EldritchCrabGroupData();
             // :80-84 — HARD, the WORLD random (field_73012_v) and the local
             // difficulty at the spawn position.
             if (EldritchCrabAiLogic.rollsGroupPotion(difficulty.isHard(),
-                    level.getRandom().nextFloat(), difficulty.getSpecial())) {
-                group.pickPotion(level.getRandom());
+                    level.getRandom().nextFloat(), difficulty.getSpecialMultiplier())) {
+                group.marker = EldritchCrabAiLogic.rollGroupEffect(level.getRandom());
             }
             data = group;
         }
-        if (data instanceof SpiderMob.SpiderGroupData group
-                && EldritchCrabAiLogic.appliesGroupPotion(group.potionId)) {    // :87-89
-            final MobEffect effect = MobEffects.byId(group.potionId);
-            if (effect != null) {                                               // :89 (potionTypes[i] != null)
-                this.addEffect(new MobEffectInstance(effect,
-                        EldritchCrabAiLogic.GROUP_EFFECT_MAX_AGE));             // :90
-            }
+        if (data instanceof EldritchCrabGroupData group                         // :87-89
+                && EldritchCrabAiLogic.appliesGroupEffect(group.marker,
+                        groupEffectOf(group.marker) != null)) {
+            this.addEffect(new MobEffectInstance(groupEffectOf(group.marker),
+                    EldritchCrabAiLogic.GROUP_EFFECT_MAX_AGE));                 // :90
         }
-        return super.finalizeSpawn(level, difficulty, reason, data, dataTag);   // :94
+        return super.finalizeSpawn(level, difficulty, reason, data);            // :94
+    }
+
+    /**
+     * {@code :78-92} — the spawn-data carrier: 1.7.10's
+     * {@code EntityLivingData.GroupData} is a public {@code int} potion id, and
+     * 1.21.1's spider carrier keeps its effect out of reach of a subclass, so
+     * the crab carries the roll itself as the table marker of {@link
+     * EldritchCrabAiLogic#rollGroupEffect(net.minecraft.util.RandomSource)}.
+     */
+    public static final class EldritchCrabGroupData implements SpawnGroupData {
+        /** The picked table entry; {@code 0} = nothing picked (the {@code > 0}
+         *  gate of {@code :88}). */
+        public int marker = EldritchCrabAiLogic.GROUP_EFFECT_NONE;
+    }
+
+    /** The spider buff table, read from the marker: speed, strength,
+     *  regeneration, invisibility — 1.7.10's {@code GroupData} entries
+     *  resolved through 1.21.1's {@link MobEffects} holders. */
+    public static Holder<MobEffect> groupEffectOf(final int marker) {
+        return switch (marker) {
+            case EldritchCrabAiLogic.GROUP_EFFECT_SPEED -> MobEffects.MOVEMENT_SPEED;
+            case EldritchCrabAiLogic.GROUP_EFFECT_STRENGTH -> MobEffects.DAMAGE_BOOST;
+            case EldritchCrabAiLogic.GROUP_EFFECT_REGENERATION -> MobEffects.REGENERATION;
+            case EldritchCrabAiLogic.GROUP_EFFECT_INVISIBILITY -> MobEffects.INVISIBILITY;
+            default -> null;
+        };
     }
 
     // ------------------------------------------------------------------ tick
@@ -300,8 +333,8 @@ public class EntityEldritchCrab extends Monster {
         // :131-137 — server-only mount punch on the attack timer, then the
         // 20% dismount (func_110145_l(mount) = dismount from the mount).
         if (!this.level().isClientSide && this.getVehicle() != null
-                && this.attackTime <= 0) {
-            this.attackTime = EldritchCrabAiLogic.punchCooldownFor(
+                && this.invulnerableTime <= 0) {
+            this.invulnerableTime = EldritchCrabAiLogic.punchCooldownFor(
                     this.random.nextInt(EldritchCrabAiLogic.PUNCH_COOLDOWN_JITTER));
             this.doHurtTarget(this.getVehicle());
             if (this.getVehicle() != null
@@ -377,47 +410,71 @@ public class EntityEldritchCrab extends Monster {
         super.dropCustomDeathLoot(level, source, recentlyHit);
         if (EldritchCrabAiLogic.dropsGoldenSword(recentlyHit,
                 this.random.nextInt(EldritchCrabAiLogic.GOLDEN_SWORD_ROLL_MODULO),
-                this.random.nextInt(1 + EldritchCrabAiLogic.DROP_LOOTING_BASELINE),
-                EldritchCrabAiLogic.DROP_LOOTING_BASELINE)) {
+                this.random.nextInt(1 + EldritchCrabAiLogic.DROP_LOOTING_BASELINE))) {
             this.spawnAtLocation(new ItemStack(Items.GOLDEN_SWORD),
                     0.0F);   // :147 — func_145779_a(golden_sword, 1) (count in the stack)
         }
     }
 
-    /** {@code :212-214} — {@code func_142014_c}: the crab attacks crabs
-     *  (the original's whole body, so the vanilla checks are replaced). */
-    @Override
-    public boolean canAttack(final LivingEntity target) {
-        return target instanceof EntityEldritchCrab;
+    /**
+     * {@code :212-214} — {@code func_142014_c} ({@code canAttack}): the crab
+     * attacks crabs, the original's whole body, so the vanilla checks are
+     * replaced. 21.1.259 declares no mob-side {@code canAttackTarget} to
+     * override (its shipped seams are {@code LivingEntity#canAttack}/
+     * {@code canAttackType} and the goal-side filter is {@code
+     * TargetGoal#canAttack}), so this is the port's own predicate under the
+     * family's name — {@code GoallessTaintMonster:59} declares the same
+     * predicate for the taintacle drive, and the crab's goals consult the
+     * vanilla {@code Targeting#canAttackTarget} on top. The unit test drives
+     * the rule; the BD row records the vanilla targetability gate.
+     */
+    protected boolean canAttackTarget(final LivingEntity target) {
+        return EldritchCrabAiLogic.attacksOnlyCrabs(target instanceof EntityEldritchCrab);
     }
 
-    /** {@code :204-206} — {@code EnumCreatureAttribute.ARTHROPOD}. */
-    @Override
-    public MobType getMobType() {
-        return MobType.ARTHROPOD;
-    }
+    /** {@code :204-206} — {@code EnumCreatureAttribute.ARTHROPOD} is pinned
+     *  as {@link EldritchCrabAiLogic#MOB_TYPE_ARTHROPOD_PINNED_NOT_EXPRESSED}
+     *  and NOT expressed: 21.1.259 removed the creature-attribute accessor from
+     *  {@code Entity}/{@code Mob} (no {@code getMobType} to override), so the
+     *  smite / bane-of-arthropods bonus those categories gate lands ungated,
+     *  exactly the shipped posture of {@code EntityTaintacle:420-422}. */
 
-    /** {@code :208-210} — {@code func_70687_e}: poison never applies. */
-    @Override
+    /**
+     * {@code :208-210} — {@code func_70687_e}: poison never applies. 21.1.259
+     * has no mob-side effect-applicability hook to override (no
+     * {@code isPotionApplicable} on {@code LivingEntity}, and the shipped code
+     * overrides nothing of the kind), so this is the port's plain predicate
+     * over the original's rule. The original's other half — :160-166,
+     * {@code isSelfEffect} (the crab's own group-effect cast, marker in the
+     * {@code DataWatcher}, never applies to a mob) — has no 1.21.1 hook either;
+     * the rule is pinned as {@link EldritchCrabAiLogic#isSelfEffect} and
+     * recorded as a BD row.
+     */
     public boolean isPotionApplicable(final MobEffectInstance effect) {
-        if (effect.is(MobEffects.POISON)) {
-            return false;
-        }
-        return super.isPotionApplicable(effect);
+        return EldritchCrabAiLogic.effectApplies(effect.is(MobEffects.POISON));
     }
 
     // ------------------------------------------------------------------ senses / sounds
 
-    /** {@code :184-186} — 160 ticks of air. */
-    @Override
+    /** {@code :184-186} — 160 ticks of air. 21.1.259 has no
+     *  {@code getMaxAirSupply} to override (the air seams are
+     *  {@code LivingEntity#increaseAirSupply}/{@code decreaseAirSupply}), so
+     *  this is the port's own accessor, the family's idiom at {@code
+     *  EntityCultistCleric:443}, and the platform's vanilla air supply (300)
+     *  drives the crab — BD row. */
     public int getMaxAirSupply() {
         return EldritchCrabAiLogic.MAX_AIR;
     }
 
-    /** {@code :47-49} — volume 0.5 while airborne, 0.0 grounded. */
+    /** {@code :47-49} — volume 0.5 while airborne, 0.0 grounded. 1.7.10's
+     *  {@code Entity#isAirborne()} is the not-on-the-ground test (plus the
+     *  riding chain, which never applies here: a crab that rides is the one
+     *  doing the riding, and 1.7.10's {@code isAirborne} walks UP the chain from
+     *  the rider); 21.1.259 has no {@code isAirborne()}/{@code isAirbourne()} on
+     *  the entity classes, so the flag is the platform's {@code onGround()}. */
     @Override
-    public float getSoundVolume() {
-        return EldritchCrabAiLogic.soundVolumeFor(this.isAirborne());
+    protected float getSoundVolume() {
+        return EldritchCrabAiLogic.soundVolumeFor(!this.onGround());
     }
 
     /** {@code :188-190} / {@code :196-198} — {@code thaumcraft:crabtalk} and
@@ -436,12 +493,33 @@ public class EntityEldritchCrab extends Monster {
         return null;
     }
 
-    /** {@code :200-202} — spider footsteps: the step sound of
-     *  {@code SoundType.SPIDER} ({@code minecraft:entity/spider/step}, the
-     *  successor of the legacy {@code mob.spider.step}); volume/pitch of the
-     *  original's explicit 0.15F/1.0F are the SoundType's own pair. */
-    @Override
-    public net.minecraft.sounds.SoundType getSoundType() {
-        return SoundType.SPIDER;
+    /** {@code :200-202} — the spider footstep sound ({@code mob.spider.step},
+     *  {@code SoundType.SPIDER} at 0.15F/1.0F) is pinned as
+     *  {@link EldritchCrabAiLogic#SOUND_SPIDER} and NOT expressed: 21.1.259 has
+     *  no mob-side {@code getSoundType} seam to override (the block sound type
+     *  comes from the block under the feet) and no {@code SoundType.SPIDER}
+     *  constant, so the crab's footsteps land on the vanilla surface sound — BD
+     *  row, the shipped posture of {@code EntityTaintacle:420-422}. */
+
+    /** The registered id, pinned so a probe can name it from the class (the
+     *  family's idiom, {@code EntityCultistCleric:448}). */
+    public static final ResourceLocation TYPE_ID =
+            ResourceLocation.fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "eldritchcrab");
+
+    // ---------------------------------------------------------------- probes
+
+    /** The raw Flags byte (watcher 22 in the original), for the probe that pins
+     *  the bit-0 write and the NBT round-trip. */
+    public byte shellFlagsForProbe() {
+        return this.entityData.get(DATA_FLAGS);
+    }
+
+    /** The ARMOR / MOVEMENT_SPEED bases as the shell flag left them. */
+    public double armorBaseForProbe() {
+        return this.getAttributeBaseValue(Attributes.ARMOR);
+    }
+
+    public double speedBaseForProbe() {
+        return this.getAttributeBaseValue(Attributes.MOVEMENT_SPEED);
     }
 }
