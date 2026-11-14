@@ -169,23 +169,18 @@ public final class CultistAiLogic {
      * original's class form; 1.21.1's hook is the {@code EntityType} form, so the
      * shipped predicate is {@link #isCultistTypeId(ResourceLocation)}.
      *
-     * <p>The Cleric and the Leader are named by class NAME, not by class: the
-     * Cleric is card t_6160444c's (c4a-2, the half this lane sliced out) and the
-     * Leader is c5's, so neither class is in this tree (BD-87 — a name-carried
-     * exclusion arm, the same shape this method already used for the Leader).
-     * The behaviour is unchanged for the shipped pair: the Knight is the only
-     * cultist registered here, and its exclusion runs on the real class.</p>
+     * <p>The Cleric and the Knight are excluded by CLASS, as the original
+     * writes them. The Leader is named by class NAME, not by class: {@code
+     * EntityCultistLeader} is card c5's and is not in this tree, so its arm is
+     * the name-carried one (BD-90 — the D-012 slice's carrier, which this commit
+     * swapped back to a class for the Cleric now that t_6160444c has landed
+     * {@code EntityCultistCleric}).</p>
      */
     public static boolean targetClassExcluded(final Class<?> targetClass) {
-        final String simpleName = targetClass.getSimpleName();
-        return CLERIC_CLASS_NAME.equals(simpleName)
+        return EntityCultistCleric.class.equals(targetClass)
                 || EntityCultistKnight.class.equals(targetClass)
-                || LEADER_CLASS_NAME.equals(simpleName);
+                || LEADER_CLASS_NAME.equals(targetClass.getSimpleName());
     }
-    /** {@code EntityCultistCleric} is card t_6160444c's class (c4a-2) and is not
-     *  in this tree, so the exclusion set carries its name verbatim from
-     *  {@code :106} — the same name-carried arm as the Leader (BD-87). */
-    public static final String CLERIC_CLASS_NAME = "EntityCultistCleric";
     /** {@code EntityCultistLeader} is card c5's class and is not in the tree yet,
      *  so the exclusion set carries its name verbatim from {@code :106}. */
     public static final String LEADER_CLASS_NAME = "EntityCultistLeader";

@@ -11,6 +11,7 @@ import net.minecraft.world.phys.AABB;
 
 import com.jonnyutah12.thaumcraftclassic.entities.monster.CultistAiLogic;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityCultist;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityCultistCleric;
 
 import java.util.List;
 
@@ -37,10 +38,13 @@ import java.util.List;
  * inflated by the follow range and 10 — 1.7.10's Thaumcraft copied vanilla's, and
  * 1.21.1 kept it). The port subclasses it and keeps the original's scan, because
  * the two differences are the family's: the box is over the {@code EntityCultist}
- * base, and the cleric's ritual rule lives inside it — that arm is pinned on the
- * cleric's registry id on this lane (BD-87, {@link #isRitualistCleric}). The parent's
- * {@code setAlertOthers} is never enabled, so the vanilla reinforcement path
- * stays off.</p>
+ * base, and the cleric's ritual rule lives inside it, read through the cleric's
+ * class ({@code :48} {@code instanceof EntityCultistCleric} + {@code
+ * getIsRitualist()}, {@code :52} {@code setIsRitualist(false)}) exactly as the
+ * original writes it. While the Cleric sat on the sibling card the arm was
+ * carried by the registry id (BD-90, resolved on t_6160444c by this commit).
+ * The parent's {@code setAlertOthers} is never enabled, so the vanilla
+ * reinforcement path stays off.</p>
  *
  * <p>The sight gate: 1.7.10's {@code EntityAITarget(owner, false)} means "no
  * line of sight required". 1.21.1's {@code HurtByTargetGoal} passes
@@ -55,6 +59,11 @@ public class AICultistHurtByTarget extends HurtByTargetGoal {
     private final boolean callsForHelp;
     /** {@code :15} — {@code private int field_142052_b}: the last seen timestamp. */
     private int timestamp;
+
+    /** {@code :14} as data for the goal-set probes: the flag the owner passed. */
+    public boolean isAgressors() {
+        return this.callsForHelp;
+    }
 
     public AICultistHurtByTarget(final PathfinderMob owner, final boolean callsForHelp) {
         // :16-19 — super(owner, false); setPriority(1). TargetGoal's checkSight
@@ -140,34 +149,13 @@ public class AICultistHurtByTarget extends HurtByTargetGoal {
             if (CultistAiLogic.canAttackFactionMember(attacker)) {
                 continue;
             }
-            if (!isRitualistCleric(cultist)) {
+            if (!(cultist instanceof EntityCultistCleric cleric) || !cleric.getIsRitualist()) {
                 cultist.setTarget(attacker);                                            // :49-50
             } else if (CultistAiLogic.ritualistBreaks(
                     level.getRandom().nextInt(CultistAiLogic.RITUALIST_BREAK_ROLL))) {
-                // :52 — {@code cleric.setIsRitualist(false)} is the cleric's own
-                // synched byte and lands with the class on t_6160444c (BD-87); the
-                // :53 join arm is wired here so the roll is already in place.
+                cleric.setIsRitualist(false);                                           // :52
                 cultist.setTarget(attacker);                                            // :53
             }
         }
-    }
-
-    /**
-     * The {@code :48-53} arm's subject test. {@code EntityCultistCleric} is card
-     * t_6160444c's (c4a-2, the half this lane sliced out of t_5c5fa1d2), so the
-     * ritualist state — the cleric's synched byte, {@code EntityCultistCleric:99
-     * /:106-113} — has no class in this tree to read it from. The arm is therefore
-     * pinned on the cleric's registry id (BD-87): while
-     * {@code thaumcraft:cultistcleric} is unregistered, as it is on this lane, the
-     * helper answers false for every shipped cultist and the gang call takes the
-     * original's {@code :49-50} arm verbatim.
-     *
-     * <p>TODO(BD-87, t_6160444c): when the Cleric lands, read
-     * {@code getIsRitualist()} through the class (and {@code setIsRitualist(false)}
-     * at {@code :52}) instead of the id.</p>
-     */
-    private static boolean isRitualistCleric(final EntityCultist cultist) {
-        return CultistAiLogic.isClericTypeId(
-                net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(cultist.getType()));
     }
 }

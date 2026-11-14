@@ -2,6 +2,7 @@ package com.jonnyutah12.thaumcraftclassic.registration.catalog;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.CultistAiLogic;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityCultistCleric;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityCultistKnight;
 
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -27,22 +28,28 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  * never edit the same file. Ids are the {@code new_id} column of
  * docs/content-mapping.csv (docs/architecture/registration.md).</p>
  *
- * <p>Registered here — one entry of the original's registration block
+ * <p>Registered here — two entries of the original's registration block
  * ({@code ConfigEntities.init}), and nothing else:</p>
  * <ul>
  *   <li>{@code thaumcraft:cultistknight} — {@code EntityCultistKnight}
  *       (content-mapping {@code Thaumcraft:CultistKnight}, CSV line 325,
  *       mod_index 27, "Crimson Knight"); {@code registerModEntity(..., 64, 3,
  *       true)} at {@code ConfigEntities.java:111}.</li>
+ *   <li>{@code thaumcraft:cultistcleric} — {@code EntityCultistCleric}
+ *       (content-mapping {@code Thaumcraft:CultistCleric}, CSV line 326,
+ *       mod_index 28, "Crimson Cleric"); {@code registerModEntity(..., 64, 3,
+ *       true)} at {@code ConfigEntities.java:113} — the same tracking 64 /
+ *       interval 3 / velocity-updates triple as the knight, so both ride
+ *       {@link CultistAiLogic}'s pinned registration constants.</li>
  * </ul>
  *
- * <p><b>The Cleric is absent by slice.</b> The original registers it at
- * {@code ConfigEntities.java:113} (mod_index 28, ledger row 326) and this lane
- * authored it, but t_5c5fa1d2 was split under D-012 and the Cleric + GolemOrb
- * half is card {@code t_6160444c} (c4a-2). Nothing here needs editing when it
- * lands: {@link CultistAiLogic#CULTIST_TYPE_PATHS} already carries
- * {@code cultistcleric} by path, so the faction pair reads it from the live
- * registry (BD-87).</p>
+ * <p>The Cleric arrived from the D-012 split: t_5c5fa1d2 died twice at the
+ * wall-clock cap, its authored WIP was sliced at the c4a-1/c4a-2 seam
+ * ({@code t_c59f137b} shipped base + knight, {@code t_6160444c} ships the
+ * Cleric + GolemOrb half), and the two name/id carriers that seam needed —
+ * the Cleric's class NAME in {@code EntityCultist:105-107}'s exclusion and the
+ * gang call's cleric-by-registry-id arm (BD-90) — were swapped back to the
+ * original's class forms in this commit.</p>
  *
  * <p><b>The base is deliberately absent.</b> {@code EntityCultist} has no
  * {@code registerModEntity} line in the original, no mod index and no ledger
@@ -73,7 +80,13 @@ public final class CatalogCultists {
 
     /** {@code thaumcraft:cultistcleric} — original {@code EntityCultistCleric}
      *  (content-mapping {@code Thaumcraft:CultistCleric}, CSV line 326,
-     *  mod_index 28). {@code ConfigEntities.java:113}. */
+     *  mod_index 28). {@code ConfigEntities.java:113} — {@code
+     *  registerModEntity(EntityCultistCleric.class, "CultistCleric", 28,
+     *  instance, 64, 3, true)}. */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityCultistCleric>> CULTIST_CLERIC =
+            ENTITY_TYPES.register("cultistcleric",
+                    () -> EntityCultistCleric.buildType(MobCategory.MONSTER));
+
     private CatalogCultists() {
     }
 
@@ -84,6 +97,7 @@ public final class CatalogCultists {
 
     private static void onAttributeCreation(final EntityAttributeCreationEvent event) {
         event.put(CULTIST_KNIGHT.get(), EntityCultistKnight.createAttributes().build());
+        event.put(CULTIST_CLERIC.get(), EntityCultistCleric.createAttributes().build());
     }
 
     /**

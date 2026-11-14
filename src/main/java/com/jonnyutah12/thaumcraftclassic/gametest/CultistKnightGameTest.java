@@ -59,7 +59,9 @@ import java.util.List;
  * <p>The Cleric half of this family (its goals, its ritual byte, its orb) is
  * card {@code t_6160444c} and is not in this tree, so the probes here assert the
  * shipped roster: {@code thaumcraft:cultistknight} present,
- * {@code thaumcraft:cultistcleric} and {@code thaumcraft:cultist} absent.</p>
+ * {@code thaumcraft:cultist} absent, and {@code thaumcraft:cultistcleric}
+ * present with the child card t_6160444c (measured in {@code
+ * CultistClericGameTest}, whose roster probe asserts the exact shipped pair).</p>
  */
 @GameTestHolder(ThaumcraftClassic.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -182,18 +184,20 @@ public final class CultistKnightGameTest {
      * <b>no {@code EntityCultist} base</b>. This card ships the knight alone, so
      * on this tree the shipped thaumcraft cultist ids are exactly
      * {@code [cultistknight]}: the base stays unregistered (the design the card
-     * records, {@link CultistAiLogic#BASE_IS_REGISTERED}) and the Cleric is the
-     * child card's (t_6160444c). The probe asserts all three halves so the day
-     * the Cleric lands this says so by name.
+     * records, {@link CultistAiLogic#BASE_IS_REGISTERED}) and the Cleric
+     * {@code thaumcraft:cultistcleric} landed with the child card t_6160444c, so
+     * the shipped pair is [cultistcleric, cultistknight] and only the Leader
+     * (card c5) is still to come. The probe asserts all four halves so the day
+     * the Leader lands this says so by name.
      */
     @GameTest(template = "empty")
     public static void theBaseIsUnregisteredAndTheKnightIsTheOnlyCultistId(final GameTestHelper helper) {
         helper.assertTrue(CultistAiLogic.BASE_IS_REGISTERED == false,
                 "the card's own statement is that the base is unregistered; the constant says "
                         + CultistAiLogic.BASE_IS_REGISTERED);
-        // The base has no id at all.
+        // The base has no id at all; the Cleric arrived with t_6160444c.
         absent(helper, "cultist");
-        absent(helper, "cultistcleric");
+        registered(helper, "cultistcleric");
         // The base is abstract, so it cannot even be instantiated as a spawnable mob.
         helper.assertTrue(java.lang.reflect.Modifier.isAbstract(EntityCultist.class.getModifiers()),
                 "EntityCultist must stay abstract: the original registers no base, so an "
@@ -207,9 +211,10 @@ public final class CultistKnightGameTest {
                 shipped.add(id.getPath());
             }
         }
-        helper.assertTrue(shipped.equals(List.of("cultistknight")),
-                "the shipped cultist ids must be exactly [cultistknight] on this card — found " + shipped
-                        + " (Cleric = t_6160444c, Leader = card c5)");
+        java.util.Collections.sort(shipped);
+        helper.assertTrue(shipped.equals(List.of("cultistcleric", "cultistknight")),
+                "the shipped cultist ids must be exactly [cultistcleric, cultistknight] since "
+                        + "t_6160444c landed the Cleric — found " + shipped + " (Leader = card c5)");
         helper.succeed();
     }
 

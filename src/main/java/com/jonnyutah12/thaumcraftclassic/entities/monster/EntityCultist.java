@@ -189,7 +189,7 @@ public abstract class EntityCultist extends Monster {
      *  ships as the named seam and is NOT wired (BD-91): its item id, meta, offset
      *  and the cleric’s LOOTING gate are pinned and unit-tested, and the caller is
      *  the death-path card that owns 1.21.1’s gift seam. */
-    protected void dropAllLoot() {
+    public void dropAllLoot() {
         if (!(this.level() instanceof ServerLevel level)) {
             return;
         }
