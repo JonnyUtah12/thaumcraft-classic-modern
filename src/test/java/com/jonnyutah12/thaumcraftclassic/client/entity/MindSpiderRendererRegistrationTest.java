@@ -297,10 +297,15 @@ class MindSpiderRendererRegistrationTest {
                 ":35 — watcher 23 is the synced string whose default is the empty name");
         assertTrue(entity.contains("public String getViewer()") && entity.contains("public void setViewer("),
                 ":38-44 — the pair the renderer reads and the mind-control lane would write");
-        assertTrue(writerOfViewerName().isEmpty(),
-                "the seam exists, and no shipped class writes it — the empty arm is the live one "
-                        + "until the mind-control lane (t_1a83f0db) lands, exactly as BD-78 records: "
-                        + writerOfViewerName());
+        // The lane BD-78 named has landed (t_1a83f0db, main c2dfa8d1), so the seam now HAS a
+        // writer. Pin the set exactly: one writer, the warp lane, and nothing else.
+        assertEquals(java.util.List.of("player/WarpEvents.java"), writerOfViewerName(),
+                "the seam's writer set is pinned: the mind-control lane writes the viewer name at "
+                        + "WarpEvents:193 (`spider.setViewer(player.getScoreboardName())`, the twin of "
+                        + "the reference's `:313 setViewer(player.getCommandSenderName())`), so the "
+                        + "second arm of :35-36 is live in a shipped world and the empty arm covers "
+                        + "every other spider. A second writer would silently hide mobs, so an "
+                        + "unlisted caller fails here: " + writerOfViewerName());
     }
 
     // ---------------------------------------------------- wiring level
@@ -423,10 +428,12 @@ class MindSpiderRendererRegistrationTest {
     /**
      * Production classes that write the viewer name. The reference's writer is
      * the mind-control lane ({@code EntityMindSpider.java:42-44} is reached from
-     * the spell's server side); that lane is the sibling card {@code t_1a83f0db},
-     * so in this repo the seam has no caller and the renderer's empty-viewer arm
-     * is the one that runs. A future card that wires it must land with its own
-     * visibility test, and this assertion is where it fails first.
+     * the spell's server side). That lane shipped as {@code t_1a83f0db} (main
+     * {@code c2dfa8d1}): {@code player/WarpEvents.java:193} marks the illusion
+     * swarm with the warping player's name, so the second arm of {@code :35-36}
+     * runs in a shipped world and the empty arm carries every other spider. The
+     * caller set is pinned in {@link #theViewerGateIsTheOriginalThreeArmsCollapsedToOne()}
+     * — a second writer would hide mobs silently, and that is where it fails first.
      */
     private static List<String> writerOfViewerName() throws IOException {
         try (var paths = Files.walk(MAIN)) {
