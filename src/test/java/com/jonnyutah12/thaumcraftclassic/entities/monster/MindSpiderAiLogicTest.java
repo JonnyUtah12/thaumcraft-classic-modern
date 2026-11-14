@@ -29,6 +29,11 @@ class MindSpiderAiLogicTest {
         // Thaumcraft.instance, 64, 3, true) — ConfigEntities.java:105-106.
         assertEquals(24, MindSpiderAiLogic.MOD_INDEX);
         assertEquals(64, MindSpiderAiLogic.TRACK_RANGE_BLOCKS);
+        // 1.21.1's builder measures the tracking range in CHUNKS, so the shipped
+        // builder must hand it 64 blocks / 16 = 4, not the raw 64 (a 1024-block
+        // tracking range). Asserted in the world by
+        // MindSpiderMobGameTest.registeredWithTheOriginalBoxAndTrackingTriple.
+        assertEquals(4, MindSpiderAiLogic.TRACK_RANGE_CHUNKS);
         assertEquals(3, MindSpiderAiLogic.UPDATE_INTERVAL);
         assertTrue(MindSpiderAiLogic.VELOCITY_UPDATES);
     }

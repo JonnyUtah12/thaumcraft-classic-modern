@@ -153,6 +153,23 @@ public class EntityPech extends Monster implements RangedAttackMob {
     private int chargecount;
     /** {@code :72} — {@code private boolean updateAINextTick}. */
     private boolean updateAINextTick;
+    /**
+     * TC-M7-04-m3-b-followup probe seam: how many times the flag has been set.
+     * The original's field is cleared on the next {@code checkDespawn} pass
+     * ({@code :501-506}), which a game-test probe cannot force, and its
+     * consumer ({@code setCombatTask}) is idempotent, so the count is the
+     * observable arm of the scam roll ({@code :95}).
+     */
+    private int aiUpdateFlagCount;
+    /**
+     * TC-M7-04-m3-b-followup probe seam: how many times the scam's
+     * {@code thaumcraft:pech_trade} cue has played. The original fires it through
+     * {@code EntityUtils.playEntitySoundAtClient} (that class is in the
+     * decompile tree), which is a plain entity-anchored sound play, so
+     * {@code playNotifySound} carries it to every tracking client; the counter
+     * lets a dedicated-server probe prove the cue.
+     */
+    private int tradeCueCount;
 
     // :63-67 — the goal instances the combat swap adds and removes.
     @Nullable
@@ -248,6 +265,46 @@ public class EntityPech extends Monster implements RangedAttackMob {
         if (this.level() != null && !this.level().isClientSide) {
             this.setCombatTask();
         }
+    }
+
+    /**
+     * {@code ContainerPech.java:95} — {@code pech.updateAINextTick = true} on the
+     * scam roll ({@code :72} field, consumed by {@code checkDespawn}
+     * {@code :501-506}, which swaps the goal set through {@code setCombatTask}).
+     * The field is private in the original; the container is its friend class in
+     * Java terms, so this is the seam.
+     */
+    public void flagAiUpdate() {
+        this.updateAINextTick = true;
+        this.aiUpdateFlagCount++;
+    }
+
+    /** The flag's live value ({@code :72}); the probe reads it, the counter is the count. */
+    public boolean aiUpdateFlagged() {
+        return this.updateAINextTick;
+    }
+
+    /** How many times the AI update was flagged (probe seam, TC-M7-04-m3-b-followup). */
+    public int lastAiUpdateFlag() {
+        return this.aiUpdateFlagCount;
+    }
+
+    /**
+     * {@code ContainerPech.java:95} —
+     * {@code EntityUtils.playEntitySoundAtClient("pech_trade", this, 0.4F, 1.0F)}:
+     * the sound rides the entity, and the 1.21.1 form of an entity-anchored play
+     * is {@code Entity#playSound} (NeoForge's {@code playNotifySound} publishes
+     * {@code ClientboundSoundEntityPacket} from it), so the scammed pech plays
+     * its trade cue for every tracking client.
+     */
+    public void playTradeCue() {
+        this.playSound(ModSounds.PECH_TRADE.get(), PechAiLogic.TRADE_SCAM_VOLUME, PechAiLogic.TRADE_SCAM_PITCH);
+        this.tradeCueCount++;
+    }
+
+    /** How many times the trade cue played (probe seam, TC-M7-04-m3-b-followup). */
+    public int lastTradeCue() {
+        return this.tradeCueCount;
     }
 
     /**

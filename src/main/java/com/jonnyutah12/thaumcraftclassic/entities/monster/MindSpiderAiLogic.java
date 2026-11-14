@@ -5,9 +5,11 @@ package com.jonnyutah12.thaumcraftclassic.entities.monster;
  * unit test can pin them without a world.
  *
  * <p>Original: {@code thaumcraft.common.entities.monster.EntityMindSpider}, 115
- * lines, {@code extends EntitySpider}. Ledger row
- * {@code docs/content-mapping.csv:322} ({@code Thaumcraft:MindSpider} →
- * {@code thaumcraft:mindspider}).</p>
+ * lines (read whole, {@code reference/decompiled/thaumcraft/thaumcraft/common/
+ * entities/monster/EntityMindSpider.java}), {@code extends EntitySpider}. Ledger
+ * row {@code docs/content-mapping.csv} line 322 ({@code Thaumcraft:MindSpider} →
+ * {@code thaumcraft:mindspider}); the line number is the current one on
+ * {@code origin/main}, the ledger id is the contract.</p>
  *
  * <p>The card's scope line calls the behaviour "the jump/attack/poison
  * behaviour at {@code :72}". Read from the source, {@code :72-77} is the <b>tick
@@ -27,6 +29,10 @@ public final class MindSpiderAiLogic {
      *  "MindSpider", 24, Thaumcraft.instance, 64, 3, true)}. */
     public static final int MOD_INDEX = 24;
     public static final int TRACK_RANGE_BLOCKS = 64;
+    /** 1.21.1's {@code EntityType.Builder#clientTrackingRange} is measured in
+     *  CHUNKS, not blocks: the original's 64 blocks is 4 chunks. Handing the
+     *  builder the raw 64 would ask for a 1024-block tracking range. */
+    public static final int TRACK_RANGE_CHUNKS = TRACK_RANGE_BLOCKS / 16;
     public static final int UPDATE_INTERVAL = 3;
     public static final boolean VELOCITY_UPDATES = true;
 

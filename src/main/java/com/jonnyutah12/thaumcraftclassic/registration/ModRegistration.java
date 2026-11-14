@@ -3,11 +3,13 @@ package com.jonnyutah12.thaumcraftclassic.registration;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArcaneWorkbench;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogArmor;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogBaubles;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogThaumatorium;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDecorativeBlocks;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEntities;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchRealm;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogMindSpider;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogOuterLands;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaTransport;
@@ -231,6 +233,13 @@ public final class ModRegistration {
         // (MazeHandler) and the teleporter. The dimension itself is the
         // dimension_type/dimension datapack pair under data/thaumcraft/.
         CatalogOuterLands.init(modEventBus);
+        // TC-M7-04-m2c: the thaumatorium window — the TileThaumatorium /
+        // TileThaumatoriumTop block entities for blockMetalDevice metas 10/11
+        // (the original's createTileEntity), their (block, variant) -> tile
+        // bindings through DeviceTileFactory, and the gui_thaumatorium menu
+        // type. The machine tick loop / essentia transport stay on the
+        // thaumatorium machine card (BD-19).
+        CatalogThaumatorium.init(modEventBus);
 
         // TC-M6-06-s-c3-a: the pech — thaumcraft:pech (EntityPech, monster
         // with its own hand-rolled AI/navigation in PechAiLogic) and
@@ -248,6 +257,14 @@ public final class ModRegistration {
         // The pipe/machine renderers, particles and sounds stay on TC-M7-01/TC-M7-05 and the
         // per-variant item labels on TC-M7-01b.
         CatalogEssentiaTransport.init(modEventBus);
+
+        // TC-M6-06-s-c3-b: the mind spider — thaumcraft:mindspider
+        // (EntityMindSpider extends the vanilla spider, with its harmless mode,
+        // viewer name, 1200-tick harmless fuse and every drop shut off in
+        // MindSpiderAiLogic). The AI switch is forced ON exactly as the
+        // original's func_145773_az() = true does, so the inherited spider
+        // goals never run. Renderer TC-M7-03-s, spawn egg row TC-M6-06-s-c6.
+        CatalogMindSpider.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

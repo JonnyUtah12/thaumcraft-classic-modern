@@ -1,5 +1,6 @@
 package com.jonnyutah12.thaumcraftclassic.client;
 
+import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.menus.DeconstructionTableMenu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -26,12 +27,19 @@ import net.neoforged.api.distmarker.OnlyIn;
  * could read the tile's {@code aspect} field directly because it held the tile;
  * 1.21.1 hands a screen only the menu, so the revealed aspect is not
  * client-visible here (BD-37).</p>
+ * 1.21.1 hands a screen only the menu, so the revealed aspect reaches it through
+ * the menu's container data (BD-17, closed by
+ * {@link DeconstructionTableMenu#getRevealedAspect()}).</p>
  *
  * <p>What this screen draws: the panel and player piece, the input slot frame,
  * the 46 px break bar rail with the synced break-time fill
  * ({@code menu.getBreakTime()} → the menu's data slot 0, the original's own
- * sync channel), and the frame of the aspect box at the original coordinates —
- * which keeps the collect action exactly where the original put it.</p>
+ * sync channel), and at {@code (64,48)} the original's tag — the 16x16 box is
+ * framed (its sheet art is overlay-only, D-004) and {@link AspectTagRenderer}
+ * draws the revealed aspect into it exactly where
+ * {@code GuiDeconstructionTable.java:39} did, now that the aspect reaches this
+ * menu as data slot 1 (BD-17 closed for the icon: see
+ * {@link DeconstructionTableMenu#getRevealedAspect()}).</p>
  */
 @OnlyIn(Dist.CLIENT)
 public class DeconstructionTableScreen extends AbstractContainerScreen<DeconstructionTableMenu> {
@@ -88,15 +96,57 @@ public class DeconstructionTableScreen extends AbstractContainerScreen<Deconstru
 
         // The original's aspect box, where its collect click lives. The aspect
         // itself is not synced to the client (BD-37), so the box is framed, not drawn into.
+        // The original's aspect box: the 176x166 sheet's frame at (64,48) is
+        // ARR-overlay (D-004), so the port frames the region, then draws the tag
+        // the original drew inside it — GuiDeconstructionTable.java:38-39, inside a
+        // `if (this.tableInventory.aspect != null)` guard:
+        //   UtilsFX.drawTag(k + 64, l + 48, this.tableInventory.aspect, 0.0F, 0, this.field_73735_i);
+        // That is the SIX-argument overload (UtilsFX.java:802-804), which forwards
+        // blend 771, alpha 1.0F and bw = false — the full aspect colour at full
+        // alpha, NOT the 3-argument overload's black-and-white tag (that one is the
+        // in-world tile renderers': TileAlembicRenderer.java, TileJarRenderer.java).
+        // The (64,48) here is the box top-left: this caller does NOT apply the
+        // workbench's -8 point shift, so the port passes the box coordinates through.
+        // The revealed aspect reaches this menu as data slot 1 (BD-17), so an empty
+        // box stays the original's empty box and a revealed one draws its tag.
         ScreenPanel.frameArea(guiGraphics, this.leftPos, this.topPos,
                 ContainerLayout.DECON_ASPECT_X, ContainerLayout.DECON_ASPECT_Y,
                 ContainerLayout.DECON_ASPECT_SIZE, ContainerLayout.DECON_ASPECT_SIZE);
+        final Aspect revealed = this.menu.getRevealedAspect();
+        if (revealed != null) {
+            drawAspectTag(guiGraphics, revealed);
+        }
+    }
+
+    /**
+     * The revealed aspect's tag inside the {@code (64,48)} box: the original's
+     * {@code UtilsFX.drawTag(k + 64, l + 48, this.tableInventory.aspect, 0.0F, 0, ...)}
+     * ({@code GuiDeconstructionTable.java:38-39}), the six-argument overload
+     * ({@code UtilsFX.java:802-804}: blend 771, alpha 1.0F, {@code bw = false}),
+     * ported as {@link AspectTagRenderer#drawTag}. It is a method — not the stand-in
+     * the state lane first shipped (a slot sprite plus the aspect's name in scaled
+     * text) — so the BD-17 probe ({@code MenuTypeScreenCoverageTest}) can name the
+     * single draw path, and so the original's null guard is the screen's own: an
+     * empty box draws nothing at all.
+     */
+    private void drawAspectTag(final GuiGraphics guiGraphics, final Aspect aspect) {
+        AspectTagRenderer.drawTag(guiGraphics, this.font,
+                this.leftPos + ContainerLayout.DECON_ASPECT_X,
+                this.topPos + ContainerLayout.DECON_ASPECT_Y,
+                aspect, 0.0F, 0);
     }
 
     /**
      * The original {@code func_73864_a}: super handles the slots, then the
      * {@code (64,48)} 16x16 box sends menu button 1. Same hitbox, same button,
      * same order — only the icon inside it is missing (BD-37).
+     * {@code (64,48)} 16x16 box sends menu button 1. Same hitbox, same button, same
+     * order. {@link DeconstructionTableMenu#clickMenuButton} is the authority — it
+     * pays only when the tile holds an aspect — and the send is additionally gated
+     * on the synced aspect (BD-17), so an empty box does not raise a no-op packet
+     * on a dedicated server, where {@code ServerPacketListeners} logs a menu
+     * exception for it. The gate reads the same state the button validates, so it
+     * cannot desync the pay: the click that reaches a loaded aspect still pays.
      */
     @Override
     public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
@@ -107,7 +157,7 @@ public class DeconstructionTableScreen extends AbstractContainerScreen<Deconstru
         final int relY = (int) mouseY - (this.topPos + ContainerLayout.DECON_ASPECT_Y);
         if (button == 0 && relX >= 0 && relY >= 0
                 && relX < ContainerLayout.DECON_ASPECT_SIZE && relY < ContainerLayout.DECON_ASPECT_SIZE) {
-            if (this.minecraft != null) {
+            if (this.minecraft != null && this.menu.getRevealedAspect() != null) {
                 this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, BUTTON_COLLECT_ASPECT);
             }
             return true;

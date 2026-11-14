@@ -2,10 +2,16 @@ package com.jonnyutah12.thaumcraftclassic.client;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.jonnyutah12.thaumcraftclassic.menus.ArcaneWorkbenchMenu;
+import com.jonnyutah12.thaumcraftclassic.menus.AlchemyFurnaceMenu;
+import com.jonnyutah12.thaumcraftclassic.menus.ArcaneBoreMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.DeconstructionTableMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.HandMirrorMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.MagicBoxMenu;
+import com.jonnyutah12.thaumcraftclassic.menus.PechMenu;
+import com.jonnyutah12.thaumcraftclassic.menus.ResearchTableMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.SpaMenu;
+import com.jonnyutah12.thaumcraftclassic.menus.ThaumatoriumMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.TrunkMenu;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -57,6 +63,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * dropped). A live check of the screen map needs a real client; the game-test
  * harness is a dedicated server and never sees the event. Rendered pixels are
  * not proved by anything in this repo's CI.</p>
+ *
+ * <p>TC-M7-04-m1 grew the table with the two device machines ({@code
+ * gui_alchemy_furnace} = original gui_id 9, {@code gui_arcane_bore} = gui_id
+ * 15), whose tiles gained {@code MenuProvider}s in that commit. The crucible
+ * is not in this table: the 1.7.10 crucible ships no GUI at all (no {@code
+ * GuiCrucible} in the reference {@code client/gui/}, and both proxy
+ * {@code getServerGuiElement}/{@code getClientGuiElement} switches return
+ * null for every crucible id), proved by {@code CrucibleGuiParityTest}.</p>
  */
 class MenuTypeScreenCoverageTest {
 
@@ -76,12 +90,37 @@ class MenuTypeScreenCoverageTest {
                 MagicBoxMenu.class, "gui_magic_box"));
         SCREENS.put(SpaScreen.class, new ScreenUnderTest("CatalogFurniture", "MENU_SPA",
                 SpaMenu.class, "gui_spa"));
+        SCREENS.put(ArcaneWorkbenchScreen.class, new ScreenUnderTest("CatalogArcaneWorkbench",
+                "MENU_ARCANE_WORKBENCH", ArcaneWorkbenchMenu.class, "gui_arcane_workbench"));
+        SCREENS.put(ThaumatoriumScreen.class, new ScreenUnderTest("CatalogThaumatorium",
+                "MENU_THAUMATORIUM", ThaumatoriumMenu.class, "gui_thaumatorium"));
+        SCREENS.put(ResearchTableScreen.class, new ScreenUnderTest("CatalogFurniture",
+                "MENU_RESEARCH_TABLE", ResearchTableMenu.class, "gui_research_table"));
+        // TC-M7-04-m1: the device machines (original gui ids 9 and 15).
+        SCREENS.put(AlchemyFurnaceScreen.class, new ScreenUnderTest("CatalogEssentiaStorage", "MENU_ALCHEMY_FURNACE",
+                AlchemyFurnaceMenu.class, "gui_alchemy_furnace"));
+        SCREENS.put(ArcaneBoreScreen.class, new ScreenUnderTest("CatalogDevices", "MENU_ARCANE_BORE",
+                ArcaneBoreMenu.class, "gui_arcane_bore"));
+        // TC-M7-04-m3-b (t_63e11e8c): PechScreen extends AbstractContainerScreen<PechMenu>
+        // directly, so it takes the strict contract this test enforces. The golem and
+        // research-note screens stay out of SCREENS: their superclass identity deviates
+        // (BD-49/BD-70, rows in docs/BEHAVIORAL_DEVIATIONS.md) and the strict
+        // everyScreenIsAContainerScreenForItsOwnMenu assertion is exactly where that
+        // deviation lands - their parity lives in GolemMenuGameTest / GolemGuiParityTest.
+        SCREENS.put(PechScreen.class, new ScreenUnderTest("CatalogPech", "GUI_PECH",
+                PechMenu.class, "gui_pech"));
 
         EXPECTED_HOLDERS.put("CatalogTrinketsLoot.GUI_TRUNK", "gui_trunk");
         EXPECTED_HOLDERS.put("CatalogTrinketsLoot.GUI_HAND_MIRROR", "gui_hand_mirror");
         EXPECTED_HOLDERS.put("CatalogFurniture.MENU_DECON_TABLE", "gui_decon_table");
         EXPECTED_HOLDERS.put("CatalogFurniture.MENU_MAGIC_BOX", "gui_magic_box");
         EXPECTED_HOLDERS.put("CatalogFurniture.MENU_SPA", "gui_spa");
+        EXPECTED_HOLDERS.put("CatalogArcaneWorkbench.MENU_ARCANE_WORKBENCH", "gui_arcane_workbench");
+        EXPECTED_HOLDERS.put("CatalogThaumatorium.MENU_THAUMATORIUM", "gui_thaumatorium");
+        EXPECTED_HOLDERS.put("CatalogFurniture.MENU_RESEARCH_TABLE", "gui_research_table");
+        EXPECTED_HOLDERS.put("CatalogEssentiaStorage.MENU_ALCHEMY_FURNACE", "gui_alchemy_furnace");
+        EXPECTED_HOLDERS.put("CatalogDevices.MENU_ARCANE_BORE", "gui_arcane_bore");
+        EXPECTED_HOLDERS.put("CatalogPech.GUI_PECH", "gui_pech");
     }
 
     private record ScreenUnderTest(String catalog, String holder, Class<?> menu, String id) {
@@ -134,6 +173,16 @@ class MenuTypeScreenCoverageTest {
         }
     }
 
+    @Test
+    void theBoreReadoutTextKeysAreShipped() throws Exception {
+        // GuiArcaneBore's six literals (the original hard-codes English; the
+        // port ships them as lang keys so the readout is translatable).
+        for (final String suffix : new String[] {"width", "speed", "other", "native", "fortune", "silk"}) {
+            final String key = "gui.thaumcraft.arcane_bore." + suffix;
+            assertTrue(langKeyIsShipped(key), key + " must ship (the bore readout rows)");
+        }
+    }
+
     // --------------------------------------------------- coverage level
 
     @Test
@@ -146,16 +195,29 @@ class MenuTypeScreenCoverageTest {
                     "a registered menu type with no screen registration: "
                             + expected.catalog() + "." + expected.holder());
         }
-        assertEquals(5, SCREENS.size(), "the five gui rows whose menus exist today");
+        assertEquals(11, SCREENS.size(), "the eleven gui rows whose menus have a screen on this tree: the five "
+                + "TC-M7-04-s rows, the workbench, the thaumatorium, the research table, the two device machines "
+                + "TC-M7-04-m1 lands (gui_alchemy_furnace = original gui_id 9, gui_arcane_bore = gui_id 15) and "
+                + "the pech trade window TC-M7-04-m3-b lands (gui_pech = original gui_id 1)");
     }
 
     @Test
-    void catalogSourcesDeclareExactlyTheFiveScreensMenus() throws Exception {
+    void catalogSourcesDeclareExactlyTheWiredScreensMenus() throws Exception {
         final Map<String, String> declared = new LinkedHashMap<>();
         collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogTrinketsLoot.java",
                 "CatalogTrinketsLoot", declared);
         collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogFurniture.java",
                 "CatalogFurniture", declared);
+        collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogArcaneWorkbench.java",
+                "CatalogArcaneWorkbench", declared);
+        collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogThaumatorium.java",
+                "CatalogThaumatorium", declared);
+        collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogEssentiaStorage.java",
+                "CatalogEssentiaStorage", declared);
+        collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogDevices.java",
+                "CatalogDevices", declared);
+        collectDeclaredMenuTypes("src/main/java/com/jonnyutah12/thaumcraftclassic/registration/catalog/CatalogPech.java",
+                "CatalogPech", declared);
         assertEquals(EXPECTED_HOLDERS, declared,
                 "the catalogs' MenuType declarations and this test's expectations must agree; a new menu type "
                         + "needs a screen and an entry here");
@@ -195,12 +257,105 @@ class MenuTypeScreenCoverageTest {
         // call handleInventoryButtonClick(containerId, 1).
         assertEquals(1, DeconstructionTableScreen.BUTTON_COLLECT_ASPECT);
         assertEquals(1, SpaScreen.BUTTON_TOGGLE_MIX);
-        for (final Class<?> screen : new Class<?>[] {DeconstructionTableScreen.class, SpaScreen.class}) {
+        // GuiPech.java:62 sends handleInventoryButtonClick(containerId, 0) - the dice is
+        // button 0, NOT the trunk/spa id 1 (run 418's audit of the WIP, kept in the landing).
+        assertEquals(0, PechMenu.DICE_BUTTON);
+        for (final Class<?> screen : new Class<?>[] {DeconstructionTableScreen.class, SpaScreen.class,
+                PechScreen.class}) {
             final String source = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/client/"
                     + screen.getSimpleName() + ".java");
             assertTrue(source.contains("handleInventoryButtonClick(this.menu.containerId,"),
                     screen.getSimpleName() + " must submit the original's menu button");
         }
+    }
+
+    // ---------------------------------------- TC-M7-04-m4: synced channels
+
+    @Test
+    void theDeconAspectStateTravelsInAMenuDataSlot() throws Exception {
+        // BD-17 closure: the 1.7.10 GUI read tableInventory.aspect off the tile;
+        // the port ships it as the aspect registry id + 1 in data slot 1 (0 = none).
+        assertEquals(0, DeconstructionTableMenu.DATA_BREAK_TIME, "the original's own slot stays slot 0");
+        assertEquals(1, DeconstructionTableMenu.DATA_ASPECT, "the aspect joins beside it");
+        assertEquals(0, DeconstructionTableMenu.encodeAspectIndex(null), "no aspect encodes as 0");
+        org.junit.jupiter.api.Assertions.assertNull(DeconstructionTableMenu.decodeAspectIndex(0),
+                "0 decodes back to no aspect");
+        org.junit.jupiter.api.Assertions.assertNull(DeconstructionTableMenu.decodeAspectIndex(1 << 20),
+                "an id the registry never served decodes to no aspect");
+        final String menu = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/menus/"
+                + "DeconstructionTableMenu.java");
+        assertTrue(menu.contains("return 2;") && menu.contains("addDataSlots(data)"),
+                "the menu must carry two data slots to the client");
+        assertTrue(menu.contains("table.aspect = decodeAspectIndex(value)"),
+                "the client landing point writes the sync into the tile the getter reads");
+        final String screen = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/client/"
+                + "DeconstructionTableScreen.java");
+        assertTrue(screen.contains("menu.getRevealedAspect()") && screen.contains("drawAspectTag"),
+                "the screen draws the aspect only from the synced getter (BD-17)");
+    }
+
+    @Test
+    void theSpaTankAndMixStateTravelInMenuDataSlots() throws Exception {
+        assertEquals(0, SpaMenu.DATA_FLUID_ID);
+        assertEquals(1, SpaMenu.DATA_FLUID_AMOUNT);
+        assertEquals(2, SpaMenu.DATA_CAPACITY, "the original 5000 mB tank scales the 48 px column");
+        assertEquals(3, SpaMenu.DATA_MIX);
+        final String menu = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/menus/SpaMenu.java");
+        assertTrue(menu.contains("return 4;") && menu.contains("addDataSlots(data)"),
+                "the spa menu must carry four data slots to the client");
+        assertTrue(menu.contains("spa.setTankFromSync") && menu.contains("spa.setMixFromSync"),
+                "the client landing point writes the sync into the tile the getters read");
+        final String screen = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/client/SpaScreen.java");
+        assertTrue(screen.contains("ContainerLayout.scaledFluidHeight")
+                        && screen.contains("ContainerLayout.fluidTop"),
+                "the fluid column must use the original's floor-scaled bottom-up fill");
+        assertTrue(screen.contains("menu.getMix()"),
+                "the 8x8 mix indicator must draw from the synced flag, on filled / off framed");
+        assertTrue(screen.contains("ContainerLayout.SPA_MIX_TIP_X")
+                        && screen.contains("ContainerLayout.SPA_TANK_TIP_X"),
+                "the original's two tooltip boxes must be the hover boxes");
+    }
+
+    @Test
+    void theMagicBoxPageIsAMenuRebindWithSyncedState() throws Exception {
+        assertEquals(2, MagicBoxMenu.BUTTON_PAGE_PREV, "button 1 stays the original sort");
+        assertEquals(3, MagicBoxMenu.BUTTON_PAGE_NEXT);
+        assertEquals(0, MagicBoxMenu.DATA_PAGE);
+        assertEquals(1, MagicBoxMenu.DATA_BOX_SLOTS,
+                "the client can't flood-fill the cluster itself, so the size is synced");
+        final String menu = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/menus/MagicBoxMenu.java");
+        assertTrue(menu.contains(".index = start + i"),
+                "the rebind rewrites the bound slots' box-slot indices (the original's clear-and-rebind)");
+        assertTrue(menu.contains("ContainerLayout.MAGIC_BOX_PAGE_SLOTS"),
+                "the page size is the original's 3 rows of 9");
+        assertTrue(menu.contains("ContainerLayout.clampPage"),
+                "the window clamps to the box's page range");
+        final String screen = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/client/MagicBoxScreen.java");
+        assertTrue(screen.contains("MagicBoxMenu.BUTTON_PAGE_PREV")
+                        && screen.contains("MagicBoxMenu.BUTTON_PAGE_NEXT"),
+                "the arrows submit the page buttons");
+        assertTrue(screen.contains("menu.getPageCount()") && screen.contains("menu.getCurrentPage()"),
+                "the counter is synced state, not a client guess");
+        assertEquals("1/3", MagicBoxScreen.pageLabel(0, 3).getString());
+        assertEquals("8/8", MagicBoxScreen.pageLabel(7, 8).getString());
+    }
+
+    @Test
+    void theTrunkStayControlIsDrawnClickedAndSynced() throws Exception {
+        assertEquals(1, TrunkMenu.BUTTON_TOGGLE_STAY, "the original stay button id");
+        assertEquals(0, TrunkMenu.DATA_STAY, "the stay flag ships in the menu's data");
+        final String menu = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/menus/TrunkMenu.java");
+        assertTrue(menu.contains("trunk.trunkStay()") && menu.contains("addDataSlots(data)"),
+                "the server reads the host and the flag syncs to the client");
+        final String screen = readSource("src/main/java/com/jonnyutah12/thaumcraftclassic/client/TrunkScreen.java");
+        assertTrue(screen.contains("menu.isStaying()"),
+                "the stay control draws from the synced flag");
+        assertTrue(screen.contains("TrunkMenu.BUTTON_TOGGLE_STAY"),
+                "the click submits the stay-toggle menu button");
+        assertTrue(TrunkScreen.inStayButtonBox(9, 10) && !TrunkScreen.inStayButtonBox(10, 0),
+                "the original's inclusive row-10 edge, verbatim");
+        assertTrue(langKeyIsShipped(TrunkScreen.STAY_ON_KEY) && langKeyIsShipped(TrunkScreen.STAY_OFF_KEY),
+                "the two mode texts ship in en_us.json");
     }
 
     // ---------------------------------------------------- harness helpers

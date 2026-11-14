@@ -57,6 +57,9 @@ import java.util.List;
  *       leaves the announcements untouched (the original's
  *       {@code world.field_72995_K} gate); a seeded roll of each bag table must
  *       resolve to registered items.</li>
+ *   <li>{@link #trunkStayButtonFlipsTheSyncedFlag}: the stay-toggle button
+ *       flips the {@link TrunkHost} seam's follow mode and the flag reaches
+ *       the menu's data slot (TC-M7-04-m4, BD-17 closure).</li>
  * </ul>
  */
 @GameTestHolder(ThaumcraftClassic.MOD_ID)
@@ -232,5 +235,98 @@ public final class CatalogTrinketsLootGameTest {
                             + " of 25 seeded rolls");
         }
         helper.succeed();
+    }
+
+    /**
+     * TC-M7-04-m4: the trunk stay toggle. The trunk entity itself is
+     * TC-M6-06's, so this runs against a live {@link TrunkHost} stand-in in the
+     * test level: the menu's data slot exposes the host's stay flag, the
+     * original button 1 flips it through the host, and the flag the
+     * {@code TrunkScreen} reads follows. (The client-side landing of that data
+     * slot is the identical {@code ContainerData#set} shape the furniture
+     * game-tests prove write-through on three sibling menus.)
+     */
+    @GameTest(template = "empty")
+    public static void trunkStayButtonFlipsTheSyncedFlag(final GameTestHelper helper) {
+        final var entity = new net.minecraft.world.entity.item.ItemEntity(
+                helper.getLevel(), 0.5, 1.5, 0.5, ItemStack.EMPTY);
+        final FakeTrunkHost trunk = new FakeTrunkHost(entity);
+        final var player = helper.makeMockPlayer(GameType.SURVIVAL);
+        final com.jonnyutah12.thaumcraftclassic.menus.TrunkMenu menu =
+                new com.jonnyutah12.thaumcraftclassic.menus.TrunkMenu(103, player.getInventory(), trunk);
+
+        helper.assertTrue(menu.slots.size() == 3 * 9 + 36,
+                "the trunk menu is 3 rows of 9 plus the player inventory, got " + menu.slots.size());
+        helper.assertTrue(trunk.open, "opening marks the trunk open (original setOpen)");
+        helper.assertTrue(!menu.isStaying()
+                        && menu.containerData().get(com.jonnyutah12.thaumcraftclassic.menus.TrunkMenu.DATA_STAY) == 0,
+                "a following trunk reads 0 in its stay data slot");
+
+        helper.assertTrue(menu.clickMenuButton(player,
+                        com.jonnyutah12.thaumcraftclassic.menus.TrunkMenu.BUTTON_TOGGLE_STAY),
+                "the stay-toggle button must be answered");
+        helper.assertTrue(trunk.stay, "the original button 1 flips the host's follow mode");
+        helper.assertTrue(menu.isStaying()
+                        && menu.containerData().get(com.jonnyutah12.thaumcraftclassic.menus.TrunkMenu.DATA_STAY) == 1,
+                "the data slot the screen draws from must follow the host");
+
+        menu.removed(player);
+        helper.assertTrue(!trunk.open, "closing marks the trunk closed");
+        helper.succeed();
+    }
+
+    /** A live stand-in for TC-M6-06's {@code EntityTravelingTrunk} (the {@link TrunkHost} seam). */
+    private static final class FakeTrunkHost implements TrunkHost {
+        private final net.minecraft.world.entity.Entity entity;
+        private final net.minecraft.world.SimpleContainer inventory =
+                new net.minecraft.world.SimpleContainer(27);
+        private boolean stay;
+        private boolean open;
+
+        FakeTrunkHost(final net.minecraft.world.entity.Entity entity) {
+            this.entity = entity;
+        }
+
+        @Override
+        public net.minecraft.world.entity.Entity asEntity() {
+            return this.entity;
+        }
+
+        @Override
+        public void setTrunkOwner(final String owner) {
+        }
+
+        @Override
+        public void setTrunkUpgrade(final byte upgrade) {
+        }
+
+        @Override
+        public void setTrunkStoredInventory(final net.minecraft.world.item.component.ItemContainerContents contents) {
+        }
+
+        @Override
+        public net.minecraft.world.Container trunkInventory() {
+            return this.inventory;
+        }
+
+        @Override
+        public int trunkRows() {
+            return 3;
+        }
+
+        @Override
+        public void setTrunkOpen(final boolean open) {
+            this.open = open;
+        }
+
+        @Override
+        public void toggleTrunkStay() {
+            this.stay = !this.stay;
+        }
+
+        @Override
+        public boolean trunkStay() {
+            return this.stay;
+        }
     }
 }

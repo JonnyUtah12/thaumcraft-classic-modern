@@ -15,6 +15,7 @@ import com.jonnyutah12.thaumcraftclassic.items.ItemArcaneDoor;
 import com.jonnyutah12.thaumcraftclassic.items.ItemKey;
 import com.jonnyutah12.thaumcraftclassic.menus.DeconstructionTableMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.MagicBoxMenu;
+import com.jonnyutah12.thaumcraftclassic.menus.ResearchTableMenu;
 import com.jonnyutah12.thaumcraftclassic.menus.SpaMenu;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileArcaneDoor;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileBanner;
@@ -26,6 +27,7 @@ import com.jonnyutah12.thaumcraftclassic.tiles.TileMagicBox;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileMirror;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileMirrorEssentia;
 import com.jonnyutah12.thaumcraftclassic.tiles.TilePedestal;
+import com.jonnyutah12.thaumcraftclassic.tiles.TileResearchTable;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileSpa;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileTable;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileWandPedestal;
@@ -177,6 +179,18 @@ public final class CatalogFurniture {
             BLOCK_ENTITY_TYPES.register("tilewardingstonefence",
                     () -> BlockEntityType.Builder.of(TileWardingStoneFence::new, blockById("blockairy")).build(null));
 
+    /**
+     * TC-M7-04-m2b: the research table's tile (the original's
+     * {@code TileResearchTable}, whose name is this id). Hosted on
+     * {@code blockTable} variants 2-5 — the original's direction-encoded
+     * research-table bases — through {@link #wireDeviceTiles()}, which is what
+     * made those variants "hostless" a {@code DeviceTileFactory} miss before
+     * this card.
+     */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TileResearchTable>> TILE_RESEARCH_TABLE =
+            BLOCK_ENTITY_TYPES.register("tileresearchtable",
+                    () -> BlockEntityType.Builder.of(TileResearchTable::new, BLOCK_TABLE.get()).build(null));
+
     // --- menus (gui rows) --------------------------------------------------------
 
     public static final DeferredHolder<MenuType<?>, MenuType<DeconstructionTableMenu>> MENU_DECON_TABLE =
@@ -194,6 +208,18 @@ public final class CatalogFurniture {
                     (final int windowId, final net.minecraft.world.entity.player.Inventory inv,
                             final net.minecraft.network.RegistryFriendlyByteBuf buf) -> new SpaMenu(windowId, inv,
                                     (TileSpa) inv.player.level().getBlockEntity(buf.readBlockPos()))));
+
+    /**
+     * TC-M7-04-m2b: {@code gui_research_table} — named after the csv row it
+     * closes (original gui_id 10). The client-side factory reads the block pos,
+     * the same wire shape as the four menu types above; the original sent the
+     * same three ints to {@code ContainerResearchTable} in its {@code GuiOpenEvent}.
+     */
+    public static final DeferredHolder<MenuType<?>, MenuType<ResearchTableMenu>> MENU_RESEARCH_TABLE =
+            MENUS.register("gui_research_table", () -> IMenuTypeExtension.create(
+                    (final int windowId, final net.minecraft.world.entity.player.Inventory inv,
+                            final net.minecraft.network.RegistryFriendlyByteBuf buf) -> new ResearchTableMenu(windowId, inv,
+                                    (TileResearchTable) inv.player.level().getBlockEntity(buf.readBlockPos()))));
 
     // --- entity ------------------------------------------------------------------
 
@@ -234,6 +260,13 @@ public final class CatalogFurniture {
         // Own multi-variant block: table family.
         DeviceTileFactory.register(BLOCK_TABLE.get(), 0, TileTable::new);
         DeviceTileFactory.register(BLOCK_TABLE.get(), 1, TileTable::new);
+        // TC-M7-04-m2b: the research table's four direction-encoded bases (the
+        // original's blockTable metas 2-5 — the research card's BlockTable comment
+        // names them and left this line to the tile's own card). Variants 6-9 are
+        // the tops, which the base owns; a top forwards its right-click here.
+        for (int v = 2; v <= 5; v++) {
+            DeviceTileFactory.register(BLOCK_TABLE.get(), v, TileResearchTable::new);
+        }
         for (int v = 6; v <= 13; v++) {
             DeviceTileFactory.register(BLOCK_TABLE.get(), v, TileTable::new);
         }

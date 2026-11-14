@@ -8,7 +8,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -18,7 +17,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 
 /**
- * The Mind Spider — {@code thaumcraft:mindspider} (content-mapping row 322,
+ * The Mind Spider — {@code thaumcraft:mindspider} (content-mapping line 322,
  * mod_index 24). Original:
  * {@code thaumcraft.common.entities.monster.EntityMindSpider}, 115 lines,
  * {@code extends EntitySpider}.
@@ -44,8 +43,8 @@ import net.minecraft.world.level.Level;
  * <p>Every figure is on {@link MindSpiderAiLogic}. The goal reconciliation
  * (parent slots transcribed from 1.21.1 {@code Spider.java:54-65} minus the
  * post-1.7.10 armadillo-avoidance goal) is documented there and asserted by
- * {@code PechMobGameTest}; the 1.7.10 vanilla {@code EntitySpider} decompile is
- * not vendored, so no parent slot is invented.</p>
+ * {@code MindSpiderMobGameTest}; the 1.7.10 vanilla {@code EntitySpider}
+ * decompile is not vendored, so no parent slot is invented.</p>
  */
 public class EntityMindSpider extends Spider {
 
@@ -74,7 +73,7 @@ public class EntityMindSpider extends Spider {
         // EntitySpider decompile is not in reference/, so every other goal of
         // the 1.21.1 parent is kept as the transcription of the 1.7.10 set
         // (the c2 convention) and the removal is asserted by
-        // PechMobGameTest.mindspidergoalsetisthespiderparentsminusthearmadillogoal.
+        // MindSpiderMobGameTest.goalSetIsTheSpiderParentsMinusTheArmadilloGoal.
         this.goalSelector.removeAllGoals(g -> g instanceof AvoidEntityGoal<?>);
     }
 
@@ -84,13 +83,15 @@ public class EntityMindSpider extends Spider {
      * {@code func_70105_a(0.3F, 0.3F)} ({@code :18}); the 1.7.10 client hook
      * {@code spiderScaleAmount() = 0.3F} ({@code :67-70}) is a RENDER scale and
      * belongs to the renderer (TC-M7-03-s), so {@code generic.scale} stays 1.0
-     * here and the box is not double-shrunk.
+     * here and the box is not double-shrunk. The tracking figure is handed over
+     * in CHUNKS because 1.21.1's builder measures it in chunks (64 blocks = 4).
      */
     public static EntityType<EntityMindSpider> buildType(final MobCategory category) {
         return EntityType.Builder.of(EntityMindSpider::new, category)
                 .sized(MindSpiderAiLogic.WIDTH, MindSpiderAiLogic.HEIGHT)
-                .clientTrackingRange(MindSpiderAiLogic.TRACK_RANGE_BLOCKS)
+                .clientTrackingRange(MindSpiderAiLogic.TRACK_RANGE_CHUNKS)   // 64 blocks = 4 chunks
                 .updateInterval(MindSpiderAiLogic.UPDATE_INTERVAL)
+                .setShouldReceiveVelocityUpdates(MindSpiderAiLogic.VELOCITY_UPDATES)
                 .build("mindspider");
     }
 
