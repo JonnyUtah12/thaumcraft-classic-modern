@@ -1,3 +1,4 @@
+head,head_sha,old_id,new_id,card,canonical,system
 origin/wt/m7-fx-wisps,535d81680aaabe9030d2aa035c7d55de6c1828df,BD-17,BD-46,t_ed46eb80,yes,FX render substrate (TC-M7-02-c-s)
 origin/wt/m7-fx-wisps,535d81680aaabe9030d2aa035c7d55de6c1828df,BD-18,BD-47,t_ed46eb80,yes,Dig / infusion crumb particles (TC-M7-02-c-s)
 origin/wt/m7-fx-wisps,535d81680aaabe9030d2aa035c7d55de6c1828df,BD-19,BD-48,t_ed46eb80,yes,Zap / wisp-zap bolt rendering (TC-M7-02-c-s)
