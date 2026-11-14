@@ -3,6 +3,7 @@ package com.jonnyutah12.thaumcraftclassic.gametest;
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityPech;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.PechAiLogic;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.PechTradeChestPool;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.PechTradeInventory;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.PechTradeRoll;
 import com.jonnyutah12.thaumcraftclassic.menus.PechMenu;
@@ -119,7 +120,8 @@ public final class PechTradeRollGameTest {
         final RandomSource clone = RandomSource.create(seed);
         final boolean scam = PechTradeRoll.scams(clone.nextInt(100), value);                   // :92
         final int jittered = PechTradeRoll.jitteredValue(value, clone);                        // :98-102
-        final PechTradeRoll.Plan expected = PechTradeRoll.plan(jittered, clone, live, pack);   // :106-157
+        final PechTradeRoll.Plan expected =
+                PechTradeRoll.plan(jittered, clone, live, menu.chestPool(), pack);             // :106-155
 
         level.random.setSeed(seed);
         helper.assertTrue(menu.clickMenuButton(player, PechMenu.DICE_BUTTON),
@@ -159,6 +161,12 @@ public final class PechTradeRollGameTest {
                 // :118-120 - the pack pays ONE of the slot's item
                 key = builtIn(pech.lootSlots()[fromPack.packSlot()]);
                 count = 1;
+            } else if (outcome instanceof PechTradeRoll.FromChest fromChest) {
+                // :136-139 - the pool pays the row's stack (one item, its meta)
+                final ItemStack payout =
+                        PechTradeChestPool.resolve(fromChest.row(), level.registryAccess());
+                key = builtIn(payout);
+                count = payout.getCount();
             } else {
                 final ItemStack payout = PechTradeInventory.resolve(
                         ((PechTradeRoll.FromTable) outcome).row(), level.registryAccess());
@@ -472,5 +480,182 @@ public final class PechTradeRollGameTest {
             }
         }
         throw new AssertionError("type " + type + " ships no live book row for " + enchantmentPath);
+    }
+
+    /**
+     * BD-80 (TC-M7-04-m3-b-c): the {@code dungeonChest} pool as shipped. The 22
+     * rows 1.7.10 registers into the hook ({@code Config.java:615,625,637}), the
+     * branch's own acceptance filter ({@code :134}), the registry gate on ids this
+     * build does not have, and the row metas on the port's component carrier. The
+     * last claim is the one that justifies the pool at all: rows the branch can
+     * pay exist that no pech trade table carries, so the dice roll that pays them
+     * is not a second route to the same loot.
+     */
+    @GameTest(template = "empty")
+    public static void pechChestPoolShipsTheTranscribedRowsAndGatesTheUnregisteredOnes(final GameTestHelper helper) {
+        final Level level = helper.getLevel();
+        helper.assertTrue(PechTradeChestPool.pool().size() == 22,
+                "3 common + 5 uncommon + 14 rare = 22 registrations (Config.java:615,625,637), got "
+                        + PechTradeChestPool.pool().size());
+        helper.assertTrue(PechTradeChestPool.payable().size() == 14,
+                "the branch's filter admits the rareLoot fourteen (:134 weight > 5 || max group > 1), got "
+                        + PechTradeChestPool.payable().size());
+        for (final PechTradeChestPool.ChestRow row : PechTradeChestPool.pool()) {
+            helper.assertTrue(row.minChances() == 1, "every registration's second argument is 1 (addItem, :615,625,637)");
+            helper.assertTrue(row.item().getNamespace().equals("thaumcraft"),
+                    "the pool names 1.7.10's ids only, no invented content: " + row.item());
+        }
+
+        final List<PechTradeChestPool.ChestRow> live = PechTradeChestPool.liveRows(level.registryAccess());
+        final List<String> gated = new ArrayList<>();
+        for (final PechTradeChestPool.ChestRow row : PechTradeChestPool.pool()) {
+            final boolean registered = net.minecraft.core.registries.BuiltInRegistries.ITEM.containsKey(row.item());
+            helper.assertTrue(live.contains(row) == registered,
+                    "the pool's rows are gated on the live registry alone: " + row.item());
+            if (!registered) {
+                gated.add(row.item().getPath() + "#" + row.meta());
+            }
+        }
+        helper.assertTrue(!gated.isEmpty(), "the gate has work to do — the pool names ids this build lacks");
+
+        // every live row resolves to a real stack: one item (ChestGenHooks.addItem
+        // isStack=false, :403-412) at the row's meta on the port's carrier.
+        for (final PechTradeChestPool.ChestRow row : live) {
+            final ItemStack payout = PechTradeChestPool.resolve(row, level.registryAccess());
+            helper.assertTrue(!payout.isEmpty(), "the live row " + row.item() + " resolves");
+            helper.assertTrue(payout.getCount() == 1, "one item per drawn row (:136-137)");
+            // the port's metadata convention (PechTradeInventory.applyMeta): every
+            // non-block item carries its meta on thaumcraft:item_meta; every pool row
+            // is an item, not a block family, so the carrier is the whole story.
+            helper.assertTrue(payout.getOrDefault(
+                            com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents.ITEM_META.get(), 0)
+                            .intValue() == row.meta(),
+                    "the drawn row's meta rides thaumcraft:item_meta: " + row.item() + "#" + row.meta());
+        }
+
+        // the discriminator: rows the branch pays that the pech's trade tables do not carry
+        final List<PechTradeChestPool.ChestRow> payableLive = live.stream()
+                .filter(PechTradeChestPool::payableByTheBranch).toList();
+        helper.assertTrue(!payableLive.isEmpty(), "the branch pays real registered content");
+        final List<String> chestOnly = List.of("itemlootbag#2", "itembaubleblanks#3", "itemthaumonomicon#0");
+        for (final String key : chestOnly) {
+            final PechTradeChestPool.ChestRow row = payableLive.stream()
+                    .filter(r -> (r.item().getPath() + "#" + r.meta()).equals(key)).findFirst().orElse(null);
+            helper.assertTrue(row != null, key + " is a payable, registered pool row (Config.java:637)");
+            for (final int type : List.of(PechAiLogic.TYPE_NORMAL, PechAiLogic.TYPE_WAND, PechAiLogic.TYPE_BOW)) {
+                helper.assertTrue(PechTradeInventory.liveRows(type, level.registryAccess()).stream()
+                                .noneMatch(trade -> trade.item().equals(row.item())),
+                        key + " is in NO pech trade table (type " + type + "): the chest branch is the only"
+                                + " route to it, so the roll is not a second route to the table's loot (BD-80)");
+            }
+        }
+        LOGGER.info("pech chest pool: rows={} payable={} live={} gated={} chest-only-rows={} ids-in-no-table={}",
+                PechTradeChestPool.pool().size(), PechTradeChestPool.payable().size(), live.size(), gated, chestOnly);
+        helper.succeed();
+    }
+
+    /**
+     * BD-80: the dice roll pays the pool. Seeds are swept for a stream whose
+     * replay draws the branch ({@code am >= 4 && nextBoolean()}, {@code :128}) and
+     * lands on a row no trade table carries; the seeded menu then runs that
+     * stream and the window is compared with the replay, item for item.
+     */
+    @GameTest(template = "empty")
+    public static void pechChestBranchPaysThePoolIntoTheWindow(final GameTestHelper helper) {
+        final EntityPech pech = tamedPech(helper, PechAiLogic.TYPE_WAND);
+        final int value = offerValue(helper);
+        final List<PechTradeInventory.TradeRow> live =
+                PechTradeInventory.liveRows(PechAiLogic.TYPE_WAND, helper.getLevel().registryAccess());
+        final List<PechTradeChestPool.ChestRow> chest =
+                PechTradeChestPool.liveRows(helper.getLevel().registryAccess());
+
+        int seed = -1;
+        for (int s = 0; s < 8192 && seed < 0; s++) {
+            final RandomSource clone = RandomSource.create(s);
+            PechTradeRoll.scams(clone.nextInt(100), value);                                   // :92
+            final int jittered = PechTradeRoll.jitteredValue(value, clone);                   // :98-102
+            final PechTradeRoll.Plan plan = PechTradeRoll.plan(jittered, clone, live, chest, new int[0]);
+            for (final PechTradeRoll.Outcome outcome : plan.outcomes()) {
+                if (outcome instanceof PechTradeRoll.FromChest fromChest
+                        && fromChest.row().item().getPath().equals("itemlootbag")
+                        && fromChest.row().meta() == 2) {
+                    seed = s;                                                                 // the Rare Treasure: no table carries it
+                    break;
+                }
+            }
+        }
+        helper.assertTrue(seed >= 0, "a seeded stream draws the branch and pays a pool row the table lacks");
+
+        final Roll roll = rollWithSeed(helper, pech, seed);
+        final Map<String, Integer> shown = tally(roll.grid());
+        final Map<String, Integer> wanted = expectedTally(roll.expected(), pech, helper.getLevel());
+        LOGGER.info("pech chest-branch roll: seed={} payouts={} chest={} grid={} expected={}",
+                seed, roll.expected().outcomes().size(), roll.expected().chestPayouts(), shown, wanted);
+        helper.assertTrue(roll.expected().chestPayouts() >= 1, "the replay draws the chest branch");
+        helper.assertTrue(shown.equals(wanted),
+                "the window carries the pool row the seeded stream drew, got " + shown + " want " + wanted);
+        helper.assertTrue(shown.containsKey("itemlootbag"),
+                "the window shows the pool's Rare Treasure, got " + shown);
+        helper.assertTrue(roll.menu().getItems().get(0).getCount() == OFFER_COUNT - 1,
+                "the click consumes one offer item (:156)");
+        helper.succeed();
+    }
+
+    /**
+     * BD-80 measured: the pool draw over seeded streams. 1.7.10 draws the whole
+     * pool uniformly and throws away what the branch's filter rejects
+     * ({@code :131-134}), so among the rows that survive — the live payable
+     * rows — every one is paid with the same probability, per-row (path + meta),
+     * and no unpayable or unregistered row is ever paid.
+     */
+    @GameTest(template = "empty")
+    public static void pechChestPoolPaysTheLiveRowsUniformly(final GameTestHelper helper) {
+        final Level level = helper.getLevel();
+        final List<PechTradeChestPool.ChestRow> live = PechTradeChestPool.liveRows(level.registryAccess());
+        final List<PechTradeChestPool.ChestRow> payableLive =
+                live.stream().filter(PechTradeChestPool::payableByTheBranch).toList();
+        final List<PechTradeInventory.TradeRow> table =
+                PechTradeInventory.liveRows(PechAiLogic.TYPE_WAND, level.registryAccess());
+        final int value = offerValue(helper);
+        final int rolls = 4000;
+
+        final Map<String, Integer> paid = new LinkedHashMap<>();
+        int chestPayouts = 0;
+        int tablePayouts = 0;
+        for (int s = 0; s < rolls; s++) {
+            final RandomSource clone = RandomSource.create(s);
+            PechTradeRoll.scams(clone.nextInt(100), value);                                   // :92
+            final int jittered = PechTradeRoll.jitteredValue(value, clone);                   // :98-102
+            final PechTradeRoll.Plan plan = PechTradeRoll.plan(jittered, clone, table, live, new int[0]);
+            chestPayouts += plan.chestPayouts();
+            tablePayouts += plan.tablePayouts();
+            for (final PechTradeRoll.Outcome outcome : plan.outcomes()) {
+                if (outcome instanceof PechTradeRoll.FromChest fromChest) {
+                    final PechTradeChestPool.ChestRow row = fromChest.row();
+                    paid.merge(row.item().getPath() + "#" + row.meta(), 1, Integer::sum);
+                    helper.assertTrue(payableLive.contains(row),
+                            "the sampler never pays a row the branch rejects or the registry lacks: " + row);
+                }
+            }
+        }
+        helper.assertTrue(chestPayouts > 0, "the branch fires over " + rolls + " seeded rolls");
+        final double mean = chestPayouts / (double) payableLive.size();
+        final double sigma = Math.sqrt(chestPayouts * (1.0 / payableLive.size()) * (1.0 - 1.0 / payableLive.size()));
+        for (final PechTradeChestPool.ChestRow row : payableLive) {
+            final int count = paid.getOrDefault(row.item().getPath() + "#" + row.meta(), 0);
+            helper.assertTrue(count > 0,
+                    "the live payable row " + row.item() + "#" + row.meta() + " is paid at least once over "
+                            + chestPayouts + " chest payouts");
+            helper.assertTrue(Math.abs(count - mean) <= 6.0 * sigma,
+                    "the pool draw is uniform per row: " + row.item() + "#" + row.meta() + " paid " + count
+                            + ", mean " + mean + ", 6 sigma " + (6.0 * sigma));
+        }
+        helper.assertTrue(paid.size() == payableLive.size(),
+                "exactly the live payable rows paid, got " + paid.size() + " of " + payableLive.size());
+        LOGGER.info("pech chest pool distribution over {} rolls: chest payouts={} table payouts={}"
+                        + " rows={} mean/row={} 6sigma={} paid={}",
+                rolls, chestPayouts, tablePayouts, payableLive.size(), String.format("%.1f", mean),
+                String.format("%.1f", 6.0 * sigma), paid);
+        helper.succeed();
     }
 }
