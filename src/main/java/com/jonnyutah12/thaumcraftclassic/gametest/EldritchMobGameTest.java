@@ -44,6 +44,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -81,6 +86,15 @@ public final class EldritchMobGameTest {
 
     private EldritchMobGameTest() {
     }
+
+    /**
+     * 21.1.259 {@code ExperienceOrb.getExperienceValue} ({@code :326-340}) —
+     * the splitter's table, used by the death-XP probe's invariant (the 1.7.10
+     * side of that getter is a Minecraft class and is not in {@code
+     * reference/}, so its buckets are not measurable here).
+     */
+    private static final List<Integer> PLATFORM_XP_TABLE =
+            List.of(2477, 1237, 617, 307, 149, 73, 37, 17, 7, 3, 1);
 
     // ------------------------------------------------------------------ fixtures
 
@@ -233,6 +247,7 @@ public final class EldritchMobGameTest {
         registered(helper, "eldritchorb");
         registered(helper, "cultistcleric");
         registered(helper, "cultistknight");
+        helper.succeed();
     }
 
     // ------------------------------------------------------------- goal sets
@@ -272,7 +287,9 @@ public final class EldritchMobGameTest {
         helper.assertTrue(contains(targets, NearestAttackableTargetGoal.class),
                 ":63/:64 — the player and cultist target goals are missing. " + describe(targets));
         helper.assertTrue(targets.size() == 3,
-                ":62/:63/:64 declare three target goals, got " + targets.size() + ". " + describe(targets));
+                ":62/:63/:64 declare three target goals, got " + targets.size() + ". "
+                        + describe(targets));
+        helper.succeed();
     }
 
     /**
@@ -318,6 +335,7 @@ public final class EldritchMobGameTest {
                 ":31-38 — canPickUpLoot must be off (the pick-up strip's twin)");
         helper.assertTrue(Math.abs(mob.getAttributeBaseValue(Attributes.SPAWN_REINFORCEMENTS_CHANCE)) < 1.0E-9,
                 ":24 — the reinforcement attribute is pinned to 0.0 (BD-120)");
+        helper.succeed();
     }
 
     // ------------------------------------------------------------ attributes
@@ -352,54 +370,130 @@ public final class EldritchMobGameTest {
         helper.assertTrue(EldritchGuardianAiLogic.IS_BOSS,
                 ":169-171 — isAI() = true is pinned as the flag (no 1.21.1 seam)");
         helper.assertTrue(Math.abs(mob.getEyeHeight()) > 0.0F, "the eye height is live on the mob");
+        helper.succeed();
     }
 
     // ------------------------------------------------- heal, realm and undying
 
     /**
-     * {@code :214-216} — the spawn heal is half the max (25 of 50), applied on
-     * the mob's first tick, and {@code :177-183} regenerates only inside the
-     * Outer Lands, so on the overworld pad the health must stay at the
-     * spawn-heal value across two full regen cadences (BD-117; the realm leg is
-     * the realm lane's pad).
+     * {@code :208-217} — {@code onInitialSpawn} heals half the max ({@code
+     * (int) getMaxHealth / 2} = 25 of 50, {@code :211-213}) INSIDE the realm
+     * gate ({@code field_73011_w.field_76574_g == Config.dimensionOuterId}), and
+     * {@code :219-227} regenerates under the same gate. So the full spawn pass
+     * ({@code finalizeSpawn}, the path that applies the attributes) on the
+     * OVERWORLD pad leaves the guardian at max health, {@link
+     * EntityEldritchGuardian#healAtSpawn()} outside the realm writes nothing,
+     * and the health may only fall across two regen cadences. The +25 heal is
+     * an Outer-Lands leg — the realm lane's pad (BD-117); the 25 is pinned on
+     * the world-free seam from the original's own arithmetic.
      */
     @GameTest(template = "empty", setupTicks = 2L)
-    public static void theGuardianSpawnsAtHalfHealthAndDoesNotRegenOutsideTheRealm(
+    public static void theGuardianTakesNoSpawnHealOutsideTheRealmAndNeverRegens(
             final GameTestHelper helper) {
+        final ServerLevel level = helper.getLevel();
         final EntityEldritchGuardian mob = guardian(helper, 0, 0);
-        helper.runAfterDelay(2, () -> {
-            helper.assertTrue(Math.abs(mob.getHealth() - 25.0F) < 1.0E-3,
-                    ":214-216 — the spawn heal is (int) maxHealth / 2 = 25, got " + mob.getHealth());
-            helper.runAfterDelay(60, () -> {
-                helper.assertTrue(Math.abs(mob.getHealth() - 25.0F) < 1.0E-3,
-                        ":177-183 — outside the Outer Lands the guardian must not regenerate; after "
-                                + "62 ticks it reads " + mob.getHealth());
-                helper.succeed();
-            });
+        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()),
+                MobSpawnType.NATURAL, null);
+        helper.assertTrue(Math.abs(mob.getHealth() - 50.0F) < 1.0E-3,
+                ":208-217 — the heal is inside the realm gate, so the full spawn pass on the "
+                        + "overworld pad leaves max health (50), got " + mob.getHealth());
+        mob.setHealth(10.0F);
+        mob.healAtSpawn();
+        helper.assertTrue(Math.abs(mob.getHealth() - 10.0F) < 1.0E-3,
+                ":208-213 — healAtSpawn() outside the Outer Lands heals nothing, got " + mob.getHealth());
+        helper.assertTrue(EldritchGuardianAiLogic.spawnHeal(50.0) == 25,
+                ":211-213 — the realm-side heal is (int) maxHealth / 2 = 25 of 50, got "
+                        + EldritchGuardianAiLogic.spawnHeal(50.0));
+        final float atSpawn = mob.getHealth();
+        mob.clearFire();
+        helper.runAfterDelay(62, () -> {
+            helper.assertTrue(mob.getHealth() <= atSpawn,
+                    ":219-227 — outside the Outer Lands the guardian must not regenerate; it read "
+                            + atSpawn + " and after 62 ticks reads " + mob.getHealth());
+            helper.succeed();
         });
     }
 
     /**
-     * {@code :155-157} + {@code :303-305} + {@code :159-161} — the air is
-     * clamped above zero (the undying seam that pairs with the health guard,
-     * BD-117) and fire takes hold: the guardian is not fire-immune on 1.7.10 or
-     * 1.21.1.
+     * {@code :155-157} — {@code func_70627_aG()} returns 500, so the breath is
+     * 500 TICKS, not infinite: there is no air clamp anywhere in the class
+     * (the {@code :303-305} pair the first run pinned is the {@code
+     * setHealth(getMaxHealth())} at {@code :304} and {@code setAirSupply(0)} at
+     * {@code :305}, an initial-state write, not a per-tick clamp). On 21.1.259
+     * the platform drains 1/tick with the eye in water ({@code
+     * LivingEntity.java:436}, {@code decreaseAirSupply} :584-592 = {@code air -
+     * 1} with no OXYGEN_BONUS attribute) and restores +4/tick out of it ({@code
+     * :455-457}, {@code increaseAirSupply} :596-597 = {@code min(air + 4, max)})
+     * — that restore is exactly the -20 → -4 the first run measured — and the
+     * eye-in-water run reaches the drown trigger at -20 ({@code :437-448},
+     * {@code hurt(drown(), 2.0F)}) on a 500-breath guardian. {@code :92-94} —
+     * {@code func_98052_bS()} returns false, so fire takes hold: the type flag
+     * is false and an ignite survives on the dry pad.
      */
-    @GameTest(template = "empty", setupTicks = 2L)
-    public static void theGuardianNeverDrownsAndAlwaysBurns(final GameTestHelper helper) {
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void theGuardianBreathesForFiveHundredTicksAndBurns(final GameTestHelper helper) {
         final EntityEldritchGuardian mob = guardian(helper, 0, 0);
-        mob.setAirSupply(-20);
+        helper.assertTrue(mob.getMaxAirSupply() == 500,
+                ":155-157 — func_70627_aG() = 500 is the whole breath, got " + mob.getMaxAirSupply());
+        helper.assertTrue(mob.getType().fireImmune() == false,
+                ":92-94 — func_98052_bS() = false: the registered type carries no fire immunity");
         // 1.21.1's seam for 1.7.10's func_70015_d(seconds) is NeoForge's
         // Entity#igniteForSeconds (the same seam the guardian's own hit uses at
         // :139); the read stays getRemainingFireTicks.
+        mob.setAirSupply(-20);
         mob.igniteForSeconds(10.0F);
         helper.runAfterDelay(4, () -> {
-            helper.assertTrue(mob.getAirSupply() >= 1,
-                    ":303-305 — the air supply must stay above zero, got " + mob.getAirSupply());
+            helper.assertTrue(mob.getAirSupply() == -20 + 16,
+                    "LivingEntity:455-457/596-597 — out of water the air walks back at +4/tick with no "
+                            + "clamp above zero (the -20 → -4 the first run measured), got "
+                            + mob.getAirSupply());
             helper.assertTrue(mob.getRemainingFireTicks() > 0,
-                    ":159-161 — the guardian burns (no immunity on either engine), fire ticks "
-                            + mob.getRemainingFireTicks());
-            helper.succeed();
+                    ":92-94 — the guardian burns (no immunity on the type, and the fire survives on "
+                            + "the dry pad), fire ticks " + mob.getRemainingFireTicks());
+
+            // The drain legs: a 3 x 5 x 3 water cube over the mob's cell (the
+            // FloatGoal of :55 drifts the mob a block or two, so the column is
+            // wider than the entity box; the pad has no floor, so the probe
+            // lays its own water and takes it back down).
+            final BlockPos cell = mob.blockPosition();
+            for (int dy = -1; dy <= 3; dy++) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    for (int dz = -1; dz <= 1; dz++) {
+                        helper.setBlock(cell.offset(dx, dy, dz), Blocks.WATER.defaultBlockState());
+                    }
+                }
+            }
+            mob.setAirSupply(mob.getMaxAirSupply());
+            helper.runAfterDelay(10, () -> {
+                final boolean eyeInWater = mob.isEyeInFluid(net.minecraft.tags.FluidTags.WATER);
+                helper.assertTrue(mob.getAirSupply() == 500 - 10,
+                        ":155-157 — with the eye in water the air drains 1/tick (LivingEntity:436/584), "
+                                + "so a full 500 reads 490 after 10 ticks (eye in water: " + eyeInWater
+                                + ", at " + mob.blockPosition() + " from " + cell + "), got "
+                                + mob.getAirSupply());
+                mob.setAirSupply(-19);
+                helper.runAfterDelay(2, () -> {
+                    helper.assertTrue(mob.getHealth() < 50.0F,
+                            ":155-157 — the breath runs out: the drown trigger (LivingEntity:437-448) "
+                                    + "hit a 500-breath guardian, health " + mob.getHealth()
+                                    + " (eye in water: " + mob.isEyeInFluid(
+                                            net.minecraft.tags.FluidTags.WATER) + ")");
+                    for (int dy = -1; dy <= 3; dy++) {
+                        for (int dx = -1; dx <= 1; dx++) {
+                            for (int dz = -1; dz <= 1; dz++) {
+                                helper.setBlock(cell.offset(dx, dy, dz), Blocks.AIR.defaultBlockState());
+                            }
+                        }
+                    }
+                    mob.setAirSupply(300);
+                    helper.runAfterDelay(4, () -> {
+                        helper.assertTrue(mob.getAirSupply() == 300 + 16,
+                                "LivingEntity:455-457 — out of water again the air walks +4/tick, got "
+                                        + mob.getAirSupply());
+                        helper.succeed();
+                    });
+                });
+            });
         });
     }
 
@@ -430,6 +524,10 @@ public final class EldritchMobGameTest {
                     ":193-195 — the home ints must be the wanted position, got "
                             + tag.getInt("HomeX") + "," + tag.getInt("HomeY") + "," + tag.getInt("HomeZ"));
 
+            // 1.21.1's EntityType#create(TagInput, …) reads the entity id out of
+            // the tag, and saveWithoutId deliberately does not write it (the
+            // caller adds it), so the probe supplies the registry key.
+            tag.putString("id", BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).toString());
             final Entity loaded = EntityType.create(tag, helper.getLevel()).orElse(null);
             helper.assertTrue(loaded instanceof EntityEldritchGuardian,
                     "the guardian's save does not read back as a guardian but "
@@ -473,6 +571,13 @@ public final class EldritchMobGameTest {
         helper.assertTrue(ranged != null, ":56 — the ranged goal is not on the mob");
         mob.setNoAi(true);
         mob.setTarget(victim);
+        // :16-37 — shouldExecute() is the goal's precondition (live target,
+        // squared distance in range); start() (:30-31) reads the target
+        // straight, so driving start() past a closed canUse gate is a
+        // null-target crash, not a probe. Pin the gate open, then drive it.
+        helper.assertTrue(ranged.canUse(),
+                ":16-37 — canUse must open for a live in-range target with the mob's own target set "
+                        + "before the goal is driven by hand");
         final int before = level.getEntitiesOfClass(EntityEldritchOrb.class,
                 mob.getBoundingBox().inflate(48)).size();
         ranged.start();
@@ -496,11 +601,25 @@ public final class EldritchMobGameTest {
     /**
      * {@code :57-91} — a kill a player claims spawns exactly one {@code
      * EntityEldritchCrab} (the c4b-1 class, reused) with its helm flag set, at
-     * the zombie's feet-at-eye-height, and throws the vanilla XP split of the
-     * zombie's five points, which on 1.7.10's table is 3 + 2 (BD-121).
+     * the zombie's feet-at-eye-height, and runs the XP loop of {@code :63-71}:
+     * the guard, then {@code int i = func_70693_a(player); while (i > 0) { int
+     * j = EntityXPOrb.func_70527_a(i); i -= j; addEntity(new EntityXPOrb(…, j))
+     * }} — the WHOLE reward thrown, each orb carrying the splitter's own
+     * bucket. The splitter is a Minecraft class ({@code EntityXPOrb
+     * func_70527_a}) and 1.7.10's decompiled Minecraft sources are not in
+     * {@code reference/}, so the bucket SIZES are the 21.1.259 platform table
+     * ({@code ExperienceOrb.java:326-340}: 2477, 1237, 617, 307, 149, 73, 37,
+     * 17, 7, then 3 / 1) and the loop's invariants are the original's: every
+     * orb carries a table value, no orb carries zero, the values sum to the
+     * reward, and the split is deterministic. The reward on the live engine is
+     * the platform's 5 for the zombie type — the reference's per-plate bonus is
+     * gated on registered plate ids (BD-68) — so 5 walks 3, then 2, then 1:
+     * the multiset {1, 1, 3}, compared order-insensitively (the orbs are thrown
+     * at one point and the census reads them in level order) (BD-121).
      */
     @GameTest(template = "empty", setupTicks = 2L)
-    public static void everyClaimedZombieDeathSpawnsACrabAndTheFivePointSplit(final GameTestHelper helper) {
+    public static void everyClaimedZombieDeathSpawnsACrabAndThePlatformOrbSplit(
+            final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
         final EntityInhabitedZombie mob = zombie(helper, 0, 0);
         final Player killer = helper.makeMockPlayer(GameType.SURVIVAL);
@@ -521,8 +640,17 @@ public final class EldritchMobGameTest {
                 values.add(orb.value);
             }
             values.sort(Integer::compareTo);
-            helper.assertTrue(values.equals(List.of(2, 3)),
-                    ":64-70 — the five points split as 3 + 2 on 1.7.10's table, got " + values);
+            helper.assertTrue(values.equals(List.of(1, 1, 3)),
+                    ":63-71 — the whole 5-point reward is thrown through the platform splitter "
+                            + "(ExperienceOrb.java:326-340: 5 -> 3, 2 -> 1, 1 -> 1), got " + values);
+            helper.assertTrue(values.stream().mapToInt(Integer::intValue).sum() == 5,
+                    ":64-69 — the loop subtracts each bucket until i is 0, so the orbs must sum to the "
+                            + "reward, got " + values);
+            helper.assertTrue(values.stream().allMatch(v -> v > 0),
+                    ":66-69 — no orb is thrown with a zero value (the splitter's buckets are all "
+                            + "positive), got " + values);
+            helper.assertTrue(values.stream().allMatch(PLATFORM_XP_TABLE::contains),
+                    ":66 — every orb value is a bucket of the platform's XP table, got " + values);
             helper.succeed();
         });
     }
@@ -573,48 +701,138 @@ public final class EldritchMobGameTest {
     // ------------------------------------------------------------ spawn gate
 
     /**
-     * {@code :251-261} / {@code :101-113} — the box expands 32 on x/z and 16 on
-     * y and every probed cell refuses the spawn on an {@code IEldritchMob}: a
-     * guardian sharing the pad with a crab refuses, and the zombie 40 blocks
-     * away passes.
+     * {@code EntityEldritchGuardian.java:251-261} and {@code
+     * EntityInhabitedZombie.java:104-113} — the gate is the mob's OWN unit box
+     * expanded 32 x 16 x 32 ({@code func_72314_b} = expand, both sides) and the
+     * census is the mob's OWN class ({@code getEntitiesWithinAABB(
+     * EntityEldritchGuardian.class, …)} / {@code EntityInhabitedZombie.class}),
+     * composed as {@code ents.size() > 0 ? false : super.getCanSpawnHere()}. An
+     * {@code IEldritchMob} of ANOTHER family (the c4b-1 crab) is not in that
+     * census and never refuses; the first run's "every IEldritchMob refuses"
+     * leg was an invented contract and is re-pinned here.
+     *
+     * <p>The harness packs pads ~50 blocks apart in x and ~30 in z, so a fixed
+     * "isolated mob passes" leg reads a neighbouring probe's mob through a
+     * 32-block box (the shape of the first run's red). Every leg here is
+     * therefore either the census conditional itself (the reference's rule,
+     * evaluated on the ambient census, with the census quoted in the message)
+     * or a delta the rule predicts when the probe's own neighbour lands inside
+     * the box.</p>
      */
     @GameTest(template = "empty", setupTicks = 2L)
-    public static void theGuardianRefusesAnEldritchNeighbour(final GameTestHelper helper) {
+    public static void theEldritchSpawnGateScansItsOwnKindInsideTheThirtyTwoBox(
+            final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
-        final EntityEldritchGuardian mob = guardian(helper, 0, 0);
-        final EntityInhabitedZombie lonely = zombie(helper, 40, 0);
-        helper.assertTrue(lonely.checkSpawnRules(level, MobSpawnType.NATURAL),
-                ":101-113 — an isolated inhabited zombie passes its own gate");
+        final EntityEldritchGuardian guardianMob = guardian(helper, 0, 0);
+        final EntityInhabitedZombie zombieMob = zombie(helper, 6, 0);
         helper.runAfterDelay(2, () -> {
-            final EntityEldritchCrab neighbour =
+            final int guardianKind = kindInGate(level, guardianMob, EntityEldritchGuardian.class);
+            final int zombieKind = kindInGate(level, zombieMob, EntityInhabitedZombie.class);
+            helper.assertTrue(guardianMob.checkSpawnRules(level, MobSpawnType.NATURAL)
+                            == (guardianKind == 0),
+                    ":259-260 — the guardian's verdict is its own class in the 32/16/32 box (census "
+                            + guardianKind + ", verdict " + guardianMob.checkSpawnRules(level,
+                                    MobSpawnType.NATURAL) + ", box " + gateBox(guardianMob) + ")");
+            helper.assertTrue(zombieMob.checkSpawnRules(level, MobSpawnType.NATURAL)
+                            == (zombieKind == 0),
+                    ":105-113 — the zombie's verdict is its own class in the 32/16/32 box (census "
+                            + zombieKind + ", verdict " + zombieMob.checkSpawnRules(level,
+                                    MobSpawnType.NATURAL) + ", box " + gateBox(zombieMob) + ")");
+
+            // An IEldritchMob of the c4b-1 family, 2 blocks from the guardian:
+            // :253-256 scans EntityEldritchGuardian.class, so it is invisible
+            // to the census and the verdict must not move.
+            final EntityEldritchCrab crab =
                     spawn(helper, "eldritchcrab", EntityEldritchCrab.class, 2, 0);
-            helper.assertTrue(neighbour.isAlive(), "the fixture crab must stay alive for the probe");
-            helper.assertTrue(!mob.checkSpawnRules(level, MobSpawnType.NATURAL),
-                    ":251-261 — a guardian within 32/16 of an IEldritchMob must refuse");
-            helper.assertTrue(lonely.checkSpawnRules(level, MobSpawnType.NATURAL),
-                    ":101-113 — the zombie 40 blocks away is outside the 32/16 box and passes");
-            helper.succeed();
+            helper.assertTrue(crab.isAlive(), "the fixture crab must stay alive for the probe");
+            helper.assertTrue(!(crab instanceof com.jonnyutah12.thaumcraftclassic.api.entities.IEldritchMob),
+                    "the invented contract's premise is not in the original: EntityEldritchCrab declares "
+                            + "no interface (its class header), IEldritchMob rides the guardian "
+                            + "(reference :47) and the golem — so 'every IEldritchMob refuses' never "
+                            + "applied to a crab in any reading of :251-261");
+            helper.runAfterDelay(2, () -> {
+                helper.assertTrue(guardianMob.checkSpawnRules(level, MobSpawnType.NATURAL)
+                                == (kindInGate(level, guardianMob, EntityEldritchGuardian.class) == 0),
+                        ":253-260 — a crab (IEldritchMob, not EntityEldritchGuardian) inside the box "
+                                + "does not refuse a guardian; census "
+                                + kindInGate(level, guardianMob, EntityEldritchGuardian.class));
+                // The delta: a same-kind neighbour 2 blocks away is inside both
+                // boxes and refuses, and the verdict returns when it is removed.
+                final EntityInhabitedZombie neighbour = zombie(helper, 8, 0);
+                helper.assertTrue(neighbour.isAlive(), "the fixture zombie must stay alive");
+                helper.runAfterDelay(2, () -> {
+                    helper.assertTrue(kindInGate(level, zombieMob, EntityInhabitedZombie.class) >= 1,
+                            ":105-108 — the fixture zombie at 8,0 is inside the 32/16/32 box of 6,0");
+                    helper.assertTrue(!zombieMob.checkSpawnRules(level, MobSpawnType.NATURAL),
+                            ":113 — a same-kind neighbour inside the box refuses the spawn (census "
+                                    + kindInGate(level, zombieMob, EntityInhabitedZombie.class) + ")");
+                    neighbour.discard();
+                    helper.runAfterDelay(2, () -> {
+                        helper.assertTrue(zombieMob.checkSpawnRules(level, MobSpawnType.NATURAL)
+                                        == (kindInGate(level, zombieMob,
+                                                EntityInhabitedZombie.class) == 0),
+                                ":113 — the verdict is the census: with the neighbour gone the gate "
+                                        + "opens again (census " + kindInGate(level, zombieMob,
+                                                EntityInhabitedZombie.class) + ")");
+                        helper.succeed();
+                    });
+                });
+            });
         });
+    }
+
+    /** The reference's 32/16/32 box around the mob's own box ({@code :255-258}). */
+    private static AABB gateBox(final Mob mob) {
+        return mob.getBoundingBox().inflate(
+                EldritchGuardianAiLogic.SPAWN_BOX_XZ_EXPAND,
+                EldritchGuardianAiLogic.SPAWN_BOX_Y_EXPAND,
+                EldritchGuardianAiLogic.SPAWN_BOX_XZ_EXPAND);
+    }
+
+    /** The mob's own class in the gate box, self excluded ({@code :253-256}). */
+    private static <T extends Mob> int kindInGate(final Level level, final T mob,
+            final Class<T> kind) {
+        int n = 0;
+        for (final Entity other : level.getEntities((Entity) null, gateBox(mob),
+                e -> kind.isInstance(e) && e != mob)) {
+            n++;
+        }
+        return n;
     }
 
     // --------------------------------------------------------- reinforcements
 
     /**
-     * BD-120 — the vanilla reinforcement pass runs on the {@code
-     * SPAWN_REINFORCEMENTS_CHANCE} attribute, which the 1.7.10 class pins to
-     * 0.0; 1.21.1's {@code Zombie} randomizes it at spawn, and the port's empty
-     * {@code randomizeReinforcementsChance} keeps the pin. The contrast leg is
-     * the vanilla zombie's own non-zero base.
+     * BD-120 — {@code :24} pins the reinforcement attribute ({@code
+     * field_110186_bp}) to 0.0 and {@code :36-48} returns the passed spawn data
+     * WITHOUT calling {@code super.onInitialSpawn}, so the vanilla pass that
+     * randomizes it never runs on this mob. Both legs are driven through the
+     * spawn pass that applies the attribute (1.21.1's seam is {@code
+     * Mob#finalizeSpawn} → {@code Zombie#finalizeSpawn} → {@code
+     * handleAttributes} → {@code randomizeReinforcementsChance}, {@code
+     * Zombie.java:552-553} = {@code setBaseValue(random.nextDouble() * 0.1F)})
+     * — a bare constructed zombie reads 0.0 on both engines and proves nothing.
+     * The port's override is empty ({@code EntityInhabitedZombie.java:169}), so
+     * the reference's 0.0 survives the pass; the vanilla zombie's base does not.
      */
     @GameTest(template = "empty", setupTicks = 2L)
     public static void theInhabitedZombieCarriesNoReinforcementPressure(final GameTestHelper helper) {
+        final ServerLevel level = helper.getLevel();
         final EntityInhabitedZombie mob = zombie(helper, 0, 0);
-        final Zombie vanilla = new Zombie(EntityType.ZOMBIE, helper.getLevel());
+        final Zombie vanilla = new Zombie(EntityType.ZOMBIE, level);
+        vanilla.moveTo(mob.position(), 0.0F, 0.0F);
+        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()),
+                MobSpawnType.NATURAL, null);
+        vanilla.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()),
+                MobSpawnType.NATURAL, null);
         helper.assertTrue(Math.abs(mob.getAttributeBaseValue(Attributes.SPAWN_REINFORCEMENTS_CHANCE)) < 1.0E-9,
-                "the port pins SPAWN_REINFORCEMENTS_CHANCE to 0.0, got "
+                ":24 + :36-48 — the full spawn pass leaves the reinforcement attribute at the "
+                        + "reference's 0.0 (the port's randomizeReinforcementsChance is empty), got "
                         + mob.getAttributeBaseValue(Attributes.SPAWN_REINFORCEMENTS_CHANCE));
         helper.assertTrue(vanilla.getAttributeBaseValue(Attributes.SPAWN_REINFORCEMENTS_CHANCE) > 0.0,
-                "the contrast leg: the vanilla zombie keeps its reinforcement pressure");
+                "the contrast leg through the same spawn pass: Zombie.java:552-553 randomizes the "
+                        + "vanilla base to nextDouble() * 0.1, got "
+                        + vanilla.getAttributeBaseValue(Attributes.SPAWN_REINFORCEMENTS_CHANCE));
         helper.succeed();
     }
 }

@@ -274,16 +274,29 @@ public final class WarpEventsGameTest {
             }
         }
 
+        // The landed isolation pattern (6117591f): the harness reuses one grid
+        // area across batches and cleans only each probe's own box, so a mob
+        // that strolled out of a finished pad can be standing in a scan cell
+        // and reject it (:270/:271) on THIS probe's attempt. The sweep and the
+        // event are synchronous, so after the sweep the pad's scan domain
+        // carries no foreign entity. The census is the SCAN DOMAIN, not the
+        // 26x30x26 pad box: the offsets of :264-266 are 7..24 per axis, so a
+        // legal landing 24 blocks in -x / -z / +y sits outside the pad box
+        // (the shape of this probe's first red at 3c804129 — the stream is
+        // positional on level.random, so the landing cell moves with the batch
+        // order, and a small census reads 0).
+        sweepPad(helper, level);
         final List<EntityMindSpider> baseline = padSpiders(helper, level);
+        final List<Entity> guardianBaseline = scanDomainEntities(helper, level);
         final Scripted random = scriptedGate(30);
         WarpEvents.checkWarpEvent(player, random);
 
         helper.assertTrue(spawnedSince(baseline, padSpiders(helper, level)).isEmpty(),
                 "the mist arm (:106) spawned spiders — only the spider arms (:158/:195) call suddenlySpiders");
-        final List<Entity> guardians = guardianEntities(helper, level);
+        final List<Entity> guardians = censusDelta(guardianBaseline, scanDomainEntities(helper, level));
         helper.assertTrue(guardians.size() == 1,
                 ":230-235 — the band summons min(8, 1) = 1 guardian through the :257-280 scan, found "
-                        + guardians.size() + " on a pad with a fitting cell");
+                        + guardians.size() + " in the ±24 scan domain of the player's cell (swept pad)");
         final EntityEldritchGuardian summoned = (EntityEldritchGuardian) guardians.get(0);
         helper.assertTrue(summoned.getTarget() == player,
                 ":273 — the scan points the guardian at the player (func_70624_b = setAttackTarget)");
@@ -540,6 +553,35 @@ public final class WarpEventsGameTest {
             return ThaumcraftClassic.MOD_ID.equals(key.getNamespace())
                     && key.getPath().equals(EldritchMobHost.GUARDIAN);
         }).size();
+    }
+
+    /**
+     * The landing domain of the guardian scan ({@code :263-266}): the offsets
+     * are {@code func_76136_a(rand, 7, 24)} times {@code func_76136_a(rand, -1,
+     * 1)} per axis around the player's floor cell, so a legal cell sits at
+     * ±(7..24) in x, y and z; +2 on y covers the mob's 2.25-tall box. The pads
+     * are packed ~50 x / ~30 z apart, so a ±25 box reaches no neighbouring
+     * pad's fixtures (30 > 25) — the census is the scan domain, not the pad.
+     */
+    private static AABB scanDomain(final GameTestHelper helper) {
+        final BlockPos o = helper.absolutePos(BlockPos.ZERO).offset(1, 1, 1);
+        return new AABB(o.getX() - 25, o.getY() - 25, o.getZ() - 25,
+                o.getX() + 26, o.getY() + 27, o.getZ() + 26);
+    }
+
+    /** The guardians the band can have summoned, in the scan domain. */
+    private static List<Entity> scanDomainEntities(final GameTestHelper helper,
+                                                   final ServerLevel level) {
+        return level.getEntitiesOfClass(Entity.class, scanDomain(helper), e -> {
+            final ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType());
+            return ThaumcraftClassic.MOD_ID.equals(key.getNamespace())
+                    && key.getPath().equals(EldritchMobHost.GUARDIAN);
+        });
+    }
+
+    /** The census delta by identity — contamination-safe baseline rule. */
+    private static List<Entity> censusDelta(final List<Entity> baseline, final List<Entity> census) {
+        return census.stream().filter(e -> !baseline.contains(e)).toList();
     }
 
     private static List<Entity> padEntities(final GameTestHelper helper, final ServerLevel level,
