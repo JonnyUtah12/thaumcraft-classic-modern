@@ -680,6 +680,28 @@ public final class EldritchCrabGameTest {
             airborne.setPos(airborne.getX(), airborne.getY() - 0.4, airborne.getZ());
             airborne.setShell(false);
             helper.assertTrue(!airborne.onGround(), ":123 — the climb needs the crab off the ground");
+            // The mount gate AND the punch (:131-137) fire on the SAME scripted
+            // tick: a fresh crab has invulnerableTime 0, so the punch block passes
+            // its cooldown check on the mount tick, and dismountsAfterPunch (0.2)
+            // throws the crab off before the mount assert. Measured on the parent
+            // tip (8 trace legs, full grid, noCurios arm): EVERY leg ivt=10..19
+            // after the tick (the punch set its cooldown on the mount tick); 2 red
+            // legs t1[veh=null psg=0 ivt=12 bdCd=60 rise=+0.20] — bdCd=60 is set
+            // only by the dismount path (Entity#removePassenger) and the +0.20 rise
+            // is the dismount hop (6/6 green legs rise=0.00 bdCd=0); the pre-tick
+            // arms all trace TRUE (gate, canRide, canAddPassenger, canMountEntity)
+            // — Entity#startRiding never rejects. The red census signature
+            // yDelta=1.80 / distSqr=3.24 is the design 1.60 plus the 0.20 hop,
+            // unreachable in a never-mounted state (1.60 / 2.56). The arm under
+            // test is :120-129, so arm the crab at its MAXIMUM punch cooldown
+            // (LivingEntity#aiStep decrements it once inside this tick and the
+            // punch block skips on the mount tick) and let the mount reach the
+            // assert; the punch cadence and the 0.2 dismount band are each
+            // measured by their own arms below. Mutation teeth: flipping
+            // PUNCH_DISMOUNT_CHANCE 0.2 -> 1.0 reddens the pre-fix probe every
+            // leg naming :120-129, and leaves this probe green.
+            airborne.invulnerableTime =
+                    EldritchCrabAiLogic.PUNCH_COOLDOWN_BASE + EldritchCrabAiLogic.PUNCH_COOLDOWN_JITTER;
             airborne.tick();                                                 // :120-129
             helper.assertTrue(airborne.getVehicle() == player,
                     ":120-129 — a free mid-air unshelled crab mounts the nearest player");
