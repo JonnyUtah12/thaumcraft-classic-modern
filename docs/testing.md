@@ -350,25 +350,26 @@ probes, all zero-drop); put a bare `return;` at the top of `ModCreativeTabs`' `d
 1**, "4 required tests failed" (this gate's 2 tab probes + `CreativeTabGameTest`'s 2). `git checkout --`
 restores both and `diff -q` reports byte-identical.
 
-- **A scan-spawn probe driving a scripted `RandomSource` must own the pad it scans into.**
-  The harness REUSES one grid area across batches: `StructureGridSpawner#onBatchStart` rewinds the
-  walk to the batch corner and `StructureUtils#clearSpaceForStructure` clears only BLOCK space, and
-  `GameTestInfo#succeed` discards only the entities inside the finished probe's own inflated box (+1).
-  Mobs that strolled out of a pad, stacks that skidded out, and every entity of a FAILED probe (a
-  failed probe never cleans at all) survive into the next batch, where a 24-tall pad now lands on
-  top of them. A stray standing on a scripted landing cell rejects the floor check
-  (`WarpEvents.java:298`), and an exact positional script desyncs on the FIRST unmarked rejection:
-  the spider reads the NEXT spider's window, every landing shifts, and the run dies naming
-  "the warp event drew beyond the scripted queue". Measured on this tree:
-  `theIllusionBandSpawnsTheWarpCappedHarmlessViewerBoundSwarm` went red 2 of 3 CI runs of
-  `3ad8a69e` (502 probes, with-Curios arm only — the no-Curios arm packs a smaller grid that left
-  the sweep box clean) and green on the third re-run; local runs 2/2 green, so the rate lives in
-  batch composition and runner timing, not in the product. Two conventions fix it: SWEEP the pad's
-  census box at probe setup (discard non-player entities — the scan is synchronous in one tick, so
-  the sweep holds for the whole scan, `WarpEventsGameTest.sweepPad`), and script the supply
-  PER SPAWN, not per slot: every scripted spider carries a window for each landing its scan cell
-  can reach (y = 1, 8, 15), so a rejection spends a scripted window instead of a random draw, and
-  the tolerance is BOUNDED by that supply — the queue clock (`consumed == 2 + 6·Σ(landing k + 1)`)
-  keeps the draw-order contract exact, so absorbing a layout rejection never absorbs a product
-  defect. An exact positional stream over a shared world is a packing bet: the sweep removes what
-  the last batch left, the per-spawn supply removes what arrives on the shared tick.
+- **A scan-spawn probe driving a scripted `RandomSource` must isolate its pad, and may NOT buy tolerance
+  from the stream.** The harness REUSES one grid area across batches: `StructureGridSpawner#onBatchStart`
+  rewinds the walk to the batch corner and `StructureUtils#clearSpaceForStructure` clears only BLOCK space,
+  and `GameTestInfo#succeed` discards only the entities inside the finished probe's own inflated box (+1).
+  Mobs that strolled out of a pad, stacks that skidded out, and every entity of a FAILED probe (a failed
+  probe never cleans at all) survive into the next batch, where a 24-tall pad now lands on top of them.
+  A stray standing on a scripted landing cell rejects the floor check (`WarpEvents.java:298`), and an
+  exact positional stream desyncs on the FIRST unmarked rejection: the spider reads the NEXT spider's
+  window, every landing shifts, and the run dies naming "the warp event drew beyond the scripted queue".
+  Measured on this tree: `theIllusionBandSpawnsTheWarpCappedHarmlessViewerBoundSwarm` went red 2 of 3 CI
+  runs of `3ad8a69e` (502 probes, with-Curios arm only — the no-Curios arm packs a smaller grid that left
+  the pad clean) and green on the third re-run; local runs 2/2 green, so the rate lives in batch
+  composition and runner timing, not in the product. THE FIX IS THE PAD, NOT THE QUEUE: sweep the pad's
+  census box at probe setup (discard non-player entities — the scan is synchronous in one tick, so after
+  the sweep nothing enters the pad except the probe's own swarm and fixtures, `WarpEventsGameTest.sweepPad`),
+  keep the stream positional, and MARK every rejection the probe intends (`secondAttemptFor`) — the queue
+  clock (drained, `consumed == 2 + 6·Σ(landing k + 1)`) then has one satisfying landing pattern and a
+  residual overrun is a product anomaly. Measured anti-pattern (same card): widening the supply to 3
+  windows per spider to "absorb" rejections made every spider accept the previous spider's leftover
+  window on a CLEAN pad — 49 landings at y = 8, spent 99 vs consumed 302 — the mutation sweep caught it;
+  a positional stream and per-spawn tolerance are mutually exclusive. Prove the causal lever by PLANTING
+  the stray: planted before the sweep the fixed probe is GREEN, planted after the sweep (or on the
+  unswept tree) it goes RED naming the queue overrun — the CI signature, on demand.
