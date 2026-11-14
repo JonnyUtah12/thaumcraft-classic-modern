@@ -78,7 +78,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * 1.7.10 spider geometry is not the 1.21.1 {@code SpiderModel} skeleton part for
  * part, and the fade of {@code :55-70} is expressed through 1.21.1's
  * model-prepare + render-type seams rather than a per-call {@code glColor4f}.
- * All of that is BD-82, and a human client look is what closes it.</p>
+ * All of that is BD-87, and a human client look is what closes it.</p>
  */
 class MindSpiderRendererRegistrationTest {
 
@@ -246,7 +246,7 @@ class MindSpiderRendererRegistrationTest {
     @Test
     void theFadeIsTheOriginalAlphaCapAndTheBodyIsTranslucent() throws Exception {
         // :60 glColor4f(1, 1, 1, min(0.1F, age / 100.0F)) — a cap of 10 %, not a
-        // fade to opaque. Read as a fade that caps at 10 %, and BD-82 says so.
+        // fade to opaque. Read as a fade that caps at 10 %, and BD-87 says so.
         assertEquals(0.1F, RenderMindSpider.FADE_ALPHA_CAP, EPS, ":60 Math.min(0.1F, …)");
         assertEquals(100.0F, RenderMindSpider.FADE_AGE_DIVISOR, EPS, ":60 age / 100.0F");
         assertEquals(0.0F, RenderMindSpider.fadeAlpha(0), EPS, "age 0: no alpha at all");

@@ -1,4 +1,3 @@
-head,head_sha,old_id,new_id,card,canonical,system
 origin/wt/m7-fx-wisps,535d81680aaabe9030d2aa035c7d55de6c1828df,BD-17,BD-46,t_ed46eb80,yes,FX render substrate (TC-M7-02-c-s)
 origin/wt/m7-fx-wisps,535d81680aaabe9030d2aa035c7d55de6c1828df,BD-18,BD-47,t_ed46eb80,yes,Dig / infusion crumb particles (TC-M7-02-c-s)
 origin/wt/m7-fx-wisps,535d81680aaabe9030d2aa035c7d55de6c1828df,BD-19,BD-48,t_ed46eb80,yes,Zap / wisp-zap bolt rendering (TC-M7-02-c-s)
@@ -51,4 +50,6 @@ origin/wt/t_f2184302,04bcd0ccf7ed2672c4016946669b5e390accf9de,BD-78,BD-78,t_f218
 origin/wt/t_2f4979f8,8dffbe3e9012aa35bc3ced2c9ab9cd36277b4320,BD-74,BD-79,t_2f4979f8,yes,Pech trade dice roll
 origin/wt/t_2f4979f8,8dffbe3e9012aa35bc3ced2c9ab9cd36277b4320,BD-75,BD-80,t_2f4979f8,yes,Pech trade dungeonChest branch
 origin/wt/t_2f4979f8,8dffbe3e9012aa35bc3ced2c9ab9cd36277b4320,BD-76,BD-81,t_2f4979f8,yes,Pech trade data shapes
-origin/wt/t_32366a27,e378872f9daf63e71fc63dfd66f80e6f795f8c14,BD-79,BD-82,t_32366a27,yes,Mind spider renderer GL state fade cap and eye pass deltas
+origin/wt/m7-fx-decal,238238f20c055ae56cb061e94dfd96a4960ac563,BD-46,BD-85,t_93ae9b28,yes,Rune decal billboarding basis (TC-M7-02-c-s-f3-a)
+origin/wt/m7-fx-decal,238238f20c055ae56cb061e94dfd96a4960ac563,BD-47,BD-86,t_93ae9b28,yes,Warding-stone sky test and thaumometer node-tile scan branch (TC-M7-02-c-s-f3-a)
+origin/wt/t_32366a27,e378872f9daf63e71fc63dfd66f80e6f795f8c14,BD-79,BD-87,t_32366a27,yes,Mind spider renderer GL state fade cap and eye pass deltas
