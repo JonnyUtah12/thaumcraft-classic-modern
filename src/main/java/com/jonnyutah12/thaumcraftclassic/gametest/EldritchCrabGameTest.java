@@ -449,6 +449,22 @@ public final class EldritchCrabGameTest {
      * ({@code :75}, the entity random) for every other difficulty: HARD always
      * shells and the rest wear it about a third of the time. Both legs are
      * measured on the live {@code finalizeSpawn}.
+     *
+     * <p>The rate arm follows the repo's band rule (docs/testing.md: mean ± 4 sd
+     * of the BINOMIAL SUM, widened outward to the quantum, never the only arm).
+     * The shipped band {@code 9..31} was ±3.0 sd of the 60-draw
+     * {@code Binom(60, 0.33)} (mean 19.8, sd 3.64) — a nominal 1.37e-3 per-leg
+     * trip — and the shared-stream seeding (every crab's fresh mob
+     * {@code RandomSource} is seeded off the same LCG, docs/testing.md's
+     * correlation warning) inflates the effective sd: it measured 1 red in 17
+     * legs at tip a29bbc06 (the red leg drew 8, a 3.24-sd tail). The band here
+     * is 19.8 ± 4·3.64 widened outward → {@code 5..35}: an exact 1.75e-5 trip on
+     * the nominal sum (1 leg in 57 268), so the ~3× effective-sd inflation the
+     * 1/17 rate implies is inside it with margin. The deterministic pair: the
+     * HARD arm (60/60) and the OUTCOME SET of the 60 non-HARD draws must be
+     * exactly {shelled, unshelled} — the whole support [0, 60] of a 1/3 roll
+     * contains both outcomes, and a roll rule collapsed to one outcome (always
+     * shells, never shells) reddens that arm on 100 % of legs.</p>
      */
     @GameTest(template = "empty", timeoutTicks = 300)
     public static void hardSpawnsAlwaysShellAndTheRestAreAboutAThird(final GameTestHelper helper) {
@@ -465,22 +481,44 @@ public final class EldritchCrabGameTest {
         helper.assertTrue(shelled == 60,
                 ":72-73 — HARD is the guaranteed branch (setHelm(true)), got " + shelled + "/60");
         int rolled = 0;
+        boolean sawShelled = false;
+        boolean sawBare = false;
         for (final Difficulty mode : List.of(Difficulty.EASY, Difficulty.NORMAL, Difficulty.PEACEFUL)) {
             for (int i = 0; i < 20; i++) {
                 final EntityEldritchCrab crab = crab(helper);
                 crab.finalizeSpawn(level, difficulty(level, mode), MobSpawnType.NATURAL, null);
                 if (crab.hasShell()) {
                     rolled++;
+                    sawShelled = true;
+                } else {
+                    sawBare = true;
                 }
                 crab.discard();
             }
         }
-        // :74-75 — p = 1/3 over n = 60 draws: mean 20, sd 3.65, so the band
-        // 9..31 is ±3.0 sd (a clean run passes with p ~0.997 and the roll
-        // reseeded every draw by the mob's own LCG), while a rule that made the
-        // shell HARD-only — the shape this probe first predicted — scores 0.
-        helper.assertTrue(rolled >= 9 && rolled <= 31,
-                ":74-75 — 0.33 of the 60 non-HARD spawns wear a shell; measured " + rolled);
+        // :74-75 — the outcome set, deterministic: 60 draws of a 1/3 roll have
+        // the whole support [0, 60] and both outcomes live inside it, so the
+        // observed set must carry SHELL and NO_SHELL. A rule that made the shell
+        // HARD-only — the shape this probe first predicted — scores 0/60 and
+        // reddens this arm, like the band arm, on every leg.
+        helper.assertTrue(sawShelled && sawBare,
+                ":74-75 — the 60 non-HARD draws must show BOTH shell outcomes (the support of a"
+                        + " 1/3 roll over 60 draws is [0, 60]); observed set = {"
+                        + (sawShelled ? "shelled" : "") + (sawShelled && sawBare ? ", " : "")
+                        + (sawBare ? "unshelled" : "") + "} at " + rolled + "/60 — a one-outcome"
+                        + " set is a collapsed roll rule, not a draw");
+        // :74-75 — the rate arm: 60 flips of p=1/3 (quantum 1) is a binomial
+        // with mean 19.8 and sd 3.64, so the band is mean ± 4 sd widened outward
+        // to the quantum = [5, 35] over the whole support [0, 60]; exact trip on
+        // the nominal sum 1.75e-5 (the old ±3.0 sd [9,31] was 1.37e-3 and
+        // measured 1/17 legs red on the correlated streams at a29bbc06). A count
+        // this far out is a removed, added or re-probability'd roll body, not a
+        // draw.
+        helper.assertTrue(rolled >= 5 && rolled <= 35,
+                ":74-75 — 0.33 of the 60 non-HARD spawns wear a shell; measured " + rolled
+                        + " against mean 19.8, sd 3.64, 4 sd widened to quantum 1 = [5, 35] over"
+                        + " the support [0, 60] (exact 1.75e-5 trip): a total this far out is a"
+                        + " changed roll body, not a draw");
         helper.succeed();
     }
 
@@ -849,28 +887,37 @@ public final class EldritchCrabGameTest {
         helper.assertTrue(zombie.getHealth() >= zombieHealth,
                 ":69 — the undead are exempt: the zombie takes no burst damage, "
                         + zombieHealth + " -> " + zombie.getHealth());
-        // :84 — the consumption, POLLED. The impact writes the 100-tick age (:84)
-        // and :27-29 discards once it is past. On 21.1.259 tickCount is incremented
-        // by the SERVER's entity tick (ServerLevel#tickNonPassenger, javap), NOT by
-        // Entity#tick — a hand-driven tick() loop freezes the age at 100 (measured:
-        // age=100 forever under manual ticks), so the walk to the clamp needs REAL
-        // server ticks. The probe used to pin that to `runAfterDelay(2, …)`, which
-        // is EXACTLY the shape docs/testing.md forbids ("an outcome that lands after
-        // N REAL ticks is a tick budget: the entity's own clock is the reference",
-        // line 192): GameTestContext#advanceTicks moves the TEST sequence's tick
-        // counter one per step, not the entity clock, and the harness pins the level
-        // with setForcedTicks(1000), so at a batch edge the test clock runs ahead of
-        // the entity's. Measured on this tree (diag#7 — a CLEAN pad, no plant,
-        // 1 leg in 11): the assert fires with age=100 removed=false, the impact
-        // landed and the walk had not. Same signature as the shipped Energy Orb
-        // probe's E2b plant (evidence in the c4a-2 lane's script). The poll is the
-        // family's own exemplar — EnergyOrbGameTest's consumption arm — and the
-        // timeout keeps the age/removed state so it names the phase. Everything the
-        // burst WRITES is asserted synchronously above, as before.
+        // :84 — the consumption, POLLED WITH ITS OWN WALK. The impact writes the
+        // 100-tick age (:84) and :27-29 discards once it is PAST (strict >), so
+        // the orb needs exactly one survival step from 100 to 101. That step is
+        // NOT left to the server: on 21.1.259 tickCount is incremented by
+        // ServerLevel#tickNonPassenger, NOT by Entity#tick (measured: age froze
+        // at 100 under manual ticks), and the harness's level pin is a FINITE
+        // forced-tick pool (setForcedTicks(1000)) — at a batch edge the test
+        // sequence's clock outlives the entity clock, and a poll that waits on
+        // the server starves: measured at tip a29bbc06 (with-Curios arm, the arm
+        // that races the suite) 1 red in ~14 burst legs, the watchdog firing
+        // with age=100 removed=false, the impact landed and the walk never came.
+        // The shape that cannot lose to the harness's pool is this file's own
+        // impact drive — the probe feeds the subject its survival step, in the
+        // server's shape (increment, then tick), on every poll tick, and the
+        // assert stays on the OUTCOME (removed), never on a tick budget
+        // (docs/testing.md, the line-192 rule + the self-contained-drive
+        // carve-out). First poll tick after the impact: 100 -> 101, the clamp
+        // fires, removed=true; the 300-tick timeout is a watchdog with ~299
+        // ticks of margin. The delay-0 budget teeth stay intact as the mutation
+        // record on the pre-poll shape (parent Q6d: 3/3 legs naming :84); the
+        // teeth on THIS shape are the clamp mutation — :27-29 "> LIFETIME_TICKS"
+        // to "> LIFETIME_TICKS * 10" puts 1000 steps beyond the watchdog and
+        // reddens the probe on every leg naming :84 (measured, this card).
         helper.succeedWhen(() -> {
+            if (!orb.isRemoved()) {
+                orb.tickCount++;   // the ServerLevel#tickNonPassenger increment
+                orb.tick();        // :27-29 — the clamp, on the age that walk wrote
+            }
             helper.assertTrue(orb.isRemoved(),
-                    ":84 — the burst consumes the orb (the impact writes the 100-tick age, the "
-                            + "server's next ticks walk it past the clamp), age=" + orb.tickCount
+                    ":84 — the burst consumes the orb (the impact writes the 100-tick age, the"
+                            + " probe's survival drive walks it past the clamp), age=" + orb.tickCount
                             + " removed=" + orb.isRemoved());
             thrower.discard();
             pig.discard();
