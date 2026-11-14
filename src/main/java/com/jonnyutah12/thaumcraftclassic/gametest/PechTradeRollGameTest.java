@@ -549,7 +549,7 @@ public final class PechTradeRollGameTest {
                                 + " route to it, so the roll is not a second route to the table's loot (BD-80)");
             }
         }
-        LOGGER.info("pech chest pool: rows={} payable={} live={} gated={} chest-only-rows={} ids-in-no-table={}",
+        LOGGER.info("pech chest pool: rows={} payable={} live={} gated={} chest-only-rows-in-no-trade-table={}",
                 PechTradeChestPool.pool().size(), PechTradeChestPool.payable().size(), live.size(), gated, chestOnly);
         helper.succeed();
     }
