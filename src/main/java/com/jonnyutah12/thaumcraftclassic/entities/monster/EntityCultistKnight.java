@@ -205,11 +205,14 @@ public class EntityCultistKnight extends EntityCultist {
         }
         final int levels = CultistAiLogic.knightEnchantLevel(light,
                 random.nextInt(CultistAiLogic.ENCHANT_LEVEL_ROLL));                      // :70
-        EnchantmentHelper.enchantItem(random, weapon, levels,
-                level.registryAccess(),
-                java.util.Optional.of(level.registryAccess()
-                        .registryOrThrow(Registries.ENCHANTMENT)
-                        .getOrThrow(net.minecraft.tags.EnchantmentTags.ON_MOB_SPAWN_EQUIPMENT))); // :70
+        // 21.1.259's 5-arg form takes an Optional<HolderSet<Enchantment>> for the
+        // eligible set (javap: enchantItem(RandomSource, ItemStack, int,
+        // RegistryAccess, Optional<? extends HolderSet<Enchantment>>)), so the
+        // vanilla mob-spawn tag resolves as a NAMED TAG SET, not as a holder:
+        // Registry#getTag, and the whole enchantable set when the tag is absent.
+        EnchantmentHelper.enchantItem(random, weapon, levels, level.registryAccess(),
+                level.registryAccess().registryOrThrow(Registries.ENCHANTMENT)
+                        .getTag(net.minecraft.tags.EnchantmentTags.ON_MOB_SPAWN_EQUIPMENT)); // :70
     }
 
     /**

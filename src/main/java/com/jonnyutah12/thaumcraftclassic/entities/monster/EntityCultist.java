@@ -160,7 +160,7 @@ public abstract class EntityCultist extends Monster {
         // 1.21.1’s hook (Mob:979) has no looting parameter: the level arrives
         // inside EnchantmentHelper.processEquipmentDropChance (:990) for the
         // equipment drop the original suppresses. The roll table reads LOOTING 0,
-        // the floor of the original’s 3 + looting window (BD-73).
+        // the floor of the original’s 3 + looting window (BD-88).
         rollCultistDrops(level, CultistAiLogic.DROP_LOOTING_BASELINE);               // :48-55
     }
 
@@ -186,7 +186,7 @@ public abstract class EntityCultist extends Monster {
      */
     /** 1.21.1 has no creative-kill gift hook (LivingEntity carries no
      *  {@code grantLastDeathLoot}/{@code dropAllLoot} seam), so the Crimson Rites gift
-     *  ships as the named seam and is NOT wired (BD-73): its item id, meta, offset
+     *  ships as the named seam and is NOT wired (BD-89): its item id, meta, offset
      *  and the cleric’s LOOTING gate are pinned and unit-tested, and the caller is
      *  the death-path card that owns 1.21.1’s gift seam. */
     protected void dropAllLoot() {

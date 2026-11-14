@@ -2,8 +2,6 @@ package com.jonnyutah12.thaumcraftclassic.registration.catalog;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.CultistAiLogic;
-import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityCultist;
-import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityCultistCleric;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityCultistKnight;
 
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -17,9 +15,9 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
- * Cultist catalog holder (TC-M6-06-s-c4a, card t_5c5fa1d2): the two registered
- * crimson cultists of the original {@code thaumcraft.common.entities.monster}
- * package.
+ * Cultist catalog holder (TC-M6-06-s-c4a-1, card t_c59f137b): the Crimson Knight,
+ * the first of the four cultists the original {@code
+ * thaumcraft.common.entities.monster} package registers.
  *
  * <p>Per docs/catalog-triage.md rule 3 this card owns its own holder: the
  * entity types, the attribute suppliers and the one wiring line in
@@ -29,18 +27,22 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  * never edit the same file. Ids are the {@code new_id} column of
  * docs/content-mapping.csv (docs/architecture/registration.md).</p>
  *
- * <p>Registered here — the original's own registration pair
+ * <p>Registered here — one entry of the original's registration block
  * ({@code ConfigEntities.init}), and nothing else:</p>
  * <ul>
  *   <li>{@code thaumcraft:cultistknight} — {@code EntityCultistKnight}
  *       (content-mapping {@code Thaumcraft:CultistKnight}, CSV line 325,
  *       mod_index 27, "Crimson Knight"); {@code registerModEntity(..., 64, 3,
  *       true)} at {@code ConfigEntities.java:111}.</li>
- *   <li>{@code thaumcraft:cultistcleric} — {@code EntityCultistCleric}
- *       (content-mapping {@code Thaumcraft:CultistCleric}, CSV line 326,
- *       mod_index 28, "Crimson Cleric"); {@code registerModEntity(..., 64, 3,
- *       true)} at {@code ConfigEntities.java:113}.</li>
  * </ul>
+ *
+ * <p><b>The Cleric is absent by slice.</b> The original registers it at
+ * {@code ConfigEntities.java:113} (mod_index 28, ledger row 326) and this lane
+ * authored it, but t_5c5fa1d2 was split under D-012 and the Cleric + GolemOrb
+ * half is card {@code t_6160444c} (c4a-2). Nothing here needs editing when it
+ * lands: {@link CultistAiLogic#CULTIST_TYPE_PATHS} already carries
+ * {@code cultistcleric} by path, so the faction pair reads it from the live
+ * registry (BD-87).</p>
  *
  * <p><b>The base is deliberately absent.</b> {@code EntityCultist} has no
  * {@code registerModEntity} line in the original, no mod index and no ledger
@@ -72,10 +74,6 @@ public final class CatalogCultists {
     /** {@code thaumcraft:cultistcleric} — original {@code EntityCultistCleric}
      *  (content-mapping {@code Thaumcraft:CultistCleric}, CSV line 326,
      *  mod_index 28). {@code ConfigEntities.java:113}. */
-    public static final DeferredHolder<EntityType<?>, EntityType<EntityCultistCleric>> CULTIST_CLERIC =
-            ENTITY_TYPES.register("cultistcleric",
-                    () -> EntityCultistCleric.buildType(MobCategory.MONSTER));
-
     private CatalogCultists() {
     }
 
@@ -86,16 +84,16 @@ public final class CatalogCultists {
 
     private static void onAttributeCreation(final EntityAttributeCreationEvent event) {
         event.put(CULTIST_KNIGHT.get(), EntityCultistKnight.createAttributes().build());
-        event.put(CULTIST_CLERIC.get(), EntityCultistCleric.createAttributes().build());
     }
 
     /**
      * The faction test of {@code EntityCultist:105-107} in the target's
      * {@code EntityType} form: the original excludes the Cleric, the Leader and
      * the Knight from its own kind's target selectors, and the Leader's id is
-     * carried by name because the class is card c5's. A cultist type is anything
-     * under {@code EntityCultist} in the live registry, so the pair on this card
-     * and the Leader on c5 both read true with no cross-card edit.
+     * the Leader's id is carried by name because the class is card c5's. A cultist type is anything
+     * under {@code EntityCultist} in the live registry, so the knight on this card,
+     * the Cleric on t_6160444c and the Leader on c5 all read true with no
+     * cross-card edit.
      */
     public static boolean isCultistType(final EntityType<?> type) {
         if (type == null) {

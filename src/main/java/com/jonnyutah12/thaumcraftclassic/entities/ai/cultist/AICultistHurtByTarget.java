@@ -11,7 +11,6 @@ import net.minecraft.world.phys.AABB;
 
 import com.jonnyutah12.thaumcraftclassic.entities.monster.CultistAiLogic;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityCultist;
-import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityCultistCleric;
 
 import java.util.List;
 
@@ -38,7 +37,8 @@ import java.util.List;
  * inflated by the follow range and 10 — 1.7.10's Thaumcraft copied vanilla's, and
  * 1.21.1 kept it). The port subclasses it and keeps the original's scan, because
  * the two differences are the family's: the box is over the {@code EntityCultist}
- * base, and the cleric's ritual rule lives inside it. The parent's
+ * base, and the cleric's ritual rule lives inside it — that arm is pinned on the
+ * cleric's registry id on this lane (BD-87, {@link #isRitualistCleric}). The parent's
  * {@code setAlertOthers} is never enabled, so the vanilla reinforcement path
  * stays off.</p>
  *
@@ -108,12 +108,34 @@ public class AICultistHurtByTarget extends HurtByTargetGoal {
             if (cultist.canAttack(attacker)) {
                 continue;                                                               // :47
             }
-            if (!(cultist instanceof EntityCultistCleric cleric) || !cleric.getIsRitualist()) {
+            if (!isRitualistCleric(cultist)) {
                 cultist.setTarget(attacker);                                            // :49-50
-            } else if (level.getRandom().nextInt(CultistAiLogic.RITUALIST_BREAK_ROLL) == 0) {
-                cleric.setIsRitualist(false);                                           // :52
+            } else if (CultistAiLogic.ritualistBreaks(
+                    level.getRandom().nextInt(CultistAiLogic.RITUALIST_BREAK_ROLL))) {
+                // :52 — {@code cleric.setIsRitualist(false)} is the cleric's own
+                // synched byte and lands with the class on t_6160444c (BD-87); the
+                // :53 join arm is wired here so the roll is already in place.
                 cultist.setTarget(attacker);                                            // :53
             }
         }
+    }
+
+    /**
+     * The {@code :48-53} arm's subject test. {@code EntityCultistCleric} is card
+     * t_6160444c's (c4a-2, the half this lane sliced out of t_5c5fa1d2), so the
+     * ritualist state — the cleric's synched byte, {@code EntityCultistCleric:99
+     * /:106-113} — has no class in this tree to read it from. The arm is therefore
+     * pinned on the cleric's registry id (BD-87): while
+     * {@code thaumcraft:cultistcleric} is unregistered, as it is on this lane, the
+     * helper answers false for every shipped cultist and the gang call takes the
+     * original's {@code :49-50} arm verbatim.
+     *
+     * <p>TODO(BD-87, t_6160444c): when the Cleric lands, read
+     * {@code getIsRitualist()} through the class (and {@code setIsRitualist(false)}
+     * at {@code :52}) instead of the id.</p>
+     */
+    private static boolean isRitualistCleric(final EntityCultist cultist) {
+        return CultistAiLogic.isClericTypeId(
+                net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(cultist.getType()));
     }
 }

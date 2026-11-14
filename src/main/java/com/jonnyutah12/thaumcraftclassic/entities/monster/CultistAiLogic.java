@@ -4,6 +4,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Every constant and rule of the crimson cultist family, kept {@code Level}-free
@@ -166,27 +168,55 @@ public final class CultistAiLogic {
      * kind) and defers to {@code super} for everything else. Pinned in the
      * original's class form; 1.21.1's hook is the {@code EntityType} form, so the
      * shipped predicate is {@link #isCultistTypeId(ResourceLocation)}.
+     *
+     * <p>The Cleric and the Leader are named by class NAME, not by class: the
+     * Cleric is card t_6160444c's (c4a-2, the half this lane sliced out) and the
+     * Leader is c5's, so neither class is in this tree (BD-87 — a name-carried
+     * exclusion arm, the same shape this method already used for the Leader).
+     * The behaviour is unchanged for the shipped pair: the Knight is the only
+     * cultist registered here, and its exclusion runs on the real class.</p>
      */
     public static boolean targetClassExcluded(final Class<?> targetClass) {
-        return EntityCultistCleric.class.equals(targetClass)
+        final String simpleName = targetClass.getSimpleName();
+        return CLERIC_CLASS_NAME.equals(simpleName)
                 || EntityCultistKnight.class.equals(targetClass)
-                || LEADER_CLASS_NAME.equals(targetClass.getSimpleName());
+                || LEADER_CLASS_NAME.equals(simpleName);
     }
+    /** {@code EntityCultistCleric} is card t_6160444c's class (c4a-2) and is not
+     *  in this tree, so the exclusion set carries its name verbatim from
+     *  {@code :106} — the same name-carried arm as the Leader (BD-87). */
+    public static final String CLERIC_CLASS_NAME = "EntityCultistCleric";
     /** {@code EntityCultistLeader} is card c5's class and is not in the tree yet,
      *  so the exclusion set carries its name verbatim from {@code :106}. */
     public static final String LEADER_CLASS_NAME = "EntityCultistLeader";
     /** The three cultist types the original registers
      *  ({@code ConfigEntities.java:111/:113/:115} — Knight 27, Cleric 28,
      *  Leader 29): the id set of {@link #isCultistTypeId}. The base is not in it
-     *  (it is unregistered) and {@code CultistPortal} is not a mob. */
+     *  (it is unregistered) and {@code CultistPortal} is not a mob. The Cleric's
+     *  id is carried by path so card t_6160444c needs no edit here. */
     public static final java.util.List<String> CULTIST_TYPE_PATHS =
             java.util.List.of("cultistknight", "cultistcleric", "cultistleader");
+    /** The Cleric's registry id path — the one cultist the gang call's ritual arm
+     *  of {@code AICultistHurtByTarget:48-53} reads. It is pinned as a path
+     *  because the class is card t_6160444c's (BD-87). */
+    public static final String CLERIC_TYPE_PATH = "cultistcleric";
+    /** The registry-id form of "is this the Cleric": true only once
+     *  {@code thaumcraft:cultistcleric} is registered by card t_6160444c, so on
+     *  this lane the gang call takes the original's {@code :49-50} arm for every
+     *  shipped cultist. */
+    public static boolean isClericTypeId(final ResourceLocation id) {
+        return id != null && "thaumcraft".equals(id.getNamespace())
+                && CLERIC_TYPE_PATH.equals(id.getPath());
+    }
     /**
      * The {@code EntityType} form of the {@code :105-107} exclusion: a type is a
      * cultist when its registry id is one of the three the original registers.
      * The Leader's id is carried by path so card c5 needs no edit here; the
      * base's id does not exist, by design.
      */
+    public static boolean isCultistTypeId(final ResourceLocation id) {
+        return "thaumcraft".equals(id.getNamespace()) && CULTIST_TYPE_PATHS.contains(id.getPath());
+    }
     /**
      * {@code EntityCultistCleric:167-169} — {@code func_70719_l}: the look angles of
      * the ritual look target, as {@code (yaw, pitch, 0)} in the order the original’s
@@ -200,9 +230,6 @@ public final class CultistAiLogic {
         final float yaw = Mth.wrapDegrees((float) Math.toDegrees(Math.atan2(dz, dx)) - 90.0F);
         final float pitch = Mth.wrapDegrees((float) (-Math.toDegrees(Math.atan2(dy, flat))));
         return new Vec3(yaw, pitch, 0.0);
-    }
-    public static boolean isCultistTypeId(final ResourceLocation id) {
-        return "thaumcraft".equals(id.getNamespace()) && CULTIST_TYPE_PATHS.contains(id.getPath());
     }
 
     // ---- goal slots (shared by both registered cultists) ----
@@ -233,7 +260,7 @@ public final class CultistAiLogic {
      *  retaliation flag the original passes at {@code Knight:34}/{@code Cleric:44}. */
     public static final boolean IS_AGRESSORS = true;
     /** 1.21.1’s {@code dropCustomDeathLoot} carries no looting level (Mob:979), so
-     *  the roll table reads the window’s floor {@code 3 + 0} (BD-73). */
+     *  the roll table reads the window’s floor {@code 3 + 0} (BD-88). */
     public static final int DROP_LOOTING_BASELINE = 0;
     public static final int GOAL_SLOT_WATCH = 8;
     public static final int GOAL_SLOT_LOOK_IDLE = 8;

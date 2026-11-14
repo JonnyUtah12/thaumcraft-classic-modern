@@ -3,6 +3,8 @@ package com.jonnyutah12.thaumcraftclassic.items;
 import com.jonnyutah12.thaumcraftclassic.aspect.AspectKnowledge;
 import com.jonnyutah12.thaumcraftclassic.aspect.AspectList;
 import com.jonnyutah12.thaumcraftclassic.aspect.EssentiaTags;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcEffects;
+import com.jonnyutah12.thaumcraftclassic.client.fx.TcFxPlans;
 import com.jonnyutah12.thaumcraftclassic.network.payload.ScannedToServerPayload;
 import com.jonnyutah12.thaumcraftclassic.player.PlayerKnowledgeData;
 import com.jonnyutah12.thaumcraftclassic.player.ModAttachments;
@@ -45,8 +47,10 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * {@code ServerNetworkHooks.completeScan}. The original's NODE tile branch and
  * the {@code scanEventhandlers} phenomena loop have no port-side systems yet
  * (node milestone), so those branches return no scan, matching the server's
- * existing TODOs. The original's blockRunes particle effect is client FX
- * deferred to the model/particle milestone.</p>
+ * existing TODOs. The original's blockRunes particle effect landed with the
+ * rune family (TC-M7-02-c-s-f3): {@link TcFxPlans#scanEntityRunes} /
+ * {@link TcFxPlans#scanBlockRunes}, spawned client-side in
+ * {@link TcEffects} at each valid scan, as the original does.</p>
  */
 public class ItemThaumometer extends Item {
 
@@ -129,6 +133,14 @@ public class ItemThaumometer extends Item {
         if (hit instanceof EntityHitResult entityHit) {
             final Entity target = entityHit.getEntity();
             if (target != null && isScanValid(EssentiaTags.getEntityAspects(target), player)) {
+                // TC-M7-02-c-s-f3: the scan rune the original sends per valid
+                // doScan (ItemThaumometer.java:68-79): the rune rides the
+                // entity's eye line, lives (int)(height * 15) ticks worth
+                // (x3 in the FX ctor) and drifts with gravity 0.03.
+                TcEffects.spawn(level, java.util.List.of(TcFxPlans.scanEntityRunes(
+                        target.getX(), target.getY(), target.getZ(),
+                        target.getEyeHeight(target.getPose()), target.getBbHeight(),
+                        level.getRandom())));
                 return new PendingScan(2, BuiltInRegistries.ENTITY_TYPE.getKey(target.getType()), 0,
                         target.getId(), "");
             }
@@ -151,6 +163,12 @@ public class ItemThaumometer extends Item {
             final int data = 0; // meta is component-carried; the scan key uses 0
             if (isScanValid(EssentiaTags.getObjectTags(pick.isEmpty()
                     ? new ItemStack(block) : pick), player)) {
+                // TC-M7-02-c-s-f3: the block-scan rune, sent from both block
+                // branches of the original (ItemThaumometer.java:91-102 and
+                // 132-143, identical values): (blockX, blockY + 0.25, blockZ),
+                // dur 15, gravity 0.03, the same colour roll.
+                TcEffects.spawn(level, java.util.List.of(
+                        TcFxPlans.scanBlockRunes(pos, level.getRandom())));
                 return new PendingScan(1, scannedId, data, 0, "");
             }
             return null;
