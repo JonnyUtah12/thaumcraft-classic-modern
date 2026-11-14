@@ -67,3 +67,14 @@ origin/wt/t_c59f137b,6814759415504bc2192239a4e782d283fc823e70,BD-95,BD-97,t_c59f
 origin/wt/t_c59f137b,6814759415504bc2192239a4e782d283fc823e70,BD-96,BD-98,t_c59f137b,yes,"Knight equipment passes run from the mob's own `finalizeSpawn`, not the base's"
 origin/wt/t_c59f137b,6814759415504bc2192239a4e782d283fc823e70,BD-97,BD-99,t_c59f137b,yes,"The knight's `NearestAttackableTargetGoal<Player>` arms through `ServerLevel#getNearestPlayer`, which the game-test harness cannot populate"
 origin/wt/t_c59f137b,6814759415504bc2192239a4e782d283fc823e70,BD-98,BD-100,t_c59f137b,yes,`AICultistHurtByTarget` runs the original's pair and skips 21.1.259's `universal_anger` player clause
+origin/wt/t_6160444c,7401d0ecd3ee3d5b9b6200352391fdd4fc49bed4,BD-101,BD-101,t_6160444c,yes,Crimson Cleric: the ritualist byte's watched index
+origin/wt/t_6160444c,7401d0ecd3ee3d5b9b6200352391fdd4fc49bed4,BD-102,BD-102,t_6160444c,yes,Crimson Cleric: the robe and boots of the equipment pass are unregistered ids
+origin/wt/t_6160444c,7401d0ecd3ee3d5b9b6200352391fdd4fc49bed4,BD-103,BD-103,t_6160444c,yes,Crimson Cleric: the equipment pair runs from the mob's own finalizeSpawn
+origin/wt/t_6160444c,7401d0ecd3ee3d5b9b6200352391fdd4fc49bed4,BD-104,BD-104,t_6160444c,yes,Crimson Cleric: the :92-94 looting gate is the family's dropAllLoot seam
+origin/wt/t_6160444c,7401d0ecd3ee3d5b9b6200352391fdd4fc49bed4,BD-105,BD-105,t_6160444c,yes,Crimson Cleric: the gang call's mid-ritual arm runs on the class
+origin/wt/t_6160444c,7401d0ecd3ee3d5b9b6200352391fdd4fc49bed4,BD-106,BD-106,t_6160444c,yes,Crimson Cleric: AIAltarFocus's home arm runs on the live block registry
+origin/wt/t_6160444c,7401d0ecd3ee3d5b9b6200352391fdd4fc49bed4,BD-107,BD-107,t_6160444c,yes,Crimson Cleric: the ritual stare is a client hook and runs through a seam
+origin/wt/t_6160444c,7401d0ecd3ee3d5b9b6200352391fdd4fc49bed4,BD-108,BD-108,t_6160444c,yes,Energy Orb: the constructor's boolean drives a pair of figures and is pinned per caller
+origin/wt/t_6160444c,7401d0ecd3ee3d5b9b6200352391fdd4fc49bed4,BD-109,BD-109,t_6160444c,yes,"Energy Orb: the parry, the pick radius and the sound seam"
+origin/wt/t_6160444c,7401d0ecd3ee3d5b9b6200352391fdd4fc49bed4,BD-110,BD-110,t_6160444c,yes,Energy Orb: the homing step reads the live bounding box
+origin/wt/t_6160444c,7401d0ecd3ee3d5b9b6200352391fdd4fc49bed4,BD-111,BD-111,t_6160444c,yes,Energy Orb: the spawn payload interface and the registration triple
