@@ -210,7 +210,7 @@ class PechTradeRollTest {
     }
 
     @Test
-    @DisplayName("branch (b) is dropped: am >= 4 with the coin TRUE returns the amount and the loop continues (:138-149, BD-75)")
+    @DisplayName("branch (b) with no pool (the pre-BD-80 state): the gate, the coin, the give-back (:126, :141)")
     void chestBranchTakesTheFailureArm() {
         // it1: nextInt(7)=6 -> am 5, chest coin TRUE -> value back to 7
         // it2: nextInt(7)=0 -> am 4, chest coin false -> table row 3 (a4)
@@ -291,9 +291,120 @@ class PechTradeRollTest {
                 .boxed().toList(), "the 1.21.1 EMPTY slot is the original's null slot");
     }
 
+    // ---- the dungeonChest pool (BD-80, TC-M7-04-m3-b-c) --------------------
+
+    /** A pool row by its {@code (min, max, weight)} registration triple. */
+    private static PechTradeChestPool.ChestRow chestRow(final String path, final int min, final int max,
+            final int weight) {
+        return new PechTradeChestPool.ChestRow(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("thaumcraft", path), 0, min, max, weight);
+    }
+
+    /** The rare row the branch accepts, and the common row it rejects. */
+    private static final PechTradeChestPool.ChestRow RARE = chestRow("rare", 1, 1, 1);
+    private static final PechTradeChestPool.ChestRow COMMON = chestRow("common", 1, 3, 5);
+
+    @Test
+    @DisplayName("branch (b) with a live pool pays the drawn row and consumes one draw (:126-139)")
+    void chestBranchPaysTheDrawnRow() {
+        // it1: nextInt(7)=6 -> am 5; the branch's coin TRUE; nextInt(2)=0 -> the rare row
+        // it2: nextInt(2)=1 -> am 2; the table search draws nextInt(5)=1 -> the amount-2 row
+        final Scripted stream = new Scripted(List.of(6, 0, 1, 1), List.of(true));
+        final PechTradeRoll.Plan plan =
+                PechTradeRoll.plan(7, stream, ladder(), List.of(RARE, COMMON), new int[0]);
+
+        assertEquals(List.of("CHEST@rare#0", "a2"), rowsOf(plan),
+                "the accepted row pays, not a table row; the rest of the value pays through the table");
+        assertEquals(1, plan.chestPayouts());
+        assertEquals(1, plan.tablePayouts());
+        assertEquals(0, plan.leftover(), "the chest payout consumes the amount (:108, no give-back)");
+        assertEquals(2, plan.iterations());
+        assertEquals(List.of("nextInt(7)=6", "nextBoolean()=true", "nextInt(2)=0", "nextInt(2)=1", "nextInt(5)=1"),
+                stream.log, "amount draw, the branch's coin, ONE pool draw, then the table's search — "
+                        + "the sampler stops at the first accepted entry and never enters the table search");
+        assertEquals(0, stream.unusedInts());
+        assertEquals(0, stream.unusedBools());
+    }
+
+    @Test
+    @DisplayName("the sampler rejects every unpayable draw and stops at the original's cc < 50 bound (:131-134, :141)")
+    void chestSamplerIsBoundedByTheOriginalsOwnCap() {
+        // A pool of one unpayable row: every draw is rejected, so the sampler burns
+        // exactly CHEST_SEARCH_CAP draws and the branch takes the give-back.
+        final java.util.List<Integer> ints = new java.util.ArrayList<>();
+        final java.util.List<Boolean> bools = new java.util.ArrayList<>();
+        ints.add(0);                                                      // nextInt(7)=0 -> am 4
+        bools.add(true);                                                  // the branch's coin
+        for (int a = 0; a < PechTradeRoll.CHEST_SEARCH_CAP; a++) {
+            ints.add(0);                                                  // nextInt(1)=0, every draw
+        }
+        // the give-back re-arms the loop; cap the scripted stream so the test ends
+        for (int a = 1; a < PechTradeRoll.ROLL_ITERATION_CAP; a++) {
+            ints.add(0);
+            bools.add(true);
+            for (int b = 0; b < PechTradeRoll.CHEST_SEARCH_CAP; b++) {
+                ints.add(0);
+            }
+        }
+        final Scripted stream = new Scripted(ints, bools);
+        final PechTradeRoll.Plan plan =
+                PechTradeRoll.plan(7, stream, ladder(), List.of(COMMON), new int[0]);
+
+        assertTrue(plan.outcomes().isEmpty(), "an unpayable pool pays nothing");
+        assertEquals(7, plan.leftover(), "every iteration gave the amount back (:141)");
+        assertTrue(plan.exhausted(), "the loop bound, not the value, ended the roll (BD-74)");
+        assertEquals(PechTradeRoll.ROLL_ITERATION_CAP, plan.iterations());
+        final List<String> firstIteration = stream.log.subList(0, 2 + PechTradeRoll.CHEST_SEARCH_CAP);
+        assertEquals(PechTradeRoll.CHEST_SEARCH_CAP,
+                firstIteration.stream().filter(s -> s.startsWith("nextInt(1)")).count(),
+                "exactly the original's 50 draws, no 51st");
+        assertEquals("nextInt(7)=0", firstIteration.get(0));
+        assertEquals("nextBoolean()=true", firstIteration.get(1));
+    }
+
+    @Test
+    @DisplayName("the filter is the original's field test: weight > 5 or max group > 1 rejects (:134)")
+    void chestFilterIsTheFieldTest() {
+        assertTrue(PechTradeChestPool.payableByTheBranch(chestRow("rare", 1, 1, 1)), "(1, 1, 1) — rareLoot (:637)");
+        assertTrue(PechTradeChestPool.payableByTheBranch(chestRow("edge", 1, 1, 5)), "weight 5 is not > 5");
+        assertFalse(PechTradeChestPool.payableByTheBranch(chestRow("common", 1, 3, 5)), "max 3 — commonLoot (:615)");
+        assertFalse(PechTradeChestPool.payableByTheBranch(chestRow("uncommon", 1, 2, 4)), "max 2 — uncommonLoot (:625)");
+        assertFalse(PechTradeChestPool.payableByTheBranch(chestRow("heavy", 1, 1, 6)), "weight 6 is > 5");
+        assertFalse(PechTradeChestPool.payableByTheBranch(chestRow("stacking", 1, 2, 1)), "max 2 is > 1");
+    }
+
+    @Test
+    @DisplayName("the pool is the 22 rows 1.7.10 registers and the filter admits exactly the rare fourteen (Config.java:587-637)")
+    void poolIsTheTranscribedRows() {
+        assertEquals(22, PechTradeChestPool.pool().size(), "3 common + 5 uncommon + 14 rare");
+        assertEquals(14, PechTradeChestPool.payable().size(), "the rareLoot rows");
+        for (PechTradeChestPool.ChestRow row : PechTradeChestPool.pool()) {
+            assertTrue(row.item().getNamespace().equals("thaumcraft"), "no invented namespace: " + row.item());
+            assertEquals(1, row.minChances(), "every registration's second argument is 1 (:615, :625, :637)");
+            // The reading of the ctor's third/fourth arguments (max,weight) vs (weight,max)
+            // does not change which rows pass: assert the invariance the class doc claims.
+            final PechTradeChestPool.ChestRow swapped =
+                    chestRow(row.item().getPath(), row.minChances(), row.weight(), row.maxGroup());
+            assertEquals(PechTradeChestPool.payableByTheBranch(row), PechTradeChestPool.payableByTheBranch(swapped),
+                    "both readings of (" + row.maxGroup() + ", " + row.weight() + ") classify the row the same way");
+        }
+        assertEquals(3, PechTradeChestPool.pool().stream().filter(r -> r.maxGroup() == 3).count(),
+                "the commonLoot trio carries (1, 3, 5)");
+        assertEquals(5, PechTradeChestPool.pool().stream().filter(r -> r.maxGroup() == 2 && r.weight() == 4).count(),
+                "the uncommonLoot five carry (1, 2, 4)");
+        assertEquals(14, PechTradeChestPool.pool().stream().filter(r -> r.maxGroup() == 1 && r.weight() == 1).count(),
+                "the rareLoot fourteen carry (1, 1, 1)");
+    }
+
     private static List<String> rowsOf(final PechTradeRoll.Plan plan) {
-        return plan.outcomes().stream().map(outcome -> outcome instanceof PechTradeRoll.FromPack fromPack
-                ? "PACK@" + fromPack.packSlot()
-                : ((PechTradeRoll.FromTable) outcome).row().item().getPath()).toList();
+        return plan.outcomes().stream().map(outcome -> {
+            if (outcome instanceof PechTradeRoll.FromPack fromPack) {
+                return "PACK@" + fromPack.packSlot();
+            }
+            if (outcome instanceof PechTradeRoll.FromChest fromChest) {
+                return "CHEST@" + fromChest.row().item().getPath() + "#" + fromChest.row().meta();
+            }
+            return ((PechTradeRoll.FromTable) outcome).row().item().getPath();
+        }).toList();
     }
 }

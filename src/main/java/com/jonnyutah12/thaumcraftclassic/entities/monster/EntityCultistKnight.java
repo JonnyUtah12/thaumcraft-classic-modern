@@ -103,7 +103,7 @@ public class EntityCultistKnight extends EntityCultist {
      * {@code AbstractSkeleton.java:139}, {@code Fox.java:340} — in the original's
      * order, slots first then enchantments. The knight follows that idiom so
      * {@code :45} and {@code :66} run on the same spawn pass they ran on in 1.7.10
-     * (recorded deviation BD-96: the seam is the per-mob override, not the base's
+     * (recorded deviation BD-98: the seam is the per-mob override, not the base's
      * {@code finalizeSpawn}).</p>
      */
     @Override
@@ -146,7 +146,7 @@ public class EntityCultistKnight extends EntityCultist {
      * {@code closeDoor=false} variant of {@code OpenDoorGoal} at the original's
      * slot and keeps slot 5's {@code closeDoor=true} form. Both share the
      * movement flag exactly as the original's pair contended for {@code MOVE},
-     * so the higher slot wins while it can run. Recorded deviation (BD-90).</p>
+     * so the higher slot wins while it can run. Recorded deviation (BD-92).</p>
      */
     @Override
     protected void registerGoals() {
@@ -224,7 +224,7 @@ public class EntityCultistKnight extends EntityCultist {
      * {@code EnchantmentHelper.enchantItem}, whose {@code selectEnchantment}
      * rolls against the same level figure and can spend fewer points (and can
      * turn a book into an enchanted book, which never happens here). Recorded
-     * deviation (BD-91): the level figure and the light gate are exact, the
+     * deviation (BD-93): the level figure and the light gate are exact, the
      * one-enchantment-per-roll shape is not.</p>
      */
     @Override

@@ -3,6 +3,7 @@ package com.jonnyutah12.thaumcraftclassic.menus;
 import com.jonnyutah12.thaumcraftclassic.client.ContainerLayout;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityPech;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.PechAiLogic;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.PechTradeChestPool;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.PechTradeInventory;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.PechTradeRoll;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogPech;
@@ -64,17 +65,20 @@ import net.minecraft.world.item.component.CustomData;
  * server's answer, the screen never touches the entity, and a dedicated-server
  * probe can measure the same bit (BD-73).</p>
  *
- * <p><b>The dice roll landed with TC-M7-04-m3-b-followup:</b>
+ * <p><b>The dice roll landed with TC-M7-04-m3-b-followup, its pool with
+ * TC-M7-04-m3-b-c:</b>
  * {@link #clickMenuButton} carries button id 0 into {@link #generateContents()}
- * ({@code ContainerPech.java:83-159}) — the value, the scam roll, the jitter,
+ * ({@code ContainerPech.java:83-158}) — the value, the scam roll, the jitter,
  * the payout loop, the loot-pack draw and the trade table — over the
  * registry-gated port of {@code EntityPech.tradeInventory}
- * ({@code entities/monster/PechTradeInventory.java}) and the pure roll planner
- * ({@code entities/monster/PechTradeRoll.java}). The {@code ChestGenHooks}
- * "dungeonChest" branch keeps its gate and takes its failure arm (BD-75), the
- * table search is bounded (BD-74) and the {@code potionitem} metas ride as data
- * (BD-76). The 25x25 dice overlay ships as a framed vanilla-toned well — the
- * original's {@code gui_pech.png} (176,0) sprite is an asset-overlay-only sheet
+ * ({@code entities/monster/PechTradeInventory.java}), the transcribed
+ * {@code dungeonChest} pool ({@code entities/monster/PechTradeChestPool.java})
+ * and the pure roll planner ({@code entities/monster/PechTradeRoll.java}). The
+ * {@code ChestGenHooks} "dungeonChest" branch draws that pool under the
+ * original's filter and 50-attempt bound (BD-80), the table search is bounded
+ * (BD-74) and the {@code potionitem} metas ride as data (BD-81). The 25x25 dice
+ * overlay ships as a framed vanilla-toned well — the original's
+ * {@code gui_pech.png} (176,0) sprite is an asset-overlay-only sheet
  * (D-004 / BD-37).</p>
  */
 public class PechMenu extends AbstractContainerMenu {
@@ -238,10 +242,10 @@ public class PechMenu extends AbstractContainerMenu {
      * the loot-pack decrement and the trade-table lookup happen here.
      *
      * <p>The pech is the RNG: the original draws on {@code pech.getRandom()}
-     * ({@code :92,98-102,107,110,118,138,142,151}) — the entity's
+     * ({@code :92,98-102,107,109,118,126,132,147}) — the entity's
      * {@code RandomSource}, NOT the world's and NOT {@code RandomSource.create()}
      * (which is 1.21.1's thread-safe factory and does not exist in 1.7.10). The
-     * offer loses exactly ONE item at the end ({@code :158}), whatever the roll
+     * offer loses exactly ONE item at the end ({@code :156}), whatever the roll
      * paid, and an unvalued offer never gets here at all (the gate,
      * {@link #rollGateOk}).</p>
      */
@@ -257,20 +261,27 @@ public class PechMenu extends AbstractContainerMenu {
         value = PechTradeRoll.jitteredValue(value, level.getRandom());                        // :98-102
         final int[] packSlots = PechTradeRoll.packSlotsOf(this.pech.lootSlots());             // :73-81
         final java.util.List<PechTradeInventory.TradeRow> liveRows =
-                PechTradeInventory.liveRows(this.pech.getPechType(), level.registryAccess());  // :150
+                PechTradeInventory.liveRows(this.pech.getPechType(), level.registryAccess());  // :104
+        final java.util.List<PechTradeChestPool.ChestRow> chestPool =
+                PechTradeChestPool.liveRows(level.registryAccess());                           // :25, :127
         final PechTradeRoll.Plan plan =
-                PechTradeRoll.plan(value, level.getRandom(), liveRows, packSlots);            // :106-157
+                PechTradeRoll.plan(value, level.getRandom(), liveRows, chestPool, packSlots);  // :106-155
         for (final PechTradeRoll.Outcome outcome : plan.outcomes()) {
-            if (outcome instanceof PechTradeRoll.FromPack fromPack) {                         // :110-124
+            if (outcome instanceof PechTradeRoll.FromPack fromPack) {                         // :109-125
                 payFromLootPack(fromPack.packSlot());
-            } else if (outcome instanceof PechTradeRoll.FromTable fromTable) {                // :150-155
+            } else if (outcome instanceof PechTradeRoll.FromChest fromChest) {                // :136-139
+                final ItemStack payout = PechTradeChestPool.resolve(fromChest.row(), level.registryAccess());
+                if (!payout.isEmpty()) {
+                    payToOutputRange(payout);                                                 // :139
+                }
+            } else if (outcome instanceof PechTradeRoll.FromTable fromTable) {                // :143-153
                 final ItemStack payout = PechTradeInventory.resolve(fromTable.row(), level.registryAccess());
                 if (!payout.isEmpty()) {
-                    payToOutputRange(payout);                                                 // :153-155
+                    payToOutputRange(payout);                                                 // :150-152
                 }
             }
         }
-        this.inventory.removeItem(0, 1);                                                      // :158
+        this.inventory.removeItem(0, 1);                                                      // :156
     }
 
     /**
@@ -341,6 +352,14 @@ public class PechMenu extends AbstractContainerMenu {
      *  ({@link PechTradeInventory#liveRows}); the probe measures it. */
     public java.util.List<PechTradeInventory.TradeRow> tradeTable() {
         return PechTradeInventory.liveRows(this.pech.getPechType(), this.pech.level().registryAccess());
+    }
+
+    /** The roll's {@code dungeonChest} draw space — the registered rows of the
+     *  transcribed pool ({@link PechTradeChestPool#liveRows}, the original's
+     *  {@code :25}/{@code :127} pool handle with D-007's gate); the probe
+     *  measures it. */
+    public java.util.List<PechTradeChestPool.ChestRow> chestPool() {
+        return PechTradeChestPool.liveRows(this.pech.level().registryAccess());
     }
 
     /** The pech this window is bound to ({@code ContainerPech.java:27-29}). */

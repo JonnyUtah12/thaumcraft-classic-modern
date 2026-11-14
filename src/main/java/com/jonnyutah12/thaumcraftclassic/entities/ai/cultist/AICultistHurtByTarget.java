@@ -84,7 +84,7 @@ public class AICultistHurtByTarget extends HurtByTargetGoal {
      * gamerule is set — and it ships SET on 21.1.259 (measured in the game-test
      * harness, where it silenced the gang call against a player attacker, which is
      * the common attacker the call exists for). The port runs the original's pair
-     * and skips that clause (recorded deviation BD-98).</p>
+     * and skips that clause (recorded deviation BD-100).</p>
      */
     @Override
     public boolean canUse() {
@@ -135,7 +135,7 @@ public class AICultistHurtByTarget extends HurtByTargetGoal {
             // the gang member. 1.21.1's {@code Mob#canAttack(LivingEntity)} is NOT that
             // predicate: it is targetability — {@code canAttackType && !isAlliedTo} — and answers
             // TRUE for a player, which would skip every cultist in the box and silence the gang
-            // call for the common attacker (recorded deviation BD-94). The faction rule is the
+            // call for the common attacker (recorded deviation BD-96). The faction rule is the
             // one the original ran.
             if (CultistAiLogic.canAttackFactionMember(attacker)) {
                 continue;

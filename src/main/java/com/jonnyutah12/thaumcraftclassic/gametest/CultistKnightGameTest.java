@@ -244,7 +244,7 @@ public final class CultistKnightGameTest {
         // ARMOR at its registered default) is what :41 leaves standing, and :41 adds
         // only MAX_HEALTH. 1.7.10's mob armour figure is a vanilla EntityMob baseline
         // the mod-only reference tree cannot cite, and the knight's real defence is
-        // the plate of :46-49, unregistered on this lane (BD-68). Recorded as BD-95.
+        // the plate of :46-49, unregistered on this lane (BD-68). Recorded as BD-97.
         final double armourBaseline = net.minecraft.world.entity.monster.Monster
                 .createMonsterAttributes().build().getBaseValue(Attributes.ARMOR);
         helper.assertTrue(knight.getAttributeBaseValue(Attributes.ARMOR) == armourBaseline,
@@ -383,7 +383,7 @@ public final class CultistKnightGameTest {
         // ServerLevel#getNearestPlayer walks the ServerPlayer list. The game-test
         // server has no connected player and GameTestHelper.makeMockPlayer never
         // joins one — the fleet's Outer Lands row records the same wall for the
-        // portal's travel leg (BD-97) — so the scan below is EMPTY and the goal can
+        // portal's travel leg (BD-99) — so the scan below is EMPTY and the goal can
         // never arm here, whatever the mob does. What the harness CAN measure is
         // asserted; the arm itself is pinned at rule and goal-shape level, and
         // CultistAiLogicTest pins the selection rule world-free.
@@ -392,7 +392,7 @@ public final class CultistKnightGameTest {
                         .inflate(CultistAiLogic.FOLLOW_RANGE));
         helper.assertTrue(inLevel.isEmpty(),
                 "PROBE SHAPE: the harness now has a level-resident player, so the :35 arm became "
-                        + "measurable — move this probe to measure the acquisition (BD-97)");
+                        + "measurable — move this probe to measure the acquisition (BD-99)");
         helper.assertTrue(a.canAttack(player),
                 ":101-103 — the knight must be attackable-targetable by the player the :35 goal hunts, "
                         + "or the goal's own TargetGoal#canAttack leg would refuse it");
@@ -442,7 +442,7 @@ public final class CultistKnightGameTest {
         // unplaced mock player sits 44 blocks away in the template's void and the goal
         // never arms. The probe puts the attacker at the hurt knight's feet, where the
         // range leg is inert. What the range leg never explained is the other gate:
-        // the platform's `universal_anger` clause (BD-98) refused a PLAYER attacker
+        // the platform's `universal_anger` clause (BD-100) refused a PLAYER attacker
         // outright, which is exactly the attacker this call exists for.
         player.setPos(hurt.getX() + 0.5, hurt.getY(), hurt.getZ() + 0.5);
         // :45-47 — a cultist that already has a target does not join.

@@ -259,7 +259,7 @@ class CultistAiLogicTest {
         assertEquals(1.0F, CultistAiLogic.ALL_LOOT_THROW_OFFSET, F);
         assertEquals(1.5F, CultistAiLogic.DROP_THROW_OFFSET, F, ":50-54 spawnAtLocation(..., 1.5F)");
         assertEquals(3, CultistAiLogic.DROP_THIRD_BASE);
-        assertEquals(0, CultistAiLogic.DROP_LOOTING_BASELINE, "1.21.1's hook has no looting param (BD-88)");
+        assertEquals(0, CultistAiLogic.DROP_LOOTING_BASELINE, "1.21.1's hook has no looting param (BD-90)");
     }
 
     // -------------------------------------------------------------- equipment

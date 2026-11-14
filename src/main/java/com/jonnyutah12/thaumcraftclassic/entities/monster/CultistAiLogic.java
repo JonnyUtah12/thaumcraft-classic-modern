@@ -262,7 +262,7 @@ public final class CultistAiLogic {
      *  retaliation flag the original passes at {@code Knight:34}/{@code Cleric:44}. */
     public static final boolean IS_AGRESSORS = true;
     /** 1.21.1’s {@code dropCustomDeathLoot} carries no looting level (Mob:979), so
-     *  the roll table reads the window’s floor {@code 3 + 0} (BD-88). */
+     *  the roll table reads the window’s floor {@code 3 + 0} (BD-90). */
     public static final int DROP_LOOTING_BASELINE = 0;
     public static final int GOAL_SLOT_WATCH = 8;
     public static final int GOAL_SLOT_LOOK_IDLE = 8;
