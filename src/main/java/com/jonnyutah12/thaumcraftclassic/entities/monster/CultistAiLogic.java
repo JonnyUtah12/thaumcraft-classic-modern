@@ -222,6 +222,38 @@ public final class CultistAiLogic {
      * out — so the yaw's -90 and the pitch's negation are the original's own, not
      * a platform conversion.
      */
+    /**
+     * {@code EntityCultistCleric.java:160-171} — the original's private
+     * {@code updateRotation(current, target, step)}: the rotation-rate limiter
+     * the stare runs on. The body is {@code f = wrap180(target - current)}
+     * ({@code :161}, {@code MathHelper.func_76142_g} = {@link Mth#wrapDegrees}),
+     * clamped to {@code +-step} ({@code :162-168}), added to {@code current}
+     * ({@code :170}) — and the original's {@code :170} does NOT wrap its result,
+     * so this mirror does not either.
+     *
+     * <p>1.21.1's nearest-looking helper, {@code Mth#rotateIfNecessary(current,
+     * target, maxDelta)}, is {@code target - clamp(wrapDegrees(target - current),
+     * -maxDelta, maxDelta)}: it keeps a head at least {@code maxDelta} away from
+     * its target (the head-follow use), so with a delta over the step it lands
+     * {@code step} away from the TARGET and, once inside the step, it returns
+     * {@code current} — the value never reaches the target. Measured on the pad:
+     * the stare of a cleric whose altar is straight above sat at pitch
+     * {@code -80.0} for the whole probe (target {@code -90}, step {@code 10}) and
+     * never converged, where the original walks 10.0 degrees per tick to
+     * {@code -90}. That is why the stare calls this seam and not the platform's
+     * helper (BD-107).</p>
+     */
+    public static float updateRotation(final float current, final float target, final float step) {
+        float delta = Mth.wrapDegrees(target - current);                                     // :161
+        if (delta > step) {                                                                   // :162-164
+            delta = step;
+        }
+        if (delta < -step) {                                                                  // :166-168
+            delta = -step;
+        }
+        return current + delta;                                                               // :170
+    }
+
     public static Vec3 clericLookAngles(final double dx, final double dy, final double dz) {
         final double flat = Math.sqrt(dx * dx + dz * dz);                              // :152
         final float yaw = Mth.wrapDegrees((float) Math.toDegrees(Math.atan2(dz, dx)) - 90.0F);

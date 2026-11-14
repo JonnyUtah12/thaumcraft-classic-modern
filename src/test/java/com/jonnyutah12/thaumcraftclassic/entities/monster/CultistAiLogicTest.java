@@ -428,6 +428,36 @@ class CultistAiLogicTest {
         assertEquals(10.0F, CultistAiLogic.RITUAL_LOOK_PITCH_STEP, F, ":155");
     }
 
+    @Test
+    void theRitualStareStepsTenDegreesPerTickToItsTarget() {
+        // EntityCultistCleric.java:160-171 — updateRotation(current, target, step):
+        // f = wrap180(target - current) (:161), clamped to +-step (:162-168), added
+        // to current (:170, unwrapped). The stare calls this seam, not
+        // Mth#rotateIfNecessary, whose target-minus-clamped-delta shape freezes a
+        // head short of its target (measured on the pad: pitch pinned at -80.0).
+        final float F = 1.0E-4F;
+        assertEquals(-10.0F, CultistAiLogic.updateRotation(0.0F, -90.0F, 10.0F), F,
+                ":155 — one tick of the pitch step is the original's 10.0F, not a jump");
+        assertEquals(-20.0F, CultistAiLogic.updateRotation(-10.0F, -90.0F, 10.0F), F,
+                ":161-170 — the limiter walks the current value toward the target");
+        assertEquals(-90.0F, CultistAiLogic.updateRotation(-85.0F, -90.0F, 10.0F), F,
+                ":162-168 — inside the step the delta is the raw wrapped delta, so the "
+                        + "stare lands ON the target and stays");
+        // :161 wraps the DELTA, so a 350-degree gap turns the head the short way;
+        // :170 adds to the current value and does NOT wrap it (the original does
+        // not), so 350 + 10 is 360 on the nose.
+        assertEquals(360.0F, CultistAiLogic.updateRotation(350.0F, 0.0F, 10.0F), F,
+                ":161/:170 — wrapDegrees(0 - 350) = +10, added unwrapped to 350");
+        assertEquals(-30.0F, CultistAiLogic.updateRotation(0.0F, -90.0F, 30.0F), F,
+                ":156 — the yaw arm runs the same limiter at the mob's rotation limit");
+        // Convergence: the original's 10.0F/tick from 0.0 reaches -90 in nine ticks.
+        float pitch = 0.0F;
+        for (int i = 0; i < 9; i++) {
+            pitch = CultistAiLogic.updateRotation(pitch, -90.0F, CultistAiLogic.RITUAL_LOOK_PITCH_STEP);
+        }
+        assertEquals(-90.0F, pitch, F, ":155 — nine steps of 10.0F converge on the altar pitch");
+    }
+
     // ------------------------------------------------------------ the shipped shape
 
     @Test

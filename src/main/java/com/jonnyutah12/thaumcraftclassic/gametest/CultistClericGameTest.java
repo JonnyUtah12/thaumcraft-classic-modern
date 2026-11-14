@@ -305,9 +305,13 @@ public final class CultistClericGameTest {
                         && has(movement, LookAtPlayerGoal.class, CultistAiLogic.GOAL_SLOT_WATCH)
                         && has(movement, RandomLookAroundGoal.class, CultistAiLogic.GOAL_SLOT_LOOK_IDLE),
                 ":37-43 — the knight's slots 3-8 must be installed slot for slot; " + describe(movement));
-        helper.assertTrue(movement.size() == 9,
-                ":34-43 — the cleric ships 9 movement goals (the knight's 8 + the altar goal); "
-                        + describe(movement));
+        helper.assertTrue(movement.size() == 10,
+                ":34-43 — the cleric ships 10 movement goals: the knight's 8 (:26/:27/:28/:29/:30/"
+                        + ":31/:32/:33) + AIAltarFocus (:35) + AILongRangeAttack (:36). The original's"
+                        + " :42/:43 both addGoal at slot 8 and 1.7.10's GoalSelect is a TreeMap keyed"
+                        + " by priority, so its WatchClosest is REPLACED by the LookIdle and the"
+                        + " cleric nets 9; 1.21.1's GoalSelector keeps every goal, so the port ships"
+                        + " the pair at distinct slots and measures 10 (BD-112); " + describe(movement));
         helper.assertTrue(has(targets, AICultistHurtByTarget.class, CultistAiLogic.TARGET_SLOT_HURT)
                         && has(targets, NearestAttackableTargetGoal.class, CultistAiLogic.TARGET_SLOT_PLAYER),
                 ":44-45 — the gang call sits at target slot 1 and the player scan at 2; " + describe(targets));
@@ -400,12 +404,20 @@ public final class CultistClericGameTest {
     @GameTest(template = "empty")
     public static void anyDamageThatLandsClearsTheRitual(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
-        final DamageSource voidEdge = level.damageSources().fellOutOfWorld();
+        // The source must be one the mob's invulnerable flag GATES: 1.21.1's
+        // OUT_OF_WORLD carries BYPASSES_INVULNERABILITY, so the :116 arm can never
+        // arm against it (measured: isInvulnerableTo(fellOutOfWorld) = false with
+        // setInvulnerable(true)). GENERIC is the plain hit the original's
+        // func_70097_a saw.
+        final DamageSource edge = level.damageSources().generic();
         final EntityCultistCleric cleric = cleric(helper);
         cleric.setIsRitualist(true);
-        cleric.hurt(voidEdge, 1.0F);                                                   // :119
+        cleric.hurt(edge, 1.0F);                                                       // :119
         helper.assertTrue(!cleric.getIsRitualist(),
                 ":118 — damage that lands must clear the ritual (the original's :118 runs before super)");
+        helper.assertTrue(cleric.getHealth() < cleric.getMaxHealth(),
+                "PROBE BROKEN: the hit must LAND for the :118 clear to mean damage — health is "
+                        + cleric.getHealth() + " of " + cleric.getMaxHealth());
         // The :116 arm: an invulnerable cleric returns at the gate, so the ritual
         // stands and nothing else moves. 1.7.10's test is the source's entity
         // (func_70097_a reads entityattacksource.getEntity().isEntityInvulnerable());
@@ -414,10 +426,10 @@ public final class CultistClericGameTest {
         final EntityCultistCleric shielded = cleric(helper);
         shielded.setIsRitualist(true);
         shielded.setInvulnerable(true);
-        helper.assertTrue(shielded.isInvulnerableTo(voidEdge),
+        helper.assertTrue(shielded.isInvulnerableTo(edge),
                 "PROBE BROKEN: the :116 gate is isInvulnerableTo, so the fixture must be invulnerable"
-                        + " to the source it is hit with");
-        shielded.hurt(voidEdge, 100.0F);                                               // :116
+                        + " to the source it is hit with (got isInvulnerableTo(" + edge + ") = false)");
+        shielded.hurt(edge, 100.0F);                                                   // :116
         helper.assertTrue(shielded.getIsRitualist(),
                 ":116 — an invulnerable cleric returns at the gate and must NOT clear the ritual");
         helper.assertTrue(shielded.getHealth() == shielded.getMaxHealth(),
@@ -456,18 +468,33 @@ public final class CultistClericGameTest {
                         + " an item appeared on the pad");
         cleric.setIsRitualist(false);
         helper.assertTrue(cleric.isLootingGateOpen(), ":94 — out of the ritual the gate opens");
+        final int before = level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box)
+                .size();
         for (int i = 0; i < 40; i++) {
             cleric.dropAllLoot();
         }
-        // BD-68's shape: the seam fires, and the unregistered id invents nothing.
-        helper.assertTrue(!BuiltInRegistries.ITEM.containsKey(CultistAiLogic.ALL_LOOT_ITEM),
-                "the probe's reading of the tree is that " + CultistAiLogic.ALL_LOOT_ITEM
-                        + " is unregistered; if it registers, the :61 drop becomes measurable and this"
-                        + " probe must turn on the drop by name");
-        helper.assertTrue(level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box)
-                        .isEmpty(),
-                ":61 — the seam must not invent an item for the unregistered "
-                        + CultistAiLogic.ALL_LOOT_ITEM);
+        // The tree REGISTERS thaumcraft:itemeldritchobject (CatalogEldritchRealm.java:196), so the
+        // :61 drop is measurable on this tree and this probe measures it by name: the id and the
+        // pinned meta of CultistAiLogic.ALL_LOOT_META through EntityCultist.dropCultistItem.
+        // (The robe and boots ids of :56-59 stay unregistered — BD-102's own probe.)
+        helper.assertTrue(BuiltInRegistries.ITEM.containsKey(CultistAiLogic.ALL_LOOT_ITEM),
+                "PROBE BROKEN: the probe's reading of the tree is that "
+                        + CultistAiLogic.ALL_LOOT_ITEM + " is registered by CatalogEldritchRealm:196");
+        final net.minecraft.world.item.Item looted =
+                BuiltInRegistries.ITEM.get(CultistAiLogic.ALL_LOOT_ITEM);
+        final java.util.List<net.minecraft.world.entity.item.ItemEntity> drops =
+                level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box);
+        helper.assertTrue(drops.size() > before,
+                ":61/:94 — out of the ritual the open gate lets the seam drop "
+                        + CultistAiLogic.ALL_LOOT_ITEM + "; 40 calls produced "
+                        + (drops.size() - before) + " item entities");
+        helper.assertTrue(drops.stream().allMatch(e -> e.getItem().is(looted)),
+                ":61 — every drop on the pad is the eldritch object, not an invented item");
+        helper.assertTrue(drops.stream().anyMatch(e -> Integer.valueOf(CultistAiLogic.ALL_LOOT_META)
+                        .equals(e.getItem().get(
+                                com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents.ITEM_META))),
+                ":61 — the drop carries the pinned meta " + CultistAiLogic.ALL_LOOT_META
+                        + " (EntityCultist.withMeta), not a bare stack");
         cleric.discard();
         helper.succeed();
     }
@@ -629,15 +656,37 @@ public final class CultistClericGameTest {
         helper.assertTrue(orb.getOwner() == cleric, ":22-26 — the thrower ctor records the owner");
         helper.assertTrue(Math.abs(orb.getDefaultGravityForProbe()) < 1.0E-9,
                 ":31-33 — func_70185_h() = 0.0F: the orb is gravity-free");
+        // The clamp arm (:102-104): a velocity outside the band is pulled inside it.
         orb.setDeltaMovement(new net.minecraft.world.phys.Vec3(9.0, -9.0, 0.0));       // pre-clamp state
         orb.tick();                                                                   // :88
+        final net.minecraft.world.phys.Vec3 clamped = orb.getDeltaMovement();
+        helper.assertTrue(Math.abs(clamped.x()) <= EntityGolemOrb.HOMING_CLAMP + 1.0E-6
+                        && Math.abs(clamped.y()) <= EntityGolemOrb.HOMING_CLAMP + 1.0E-6
+                        && Math.abs(clamped.z()) <= EntityGolemOrb.HOMING_CLAMP + 1.0E-6,
+                ":102-104 — every velocity component is clamped to +-0.25, got " + clamped);
+        helper.assertTrue(Math.abs(Math.abs(clamped.x()) - EntityGolemOrb.HOMING_CLAMP) < 1.0E-6
+                        && Math.abs(Math.abs(clamped.y()) - EntityGolemOrb.HOMING_CLAMP) < 1.0E-6,
+                ":102-104 — an out-of-band component lands exactly ON the clamp, got " + clamped);
+        // The step arm (:95-101), measured from rest so the clamp is not in the way:
+        // the unit vector toward (target.x, BB.minY + height*0.6, target.z) times 0.2.
+        orb.setPos(cleric.getX(), cleric.getY(), cleric.getZ());
+        orb.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
+        final double d = orb.position().distanceTo(target.position());                // :91 (d = dist to target)
+        final double ux = (target.getX() - orb.getX()) / d;                           // :92/:96
+        final double uy = (target.getBoundingBox().minY + target.getBbHeight()
+                * EntityGolemOrb.HOMING_HEIGHT_FACTOR - orb.getY()) / d;              // :93/:97
+        final double uz = (target.getZ() - orb.getZ()) / d;                           // :94/:98
+        orb.tick();                                                                   // :88
         final net.minecraft.world.phys.Vec3 motion = orb.getDeltaMovement();
-        helper.assertTrue(Math.abs(motion.x()) <= EntityGolemOrb.HOMING_CLAMP + 1.0E-6
-                        && Math.abs(motion.y()) <= EntityGolemOrb.HOMING_CLAMP + 1.0E-6
-                        && Math.abs(motion.z()) <= EntityGolemOrb.HOMING_CLAMP + 1.0E-6,
-                ":102-104 — every velocity component is clamped to +-0.25, got " + motion);
-        helper.assertTrue(motion.x() > 0.0 && motion.x() < EntityGolemOrb.HOMING + 1.0E-6,
-                ":100 — the homing adds the unit vector x times 0.2 to the velocity, got " + motion.x());
+        helper.assertTrue(Math.abs(motion.x() - ux * EntityGolemOrb.HOMING) < 1.0E-6
+                        && Math.abs(motion.y() - uy * EntityGolemOrb.HOMING) < 1.0E-6
+                        && Math.abs(motion.z() - uz * EntityGolemOrb.HOMING) < 1.0E-6,
+                ":99-101 — from rest, one tick adds the unit vector times 0.2 (HOMING) to the"
+                        + " velocity; got " + motion + " expected "
+                        + (ux * EntityGolemOrb.HOMING) + "/" + (uy * EntityGolemOrb.HOMING)
+                        + "/" + (uz * EntityGolemOrb.HOMING) + " at d=" + d);
+        helper.assertTrue(motion.x() > 0.0,
+                ":99 — the orb homes TOWARD the target's x, got " + motion.x());
         // The aim point's height factor: the target's BB.minY + height * 0.6.
         final double aimY = target.getBoundingBox().minY + target.getBbHeight()
                 * EntityGolemOrb.HOMING_HEIGHT_FACTOR;
@@ -809,7 +858,10 @@ public final class CultistClericGameTest {
         final BlockPos home = helper.absolutePos(BlockPos.ZERO).offset(2, 3, 2);
         helper.setBlock(home, CatalogEldritchRealm.BLOCK_ELDRITCH.get().defaultBlockState());
         helper.assertTrue(level.getBlockState(home).is(CatalogEldritchRealm.BLOCK_ELDRITCH.get()),
-                "PROBE BROKEN: the pad must hold a thaumcraft:blockeldritch at the home for :38-43");
+                "PROBE BROKEN: the pad must hold a thaumcraft:blockeldritch at the home for :38-43;"
+                        + " home=" + home + " origin=" + helper.absolutePos(BlockPos.ZERO)
+                        + " wanted=" + CatalogEldritchRealm.BLOCK_ELDRITCH.get()
+                        + " reading=" + level.getBlockState(home));
         cleric.setHomePosition(home, CultistAiLogic.SPAWN_HOME_DISTANCE);
         cleric.setIsRitualist(true);
         final AIAltarFocus goal = new AIAltarFocus(cleric);

@@ -132,6 +132,16 @@ public class EntityCultistCleric extends EntityCultist implements RangedAttackMo
      * slot for slot and parameter for parameter (see
      * {@code EntityCultistKnight#registerGoals()} for the mapping of the two
      * 1.7.10-only goals).
+     *
+     * <p>The pair at {@code :42}/{@code :43} is the original's slot-8 collision:
+     * 1.7.10's {@code GoalSelect} is a {@code TreeMap} of priority to goal, so
+     * the {@code EntityAIWatchClosest} of {@code :42} is REPLACED by the
+     * {@code EntityAILookIdle} of {@code :43} and the cleric nets nine movement
+     * goals. 1.21.1's {@code GoalSelector} is a set of {@code WrappedGoal} that
+     * keeps every goal at any priority, so the port ships the pair at distinct
+     * slots (WATCH 8, LOOK_IDLE 9) and the cleric ships ten movement goals —
+     * recorded deviation BD-112, measured by
+     * {@code CultistClericGameTest.theClericGoalSetIsTheFamilySetPlusTheAltarAndRangedGoals}.</p>
      */
     @Override
     protected void registerGoals() {
@@ -404,12 +414,17 @@ public class EntityCultistCleric extends EntityCultist implements RangedAttackMo
      * <p>The two angles are the original's own radian maths, kept as the pure
      * function {@link CultistAiLogic#clericLookAngles(double, double, double)}
      * ({@code :152-154}, {@code (yaw, pitch, 0)}), and each is applied through
-     * {@code Mth#rotateIfNecessary}: that is 1.21.1's twin of 1.7.10's
-     * {@code func_70126_a(float, float, float)} ({@code updateRotation}) —
-     * {@code target - clamp(degreesDifference(current, target), -step, step)},
-     * the same wrapped-delta clamp. The pitch step is the original's
-     * {@code 10.0F} ({@code :155}); the yaw step is the mob's rotation limit
-     * {@code func_70646_bf()} = {@link #getMaxHeadXRot()} ({@code :156}).</p>
+     * {@link CultistAiLogic#updateRotation(float, float, float)}, the mirror of
+     * the original's own private {@code updateRotation} ({@code :160-171}):
+     * {@code current + clamp(wrapDegrees(target - current), -step, step)} — a
+     * rate limiter that walks to the target. The platform's
+     * {@code Mth#rotateIfNecessary} is NOT that function (it is
+     * {@code target - clamp(...)}, a head-follow clamp that freezes short of the
+     * target; measured: the stare pinned at pitch {@code -80.0} and never
+     * converged), so the stare keeps the original's arithmetic (BD-107). The
+     * pitch step is the original's {@code 10.0F} ({@code :155}); the yaw step is
+     * the mob's rotation limit {@code func_70646_bf()} =
+     * {@link #getMaxHeadXRot()} ({@code :156}).</p>
      */
     public void applyRitualLook(final BlockPos home) {
         final double dx = home.getX() + CultistAiLogic.RITUAL_LOOK_XZ_OFFSET - this.getX();
@@ -417,10 +432,10 @@ public class EntityCultistCleric extends EntityCultist implements RangedAttackMo
                 - (this.getY() + this.getEyeHeight());
         final double dz = home.getZ() + CultistAiLogic.RITUAL_LOOK_XZ_OFFSET - this.getZ();
         final Vec3 look = CultistAiLogic.clericLookAngles(dx, dy, dz);                  // :152-154
-        this.setXRot(Mth.rotateIfNecessary(this.getXRot(), (float) look.y(),
-                CultistAiLogic.RITUAL_LOOK_PITCH_STEP));                               // :155
-        this.setYHeadRot(Mth.rotateIfNecessary(this.getYHeadRot(), (float) look.x(),
-                this.getMaxHeadXRot()));                                               // :156
+        this.setXRot(CultistAiLogic.updateRotation(this.getXRot(), (float) look.y(),
+                CultistAiLogic.RITUAL_LOOK_PITCH_STEP));                               // :155 (:160-171)
+        this.setYHeadRot(CultistAiLogic.updateRotation(this.getYHeadRot(), (float) look.x(),
+                this.getMaxHeadXRot()));                                               // :156 (:160-171)
     }
 
     /** {@code :177-179} — {@code func_70627_aG()} ({@code getMaxAir}): 500. */
