@@ -7,6 +7,8 @@ Minecraft 1.21.1 / NeoForge 21.1.259 targets.
 
 ## [Unreleased]
 
+- Pech trade dice roll (TC-M7-04-m3-b-followup / t_2f4979f8): the server arm of the pech window is live - the dice button (`GuiPech.java:62`) runs `ContainerPech.generateContents` end to end, the scam roll untames the pech and fires the `pech_trade` cue, the pech's loot pack and the ported `EntityPech.tradeInventory` tables fill the output grid, and the offer loses exactly one item. The three trade tables ship verbatim from `EntityPech.java:746-830` with the metadata ids on the port's variant carriers and the books over the data-registry enchantments; the payout search is bounded against registry gating (BD-79), the `ChestGenHooks` `dungeonChest` branch ships as gate + failure arm only (BD-80), and the potion metas ship as data (BD-81). `runGameTestServer`: All 435 required tests passed (exit 0) / `-Ptc.noCurios runGameTestServer`: All 435 required tests passed (exit 0), 1037 unit tests / 0 failures / 2 skipped (build exit 0, counted from `build/test-results/test` XML on the merged tree).
+
 The Thaumonomicon is in the shipped code path. The BOOK chain (BOOK-1 open path,
 BOOK-2 tab strip and entry listing generated from the shipped research graph, BOOK-4
 per-entry detail panel, the note item with its hex-grid puzzle, and the note-request
