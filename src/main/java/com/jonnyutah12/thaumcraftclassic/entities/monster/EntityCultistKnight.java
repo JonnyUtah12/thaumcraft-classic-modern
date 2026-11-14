@@ -8,6 +8,8 @@ import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
@@ -25,6 +27,10 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.Level;
+
+import javax.annotation.Nullable;
+
+import net.minecraft.server.level.ServerLevelAccessor;
 
 import com.jonnyutah12.thaumcraftclassic.entities.ai.cultist.AICultistHurtByTarget;
 
@@ -80,6 +86,35 @@ public class EntityCultistKnight extends EntityCultist {
         // and no armour value.
         return EntityCultist.createAttributes()
                 .add(Attributes.MAX_HEALTH, CultistAiLogic.KNIGHT_MAX_HEALTH);
+    }
+
+    /**
+     * The spawn pass, wired. The original reaches its two passes from
+     * {@code EntityLiving#onInitialSpawn}: the equipment roll
+     * ({@code EntityCultistKnight.java:45-64} {@code func_82164_bB},
+     * {@code addRandomEquipment}) and the light-gated weapon enchantment
+     * ({@code :66-72} {@code func_82162_bC}, {@code enchantItemWithRandom}).
+     *
+     * <p>1.21.1 does NOT reach them from {@code Mob#finalizeSpawn}: that body
+     * (target jar, decompiled {@code Mob.java:1192-1204}) only adds the
+     * follow-range spawn modifier, rolls the left-hand flag and records the
+     * spawn type. Every mob that carries equipment calls the pair from its OWN
+     * override — {@code Vindicator.java:131-132}, {@code Piglin.java:215-216},
+     * {@code AbstractSkeleton.java:139}, {@code Fox.java:340} — in the original's
+     * order, slots first then enchantments. The knight follows that idiom so
+     * {@code :45} and {@code :66} run on the same spawn pass they ran on in 1.7.10
+     * (recorded deviation BD-96: the seam is the per-mob override, not the base's
+     * {@code finalizeSpawn}).</p>
+     */
+    @Override
+    public SpawnGroupData finalizeSpawn(final ServerLevelAccessor level,
+            final DifficultyInstance difficulty, final MobSpawnType spawnType,
+            @Nullable final SpawnGroupData groupData) {
+        final SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnType, groupData);
+        final RandomSource random = level.getRandom();
+        this.populateDefaultEquipmentSlots(random, difficulty);                 // :45-64
+        this.populateDefaultEquipmentEnchantments(level, random, difficulty);   // :66-72
+        return data;
     }
 
     /**

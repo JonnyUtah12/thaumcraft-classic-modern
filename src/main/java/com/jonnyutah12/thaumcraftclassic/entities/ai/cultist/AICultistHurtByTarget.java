@@ -105,8 +105,16 @@ public class AICultistHurtByTarget extends HurtByTargetGoal {
             if (!CultistAiLogic.helpsTheHurt(cultist == this.mob, cultist.getTarget() != null)) {
                 continue;                                                               // :45-46
             }
-            if (cultist.canAttack(attacker)) {
-                continue;                                                               // :47
+            // :47 — the original's test is the FACTION predicate
+            // {@code EntityCultist#func_142014_c(EntityLivingBase)} (EntityCultist.java:101-103,
+            // "el instanceof EntityCultist || el instanceof EntityCultistLeader"), evaluated on
+            // the gang member. 1.21.1's {@code Mob#canAttack(LivingEntity)} is NOT that
+            // predicate: it is targetability — {@code canAttackType && !isAlliedTo} — and answers
+            // TRUE for a player, which would skip every cultist in the box and silence the gang
+            // call for the common attacker (recorded deviation BD-94). The faction rule is the
+            // one the original ran.
+            if (CultistAiLogic.canAttackFactionMember(attacker)) {
+                continue;
             }
             if (!isRitualistCleric(cultist)) {
                 cultist.setTarget(attacker);                                            // :49-50

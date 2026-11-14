@@ -12,6 +12,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
@@ -236,9 +237,20 @@ public final class CultistKnightGameTest {
         helper.assertTrue(knight.getAttributeBaseValue(Attributes.ATTACK_DAMAGE) == CultistAiLogic.ATTACK_DAMAGE,
                 ":28 — attack damage must be 4.0, got "
                         + knight.getAttributeBaseValue(Attributes.ATTACK_DAMAGE));
-        helper.assertTrue(Math.abs(knight.getAttributeBaseValue(Attributes.ARMOR) - 2.0) < 1.0E-6,
-                "the knight adds no armour (:41 adds only MAX_HEALTH), so the monster baseline 2.0 must "
-                        + "stand; got " + knight.getAttributeBaseValue(Attributes.ARMOR));
+        // The knight's armour is the PLATFORM monster baseline, measured, not a
+        // remembered figure: 21.1.259's Monster.createMonsterAttributes() (target
+        // jar, decompiled) is Mob.createMobAttributes().add(Attributes.ATTACK_DAMAGE)
+        // — no ARMOR term — so the living baseline (LivingEntity.createLivingAttributes,
+        // ARMOR at its registered default) is what :41 leaves standing, and :41 adds
+        // only MAX_HEALTH. 1.7.10's mob armour figure is a vanilla EntityMob baseline
+        // the mod-only reference tree cannot cite, and the knight's real defence is
+        // the plate of :46-49, unregistered on this lane (BD-68). Recorded as BD-95.
+        final double armourBaseline = net.minecraft.world.entity.monster.Monster
+                .createMonsterAttributes().build().getBaseValue(Attributes.ARMOR);
+        helper.assertTrue(knight.getAttributeBaseValue(Attributes.ARMOR) == armourBaseline,
+                "the knight adds no armour (:41 adds only MAX_HEALTH), so its armour must equal the "
+                        + "platform monster baseline " + armourBaseline + "; got "
+                        + knight.getAttributeBaseValue(Attributes.ARMOR));
         // The attribute builder adds exactly three to the baseline: a count probe,
         // because a fourth value would mean the port invented a stat.
         helper.assertTrue(CultistAiLogic.FOLLOW_RANGE == 32.0
@@ -352,24 +364,52 @@ public final class CultistKnightGameTest {
                         + "(BD-87) — " + CultistAiLogic.CULTIST_TYPE_PATHS);
         helper.assertTrue(!a.isCultistType(EntityType.ZOMBIE),
                 "a zombie must not read as a cultist type");
-        // The player target goal is armed only on a target — the goal's canUse is
-        // the live gate of :35.
-        final Player player = helper.makeMockPlayer(GameType.SURVIVAL);
-        a.setTarget(player);
-        final boolean armed = goals(a, true).stream()
-                .filter(g -> g.getGoal() instanceof NearestAttackableTargetGoal)
-                .allMatch(WrappedGoal::canUse);
-        helper.assertTrue(armed, "the :35 target goal is not usable with a target set");
         // Damage lands: the vanilla damage path is what the ledger's "attackable"
         // row means, and the pad's on-fire state is excluded by clearFire().
+        final Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        // The house pattern (the pech card): makeMockPlayer does NOT place the
+        // player, and every distance gate on the damage/goal path uses its position.
+        player.setPos(a.getX() + 0.5, a.getY(), a.getZ() + 0.5);
         a.clearFire();
         final float before = a.getHealth();
         a.hurt(level.damageSources().playerAttack(player), 4.0F);
         helper.assertTrue(a.getHealth() < before,
                 "a player hit did not damage the knight (health " + before + " -> " + a.getHealth() + ")");
-        a.discard();
-        b.discard();
-        helper.succeed();
+
+        // :35 — the player target goal, MEASURED on the mob's own AI cadence.
+        // 1.21.1's NearestAttackableTargetGoal#canUse (target jar, decompiled) is
+        // `this.randomInterval > 0 && this.mob.getRandom().nextInt(this.randomInterval)
+        // != 0 -> false`, then findTarget(), and findTarget selects through
+        // TargetingConditions over the LEVEL's players. Two consequences the
+        // pre-fix probe ignored: the goal is throttled to a 1-in-20 roll per tick
+        // (the ctor's `true` = randomInterval 20), and a makeMockPlayer player is
+        // NOT in the level's player list, so calling canUse() on demand answers
+        // false for reasons that have nothing to do with :35. The harness's runner
+        // player IS level-resident (the Mind Spider card's finding), so the arm is
+        // measured by letting the mob's own cadence acquire it (BD-97).
+        final List<Player> inLevel = level.getPlayers();
+        helper.assertTrue(!inLevel.isEmpty(),
+                "PROBE SHAPE: the harness has no level-resident player, so :35's target selection "
+                        + "cannot be measured here (the goal PRESENCE is asserted in "
+                        + "knightGoalSetIsTheOriginalSlots)");
+        final Player harness = inLevel.get(0);
+        helper.assertTrue(a.distanceToSqr(harness)
+                        <= CultistAiLogic.FOLLOW_RANGE * CultistAiLogic.FOLLOW_RANGE,
+                "PROBE SHAPE: the harness player is " + a.distanceTo(harness)
+                        + " blocks away, outside the 32-block follow range the :35 goal selects with");
+        a.setTarget(null);
+        helper.succeedWhen(() -> {
+            a.clearFire();
+            b.clearFire();
+            final LivingEntity acquired = a.getTarget();
+            helper.assertTrue(acquired == harness,
+                    ":35 — the knight's own player target goal did not acquire the harness's "
+                            + "level-resident player (target = " + acquired + ", players in level = "
+                            + inLevel.size() + ", distance = " + a.distanceTo(harness)
+                            + ", probeTick = " + helper.getTick() + ")");
+            a.discard();
+            b.discard();
+        });
     }
 
     /**
@@ -398,6 +438,14 @@ public final class CultistKnightGameTest {
         other.setNoGravity(true);
         level.addFreshEntity(other);
         final Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        // The house pattern (the pech card): makeMockPlayer does NOT place the player.
+        // 1.21.1's HurtByTargetGoal#canUse (target jar, decompiled :20-38) tests the
+        // attacker with HURT_BY_TARGETING = TargetingConditions.forCombat() — a
+        // 10-block combat range (TargetGoal#canAttack) — so an unplaced mock player
+        // sits outside the gate and the goal never arms. The original's shouldExecute
+        // (:20-23) has no range term at all (recorded deviation BD-97), so the probe
+        // puts the attacker at the hurt knight's feet, where the gate is inert.
+        player.setPos(hurt.getX() + 0.5, hurt.getY(), hurt.getZ() + 0.5);
         // :45-47 — a cultist that already has a target does not join.
         busy.setTarget(other);
         helper.assertTrue(busy.getTarget() == other,
@@ -466,25 +514,45 @@ public final class CultistKnightGameTest {
         final var difficulty = new net.minecraft.world.DifficultyInstance(
                 level.getDifficulty(), level.getDayTime(), 0L, 0.0F);
         int swords = 0;
+        int elite = 0;
         for (int i = 0; i < 100; i++) {
             final EntityCultistKnight knight = knight(helper);
             knight.finalizeSpawn(level, difficulty, MobSpawnType.NATURAL, null);       // :45
             final ItemStack mainhand = knight.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND);
             final ResourceLocation id = mainhand.isEmpty() ? null
                     : BuiltInRegistries.ITEM.getKey(mainhand.getItem());
-            helper.assertTrue(mainhand.is(Items.IRON_SWORD),
-                    "the spawn pass handed the knight " + id + "; the shipped sword is the iron stand-in"
-                            + " of the unregistered thaumcraft:questsword (:62, and the elite void /"
-                            + " thaumium swords of :52/:56 are unregistered too)");
+            if (mainhand.is(Items.IRON_SWORD)) {
+                swords++;                                                              // :62
+            } else if (mainhand.isEmpty()) {
+                elite++;                                        // :50-59 — every elite sword id of
+                                                                 // :52/:53/:56 is unregistered, so an
+                                                                 // elite draw leaves the hand empty
+                                                                 // (BD-68), it may not invent one.
+            } else {
+                helper.assertTrue(false,
+                        "the spawn pass handed the knight " + id + "; the shipped sword is the iron"
+                                + " stand-in of the unregistered thaumcraft:questsword (:62), and the"
+                                + " elite void / thaumium swords of :52/:56 are unregistered too, so"
+                                + " no draw may produce anything else");
+            }
             helper.assertTrue(knight.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).isEmpty()
                             && knight.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST).isEmpty()
                             && knight.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.LEGS).isEmpty()
                             && knight.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.FEET).isEmpty(),
                     ":46-49 — every plate id is unregistered, so the armour slots must stay empty (BD-68)");
-            swords++;
             knight.discard();
         }
-        helper.assertTrue(swords == 100, "the spawn pass ran " + swords + " of 100 times");
+        // :50 — off HARD the elite chance is 0.01, so 100 draws carry mean 1.0 elite
+        // draws (sd 1.0) and 0.99^100 = 36.6% of runs carry none. "Every draw is an
+        // iron sword" was therefore an RNG cliff that reddened 63 runs in 100 — the
+        // gates are the ones the arithmetic supports: iron carries the draw set
+        // (floor 90), the elite set stays inside a ~7 sd band (ceiling 8), and the
+        // else-branch above fails the probe the day a weapon gets invented.
+        helper.assertTrue(swords + elite == 100, "the spawn pass ran " + (swords + elite) + " of 100 times");
+        helper.assertTrue(swords >= 90 && elite <= 8,
+                "100 spawn passes: " + swords + " iron (:62), " + elite + " elite-empty (:50-59) — the"
+                        + " original's 0.01 elite chance puts the elite count at mean 1.0 sd 1.0, so 8"
+                        + " is a ~7 sd ceiling and 90 is the matching iron floor");
         // The elite shape, pinned as data because its items are not in this tree.
         helper.assertTrue(CultistAiLogic.knightIsElite(0.049F, true) && !CultistAiLogic.knightIsElite(0.05F, true)
                         && CultistAiLogic.knightIsElite(0.009F, false) && !CultistAiLogic.knightIsElite(0.01F, false),
@@ -526,21 +594,35 @@ public final class CultistKnightGameTest {
         helper.assertTrue(light > 0,
                 "the probe expects a lit pad (the gate needs non-zero light to be exercised); got " + light);
         int enchanted = 0;
+        int weapons = 0;
+        int elite = 0;
         for (int i = 0; i < 120; i++) {
             final EntityCultistKnight knight = knight(helper);
             knight.finalizeSpawn(level, difficulty, MobSpawnType.NATURAL, null);       // :66-72
             final ItemStack weapon = knight.getItemBySlot(
                     net.minecraft.world.entity.EquipmentSlot.MAINHAND);
-            helper.assertTrue(!weapon.isEmpty(), ":69 — the enchant pass needs the weapon of :62");
-            if (weapon.isEnchanted()) {
-                enchanted++;
+            if (weapon.isEmpty()) {
+                // :50-59 — an elite draw's sword ids (:52 swordvoid, :56 swordthaumium)
+                // are unregistered content, so the hand is EMPTY (BD-68) and the
+                // original's own :67 `getHeldItem() != null` gate skips the enchant.
+                // Asserting a weapon on every draw was an RNG cliff: 0.01 off HARD means
+                // ~1.2 elite draws in 120 and 70 runs in 100 carry at least one.
+                elite++;
+            } else {
+                weapons++;
+                if (weapon.isEnchanted()) {
+                    enchanted++;
+                }
             }
             knight.discard();
         }
+        helper.assertTrue(weapons >= 100 && elite <= 12,
+                ":50 — off HARD the elite chance is 0.01: mean 1.2 empty hands in 120 (sd 1.1), so 12 is"
+                        + " a ~10 sd ceiling; got " + weapons + " weapon draws and " + elite + " elite-empty");
         helper.assertTrue(enchanted > 0,
-                "120 spawn passes on a lit pad (light " + light + ") enchanted the weapon " + enchanted
-                        + " times — the :69-70 leg is not live (gate rand() < 0.25 * light, level"
-                        + " (int)(5.0 + light * nextInt(18)))");
+                "120 spawn passes on a lit pad (light " + light + ") handed " + weapons
+                        + " weapons and enchanted " + enchanted + " of them — the :69-70 leg is not live"
+                        + " (gate rand() < 0.25 * light, level (int)(5.0 + light * nextInt(18)))");
         // The shape the pad cannot reach, pinned as data.
         helper.assertTrue(CultistAiLogic.knightEnchantsWeapon(0.249F, 1.0F)
                         && !CultistAiLogic.knightEnchantsWeapon(0.25F, 1.0F)
