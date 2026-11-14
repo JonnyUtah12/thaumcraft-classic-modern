@@ -176,24 +176,20 @@ class CultistAiLogicTest {
     }
 
     @Test
-    void theTargetSelectorExcludesTheThreeCultistsByName() {
+    void theTargetSelectorExcludesTheShippedCultistsByClassAndTheLeaderByName() {
         // EntityCultist.java:105-107 — false for EntityCultistCleric,
-        // EntityCultistLeader and EntityCultistKnight. The Cleric is card
-        // t_6160444c's and the Leader is card c5's, so the exclusion carries
-        // their NAMES (BD-87); the pins below use stand-in classes with the
-        // original's simple names to prove the name-carried arms.
-        assertTrue(CultistAiLogic.targetClassExcluded(EntityCultistKnight.class), ":106");
-        assertTrue(CultistAiLogic.targetClassExcluded(EntityCultistCleric.class), ":106 (name-carried)");
-        assertTrue(CultistAiLogic.targetClassExcluded(EntityCultistLeader.class), ":106 (name-carried)");
+        // EntityCultistLeader and EntityCultistKnight. t_6160444c landed the
+        // Cleric class, so its arm runs on the CLASS exactly as the original
+        // writes it (`!(el instanceof EntityCultistCleric)`); the Leader is card
+        // c5's and is not in this tree, so its arm stays the name-carried one
+        // (BD-90 — the D-012 slice's carrier). The stand-in below carries only
+        // the Leader's simple name, and the Cleric pin names the real class.
+        assertTrue(CultistAiLogic.targetClassExcluded(EntityCultistKnight.class), ":105");
+        assertTrue(CultistAiLogic.targetClassExcluded(EntityCultistCleric.class),
+                ":106 — class-carried since t_6160444c landed the class");
+        assertTrue(CultistAiLogic.targetClassExcluded(EntityCultistLeader.class), ":107 (name-carried)");
         assertFalse(CultistAiLogic.targetClassExcluded(net.minecraft.world.entity.monster.Zombie.class));
-        assertEquals("EntityCultistCleric", CultistAiLogic.CLERIC_CLASS_NAME);
         assertEquals("EntityCultistLeader", CultistAiLogic.LEADER_CLASS_NAME);
-    }
-
-    /** A stand-in whose simple name is the Cleric's, for the name-carried arm. */
-    static final class EntityCultistCleric {
-        private EntityCultistCleric() {
-        }
     }
 
     /** A stand-in whose simple name is the Leader's, for the name-carried arm. */

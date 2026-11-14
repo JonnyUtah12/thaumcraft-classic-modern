@@ -86,7 +86,7 @@ public class AIAltarFocus extends Goal {
         }
         final Vec3 feet = new Vec3((int) this.cleric.getX(), (int) this.cleric.getY(),
                 (int) this.cleric.getZ());                                              // :37
-        if (new Vec3(home.getX(), home.getY(), home.getZ()).distSqr(feet) > CultistAiLogic.ALTAR_MAX_DIST_SQ                       // :37
+        if (new Vec3(home.getX(), home.getY(), home.getZ()).distanceToSqr(feet) > CultistAiLogic.ALTAR_MAX_DIST_SQ                 // :37
                 || !this.level.getBlockState(home).is(CatalogEldritchRealm.BLOCK_ELDRITCH.get())) { // :38-43
             this.cleric.setIsRitualist(false);                                          // :44
         }
