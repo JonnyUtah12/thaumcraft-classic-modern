@@ -41,6 +41,7 @@ import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -127,6 +128,81 @@ public final class MindSpiderMobGameTest {
     private static AABB mobBox(final GameTestHelper helper) {
         final BlockPos at = helper.absolutePos(MOB_CELL);
         return new AABB(at.getX() - 6, at.getY() - 4, at.getZ() - 6, at.getX() + 7, at.getY() + 5, at.getZ() + 7);
+    }
+
+    /**
+     * The claim this probe keeps over its own window: the mob box (the lane's mobBox)
+     * swept of foreign entities, and the mob cell column clear of colliding blocks.
+     * A block in the mob cell is the inWall damage a stuck mob takes
+     * ({@code LivingEntity#pushEntities} → {@code makeStuckInBlock}); a neighbour
+     * probe's projectile — the pech-blast pellet flies 12 blocks, 1×1 pads stride 6,
+     * so its corridor crosses the pads in front — is {@code damage().setExplosion} at
+     * a 1.0-health spider. Both channels were measured on this card as able to red the
+     * fuse probe with the shipped line, and both are reachable by a claim: the teeth leg
+     * disables this claim and the plant probe goes red with the shipped line on every
+     * leg (2 of 2, t_21b2160d keep dir {@code teeth2/}), and a GREEN leg prints the
+     * contamination this claim removes — on one leg, one
+     * {@code EntityPechBlast['Pech Blast'/12763]} inside the mob box plus a
+     * {@code barrier} and a {@code stone} in the mob cell column, the neighbour's
+     * corridor crossing this pad exactly as the stride arithmetic predicts.
+     *
+     * A registered {@code ServerPlayer} resident is deliberately NOT part of this set:
+     * {@code level.getEntitiesOfClass} reads the level's ENTITY list, not
+     * {@code level.players()}, so a resident registered through {@code players()} — the
+     * shape the crab lane's fixture uses ({@code EldritchCrabGameTest:672}) and the
+     * leak the docs rule at docs/testing.md#sweep-hazard-set-is-scan-set is about — is
+     * invisible to this
+     * query and cannot touch the spider. Measured, not assumed: a probe that plants such
+     * a resident ON this pad and runs the pad census sees it 0 times (t_21b2160d,
+     * {@code teeth2/fixed1.gradle.log}: 0 registered-resident lines on a leg that
+     * planted one), and the same plant leaves the warp scan's own cell arms green,
+     * because {@code WarpEvents}'s :298/:301 arms are {@code level.getEntities} calls
+     * over the same entity list. The crab rule sizes a sweep to a gate that scans
+     * {@code level.players()}; this gate does not, so this claim does not grow that arm.
+     *
+     * The fire channel is NOT reachable this way and is not claimed: fire set on a tick
+     * takes its boundary damage in that same tick when the ticks are a multiple of 20
+     * ({@code LivingEntity#baseTick}) and the harness's tick runs after the entity pass
+     * (t_89eee704's measurement), so a probe-side clearFire cannot precede it. Measured
+     * on this card: a planted ignite of 300 ticks kills a 1.0-health spider on the
+     * ignite tick with the guard in place. It is also not the observed natural channel —
+     * the sampler under the burn/fall red saw {@code remainingFireTicks = 0} on both
+     * spiders on every green leg. The checkpoints' clearFire stays.
+     */
+    private static void claimMobPad(final GameTestHelper helper, final Entity... keep) {
+        final ServerLevel level = helper.getLevel();
+        final List<Entity> foreign = level.getEntitiesOfClass(Entity.class, mobBox(helper)).stream()
+                .filter(candidate -> Arrays.stream(keep).noneMatch(kept -> kept == candidate))
+                .toList();
+        if (!foreign.isEmpty()) {
+            ThaumcraftClassic.LOGGER.info("[t_21b2160d] the mind spider pad was handed over {} foreign"
+                    + " entities inside its mob box: {}", foreign.size(), foreign);
+        }
+        for (final Entity intruder : foreign) {
+            intruder.discard();
+        }
+        final BlockPos mobCell = helper.absolutePos(MOB_CELL);
+        for (int dy = -1; dy <= 1; dy++) {
+            final BlockPos at = mobCell.offset(0, dy, 0);
+            if (!level.noCollision(new AABB(at.getX(), at.getY(), at.getZ(),
+                    at.getX() + 1, at.getY() + 1, at.getZ() + 1))) {
+                ThaumcraftClassic.LOGGER.info("[t_21b2160d] the mind spider pad was handed over a"
+                                + " colliding block {} in the mob cell column",
+                        BuiltInRegistries.BLOCK.getKey(level.getBlockState(at).getBlock()).getPath());
+                helper.setBlock(MOB_CELL.offset(0, dy, 0), Blocks.AIR);
+            }
+        }
+        final StringBuilder left = new StringBuilder();
+        for (int dy = -1; dy <= 1; dy++) {
+            final BlockPos at = mobCell.offset(0, dy, 0);
+            if (!level.noCollision(new AABB(at.getX(), at.getY(), at.getZ(),
+                    at.getX() + 1, at.getY() + 1, at.getZ() + 1))) {
+                left.append(at.toShortString()).append('=')
+                        .append(BuiltInRegistries.BLOCK.getKey(level.getBlockState(at).getBlock()).getPath())
+                        .append(' ');
+            }
+        }
+        helper.assertTrue(left.isEmpty(), "the mob cell column is not free air after the claim: " + left);
     }
 
     /** The tick-list precondition, stated where it can be read (the c2 pattern): a
@@ -418,6 +494,8 @@ public final class MindSpiderMobGameTest {
         helper.assertTrue(control.lifeSpan() == MindSpiderAiLogic.DEFAULT_LIFESPAN,
                 "the control spider must carry the unbounded lifespan (:14)");
         assertMobCellIsTicking(helper, armed, "the armed mind spider");
+        claimMobPad(helper, armed, control);
+        helper.onEachTick(() -> claimMobPad(helper, armed, control));
 
         for (int tick = 20; tick <= 1100; tick += 20) {
             final int checkpoint = tick;              // lambda capture (the loop variable is not final)

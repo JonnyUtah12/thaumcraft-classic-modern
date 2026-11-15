@@ -6,9 +6,8 @@ import com.jonnyutah12.thaumcraftclassic.entities.monster.PechAiLogic;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.PechTradeChestPool;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.PechTradeInventory;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.PechTradeRoll;
+import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogPech;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -18,7 +17,6 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 
 /**
  * Pech trade window (content-mapping.csv {@code thaumcraft:GUI_PECH}, original
@@ -91,7 +89,10 @@ public class PechMenu extends AbstractContainerMenu {
 
     /** The literal owner the original stamps on a dropped stack
      *  ({@code ContainerPech.java:211} {@code func_145799_b("PechDrop")}), read
-     *  back by {@code AIPechItemEntityGoto} under the same {@code "Owner"} key. */
+     *  back by {@code AIPechItemEntityGoto.java:76-78}. 1.7.10's owner is a
+     *  free-form String on the item entity; in 1.21.1 it rides
+     *  {@code thaumcraft:pech_drop_owner} — see that component's javadoc for why
+     *  vanilla's {@code minecraft:entity_data} cannot carry it (BD-73). */
     private static final String DROP_OWNER = PechAiLogic.PECH_DROP_OWNER;
 
     private final SimpleContainer inventory = new SimpleContainer(5);
@@ -423,9 +424,16 @@ public class PechMenu extends AbstractContainerMenu {
             }
             final ItemEntity dropped = playerLeaving.drop(stack, false);
             if (dropped != null) {
-                final CompoundTag owner = new CompoundTag();
-                owner.putString("PechDropOwner", DROP_OWNER);                              // :211, BD-73 key
-                dropped.getItem().set(DataComponents.ENTITY_DATA, CustomData.of(owner));
+                // :211 — the original's setOwner("PechDrop"), on the port's own component.
+                // NOT vanilla minecraft:entity_data: its persistent codec is
+                // CustomData.CODEC_WITH_ID (DataComponents.java:172; CustomData.java:33-35
+                // validate "Missing id for entity in: <tag>"), so a marker compound with no
+                // entity id throws IllegalStateException out of ItemStack#save on EVERY world
+                // save — ServerLevel#save logs "Error saving [N minecraft:diamond]" and the
+                // stack never reaches the chunk data, i.e. every pech trade-window drop was
+                // lost on save/reload (t_04233450, 186 hits in 53/53 legs; the rule and its
+                // probe shape are docs/testing.md#component-codec-save-path). BD-73.
+                dropped.getItem().set(ModDataComponents.PECH_DROP_OWNER.get(), DROP_OWNER);
             }
         }
     }

@@ -5,9 +5,8 @@ import java.util.List;
 
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityPech;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.PechAiLogic;
+import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
@@ -34,29 +33,25 @@ import net.minecraft.world.item.ItemStack;
  * <p>Two 1.21.1 seams are recorded, not invented:</p>
  * <ul>
  *   <li>the owner <b>name</b> is gone from {@code ItemEntity} (1.21.1's
- *       {@code getOwner()} returns an {@code Entity}), so the marker rides the
- *       vanilla {@code minecraft:entity_data} component under the original's
- *       key; the site that wrote it ({@code ContainerPech.java:211},
- *       {@code setOwner("PechDrop")}) is the container/menu lane this card
- *       leaves out of scope, so the guard is live code over a tag nothing
- *       writes today — the pech's own death drops ({@code :326}
- *       {@code entityDropItem}) never carried the tag either, so the guard's
- *       behaviour is unchanged for them;</li>
+ *       {@code getOwner()} returns a {@code UUID}), so the marker rides the
+ *       port's own {@code thaumcraft:pech_drop_owner} data component on the
+ *       dropped stack, written at the drop site
+ *       ({@code PechMenu.removed}, the port of {@code ContainerPech.java:211}
+ *       {@code setOwner("PechDrop")}). Vanilla's {@code minecraft:entity_data}
+ *       is NOT an option: its persistent codec is {@code CustomData.CODEC_WITH_ID}
+ *       ({@code DataComponents.java:172}, {@code CustomData.java:33-35}) and a
+ *       marker compound with no entity {@code id} throws
+ *       {@code IllegalStateException: Missing id for entity in: ...} out of
+ *       {@code ItemStack#save} on every world save, so the marker's first home
+ *       silently lost every pech drop at save (t_04233450, BD-73). The pech's own
+ *       death drops ({@code :326} {@code entityDropItem}) never carried the tag,
+ *       so the guard's behaviour is unchanged for them;</li>
  *   <li>1.7.10's {@code PathNavigate.func_75494_a(Entity)} (the entity-path
  *       helper, whose vanilla body passes the 16-block range) is
  *       {@code createPath(Entity, 16)}.</li>
  * </ul>
  */
 public class AIPechItemEntityGoto extends Goal {
-
-    /** {@code :76-77} — the original reads the item entity's free-form entity
-     *  data; 1.21.1's slot for that is the vanilla {@code entity_data}
-     *  component. */
-    // 1.21.1 reserves the entity-level "Owner" key for a UUID and rejects a string there
-    //    at ItemEntity save (IllegalStateException "Missing id for entity", measured on the
-    //    first pech-drop gate). The literal rides a non-reserved key; value semantics are
-    //    unchanged (BD-73).
-    static final String OWNER_KEY = "PechDropOwner";
 
     private final EntityPech pech;
     private Entity targetEntity;
@@ -88,7 +83,7 @@ public class AIPechItemEntityGoto extends Goal {
         }
         for (final Entity e : targets) {
             if (e instanceof ItemEntity item && this.pech.canPickup(item.getItem())) {   // :75
-                final String username = ownerName(item);                        // :76-77
+                final String username = pechDropOwnerOf(item);                  // :76-77
                 if (username == null
                         || !PechAiLogic.isPechDrop(username)) {                 // :78
                     final double distance = e.distanceToSqr(this.pech.getX(),
@@ -189,14 +184,18 @@ public class AIPechItemEntityGoto extends Goal {
         return instance == null ? 0.0 : instance.getValue();
     }
 
-    /** {@code :76-77} — the original's {@code getEntityData().getString("Owner")}
-     *  shape: read the vanilla {@code entity_data} component, no tag → null. */
-    private static String ownerName(final ItemEntity item) {
-        final var data = item.getItem().get(net.minecraft.core.component.DataComponents.ENTITY_DATA);
-        if (data == null) {
-            return null;
-        }
-        final CompoundTag tag = data.copyTag();                                       // CustomData#copyTag (21.1.259 has no copy())
-        return tag.contains(OWNER_KEY, Tag.TAG_STRING) ? tag.getString(OWNER_KEY) : null;  // CompoundTag#isString is gone
+    /**
+     * {@code :76-77} — the original's {@code ((EntityItem)e).func_145800_j()}
+     * ({@code getOwner()}, a free-form String): read the owner literal off the
+     * stack, unstamped → {@code null} so the guard admits the stack exactly as
+     * the original's {@code username == null} arm does ({@code :78}).
+     *
+     * <p>Public for the save-path probe ({@code PechMenuGameTest.pechDropSurvivesAWorldSave}):
+     * the round-trip verdict has to read the marker through the SAME reader the AI
+     * uses, so a marker that survives the save but lands on a key the goal never
+     * reads cannot pass green.</p>
+     */
+    public static String pechDropOwnerOf(final ItemEntity item) {
+        return item.getItem().get(ModDataComponents.PECH_DROP_OWNER.get());
     }
 }
