@@ -744,9 +744,9 @@ public final class CultistClericGameTest {
      * template box covers — so the fixtures ride the vouched cell
      * ({@code helper.absolutePos(BlockPos.ZERO)}, docs/testing.md:123) and the arm drives
      * the owed entity tick ONLY on the probe ticks the server left the clock still
-     * ({@link #driveEntityClock}, docs/testing.md:192). Nothing is pinned to N real
-     * ticks: the arm ends on the <b>observed removal</b>, {@code driven = 0} on a vouched
-     * pad, and {@code padChunkVouched} / {@code ticksDrivenByProbe} ride the census line
+     * ({@link #driveEntityClock}, docs/testing.md:158). Nothing is pinned to N real
+     * ticks (docs/testing.md:240): the arm ends on the <b>observed removal</b>, {@code driven = 0}
+     * on a vouched pad, and {@code padChunkVouched} / {@code ticksDrivenByProbe} ride the census line
      * AND every failure message, so a vouch loss names itself.</p>
      *
      * <p><b>A removal is only evidence when its age names the mechanism.</b> The first
@@ -765,7 +765,8 @@ public final class CultistClericGameTest {
      * leaves AIR, asserted air so a block landing there reports itself as
      * {@code PROBE BROKEN}, and (b) pins the age at removal to {@code edge+1} — 161
      * plain, 241 red — which is the clamp's signature, because the clamp fires on the
-     * first entity tick past the edge and a removed entity stops ticking. Teeth for this
+     * first entity tick past the edge and a removed entity stops ticking
+     * (docs/testing.md:201). Teeth for this
      * card, one leg each, each RED naming this probe: the clamp never discarding, the
      * PLAIN edge alone stopping, the RED edge alone stopping, and the two edges
      * swapping.</p>
@@ -917,7 +918,7 @@ public final class CultistClericGameTest {
 
     /**
      * Drive an entity's clock from the probe's own ticks and count the driven ticks —
-     * the landed shape of {@code EldritchCrabGameTest#driveEntityClock} (docs/testing.md:192),
+     * the landed shape of {@code EldritchCrabGameTest#driveEntityClock} (docs/testing.md:158),
      * kept local because every GameTest file in this lane is self-contained.
      *
      * <p>The server ticks an entity only in an entity-ticking chunk

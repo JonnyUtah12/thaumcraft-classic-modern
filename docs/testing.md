@@ -165,11 +165,12 @@ without the evidence for its stages.
   only when it runs WITHOUT throwing (`tickAndContinue` retries only a `GameTestAssertException`). A
   criterion that RETURNS early consumes the event, runs `thenSucceed`, and passes the probe with its
   asserts NEVER executed. `CultistClericGameTest.theOrbLifetimeClampDiesAtSixteenForPlainAndTwoFortyForRed`
-  is on that path — its "has not crossed the edge: poll again" `return` arms — so a mutation that deletes
-  the golem orb's `discard()` leaves the 502-probe suite GREEN (measured at `046f3d32` + that mutation,
-  one leg, card t_43022b00), while the same
-  mutation on the orb burst probe turns that one RED through the poll. The assert is the poll; never
-  `return` out of a final clause.
+  WAS on that path — its "has not crossed the edge: poll again" `return` arms — so a mutation that deletes
+  the golem orb's `discard()` left the 502-probe suite GREEN (`046f3d32` + that mutation, one leg, card
+  t_43022b00; again on `89b2a31d`, leg `preteethoff`), while the same mutation on the orb burst probe
+  turns that one RED through the poll. It is OFF that path now: every non-final clause throws
+  `GameTestAssertException` with the observed age/edge/vouch/driven, and the mutation reddens it by name
+  (card t_d29d6aa8). The assert is the poll; never `return` out of a final clause.
 - **A goal left on a live selector is armed by the ENGINE, and a route gate closes off the ground.**
   `Mob.serverAiStep` ticks the goal selector and `GoalSelector#tick` starts a goal on the
   `(tickCount + id) % 2` parity tick (`GoalSelector.java:74-105`). A probe that hand-drives a goal's
@@ -197,6 +198,24 @@ without the evidence for its stages.
   fleeDomainUnloaded=0`. Tick order decides mutations: `onGround` is recomputed in the physics step
   at the END of a tick, so a `setDeltaMovement` applied in the same tick as the probe's draws is
   invisible to those draws — an airborne mutation has to be established one tick early to be seen.
+- **A removal is only evidence when its age names the mechanism.** A probe that ends on "the entity is
+  gone" passes on ANY removal, and the pad itself hides one: the `empty` template's origin column carries
+  the harness's marker pair — `structure_block` in the corner cell and a **full-cube `jigsaw`** one above
+  it — so a projectile armed at the corner stands INSIDE a solid block, and `Projectile` answers its
+  first MOVING tick with a `BLOCK` hit; `EntityGolemOrb#onHit` (`:63`) answers that with `discard()`.
+  Measured with the orb's lifetime clamp mutated off, by a throwaway probe logging every hit, the removal
+  reason and the block states (card t_d29d6aa8, leg `diag_1`): `onHit type=BLOCK pos=…`
+  `Block{minecraft:jigsaw}` and then `REMOVAL observed: age=162 reason=DISCARDED`. The clamp probe that
+  armed its pair on that column went RED on the plain-edge mutation for the WRONG reason (`age=162
+  removed=true` on the pair assert) and GREEN on the red-edge mutation — a real removal at the wrong age
+  standing in for the clamp. The shape that closes it: put the fixtures in cells the pad leaves AIR and
+  ASSERT them air, so a block landing there reports itself as `PROBE BROKEN` instead of arriving as a
+  rate, and pin the age AT the removal to `edge+1` — the clamp fires on the first entity tick past the
+  edge and a removed entity stops ticking, so `161` plain / `241` red is the clamp's signature and no
+  other path writes it. Every edge's mutation then goes RED by name and by the right clause: on the fixed
+  arm, clamp off → `PLAIN EDGE … age=461 removed=false`, plain edge off → the same with `ageRed=241`
+  beside it, red edge off → `RED EDGE … age=540 removed=false`, edges swapped → `PLAIN EDGE MECHANISM
+  plainAge=241 pin=161` — one leg each, four of four RED, each naming the probe (card t_d29d6aa8).
 - **A route-OUTCOME gate goes red as a rate, on the leg that loads more.** Measured on this tree: the   scribing-ink family landing (`2fefa9b`, over main `104ccce`) ran `runGameTestServer` red ONCE in 4   legs on `combat_golemopensarealdoorandclosesitbehindit` — "the route reaches the far side with doors   openable: `path[1,reached=false]`" — with `All 328 required tests passed :)` on the `-Ptc.noCurios`   leg (rc 0) and on both re-runs of the with-Curios leg (rc 0, rc 0). `GolemCombatAiGameTest.java` is   byte-identical to main's tip (`b3bc00a6`), the landing's 27 paths contain zero golem/door/entity   files, and the red leg printed the landing's own probes passing (`[TC-M3-04-s-vi] Scribe2 craft:`,   `[TC-M3-04-s-iv] KnowFrag craft:`). `reached=false` over a node list that EXISTS is the ground /   tick-order wall above, not the change under test: read the failing probe's NAME before diagnosing,   then re-run the leg before touching code.
 - **A tick-budget-coupled probe goes red when a HEAVIER probe joins the suite — the suite's size is not the trigger, the added probes' weight is.** Measured on this tree: `bossroombuildsthroughtheseam` (`gametest/OuterLandsGameTest`, byte-identical to main, 0 diff lines) went red on **10 of 10** `runGameTestServer` legs on the `t_79eea20e` tree (**331** probes) and green on **5 of 5** legs on main's tip (**328**) and on **2 of 2** legs of main's tip with **three NO-OP probes added (also 331, `CtlThreeProbeGameTest`, deleted after the run)** — same host, warm caches, legs run singly and in pairs. So the suite size (328 → 331) is exonerated by the control, and the trigger is what this card's probes *do*: the probe builds the maze at cells (40,40)/(44,44) in the SHARED game-test level and then counts `blockEldritch` and eldritch stairs in the ABSOLUTE box `x 632..664, y ROOM_Y..ROOM_Y+16, z 632..664`, and the doorway pass that fills it is budgeted in ticks — the sweep has to have drained when the assertion runs, so a probe that occupies ticks ahead of it (this card's probes sweep the 201-entry research graph and resolve rows out of the live `RecipeManager`) starves the pass and the leg reports "the boss-room doorway placed no blockEldritch in the cell envelope". `required = false` does not help: the probes still run and still occupy ticks. This is main's own rule from `554ac56` — assert the outcome, not the tick budget — applied to a probe that does not: the fix is for the probe to poll its envelope on ticks with a deadline (or build in a cell window it owns), not for the joining card to thin its probes. Same family as the golem's inherited start cell (`t_67f61f59`). Until that probe is fixed, any leg whose added probes are heavy should expect this red name, and it is a probe-isolation gate, not a product regression: CI at the landing tip `f4bac9e` runs the same suite green (`build` + `game-test-no-curios` + `runServer`).
 - **A hand-driven `tick()` runs the FULL goal selector, and the goal's gate reads the world.**
