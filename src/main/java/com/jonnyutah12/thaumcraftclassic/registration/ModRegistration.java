@@ -10,6 +10,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogCrucible;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEntities;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogDevices;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchCrab;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchGuardian;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchRealm;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogMindSpider;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogOuterLands;
@@ -289,6 +290,17 @@ public final class ModRegistration {
         // TC-M7-03, spawn egg row TC-M6-06-s-c6; the guardian and the inhabited
         // zombie are card c4b-2's.
         CatalogEldritchCrab.init(modEventBus);
+
+        // thaumcraft:eldritchguardian (EntityEldritchGuardian, the 50-health
+        // gate-warden that fires thaumcraft:eldritchorb 90% of its shots and
+        // the wither+warp sonic blast the other 10%) and
+        // thaumcraft:inhabitedzombie (EntityInhabitedZombie, the zombie that
+        // lands no melee and spawns an Eldritch Crab + XP orbs on death). This
+        // catalog also claims the guardian's EldritchMobHost id, which is what
+        // turns the eldritch structures' and the warp lane's guardian summon
+        // from the documented no-op into the live seam. Renderer TC-M7-03,
+        // spawn-egg rows TC-M6-06-s-c6.
+        CatalogEldritchGuardian.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

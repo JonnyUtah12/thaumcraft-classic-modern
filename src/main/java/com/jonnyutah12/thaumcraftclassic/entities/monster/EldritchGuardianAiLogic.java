@@ -1,5 +1,9 @@
 package com.jonnyutah12.thaumcraftclassic.entities.monster;
 
+import com.jonnyutah12.thaumcraftclassic.api.entities.IEldritchMob;
+
+import net.minecraft.world.entity.LivingEntity;
+import java.util.function.Predicate;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -79,9 +83,11 @@ public final class EldritchGuardianAiLogic {
     public static final int GOAL_SLOT_WANDER = 7;
     public static final float WANDER_SPEED = 1.0F;
     /** {@code :60}/{@code :61} — the slot-8 collision: WatchClosest and
-     *  LookIdle both land on 8; 1.7.10's TreeMap keeps only the LAST (the
-     *  look-idle), 1.21.1's set keeps every goal, so the port ships the pair
-     *  at 8 and 9 — BD-112's shape, recorded for the guardian as BD-113. */
+     *  LookIdle both land on 8; 1.7.10's {@code EntityAITasks.func_75776_a}
+     *  walks a taken slot upward, so the look-idle lands on 9 (six net
+     *  movement goals). 1.21.1's set keys on the goal, not the slot, so the
+     *  port ships the pair at the original's effective slots (WATCH 8,
+     *  LOOK_IDLE 9) — BD-112's shape, recorded for the guardian as BD-117. */
     public static final int GOAL_SLOT_WATCH = 8;
     public static final int GOAL_SLOT_LOOK_IDLE = 8;
     public static final int GOAL_SLOT_LOOK_IDLE_PORT = 9;
@@ -217,17 +223,19 @@ public final class EldritchGuardianAiLogic {
             ResourceLocation.fromNamespaceAndPath("thaumcraft", "egscreech");
     public static final float SCREECH_VOLUME = 3.0F;
 
-    /** {@code :135-145} — after a landed melee hit: with an empty
-     *  in-use item, an active path, and {@code nextFloat() <
-     *  difficultyId * 0.3F}, the target burns {@code 2 * difficultyId}
-     *  seconds ({@code func_70015_d} takes seconds; the difficulty ordinal
-     *  is 0 peaceful .. 3 hard, so the fire is 0 below NORMAL). */
+    /** {@code :135-145} — after a landed melee hit: with an empty mainhand
+     *  ({@code func_70694_bm()} == null), ON THE GROUND ({@code
+     *  func_70027_ad()}), and {@code nextFloat() < difficultyId * 0.3F}, the
+     *  target burns {@code 2 * difficultyId} seconds ({@code func_70015_d}
+     *  takes seconds; the difficulty ordinal is 0 peaceful .. 3 hard, so the
+     *  fire is 0 below NORMAL). The 1.21.1 seam is {@code Mob#doHurtTarget} +
+     *  NeoForge's {@code Entity#igniteForSeconds}. */
     public static final float BURN_CHANCE_PER_DIFFICULTY = 0.3F;
     public static final int BURN_SECONDS_PER_DIFFICULTY = 2;
 
-    public static boolean setsFire(final int difficultyId, final boolean inUseItemEmpty,
-            final boolean hasPath, final float roll) {
-        return inUseItemEmpty && hasPath && roll < difficultyId * BURN_CHANCE_PER_DIFFICULTY;
+    public static boolean setsFire(final int difficultyId, final boolean mainHandEmpty,
+            final boolean onGround, final float roll) {
+        return mainHandEmpty && onGround && roll < difficultyId * BURN_CHANCE_PER_DIFFICULTY;
     }
 
     public static int fireSecondsFor(final int difficultyId) {
@@ -243,8 +251,8 @@ public final class EldritchGuardianAiLogic {
      *  aspect registry ({@code Aspect.getAspect(tag)}); both tags exist. */
     public static final int WISP_ASPECT_AMOUNT = 2;
     public static final float WISP_THROW_OFFSET = 1.0F;
-    public static final String ASPECT_TAG_UNDEAD = "unDead";
-    public static final String ASPECT_TAG_ELDRITCH = "eldritch";
+    public static final String ASPECT_TAG_UNDEAD = "exanimis";
+    public static final String ASPECT_TAG_ELDRITCH = "alienis";
 
     /** {@code :185-187} — {@code dropRareDrop(int fortune)}: one
      *  {@code itemEldritchObject} meta 0. 1.7.10 calls it from the vanilla
@@ -262,29 +270,48 @@ public final class EldritchGuardianAiLogic {
     public static final double SPAWN_BOX_XZ_EXPAND = 32.0;
     public static final double SPAWN_BOX_Y_EXPAND = 16.0;
 
-    /** {@code :263-265} — {@code func_70814_o()} (canPickUpLoot) true. */
-    public static final boolean CAN_PICK_UP_LOOT = true;
+    /** {@code :92-94} — {@code func_98052_bS()} (getCanPickUpLoot) returns
+     *  FALSE: the guardian picks up nothing. The family pins the same getter on
+     *  the cultists ({@code CultistAiLogic.CAN_PICK_UP_LOOT}) and 1.21.1 reads
+     *  the field, so the field rides (BD-117). {@code :263-265} is
+     *  {@code func_70814_o()} = {@code isAIEnabled()} (1.7.10's per-mob AI
+     *  switch), NOT the pickup rule; 1.21.1's GoalSelector is the only AI path,
+     *  so it ships inert, and the 310 lines declare no fire immunity — the
+     *  guardian is NOT fire-immune (pinned by the game test, the crab's shape). */
+    public static final boolean CAN_PICK_UP_LOOT = false;
+
+    /** {@code :54} — {@code getNavigator().setAvoidsWater(true)}. */
+    public static final boolean NAVIGATOR_AVOIDS_WATER = true;
 
     /** {@code :88-90} — the boss flag, shipped inert (BD-69's shape: 1.21.1
      *  has no {@code Mob#isBoss()}; no bar is drawn). */
     public static final boolean IS_BOSS = true;
 
-    /** {@code :155-157} — air supply 500. {@code :159-161} — pickup item is
-     *  air (inert, the pickup path is open ({@code CAN_PICK_UP_LOOT true})
-     *  and the 1.21.1 picked-item slot ships empty, as the original's air). */
+    /** {@code :155-157} — air supply 500. {@code :159-161} — the pickup item
+     *  ({@code func_146068_u()}) is {@code Item(0)} = air: 1.21.1 has no
+     *  pickup-item hook, and with {@code CAN_PICK_UP_LOOT} false the pickup
+     *  path is unreachable by construction (BD-94's shape), so nothing ships
+     *  for it. */
     public static final int MAX_AIR = 500;
 
-    /** {@code :243-245} — {@code func_70692_ba()} (dropsLoot) = NOT idle.
-     *  The idle flag rides 1.7.10's public {@code setEntityIdle}; 1.21.1 has
-     *  no such hook, so the field ships as the named seam (default false =
-     *  drops on, the original's live behaviour — nothing on the guardian
-     *  ever sets idle true; the 1.7.10 callers are structure code that
-     *  never fires for guardians). */
+    /** {@code :243-245} — {@code func_70692_ba()} (the looting gate the family
+     *  pins at BD-92/BD-104) = NOT idle. The idle flag rides 1.7.10's public
+     *  {@code setEntityIdle}; 1.21.1 has no such hook, so the field ships as
+     *  the named seam (default false = drops on, the original's live behaviour —
+     *  nothing on the guardian ever sets idle true; the 1.7.10 callers are
+     *  structure code that never fires for guardians), and the gate rides
+     *  {@code LivingEntity#shouldDropLoot()} (BD-117). */
     public static final boolean IDLE_DEFAULT = false;
 
+    public static boolean dropsLoot(final boolean idle) {
+        return !idle;
+    }
+
     /** {@code :147-153} — ambient {@code thaumcraft:egidle}, death
-     *  {@code thaumcraft:egdeath}: unregistered (D-004), pinned not fired.
-     *  The hurt is the vanilla default (no override in the 310 lines). */
+     *  {@code thaumcraft:egdeath}: both ids are registered by the audio lane
+     *  ({@code ModSounds.EGIDLE}/{@code EGDEATH}), so the entity fires them;
+     *  the ids are pinned here as the contract. The hurt is the vanilla
+     *  default (no override in the 310 lines). */
     public static final ResourceLocation SOUND_AMBIENT =
             ResourceLocation.fromNamespaceAndPath("thaumcraft", "egidle");
     public static final ResourceLocation SOUND_DEATH =
@@ -306,4 +333,34 @@ public final class EldritchGuardianAiLogic {
      *  original's {@code particleCount(1)}). */
     public static final float MOTE_JITTER = 0.2F;
     public static final float MOTE_Y_FACTOR = 0.22F;
+
+    // ------------------------------------------------------------------ pins (b)
+
+
+
+
+    /**
+     * {@code :307-309} — {@code canAttackClass(Class)}: the guardian does not
+     * target eldritch mobs.
+     */
+    public static boolean canTarget(final LivingEntity target) {
+        return !(target instanceof IEldritchMob);
+    }
+
+    /**
+     * {@code :63-64} — the target pair's 1.21.1 filter: the original's
+     * {@code canAttackClass} seam rides {@link TargetingConditions}, which is
+     * what {@code NearestAttackableTargetGoal} takes (for-combat, since the
+     * original passes no inclusion flags).
+     */
+    public static Predicate<LivingEntity> targetConditions() {
+        return EldritchGuardianAiLogic::canTarget;
+    }
+
+
+    /** {@code :285}/{@code :303} — the shot/blast sound pair, pitch jitter 0.1. */
+    public static final ResourceLocation SOUND_ATTACK =
+            ResourceLocation.parse("thaumcraft:egattack");
+    public static final float ATTACK_SOUND_VOLUME = 2.0F;
+    public static final float SOUND_PITCH_JITTER = 0.1F;
 }

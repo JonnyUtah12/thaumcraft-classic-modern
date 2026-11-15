@@ -16,6 +16,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.PacketFlow;
@@ -28,7 +29,12 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityEldritchGuardian;
+
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -37,6 +43,8 @@ import net.neoforged.neoforge.network.payload.SyncAttachmentsPayload;
 import net.neoforged.neoforge.network.registration.ChannelAttributes;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 import java.util.UUID;
@@ -78,16 +86,54 @@ import java.util.function.Predicate;
  * positional stream cannot absorb an unmarked rejection: the landing spider
  * takes the NEXT spider's window and every later spider lands shifted
  * (measured in the t_b51c488c mutation sweep: supply 3 windows per spider
- * put 49 spiders at y = 8 on a clean pad). Isolation is the sweep, not
- * tolerance: the sweep leaves every k = 0 window free (the 0.3-wide boxes,
- * 2 apart, cannot collide with the swarm itself), and the scan is
- * synchronous inside one server tick, so between the sweep and the queue
- * assert the only entities entering the pad are the probe's own swarm and
- * fixtures. The probes assert the arithmetic: every spider lands on one of
+ * put 49 spiders at y = 8 on a clean pad). Isolation is the sweep PLUS the
+ * claim, never tolerance: the sweep leaves every k = 0 window free of
+ * ENTITIES (the 0.3-wide boxes, 2 apart, cannot collide with the swarm
+ * itself), and the scan is synchronous inside one server tick, so between the
+ * sweep and the queue assert the only entities entering the pad are the
+ * probe's own swarm and fixtures — and the BLOCK arms of the same checks
+ * ({@code :298}, {@code :300}) need their own claim, which is the paragraph
+ * below. The probes assert the arithmetic: every spider lands on one of
  * its scripted cells and the queue is drained to exactly 2 + 6 draws per
  * spent attempt — a port that draws more, fewer, or in a different
- * sequence than the original fails, and on a swept pad "drew beyond the
- * scripted queue" is a product anomaly, never layout.</p>
+ * sequence than the original fails.</p>
+ *
+ * <p><b>t_6119f491 — the sweep is only HALF the isolation, and the sentence
+ * above this one used to claim it was the whole of it.</b> The scan reads
+ * blocks as well as entities: {@code :298} reads the cell under the landing
+ * spot and {@code :300} reads the spider's box. The pad shares its area with
+ * the harness's 1×1×1 pads — {@code StructureGridSpawner#onBatchStart} rewinds
+ * the walk, whose stride is {@code template width + 5} in x and
+ * {@code template depth + 6} in z, so a 1×1×1 probe strides 6 cells and
+ * sixteen of them pack inside this 24-wide footprint, their bodies run in the
+ * SAME tick as this probe's, and {@code clearSpaceForStructure} clears only
+ * BLOCK space. A neighbour's {@code setBlock} at its own cell (1, 1, 1)
+ * therefore lands on a scripted landing cell HERE. That is an UNMARKED
+ * rejection, and a positional stream cannot absorb one: the spider takes the
+ * NEXT window, every later spider lands shifted, and the draw clock overruns —
+ * which is the shape both CI reds on this lineage took, run 43656053623
+ * (job 132646193157, {@code thescanrejectsoccupiedandflooredcellsandspendsitssecondattempt})
+ * and main run 43662060834 (job 132653328128,
+ * {@code theillusionbandspawnsthewarpcappedharmlessviewerboundswarm}), both
+ * reading "the warp event drew beyond the scripted queue (bound 18)". One
+ * {@code Blocks.STONE} planted at rel (18, 0, 8) — slot 5's {@code :298} floor
+ * cell — reproduces that line byte-for-byte on 6a05ba14, and the SAME leg took
+ * the scan probe red on the same line with no plant in it: the channel is
+ * natural, it is a grid-alignment draw, and it is not layout-stable.</p>
+ *
+ * <p>Two halves close it, in the shape the pech-blast probe landed
+ * ({@code t_89eee704}): {@link #claimScanCells} claims the BLOCKS of every cell
+ * this scan can read — the landing cell and the {@code :298} floor cell of each
+ * scripted window — before the event fires, naming what it clears, and
+ * {@link #attachScanShadow} replays the scan's four cell checks on every
+ * scripted window at that window's own draw, so a window the script did NOT
+ * mark fails by naming the intruder (block state, entity type, pad-relative
+ * cell) at the instant it rejected, instead of ending as a queue overrun that
+ * names nothing. The script stays POSITIONAL (tolerance cannot be scripted
+ * into a positional stream — t_b51c488c), the probe's own fixtures go in AFTER
+ * the claim so the claim can never eat the fixture it asserts on, and each
+ * marked slot's rejection is asserted PRESENT, so a pad that was handed over
+ * clean cannot be what makes the blocked-scan probe pass.</p>
  */
 @GameTestHolder(ThaumcraftClassic.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -100,6 +146,13 @@ public final class WarpEventsGameTest {
     // 120 -> eventWarp 90, and the scripted event rolls (57, 89) sit inside both.
     private static final int COUNTER = 30;
     private static final int DECAYED = 19;   // (int)(30 - max(5, sqrt(30)*2)) = 19 — WarpEvents.java:48
+    // The probe-4 slots whose scripted k = 0 cell the probe itself blocks:
+    // witnesses at (8,1,8)/(10,1,8) for slots 0/1, stone under (12,1,8) for slot 2.
+    private static final int[] SCAN_MARKS = {0, 1, 2};
+    /** The scripted swarm: 50 spiders, slots x = 8 + 2·(a%8), z = 8 + 2·(a/8). */
+    private static final int SPIDERS = 50;
+    /** The player cell {@code warpPlayer} fixes inside the pad — the cell the scan measures from. */
+    private static final int PLAYER_X = 1, PLAYER_Y = 1, PLAYER_Z = 1;
 
     /**
      * eff 57 ∈ the illusion band (57..60, {@code :158}):
@@ -114,10 +167,12 @@ public final class WarpEventsGameTest {
     public static void theIllusionBandSpawnsTheWarpCappedHarmlessViewerBoundSwarm(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
         sweepPad(helper, level);
+        claimScanCells(helper, level);
         final ServerPlayer player = warpPlayer(helper, 90, 5, 30, COUNTER);
 
         final List<EntityMindSpider> baseline = padSpiders(helper, level);
         final Scripted random = scriptedSwarm(57);
+        attachScanShadow(helper, level, random, new int[0]);
         WarpEvents.checkWarpEvent(player, random);
 
         final List<EntityMindSpider> spawned = spawnedSince(baseline, padSpiders(helper, level));
@@ -139,6 +194,7 @@ public final class WarpEventsGameTest {
                         + DECAYED + " (:48-49)");
         helper.assertTrue(after.warpTemp() == 4,
                 "the tail (WarpEvents.java:224) did not decay temp warp 5 -> 4");
+        assertScanOutcome(helper, random, new int[0]);
         assertQueueArithmetic(helper, random, spawned);
         helper.succeed();
     }
@@ -152,11 +208,12 @@ public final class WarpEventsGameTest {
      * ({@code :45}, {@code :50}, then offset/sign per axis) drains the queue
      * to zero; any other draw shape (per-attempt count, axis order, sign
      * term) leaves a residue and fails. The stream is POSITIONAL (spider a
-     * reads window a, plus the marked k = 1 windows) and the pad is
-     * {@link #sweepPad swept} at setup, so the satisfying pattern is unique;
-     * "drew beyond the scripted queue" on a swept pad means the world put
-     * something into a scan cell mid-tick, which the sweep rules out — that
-     * is a real product anomaly, not layout.
+     * reads window a, plus the marked k = 1 windows), the pad is
+     * {@link #sweepPad swept} (entities) and {@link #claimScanCells claimed}
+     * (blocks) at setup, and every window is {@link #attachScanShadow shadowed}
+     * at its own draw, so the satisfying pattern is unique and an intruder
+     * fails at its own window by name. A queue overrun that reaches THIS assert
+     * is therefore the draw shape itself, not the layout.
      */
     private static void assertQueueArithmetic(final GameTestHelper helper, final Scripted random,
                                               final List<EntityMindSpider> spawned) {
@@ -188,10 +245,12 @@ public final class WarpEventsGameTest {
     public static void theRealBandSpawnsTheWarpCappedHostileSwarm(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
         sweepPad(helper, level);
+        claimScanCells(helper, level);
         final ServerPlayer player = warpPlayer(helper, 90, 0, 30, COUNTER);
 
         final List<EntityMindSpider> baseline = padSpiders(helper, level);
         final Scripted random = scriptedSwarm(89);
+        attachScanShadow(helper, level, random, new int[0]);
         WarpEvents.checkWarpEvent(player, random);
 
         final List<EntityMindSpider> spawned = spawnedSince(baseline, padSpiders(helper, level));
@@ -207,6 +266,7 @@ public final class WarpEventsGameTest {
             helper.assertTrue(spider.getTarget() == player,
                     "a warp spider does not target the warping player (:310 setAttackTarget)");
         }
+        assertScanOutcome(helper, random, new int[0]);
         assertQueueArithmetic(helper, random, spawned);
         helper.succeed();
     }
@@ -242,28 +302,65 @@ public final class WarpEventsGameTest {
     /**
      * eff 30 ∈ the mist band (29..32, {@code :106}): {@code spawnMist(warp, 1)}
      * ({@code :228-240}) sends the mist FX, summons min(8, 1) = 1 eldritch
-     * guardian and chats warp.text.6. The guardian is not registered, so the
-     * summon runs as the {@link EldritchMobHost} documented no-op (the same
-     * seam {@code TileEldritchCrabSpawner} uses): the probe asserts the seam
-     * ran without producing an entity, the pass decayed the counter, and NO
-     * spider spawned (the mist arm is not the spider arm).
+     * guardian and chats warp.text.6. {@code CatalogEldritchGuardian} now
+     * claims the id (TC-M6-06-s-c4b-2), so the summon is the REAL {@code :257-280}
+     * scan, not the {@link EldritchMobHost} no-op this probe narrated before
+     * that card landed: the probe builds a fitting 5x5 platform under the
+     * player (the pad has no floor), asserts the band produced exactly one
+     * guardian whose target is the player, the counter decayed, the scripted
+     * queue drained (the scan draws on the {@code level.random}, never the
+     * band's gates) and NO spider spawned (the mist arm is not the spider arm).
      */
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
     public static void theMistBandFiresTheFxAndTheGuardianSeamAsDocumentedNoOps(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
         final ServerPlayer player = warpPlayer(helper, 90, 0, 30, COUNTER);
 
-        helper.assertTrue(!EldritchMobHost.isAvailable(EldritchMobHost.GUARDIAN),
-                "this probe narrates the guardian as unregistered; if it became available, re-measure the summon");
+        helper.assertTrue(EldritchMobHost.isAvailable(EldritchMobHost.GUARDIAN),
+                "TC-M6-06-s-c4b-2 landed the guardian row, so the band's summon is the real :257-280 scan");
+
+        // The scan of :263-275 needs a cell where a 0.8 x 2.25 box fits: solid
+        // below, air for the height, no collision, no non-player occupant. The
+        // "empty_24" pad has no floor (the family's standing finding), so the
+        // probe lays its own platform centred on the player's foot cell.
+        final BlockPos foot = helper.absolutePos(BlockPos.ZERO).offset(1, 0, 1);
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                helper.setBlock(foot.offset(dx, 0, dz), Blocks.STONE.defaultBlockState());
+                helper.setBlock(foot.offset(dx, 1, dz), Blocks.AIR.defaultBlockState());
+                helper.setBlock(foot.offset(dx, 2, dz), Blocks.AIR.defaultBlockState());
+            }
+        }
+
+        // The landed isolation pattern (6117591f): the harness reuses one grid
+        // area across batches and cleans only each probe's own box, so a mob
+        // that strolled out of a finished pad can be standing in a scan cell
+        // and reject it (:270/:271) on THIS probe's attempt. The sweep and the
+        // event are synchronous, so after the sweep the pad's scan domain
+        // carries no foreign entity. The census is the SCAN DOMAIN, not the
+        // 26x30x26 pad box: the offsets of :264-266 are 7..24 per axis, so a
+        // legal landing 24 blocks in -x / -z / +y sits outside the pad box
+        // (the shape of this probe's first red at 3c804129 — the stream is
+        // positional on level.random, so the landing cell moves with the batch
+        // order, and a small census reads 0).
+        sweepPad(helper, level);
         final List<EntityMindSpider> baseline = padSpiders(helper, level);
+        final List<Entity> guardianBaseline = scanDomainEntities(helper, level);
         final Scripted random = scriptedGate(30);
         WarpEvents.checkWarpEvent(player, random);
 
         helper.assertTrue(spawnedSince(baseline, padSpiders(helper, level)).isEmpty(),
                 "the mist arm (:106) spawned spiders — only the spider arms (:158/:195) call suddenlySpiders");
-        helper.assertTrue(countGuardians(helper, level) == 0,
-                "a thaumcraft:eldritchguardian entity exists — the unregistered guardian must summon as the "
-                        + "EldritchMobHost no-op, and its registered card must own the :257-280 scan");
+        final List<Entity> guardians = censusDelta(guardianBaseline, scanDomainEntities(helper, level));
+        helper.assertTrue(guardians.size() == 1,
+                ":230-235 — the band summons min(8, 1) = 1 guardian through the :257-280 scan, found "
+                        + guardians.size() + " in the ±24 scan domain of the player's cell (swept pad)");
+        final EntityEldritchGuardian summoned = (EntityEldritchGuardian) guardians.get(0);
+        helper.assertTrue(summoned.getTarget() == player,
+                ":273 — the scan points the guardian at the player (func_70624_b = setAttackTarget)");
+        for (final Entity stray : guardians) {
+            stray.discard();                        // keep the shared pad clean
+        }
         final PlayerWarpData after = player.getData(ModAttachments.PLAYER_WARP);
         helper.assertTrue(after.warpCounter() == DECAYED,
                 "the mist pass did not decay the counter to " + DECAYED + " (:48-49)");
@@ -309,12 +406,17 @@ public final class WarpEventsGameTest {
      * blocked cell; all 50 land. The pad is swept first so the ONLY blocked
      * cells are the probe's own fixtures, and the script marks exactly those
      * three slots with a k = 1 window — the positional stream then has one
-     * satisfying landing pattern (queue clock 2 + 6·53 = 320 draws).
+     * satisfying landing pattern (queue clock 2 + 6·53 = 320 draws). The pad's
+     * blocks are {@link #claimScanCells claimed} before the fixtures go in, and
+     * the shadow asserts that EXACTLY those three windows were rejected, by the
+     * fixture each one names: an unmarked rejection fails at its own window
+     * naming the intruder, and a fixture that stops biting fails here.
      */
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
     public static void theScanRejectsOccupiedAndFlooredCellsAndSpendsItsSecondAttempt(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
         sweepPad(helper, level);
+        claimScanCells(helper, level, SCAN_MARKS);
         final ServerPlayer player = warpPlayer(helper, 90, 0, 30, COUNTER);
         final BlockPos origin = helper.absolutePos(BlockPos.ZERO);
 
@@ -330,7 +432,8 @@ public final class WarpEventsGameTest {
         helper.setBlock(new BlockPos(12, 0, 8), Blocks.STONE);
 
         final List<EntityMindSpider> baseline = padSpiders(helper, level);
-        final Scripted random = scriptedSwarm(57, 0, 1, 2);
+        final Scripted random = scriptedSwarm(57, SCAN_MARKS);
+        attachScanShadow(helper, level, random, SCAN_MARKS);
         WarpEvents.checkWarpEvent(player, random);
 
         final List<EntityMindSpider> spawned = spawnedSince(baseline, padSpiders(helper, level));
@@ -347,6 +450,7 @@ public final class WarpEventsGameTest {
                             + ":298 floor check (stone under (12,1,8)) or the :301-302 occupancy check "
                             + "(witnesses at (8,1,8) and (10,1,8)) is not rejecting");
         }
+        assertScanOutcome(helper, random, SCAN_MARKS);
         assertQueueArithmetic(helper, random, spawned);
         helper.succeed();
     }
@@ -380,8 +484,11 @@ public final class WarpEventsGameTest {
      * and lands one block above. The arithmetic assert (queue clock ==
      * 2 + 6·Σ(landing k + 1), queue fully drained) then has exactly one
      * satisfying landing pattern per probe: the measured run spends 302
-     * (swept, unblocked) / 320 (probe 4's three blocked slots) draws, and a
-     * queue overrun on a swept pad is a product anomaly, never layout.</p>
+     * (swept, unblocked) / 320 (probe 4's three blocked slots) draws. Isolation
+     * is the pair — {@link #sweepPad} for entities, {@link #claimScanCells} for
+     * blocks — and {@link #attachScanShadow} names any intruder that survives
+     * both at the window it rejected, so an overrun that reaches the arithmetic
+     * assert is the draw shape, never the layout.</p>
      */
     private static Scripted scriptedSwarm(final int eff, final int... secondAttemptFor) {
         final Scripted random = scriptedGate(eff);
@@ -405,6 +512,7 @@ public final class WarpEventsGameTest {
 
     /** The 6 draws that offer cell (8 + 2·(a%8), 1 + 7·k, 8 + 2·(a/8)). */
     private static void window(final Scripted random, final int a, final int k) {
+        random.key(a, k);
         final int x = 2 * (a % 8);
         final int z = 2 * (a / 8);
         // offset = 7 + nextInt(18); sign = -1 + nextInt(3): 1 -> 0 (y = j),
@@ -500,12 +608,49 @@ public final class WarpEventsGameTest {
         return census.stream().filter(e -> !baseline.contains(e)).toList();
     }
 
+    private static List<Entity> guardianEntities(final GameTestHelper helper, final ServerLevel level) {
+        return padEntities(helper, level, e -> {
+            final ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType());
+            return ThaumcraftClassic.MOD_ID.equals(key.getNamespace())
+                    && key.getPath().equals(EldritchMobHost.GUARDIAN);
+        });
+    }
+
     private static int countGuardians(final GameTestHelper helper, final ServerLevel level) {
         return padEntities(helper, level, e -> {
             final ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType());
             return ThaumcraftClassic.MOD_ID.equals(key.getNamespace())
                     && key.getPath().equals(EldritchMobHost.GUARDIAN);
         }).size();
+    }
+
+    /**
+     * The landing domain of the guardian scan ({@code :263-266}): the offsets
+     * are {@code func_76136_a(rand, 7, 24)} times {@code func_76136_a(rand, -1,
+     * 1)} per axis around the player's floor cell, so a legal cell sits at
+     * ±(7..24) in x, y and z; +2 on y covers the mob's 2.25-tall box. The pads
+     * are packed ~50 x / ~30 z apart, so a ±25 box reaches no neighbouring
+     * pad's fixtures (30 > 25) — the census is the scan domain, not the pad.
+     */
+    private static AABB scanDomain(final GameTestHelper helper) {
+        final BlockPos o = helper.absolutePos(BlockPos.ZERO).offset(1, 1, 1);
+        return new AABB(o.getX() - 25, o.getY() - 25, o.getZ() - 25,
+                o.getX() + 26, o.getY() + 27, o.getZ() + 26);
+    }
+
+    /** The guardians the band can have summoned, in the scan domain. */
+    private static List<Entity> scanDomainEntities(final GameTestHelper helper,
+                                                   final ServerLevel level) {
+        return level.getEntitiesOfClass(Entity.class, scanDomain(helper), e -> {
+            final ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType());
+            return ThaumcraftClassic.MOD_ID.equals(key.getNamespace())
+                    && key.getPath().equals(EldritchMobHost.GUARDIAN);
+        });
+    }
+
+    /** The census delta by identity — contamination-safe baseline rule. */
+    private static List<Entity> censusDelta(final List<Entity> baseline, final List<Entity> census) {
+        return census.stream().filter(e -> !baseline.contains(e)).toList();
     }
 
     private static List<Entity> padEntities(final GameTestHelper helper, final ServerLevel level,
@@ -528,9 +673,13 @@ public final class WarpEventsGameTest {
      * on that area, rejecting the cell under it ({@code :298}) in an unmarked
      * scan attempt. The whole scan runs synchronously inside one tick — no
      * other probe's body, mob tick, or payload handler executes between the
-     * sweep and the queue assert — so the sweep is full isolation: after it,
-     * the only entities entering the pad are the probe's own swarm and
-     * fixtures, and the positional script's landing pattern is unique. The
+     * sweep and the queue assert — so the sweep is the ENTITY half of the
+     * isolation: after it, the only entities entering the pad are the probe's
+     * own swarm and fixtures. It never touches a block, and the scan reads
+     * blocks too ({@code :298}, {@code :300}): that gap — a 1×1×1 neighbour's
+     * {@code setBlock} landing on a scripted cell inside this pad — is what
+     * {@link #claimScanCells} closes for t_6119f491, and what left the
+     * "drew beyond the scripted queue" reds unattributable before it. The
      * probe's own witnesses (probe 4) are placed after the sweep, and the
      * baseline census runs after both, so the delta stays exact.
      */
@@ -540,6 +689,211 @@ public final class WarpEventsGameTest {
                 stray.discard();
             }
         }
+    }
+
+    // ------------------------------------------------- the pad claim + the scan shadow (t_6119f491)
+
+    /** A scripted window the scan rejected, with the offender named at the window's own draw. */
+    private record Rejection(int slot, int k, BlockPos cell, String offender) {
+        @Override
+        public String toString() {
+            return "window (a=" + slot + ", k=" + k + ") at rel " + cell + ": " + offender;
+        }
+    }
+
+    /** The hook {@link Scripted} runs on every scripted window, at the instant of its sixth draw. */
+    private interface WindowShadow {
+        /** The offender that rejected this window's cell, naming the arm it failed; null when the cell is free. */
+        String reject(int slot, int k, int[] draws);
+    }
+
+    /**
+     * The scripted landing cell of spider {@code a} on attempt {@code k}:
+     * (8 + 2·(a%8), 1 + 7·k, 8 + 2·(a/8)), pad-relative — the same arithmetic
+     * {@link #window} scripts, so the claim, the shadow and the landing reader
+     * all name the same cells.
+     */
+    private static BlockPos scriptedCell(final int a, final int k) {
+        return new BlockPos(8 + 2 * (a % 8), 1 + 7 * k, 8 + 2 * (a / 8));
+    }
+
+    /** Every cell the scan reads for the scripted windows: each landing cell and the {@code :298} cell under it. */
+    private static List<BlockPos> scriptedCells(final int... secondAttemptFor) {
+        final List<BlockPos> cells = new ArrayList<>();
+        for (int a = 0; a < SPIDERS; a++) {
+            final BlockPos landing = scriptedCell(a, 0);
+            cells.add(landing.below());
+            cells.add(landing);
+            if (isMarked(secondAttemptFor, a)) {
+                final BlockPos above = scriptedCell(a, 1);
+                cells.add(above.below());
+                cells.add(above);
+            }
+        }
+        return cells;
+    }
+
+    /**
+     * Claim the BLOCKS of every cell this scan can read, in the shape the
+     * pech-blast probe's corridor claim landed (t_89eee704), and log what was
+     * found: the harness's 1×1×1 pads stride 6 cells
+     * ({@code StructureGridSpawner}: stride = {@code width + 5} / {@code depth + 6}),
+     * so sixteen of them pack inside this 24-wide footprint, their bodies run
+     * in the SAME tick as this probe's, and {@code clearSpaceForStructure}
+     * clears only BLOCK space — a neighbour's {@code setBlock} at its own cell
+     * (1, 1, 1) lands on a scripted landing cell HERE, and {@link #sweepPad}
+     * never touches a block. One {@code Blocks.STONE} at rel (18, 0, 8) is
+     * measured (t_6119f491) to reproduce the CI red text byte-for-byte
+     * ("the warp event drew beyond the scripted queue (bound 18)").
+     *
+     * <p>The claim runs AFTER {@link #sweepPad} and BEFORE the probe's own
+     * fixtures, so the claim can never clear a fixture the probe asserts on
+     * (probe 4's witnesses and its stone at (12, 0, 8) go in afterwards), and it
+     * logs the blocks it cleared on every leg, so a green leg says whether the
+     * pad was handed over clean rather than leaving that to luck.</p>
+     */
+    private static void claimScanCells(final GameTestHelper helper, final ServerLevel level,
+                                       final int... secondAttemptFor) {
+        final BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+        final List<BlockPos> cells = scriptedCells(secondAttemptFor);
+        final List<String> cleared = new ArrayList<>();
+        for (final BlockPos cell : cells) {
+            final BlockState state = level.getBlockState(origin.offset(cell));
+            if (!state.isAir()) {
+                cleared.add(state + " @ rel (" + cell.getX() + ", " + cell.getY() + ", " + cell.getZ() + ")");
+                helper.setBlock(cell, Blocks.AIR);
+            }
+        }
+        ThaumcraftClassic.LOGGER.info("[t_6119f491] claimed the {} block cells this warp-spider scan reads"
+                        + " ({} scripted windows + their :298 cells); cleared {} foreign block(s){}",
+                cells.size(), cells.size() / 2, cleared.size(), cleared.isEmpty() ? "" : " " + cleared);
+    }
+
+    /**
+     * Attach the scan's own cell checks to the script: every scripted window is
+     * checked — from the test side, at the instant its sixth draw is served —
+     * with {@link #scanRejection}, which is the port's four arms replayed on the
+     * same level state in the same tick. A window the script did NOT mark fails
+     * THERE, naming the intruder, instead of surfacing at the end of the swarm
+     * as a queue overrun that names nothing (the CI red shape of runs
+     * 43656053623 and 43662060834). The box the scan measures is the spider's
+     * own bounding box at the candidate cell, so the shadow builds the same
+     * entity type — detached, never added to the level, invisible to every
+     * query it makes.
+     */
+    private static void attachScanShadow(final GameTestHelper helper, final ServerLevel level,
+                                         final Scripted random, final int[] marks) {
+        final EntityMindSpider probe = new EntityMindSpider(CatalogMindSpider.MIND_SPIDER.get(), level);
+        final BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+        random.scan(marks, (a, k, draws) -> scanRejection(level, origin, probe, draws));
+    }
+
+    /**
+     * The scan's four cell checks, replayed: {@code :298} the cell under the
+     * landing spot (block-free, player-free), {@code :300} {@code noCollision}
+     * on the spider's box, {@code :301} every entity in that box, {@code :302}
+     * every non-player in it. The first failing arm comes back with the offender
+     * named — block state, entity type + id, pad-relative cell — so the failure
+     * identifies the intruder, not just the count; null means the cell is free.
+     */
+    private static String scanRejection(final Level level, final BlockPos origin,
+                                        final EntityMindSpider probe, final int[] draws) {
+        // :292-297 — offset = 7 + nextInt(18), sign = -1 + nextInt(3), per axis,
+        // measured from the player cell warpPlayer fixes at pad-relative (1, 1, 1).
+        // The scan works in ABSOLUTE coordinates (its base is the player's absolute
+        // blockPosition, :289-291), and a game-test pad sits at world coordinates in
+        // the millions, so every cell below goes through the pad origin: reading the
+        // pad-relative numbers as absolute reads the void at (8, 1, 8) — measured on
+        // the first version of this code, whose floor arm saw the sea-floor stone at
+        // absolute (8, 0, 8) and whose entity arm saw nothing, so it fired on every
+        // leg and never once on the pad.
+        final int x = PLAYER_X + (7 + draws[0]) * (draws[1] - 1);
+        final int y = PLAYER_Y + (7 + draws[2]) * (draws[3] - 1);
+        final int z = PLAYER_Z + (7 + draws[4]) * (draws[5] - 1);
+        final BlockPos rel = new BlockPos(x, y, z);
+        final BlockPos landing = origin.offset(rel);
+        final BlockPos floor = landing.below();
+        // cellFits (:390-392) verbatim: the same noCollision AABB, then the same
+        // (Player) null entity arm, on the Level view the product uses.
+        final AABB floorCell = new AABB(floor.getX(), floor.getY(), floor.getZ(),
+                floor.getX() + 1, floor.getY() + 1, floor.getZ() + 1);
+        if (!level.noCollision(floorCell)) {
+            return "the :298 floor cell " + rel.below() + " is not block-free: " + blocksIn(level, origin, floorCell);
+        }
+        final List<Entity> inFloor = level.getEntities((Player) null, floorCell);  // cellFits :391 arm
+        if (!inFloor.isEmpty()) {
+            return "the :298 floor cell " + rel.below() + " carries " + describe(origin, inFloor);
+        }
+        // :299 — spider.moveTo(i1, j1, k1), then the box arms read its bounding box.
+        probe.moveTo(landing.getX(), landing.getY(), landing.getZ(), 0.0F, 0.0F);
+        final AABB box = probe.getBoundingBox();
+        if (!level.noCollision(box)) {
+            return "the spider box at " + rel + " collides with " + blocksIn(level, origin, box);
+        }
+        final List<Entity> hitting = level.getEntities(probe, box);
+        if (!hitting.isEmpty()) {
+            return "the :301 entity arm at " + rel + " sees " + describe(origin, hitting);
+        }
+        final List<Entity> nonPlayer = level.getEntities((Entity) null, box, e -> !(e instanceof Player));
+        if (!nonPlayer.isEmpty()) {
+            return "the :302 checkNoEntity arm at " + rel + " sees " + describe(origin, nonPlayer);
+        }
+        return null;
+    }
+
+    /** Entities, named: type, id and the pad-relative cell — the fingerprint of the pad that spawned them. */
+    private static String describe(final BlockPos origin, final List<? extends Entity> list) {
+        final StringBuilder sb = new StringBuilder(list.size() == 1 ? "1 entity: " : list.size() + " entities: ");
+        for (final Entity e : list) {
+            sb.append(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType())).append(" id=").append(e.getId())
+                    .append(" at rel (").append((int) Math.floor(e.getX()) - origin.getX()).append(", ")
+                    .append((int) Math.floor(e.getY()) - origin.getY()).append(", ")
+                    .append((int) Math.floor(e.getZ()) - origin.getZ()).append("); ");
+        }
+        return sb.toString();
+    }
+
+    /** Every non-air block state whose cell the box touches, pad-relative — the diagnostic for a block arm. */
+    private static String blocksIn(final Level level, final BlockPos origin, final AABB box) {
+        final StringBuilder sb = new StringBuilder();
+        for (int x = Mth.floor(box.minX); x <= Mth.floor(box.maxX); x++) {
+            for (int y = Mth.floor(box.minY); y <= Mth.floor(box.maxY); y++) {
+                for (int z = Mth.floor(box.minZ); z <= Mth.floor(box.maxZ); z++) {
+                    final BlockState state = level.getBlockState(new BlockPos(x, y, z));
+                    if (!state.isAir()) {
+                        sb.append(state).append(" @ rel (").append(x - origin.getX()).append(", ")
+                                .append(y - origin.getY()).append(", ").append(z - origin.getZ()).append("); ");
+                    }
+                }
+            }
+        }
+        return sb.isEmpty()
+                ? "no non-air block state in the touched cells (a collision shape is colliding, not a block state)"
+                : sb.toString();
+    }
+
+    /**
+     * The scan's outcome gate: the rejected windows must be EXACTLY the marked
+     * ones, and every marked slot's k = 0 window must be among them — that is
+     * the probe's own fixture proving it bites, so neither a pad that was
+     * handed over clean nor a claim that ate the fixture can be what makes the
+     * blocked-scan probe pass. Unmarked rejections never reach here: the shadow
+     * fails them at their own window and names the intruder.
+     */
+    private static void assertScanOutcome(final GameTestHelper helper, final Scripted random,
+                                          final int[] marks) {
+        for (final int slot : marks) {
+            helper.assertTrue(random.wasRejected(slot, 0),
+                    "the scripted k=0 cell of slot " + slot + " (" + scriptedCell(slot, 0) + ") was NOT rejected:"
+                            + " the fixture meant to block it (witnesses at (8,1,8)/(10,1,8), stone under (12,1,8))"
+                            + " is not in the cell — claimScanCells runs BEFORE the fixtures, so a missing fixture is"
+                            + " what this reports, never a clear pad");
+        }
+        helper.assertTrue(random.rejections().size() == marks.length,
+                "the scan rejected " + random.rejections().size() + " window(s)" + random.describeRejections()
+                        + " while the script marks exactly " + marks.length + " (slots " + Arrays.toString(marks)
+                        + " at k=0). The shadow fails an unmarked window at its own draw, so an extra here is a"
+                        + " marked slot counted twice: the positional stream shifted at the first marked rejection.");
     }
 
     /**
@@ -554,6 +908,40 @@ public final class WarpEventsGameTest {
 
         private final Deque<Integer> draws = new ArrayDeque<>();
         int consumed;
+        private final List<int[]> keys = new ArrayList<>();
+        private final List<Rejection> rejections = new ArrayList<>();
+        private int[] marks = new int[0];
+        private WindowShadow shadow;
+        private final int[] served = new int[6];
+        private int pending;        // scan draws still owed by the spider whose slot roll just came
+        private int windowsFired;
+
+        /** Record the window the builder is about to offer, so the shadow can name it. */
+        void key(final int a, final int k) {
+            keys.add(new int[] {a, k});
+        }
+
+        /** Attach the scan shadow: the slots the probe marks, and the per-window cell check. */
+        void scan(final int[] marks, final WindowShadow shadow) {
+            this.marks = marks;
+            this.shadow = shadow;
+        }
+
+        List<Rejection> rejections() {
+            return List.copyOf(rejections);
+        }
+
+        boolean wasRejected(final int slot, final int k) {
+            return rejections.stream().anyMatch(r -> r.slot() == slot && r.k() == k);
+        }
+
+        String describeRejections() {
+            final StringBuilder sb = new StringBuilder();
+            for (final Rejection r : rejections) {
+                sb.append("\n     - ").append(r);
+            }
+            return sb.toString();
+        }
 
         Scripted offer(final int... values) {
             for (final int v : values) {
@@ -574,6 +962,61 @@ public final class WarpEventsGameTest {
                         + " — the port rolled with the wrong bound");
             }
             consumed++;
+            if (shadow != null) {
+                // The window boundary IS the scan's draw shape. A scan attempt is six
+                // draws in the order (offset, sign) per axis — offset
+                // nextIntBetweenInclusive(7, 24) = nextInt(18), sign
+                // nextIntBetweenInclusive(-1, 1) = nextInt(3), :292-297 — and the port
+                // has NO per-spider roll at all: the landing spot is the scan's result
+                // (:156, :280-286), so the only draws in the stream are the pre-scan
+                // rolls (:45 = 100, :50 = warp, :57 = 4, :59-61 band = 101, all with
+                // other bounds) and then window after window of this shape. The probes
+                // fix warp at 90 (warpPlayer), so the :50 roll cannot pass for offset.
+                if (pending == 0 && bound == 18) {
+                    pending = 6;                                   // an offset opens a window
+                }
+                if (pending > 0) {
+                    final int index = 6 - pending;
+                    final int want = index % 2 == 0 ? 18 : 3;      // offset, then sign, per axis
+                    if (bound != want) {
+                        throw new IllegalStateException("the scripted scan window drew bound " + bound
+                                + " at position " + index + " of the window, expected " + want
+                                + " — a scan attempt is (offset nextInt(18), sign nextInt(3)) per axis"
+                                + " (:292-297), so the shadow's window alignment no longer matches the"
+                                + " port's draw shape");
+                    }
+                    served[index] = v;
+                    if (--pending == 0) {
+                        if (windowsFired >= keys.size()) {
+                            throw new IllegalStateException("the scan ran " + (windowsFired + 1)
+                                    + " windows and the script scripted " + keys.size()
+                                    + " — the queue overran at a window boundary, not at the tail");
+                        }
+                        final int[] key = keys.get(windowsFired++);
+                        final String offender = shadow.reject(key[0], key[1], served.clone());
+                        if (windowsFired <= 3) {        // a one-shot trace of the window mapping
+                            ThaumcraftClassic.LOGGER.info("[t_6119f491] shadow window #{} key=(a={},k={})"
+                                            + " draws={} consumed={} verdict={}",
+                                    windowsFired, key[0], key[1], java.util.Arrays.toString(served), consumed,
+                                    offender == null ? "FREE" : offender);
+                        }
+                        if (offender != null) {
+                            final Rejection r = new Rejection(key[0], key[1], scriptedCell(key[0], key[1]), offender);
+                            rejections.add(r);
+                            if (!(key[1] == 0 && isMarked(marks, key[0]))) {
+                                throw new GameTestAssertException("the warp scan rejected the scripted window (a="
+                                        + key[0] + ", k=" + key[1] + ") at pad-relative " + r.cell() + " — " + offender
+                                        + ". This pad's entities are swept (sweepPad) and its blocks are claimed"
+                                        + " (claimScanCells) over exactly the cells this scan reads, so this intruder"
+                                        + " arrived after the claim: layout, not the port, is what broke the"
+                                        + " positional stream — one unmarked rejection hands the next spider's window"
+                                        + " to this spider, shifts every later landing, and overruns the draw queue,"
+                                        + " which is the shape CI runs 43656053623 and 43662060834 reported.");
+                            }
+                        }
+                    }
+                }
+            }
             return v;
         }
 

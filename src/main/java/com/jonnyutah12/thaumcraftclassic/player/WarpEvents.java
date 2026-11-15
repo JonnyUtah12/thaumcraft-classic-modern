@@ -216,16 +216,64 @@ public final class WarpEvents {
     /**
      * {@code WarpEvents.spawnGuardian} ({@code :257-280}): an
      * {@code EntityEldritchGuardian} placed by a 50-attempt offset scan and
-     * set on the player. The guardian is not registered, so the summon runs
-     * through {@link EldritchMobHost} — the documented no-op until the
-     * guardian card claims it, the same seam {@code TileEldritchCrabSpawner}
-     * and {@code TileEldritchAltar} use; when it lands, the host's spawner
-     * owns the {@code :257-280} scan (the scan needs the registered entity
-     * type to build the box, so it cannot precede registration).
+     * set on the player. The scan is THIS card's (TC-M6-06-s-c4b-2): the
+     * original builds the mob first ({@code :257}), then walks 50 attempts
+     * ({@code :263}) at {@code MathHelper.getRandomIntegerInRange(rand, 7, 24)}
+     * times {@code getRandomIntegerInRange(rand, -1, 1)} per axis ({@code
+     * :264-266}, six draws per attempt), requires the 1x1x1 cell at {@code
+     * (i1, j1 - 1, k1)} to be free of blocks ({@code :267}), places the mob
+     * ({@code :268}), then requires the mob's own box to be free of blocks
+     * ({@code :269} {@code func_72855_b}), of entities ({@code :270} {@code
+     * func_72945_a}) and of colliding non-player entities ({@code :271} {@code
+     * !func_72953_d}), and only then points the guardian at the player
+     * ({@code :272} {@code func_70784_b} = {@code lookAt}), targets it
+     * ({@code :273} {@code func_70624_b} = {@code setAttackTarget}) and spawns
+     * it ({@code :274}), breaking on the first success.
+     *
+     * <p>The scan draws on the {@code worldObj} random ({@code field_73012_v}),
+     * NOT on a passed-in source, so it is untouched by the warp lane's scripted
+     * roll gates — the drawn count is a function of the terrain, not of the
+     * band. While the guardian is unclaimed the summon stays the {@link
+     * EldritchMobHost} no-op (the pre-registration shape the warp lane's probe
+     * narrated); with {@code CatalogEldritchGuardian} claiming the id the scan
+     * runs, which is the claim the seam's javadoc and that probe both assign to
+     * this card.</p>
      */
     private static void summonGuardian(final ServerPlayer player) {
-        EldritchMobHost.spawn(EldritchMobHost.GUARDIAN, (ServerLevel) player.level(),
-                BlockPos.containing(player.getX(), player.getY(), player.getZ()));
+        final ServerLevel level = (ServerLevel) player.level();                   // :281 worldObj cast
+        if (!EldritchMobHost.isAvailable(EldritchMobHost.GUARDIAN)) {
+            EldritchMobHost.spawn(EldritchMobHost.GUARDIAN, level, player.blockPosition());
+            return;
+        }
+        final com.jonnyutah12.thaumcraftclassic.entities.monster.EntityEldritchGuardian guardian =
+                new com.jonnyutah12.thaumcraftclassic.entities.monster.EntityEldritchGuardian(
+                        com.jonnyutah12.thaumcraftclassic.registration.catalog
+                                .CatalogEldritchGuardian.ELDRITCH_GUARDIAN.get(), level);   // :257
+        final int i = Mth.floor(player.getX());                                   // :258
+        final int j = Mth.floor(player.getY());                                   // :259
+        final int k = Mth.floor(player.getZ());                                   // :260
+        for (int l = 0; l < WarpEventsLogic.SCAN_ATTEMPTS; l++) {                 // :263
+            final int i1 = i + scanOffset(level.random) * scanSign(level.random);  // :264
+            final int j1 = j + scanOffset(level.random) * scanSign(level.random);  // :265
+            final int k1 = k + scanOffset(level.random) * scanSign(level.random);  // :266
+            if (cellFits(level, i1, j1 - 1, k1)) {                                 // :267 World.func_147466_a
+                guardian.setPos(i1, j1, k1);                                        // :268 setPosition
+                final AABB box = guardian.getBoundingBox();
+                if (level.noCollision(box)                                         // :269 func_72855_b
+                        && level.getEntities(guardian, box).isEmpty()               // :270 func_72945_a
+                        && level.getEntities((Entity) null, box,
+                                e -> !(e instanceof Player)).isEmpty()) {           // :271 !func_72953_d
+                    // :272 — func_70784_b(player) (point the mob at the player).
+                    // 1.21.1 dropped Entity#lookAt(Entity); the family's
+                    // look-controller seam is setLookAt(entity, 30, 30)
+                    // (LookAtLivingGoal.java:70).
+                    guardian.getLookControl().setLookAt(player, 30.0F, 30.0F);
+                    guardian.setTarget(player);                                     // :273 func_70624_b
+                    level.addFreshEntity(guardian);                                 // :274 spawnEntityInWorld
+                    return;                                                         // :275 break
+                }
+            }
+        }
     }
 
     /**

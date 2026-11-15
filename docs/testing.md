@@ -173,11 +173,12 @@ without the evidence for its stages.
   only when it runs WITHOUT throwing (`tickAndContinue` retries only a `GameTestAssertException`). A
   criterion that RETURNS early consumes the event, runs `thenSucceed`, and passes the probe with its
   asserts NEVER executed. `CultistClericGameTest.theOrbLifetimeClampDiesAtSixteenForPlainAndTwoFortyForRed`
-  is on that path — its "has not crossed the edge: poll again" `return` arms — so a mutation that deletes
-  the golem orb's `discard()` leaves the 502-probe suite GREEN (measured at `046f3d32` + that mutation,
-  one leg, card t_43022b00), while the same
-  mutation on the orb burst probe turns that one RED through the poll. The assert is the poll; never
-  `return` out of a final clause.
+  WAS on that path — its "has not crossed the edge: poll again" `return` arms — so a mutation that deletes
+  the golem orb's `discard()` left the 502-probe suite GREEN (`046f3d32` + that mutation, one leg, card
+  t_43022b00; again on `89b2a31d`, leg `preteethoff`), while the same mutation on the orb burst probe
+  turns that one RED through the poll. It is OFF that path now: every non-final clause throws
+  `GameTestAssertException` with the observed age/edge/vouch/driven, and the mutation reddens it by name
+  (card t_d29d6aa8). The assert is the poll; never `return` out of a final clause.
 - **A goal left on a live selector is armed by the ENGINE, and a route gate closes off the ground.**
   `Mob.serverAiStep` ticks the goal selector and `GoalSelector#tick` starts a goal on the
   `(tickCount + id) % 2` parity tick (`GoalSelector.java:74-105`). A probe that hand-drives a goal's
@@ -205,6 +206,28 @@ without the evidence for its stages.
   fleeDomainUnloaded=0`. Tick order decides mutations: `onGround` is recomputed in the physics step
   at the END of a tick, so a `setDeltaMovement` applied in the same tick as the probe's draws is
   invisible to those draws — an airborne mutation has to be established one tick early to be seen.
+- **A removal is only evidence when its age names the mechanism.** A probe that ends on "the entity is
+  gone" passes on ANY removal, and the pad itself hides one: the `empty` template's origin column carries
+  the harness's marker pair — `structure_block` in the corner cell and a **full-cube `jigsaw`** one above
+  it — so a projectile armed at the corner stands INSIDE a solid block, and `Projectile` answers its
+  first MOVING tick with a `BLOCK` hit; `EntityGolemOrb#onHit` (`:63`) answers that with `discard()`.
+  Measured with the orb's lifetime clamp mutated off, by a throwaway probe logging every hit, the removal
+  reason and the block states (card t_d29d6aa8, leg `diag_1`): `onHit type=BLOCK pos=…`
+  `Block{minecraft:jigsaw}` and then `REMOVAL observed: age=162 reason=DISCARDED`. The clamp probe that
+  armed its pair on that column went RED on the plain-edge mutation for the WRONG reason (`age=162
+  removed=true` on the pair assert) and GREEN on the red-edge mutation — a real removal at the wrong age
+  standing in for the clamp. The shape that closes it: put the fixtures in cells the pad leaves AIR and
+  ASSERT them air, so a block landing there reports itself as `PROBE BROKEN` instead of arriving as a
+  rate, and pin the age AT the removal to `edge+1` — the clamp fires on the first entity tick past the
+  edge and a removed entity stops ticking, so `161` plain / `241` red is the clamp's signature and no
+  other path writes it. Every edge's mutation then goes RED by name and by the right clause: on the fixed
+  arm, clamp off → `PLAIN EDGE … age=461 removed=false`, plain edge off → the same with `ageRed=241`
+  beside it, red edge off → `RED EDGE … age=540 removed=false`, edges swapped → `PLAIN EDGE MECHANISM
+  plainAge=241 pin=161` — one leg each, four of four RED, each naming the probe (card t_d29d6aa8).
+  Rules bullets here are cited **by line number**, so an insertion moves every cite below it: main's
+  bullet at `caef6cc7` shifted the `:123` / `:172` / `:192` cites by 8, and this bullet moves
+  everything below `:209` by 19. Insert at the END of the section and re-point the cites the change
+  touches, in the same commit — a stale cite reads as a rule that no longer exists.
 - **A route-OUTCOME gate goes red as a rate, on the leg that loads more.** Measured on this tree: the   scribing-ink family landing (`2fefa9b`, over main `104ccce`) ran `runGameTestServer` red ONCE in 4   legs on `combat_golemopensarealdoorandclosesitbehindit` — "the route reaches the far side with doors   openable: `path[1,reached=false]`" — with `All 328 required tests passed :)` on the `-Ptc.noCurios`   leg (rc 0) and on both re-runs of the with-Curios leg (rc 0, rc 0). `GolemCombatAiGameTest.java` is   byte-identical to main's tip (`b3bc00a6`), the landing's 27 paths contain zero golem/door/entity   files, and the red leg printed the landing's own probes passing (`[TC-M3-04-s-vi] Scribe2 craft:`,   `[TC-M3-04-s-iv] KnowFrag craft:`). `reached=false` over a node list that EXISTS is the ground /   tick-order wall above, not the change under test: read the failing probe's NAME before diagnosing,   then re-run the leg before touching code.
 - **A tick-budget-coupled probe goes red when a HEAVIER probe joins the suite — the suite's size is not the trigger, the added probes' weight is.** Measured on this tree: `bossroombuildsthroughtheseam` (`gametest/OuterLandsGameTest`, byte-identical to main, 0 diff lines) went red on **10 of 10** `runGameTestServer` legs on the `t_79eea20e` tree (**331** probes) and green on **5 of 5** legs on main's tip (**328**) and on **2 of 2** legs of main's tip with **three NO-OP probes added (also 331, `CtlThreeProbeGameTest`, deleted after the run)** — same host, warm caches, legs run singly and in pairs. So the suite size (328 → 331) is exonerated by the control, and the trigger is what this card's probes *do*: the probe builds the maze at cells (40,40)/(44,44) in the SHARED game-test level and then counts `blockEldritch` and eldritch stairs in the ABSOLUTE box `x 632..664, y ROOM_Y..ROOM_Y+16, z 632..664`, and the doorway pass that fills it is budgeted in ticks — the sweep has to have drained when the assertion runs, so a probe that occupies ticks ahead of it (this card's probes sweep the 201-entry research graph and resolve rows out of the live `RecipeManager`) starves the pass and the leg reports "the boss-room doorway placed no blockEldritch in the cell envelope". `required = false` does not help: the probes still run and still occupy ticks. This is main's own rule from `554ac56` — assert the outcome, not the tick budget — applied to a probe that does not: the fix is for the probe to poll its envelope on ticks with a deadline (or build in a cell window it owns), not for the joining card to thin its probes. Same family as the golem's inherited start cell (`t_67f61f59`). Until that probe is fixed, any leg whose added probes are heavy should expect this red name, and it is a probe-isolation gate, not a product regression: CI at the landing tip `f4bac9e` runs the same suite green (`build` + `game-test-no-curios` + `runServer`).
 - **A hand-driven `tick()` runs the FULL goal selector, and the goal's gate reads the world.**
@@ -449,6 +472,55 @@ restores both and `diff -q` reports byte-identical.
   natural rate is the motivation. Plant-script lesson from the failed first pass: plant anchors pin
   the probe's setup text, so a probe refactor silently UNPLANTS the script and the legs run clean —
   a planted leg must print its plant line, and every leg verdict is read, never assumed.
+
+- **A sweep is only HALF a scan probe's isolation: the claim has to cover every arm the gate reads, and
+  the probe's own fixtures are claimed LAST.** The rule at :390 sweeps non-player ENTITIES, and the
+  hazard census that justified it (49 mind spiders at y = 8) is a shape the BLOCK arm cannot produce.
+  `cellFits` (`WarpEvents.java:390-392`) is `noCollision` on the 1×1×1 box **plus** the player arm, and
+  `:300` reads the spider's own `getBoundingBox()`, so a block inside a scripted cell rejects a window
+  the sweep cannot see. Blocks are the half the grid hands over dirty: a 1×1×1 pad strides 6 cells
+  (`StructureGridSpawner`: stride = `template width + 5` / `depth + 6`), so sixteen pack inside a
+  24-wide pad, their bodies run in the SAME tick, and `clearSpaceForStructure` clears BLOCK space only
+  — a neighbour's `setBlock` at its own cell (1, 1, 1) lands on a scripted landing cell HERE. Measured
+  on this tree: one `Blocks.STONE` at rel (18, 0, 8) (slot 5's `:298` floor cell) reproduces the CI line
+  byte-for-byte on `6a05ba14` in BOTH arms, and the same leg took
+  `theScanRejectsOccupiedAndFlooredCellsAndSpendsItsSecondAttempt` red on the identical line with no
+  plant in it; the base tree with no plant went red **1 of 8** full-grid legs on the no-Curios arm
+  naming `theIllusionBandSpawnsTheWarpCappedHarmlessViewerBoundSwarm … drew beyond the scripted queue
+  (bound 18)` — the natural channel, on demand. The layout draw is the ALIGNMENT, not the cell: the
+  intruder's position is a function of the grid origin, so no named cell can be excluded — only claimed.
+  Shape (t_6119f491, `WarpEventsGameTest`): `claimScanCells` clears and NAMES the blocks of every cell
+  this scan can read (each scripted landing cell and its `:298` cell) at setup,
+  `attachScanShadow` replays the scan's four arms on every scripted window at the window's own draw —
+  so an unmarked rejection fails BY NAME (block state / entity type + id / cell) at the instant it
+  lands, instead of ending as the unattributable queue overrun that made this lane unrateable — and
+  `assertScanOutcome` asserts the marked rejections are PRESENT, so the probe cannot pass on a pad that
+  was handed over clean. Claim first, fixtures after: a claim that runs after the fixtures eats them.
+
+- **A window-shadow over a scripted stream aligns on the DRAW SHAPE, works in ABSOLUTE space, and
+  traces its first windows.** The shadow replays the gate's own cell checks on every scripted window
+  so an unmarked rejection names its intruder (block state / entity type + id / pad-relative cell)
+  instead of surfacing at the tail as "drew beyond the scripted queue" — the shape that made this lane
+  unrateable (t_6119f491: 2 CI reds on one lineage, base-tree rate **1/8** measured with no plant in
+  the tree). Three shipped versions read the stream plausibly and were wrong, and each failure mode is
+  cheap to name. (1) A counted pre-scan offset misses the band roll at `:59-61`, so every window is one
+  draw off and the shadow fires on all 502 legs. (2) Pad-relative cells used as world coordinates: a
+  game-test pad sits at world coordinates in the MILLIONS, so the arms read the void — the floor arm
+  finds the sea-floor stone at absolute (8, 0, 8) and fires on EVERY leg, the entity arm finds nothing,
+  and the fixture assert then names a "missing" fixture on every leg. (3) A boundary roll the port
+  never draws: the landing spot is the scan's RESULT, and `WarpEvents` draws `:45` (100), `:50` (warp),
+  `:57` (4, helm only), `:59-61` (101, band), then per attempt SIX draws shaped (offset `nextInt(18)`,
+  sign `nextInt(3)`) per axis (`:292-297`) — arming on a phantom bound-50 roll arms nothing, so the
+  shadow silently never runs at all. So: the boundary IS the shape, with the bound asserted at each
+  position; every cell goes through `helper.absolutePos(BlockPos.ZERO)`; and the first three windows
+  log `key / draws / consumed / verdict`, which is what made the mapping auditable at all. **Prove a
+  code path runs by counting its log line against a line known to be emitted on the same leg**
+  (measured: 0 `shadow window` lines vs 3 `claimed` lines in the same log) — one grep settles what
+  three rounds of static reasoning did not. Teeth, all deterministic on the fixed tree: stone planted
+  BEFORE the claim → `All 502 passed` with the claim line naming the clear; the same stone with the
+  claim disabled → RED; stone planted AFTER the claim → shadow RED naming `(a=5, k=0) … :298 floor cell
+  (18,0,8) … Block{minecraft:stone}`; `SCAN_MARKS {0,1,2}→{0,1}` → shadow RED naming slot 2's own
+  fixture window; the fixture stone removed → the positional stream shifts and the landing arm reddens.
 
 - **A scripted ride assert must arm off the mount's own same-tick punch.** The crab's climb gate
   (`EntityEldritchCrab#tick` :120-129) and its punch block (:131-137) run in the SAME `tick()`, and a
