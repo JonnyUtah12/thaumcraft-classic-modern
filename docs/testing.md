@@ -388,6 +388,69 @@ without the evidence for its stages.
   window), and it is not a window. Clear every mob in the template's box that is not the probe's
   own golem and herd, at spawn and at settle, and print them; the animal the probe measures then
   dies only to the probe's own fixture.
+<a id="crop-light-propagation-depth"></a>
+- **A fixture that leans on a block's LIGHT gate has to pay for its light, and a probe must classify
+  the `BlockState` before reading a property that not every state of that block carries.** Measured on
+  this tree: `interact_harvestcropscorereapsripewheatandreplantsit` reddened the with-Curios `build`
+  job on CI (run `43675329931`, job `132694099034`, tip `e50113cc`) with `Cannot get property
+  IntegerProperty{name=age, clazz=class java.lang.Integer, values=[0..7]} as it does not exist in
+  Block{minecraft:air}`; the sanctioned same-sha rerun is green on all 3 jobs, the identical line sits
+  in the c4a2 legs, and **0 of the 42** red `build` jobs in a 120-run window name it (16 of 16 local
+  legs on the landing tree green — 8 with-Curios + 8 no-Curios, 502/502 each, probe never named), so it
+  is a rate and the file that crashes is the probe, not the product. The mechanism is the crop's own
+  survival gate: `CropBlock#canSurvive` (`CropBlock.java:164-171`) is `hasSufficientLight` =
+  `getRawBrightness(pos, 0) >= 8` AND the soil gate, and `BushBlock#updateShape`
+  (`BushBlock.java:30-35`) turns the crop into `Block{air}` on the FIRST neighbour update that fails
+  it — and the harvest goal's own `setBlock` IS that neighbour update, so the cell the next draw reads
+  can be air, and asking `CropBlock.AGE` of it is the disclosed line. The light that gate consults is
+  `Level#updateSkyBrightness` (from `ServerLevel#tick`): `skyDarken = (1 − d2)·11` with
+  `d2 = 0.5 + 2·clamp(cos(2π·dayTime/24000), −0.25, 0.25)`, so a crop under open sky survives at
+  midnight (`dayTime 18000` → skyDarken 5 → raw 10) and pops at dusk (`dayTime 13000` → skyDarken 11 →
+  raw 4). The game-test box pays for none of it: every crop cell in the patch reads raw **15**, the
+  uncomputed-section value, printed on every leg of an 11-leg sweep — the patch's survival is inherited
+  from a number the fixture does not own. The first shape the card shipped — one glowstone at
+  `(4,3,4)`, Manhattan ≤ 5 from every crop cell, block channel 15 − Manhattan — measured
+  INSUFFICIENT: on the 515-probe grid the drive's FIRST draw found **7 of 8** cells `Block{air}` with
+  the farmland intact and raw 10-12 read AFTER the fact (`the crop patch lost a cell to a non-crop
+  state at tick 190 … vanished=7 of 8 cells`), and the survivor was exactly the cell at propagation
+  depth 2. That is a light engine mid-flush (`ServerChunkCache:573` schedules the flush per chunk tick,
+  `ThreadedLevelLightEngine:54-55` is the queue): the SKY channel is applied before the block channel
+  has propagated to the far cells, so inside that window a cell reads `max(0, 15 − skyDarken(11)) = 4`
+  and `BushBlock#updateShape` pops it on the first neighbour update inside it, permanently. The rule is
+  therefore not "pay for light" but **pay for light at propagation depth 2**: a source directly under
+  EVERY crop cell (2 steps to the crop through the farmland, block channel 13-15 permanently; BELOW the
+  soil, so the golem's walk cells and the crops' headroom are untouched), the crop planted at
+  `PLANT_TICK = 40` — after that flush, never into it — the farmland paid wet (`FarmBlock#randomTick`
+  turns dry farmland to dirt, `FarmBlock.java:95-104`; the crop above holds it through
+  `MAINTAINS_FARMLAND`, `:124-126`), and any cell the window popped before the drive opened is restored
+  AND PRINTED (`HARVEST-FIXTURE repaired=N`, with the state / soil / raw it found) so a fixture repair
+  is on the record. Measured on that shape: **8 of 8** gate legs green (4 with-Curios + 4 no-Curios,
+  515/515 each, `repaired=0`, the census arm never named), and the raw at plant tick is still 15 — the
+  uncomputed value — which is why the draw classifies the state first
+  (`state.hasProperty(CropBlock.AGE) ? … : VANISHED`): no draw can ask an `IntegerProperty` of
+  `Block{air}`, and `getRawBrightness >= 8` is asserted on the drive's first tick in the probe's own
+  message. The arm then ends on the OBSERVED reap+replant (`reaped >= 3`, `replanted >= 3`, polled by
+  `succeedWhen`, no fixed verdict tick — the `return`-is-not-a-poll rule above) and the two hard arms
+  (a cell that stopped being a crop, the drive window closed) throw a plain exception carrying the
+  census: per-cell state, soil below, raw, golem state, repaired count. Teeth, RED by name on the fix
+  tree: replant disabled (`if (false && broken && …)`) → `the crop patch lost a cell to a non-crop
+  state at tick 203 … vanished=1 of 8 cells, repaired=0` (2/2 legs); harvest disabled
+  (`final boolean broken = false`) → `the harvest goal never reaped the ripe wheat by the deadline at
+  tick 670 … harvested=0, replanted=0, stillRipe=8, vanished=0` (2/2 legs). The crash class is
+  reproducible on demand and closed structurally: the SHIPPED probe plus a planted pop
+  (`setBlock … Blocks.AIR` at `SETTLE + 40`) went 2/2 RED with the CI line byte-exact (`Cannot get
+  property IntegerProperty{name=age, clazz=class java.lang.Integer, values=[0..7]} as it does not exist
+  in Block{minecraft:air}`), and the FIXED probe with the SAME pop went 2/2 RED naming the census arm
+  (`… at tick 231: harvested=2, replanted=2, …, vanished=1 of 8 cells, repaired=0`) — the age read is
+  gone, the pop is named, and that is also why the drive-open repair keeps its teeth: a pop landing
+  after the drive opens is a red. Recorded so
+  the next reader does not re-chase it: planting the phase clock into the shipped probe
+  (`setDayTime(13000)`) went 1 red / 1 green and the red named
+  `combat_woundedguardretaliatesanddoesnotrecruititsneighbour`, never the age read, and the probe's own
+  raw read stayed 15 — inside the box the section's light is never computed at the read tick, so the
+  daylight pop is not armable from the probe side (`setDayTime(18000)` = 4/4 green on the fix tree). The
+  daylight gate is the source-level formula; the flush that actually bites inside the box is the queued
+  one above, and the crash is closed structurally by the classification.
 
 ## Standing acceptance gates
 **`PlayableAcceptanceGameTest` is the PLAYABLE gate** (TC-M9-01-s, `t_8ea70fda`). The 2026-10-30 intake asked
