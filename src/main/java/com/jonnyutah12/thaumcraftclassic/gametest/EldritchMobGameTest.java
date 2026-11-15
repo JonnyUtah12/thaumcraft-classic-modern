@@ -87,6 +87,8 @@ public final class EldritchMobGameTest {
     private EldritchMobGameTest() {
     }
 
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+
     /**
      * 21.1.259 {@code ExperienceOrb.getExperienceValue} ({@code :326-340}) —
      * the splitter's table, used by the death-XP probe's invariant (the 1.7.10
@@ -432,6 +434,7 @@ public final class EldritchMobGameTest {
      */
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void theGuardianBreathesForFiveHundredTicksAndBurns(final GameTestHelper helper) {
+        final ServerLevel level = helper.getLevel();
         final EntityEldritchGuardian mob = guardian(helper, 0, 0);
         helper.assertTrue(mob.getMaxAirSupply() == 500,
                 ":155-157 — func_70627_aG() = 500 is the whole breath, got " + mob.getMaxAirSupply());
@@ -451,36 +454,35 @@ public final class EldritchMobGameTest {
                     ":92-94 — the guardian burns (no immunity on the type, and the fire survives on "
                             + "the dry pad), fire ticks " + mob.getRemainingFireTicks());
 
-            // The drain legs: a 3 x 5 x 3 water cube over the mob's cell (the
-            // FloatGoal of :55 drifts the mob a block or two, so the column is
-            // wider than the entity box; the pad has no floor, so the probe
-            // lays its own water and takes it back down).
+            // The drain legs: a water column over the mob's cell (the FloatGoal
+            // of :55 drifts the mob, so the column is wider and taller than the
+            // entity box; the pad has no floor, so the probe lays its own water
+            // and takes it back down).
             //
-            // GameTestHelper#setBlock(BlockPos, BlockState) applies absolutePos
-            // to its argument ITSELF (framework GameTestHelper.java:345-347 =
-            // getLevel().setBlock(this.absolutePos(pos), state, 3)), so the
-            // position handed to it is TEMPLATE-RELATIVE. Handing it the mob's
-            // absolute blockPosition() — as this probe did — puts every block
-            // twice the grid offset away from the pad (measured red: the air
-            // never drained, 500 stayed 500, and the mob showed no buoyancy
-            // because no water existed at its cell). Convert once, then work in
-            // relative space.
+            // The fill goes through the ABSOLUTE level - the family's flood
+            // pattern (TaintGameTest.java:570 floods a cell with
+            // level.setBlockAndUpdate) - and NOT through GameTestHelper#setBlock:
+            // setBlock applies absolutePos to its argument ITSELF (framework
+            // GameTestHelper.java:345-347 = getLevel().setBlock(this.absolutePos(
+            // pos), state, 3)), and GameTestHelper#relativePos composes the
+            // test's rotation with CLOCKWISE_180 (Rotation#getRotated; framework
+            // :866-878), so the pair is NOT an inverse in x/z on 21.1.259.
+            // Measured at this tip with rot=NONE: absolutePos(relativePos(x)) is
+            // x mirrored about the structure position, so the drafted fill -
+            // helper.setBlock(relativePos(cell).offset(..)) - landed 2 blocks off
+            // the mob's cell (the probe's own read-back: water only in the
+            // window's far corner) and the air never drained. The mob's cell is
+            // an absolute position the probe already holds, so anchoring the
+            // column to it is exact in every rotation.
             final BlockPos cell = mob.blockPosition();
-            final BlockPos rel = helper.relativePos(cell);
             final BlockPos eyeCell = BlockPos.containing(mob.getEyePosition());
-            for (int dy = -1; dy <= 3; dy++) {
-                for (int dx = -1; dx <= 1; dx++) {
-                    for (int dz = -1; dz <= 1; dz++) {
-                        helper.setBlock(rel.offset(dx, dy, dz), Blocks.WATER.defaultBlockState());
-                    }
-                }
-            }
+            mob.setNoGravity(true);
+            flood(level, cell, 6);
             helper.assertTrue(
-                    helper.getLevel().getFluidState(eyeCell).is(net.minecraft.tags.FluidTags.WATER),
+                    level.getFluidState(eyeCell).is(net.minecraft.tags.FluidTags.WATER),
                     "the probe's own water must reach the mob's eye cell " + eyeCell.toShortString()
-                            + " (feet " + cell.toShortString() + ", relative base "
-                            + rel.toShortString() + "): the state there is "
-                            + helper.getLevel().getBlockState(eyeCell));
+                            + " (feet " + cell.toShortString() + ", column dy -1..+6): the block there is "
+                            + level.getBlockState(eyeCell));
             mob.setAirSupply(mob.getMaxAirSupply());
             // The drain leg, measured at this tip: with the eye in water the
             // platform walks the air down 1/tick (LivingEntity:436 +
@@ -494,7 +496,7 @@ public final class EldritchMobGameTest {
             helper.runAfterDelay(1, () -> {
                 helper.assertTrue(mob.isEyeInFluid(net.minecraft.tags.FluidTags.WATER),
                         "the probe's water must still cover the eye one tick later (feet "
-                                + cell.toShortString() + ", relative base " + rel.toShortString()
+                                + cell.toShortString() + ", absolute column dy -1..+6"
                                 + ", eye " + BlockPos.containing(mob.getEyePosition()).toShortString()
                                 + "): air " + mob.getAirSupply());
                 helper.assertTrue(mob.getAirSupply() == 500 - 1,
@@ -524,13 +526,7 @@ public final class EldritchMobGameTest {
                         helper.assertTrue(mob.getAirSupply() >= 0,
                                 ":437-448 — the trigger resets the air to 0 (setAirSupply(0) at :438), "
                                         + "got " + mob.getAirSupply());
-                        for (int dy = -1; dy <= 3; dy++) {
-                            for (int dx = -1; dx <= 1; dx++) {
-                                for (int dz = -1; dz <= 1; dz++) {
-                                    helper.setBlock(rel.offset(dx, dy, dz), Blocks.AIR.defaultBlockState());
-                                }
-                            }
-                        }
+                        drain(level, cell, 6);
                         mob.setAirSupply(300);
                         mob.setNoGravity(true);
                         helper.runAfterDelay(4, () -> {
@@ -794,6 +790,44 @@ public final class EldritchMobGameTest {
         final EntityEldritchGuardian guardianMob = guardian(helper, 0, 0);
         final EntityInhabitedZombie zombieMob = zombie(helper, 6, 0);
         helper.runAfterDelay(2, () -> {
+            // The pad is fully lit (measured raw light 15 at the mob's cell at
+            // this tip), and the platform's half of the reference's ternary
+            // refuses a lit cell: PathfinderMob#checkSpawnRules is
+            // getWalkTargetValue(pos, level) >= 0.0F and Monster#getWalkTargetValue
+            // is -getPathfindingCostFromLightLevels, which is
+            // getLightLevelDependentMagicValue(pos) - 0.5F (measured here: raw 15
+            // -> cost 0.5 -> walk-target value -0.5). 1.7.10 composes the same
+            // way at EntityInhabitedZombie.java:113
+            // ({@code ents.size() > 0 ? false : super.func_70601_bi()}), so the
+            // probe seals the mob's own cell in the dark - the family's
+            // pad-fixture pattern, written through the ABSOLUTE level for the
+            // same reason the water column is (GameTestHelper#setBlock applies
+            // absolutePos to its argument, GameTestHelper#relativePos composes
+            // the rotation with CLOCKWISE_180, and the pair is not an inverse in
+            // x/z: the drafted seal landed on the mirrored cell and the light
+            // stayed 15). With the cell dark the platform half PASSES, so every
+            // gate leg below is the census's bite, not the platform's.
+            sealInDark(level, zombieMob);
+            final float walkTarget = zombieMob.getWalkTargetValue(zombieMob.blockPosition(), level);
+            final boolean obstructionFree = zombieMob.checkSpawnObstruction(level);
+            helper.assertTrue(walkTarget >= 0.0F && obstructionFree,
+                    "the sealed cell must pass the platform half of :113's ternary (walkTargetValue "
+                            + walkTarget + ", raw light "
+                            + level.getRawBrightness(zombieMob.blockPosition(), 0) + ", unobstructed "
+                            + obstructionFree + " at " + zombieMob.blockPosition().toShortString() + ")");
+            final int aloneKind = kindInGate(level, zombieMob, EntityInhabitedZombie.class);
+            helper.assertTrue(aloneKind == 0 && zombieMob.checkSpawnRules(level, MobSpawnType.NATURAL),
+                    ":104-113 — alone in its own 32/16/32 box and in the dark, the census is empty, "
+                            + "super passes and the gate OPENS (census " + aloneKind + ", verdict "
+                            + zombieMob.checkSpawnRules(level, MobSpawnType.NATURAL) + ", box "
+                            + gateBox(zombieMob) + ")");
+            helper.assertTrue(kindInGateInclusive(level, zombieMob, EntityInhabitedZombie.class) >= 1
+                            && kindInGate(level, zombieMob, EntityInhabitedZombie.class) == 0,
+                    ":104-113 against the port - the original's func_72872_a(Class, bb) excludes NO "
+                            + "entity, so the mob's own body sits in its own box (census self-inclusive "
+                            + ">= 1) while the shipped zombie census skips it (self-excluded 0). The "
+                            + "asymmetry is BD-123: the zombie's gate opens where the original's never "
+                            + "would for its own body");
             final int guardianKind = kindInGateInclusive(level, guardianMob,
                     EntityEldritchGuardian.class);
             final int zombieKind = kindInGate(level, zombieMob, EntityInhabitedZombie.class);
@@ -859,6 +893,58 @@ public final class EldritchMobGameTest {
                 });
             });
         });
+    }
+
+    /**
+     * A water column anchored on the mob's ABSOLUTE cell: the 3 x 3 x (height +
+     * 2) box from one cell below the mob's feet up {@code height} cells above it,
+     * written through the level (the family's flood pattern, TaintGameTest
+     * {@code level.setBlockAndUpdate}). Absolute, because the mob's cell is an
+     * absolute position: the harness's own {@code setBlock}/{@code relativePos}
+     * pair mirrors x/z about the structure position on this build (measured), so
+     * a fill expressed through it does not land on the mob.
+     */
+    private static void flood(final ServerLevel level, final BlockPos cell, final int height) {
+        for (int dy = -1; dy <= height; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    level.setBlockAndUpdate(cell.offset(dx, dy, dz), Blocks.WATER.defaultBlockState());
+                }
+            }
+        }
+    }
+
+    /** The same column, taken back down. */
+    private static void drain(final ServerLevel level, final BlockPos cell, final int height) {
+        for (int dy = -1; dy <= height; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    level.setBlockAndUpdate(cell.offset(dx, dy, dz), Blocks.AIR.defaultBlockState());
+                }
+            }
+        }
+    }
+
+    /**
+     * A stone shell around the mob's own two cells - the 3 x 3 ring on the feet
+     * cell and the head cell, the floor below, the ceiling two cells above -
+     * written through the ABSOLUTE level. The mob's own cells stay air and the
+     * shell sits outside its bounding box, so {@code Mob#checkSpawnObstruction}
+     * keeps passing while the cell carries no skylight and
+     * {@code Monster#getWalkTargetValue} stops refusing.
+     */
+    private static void sealInDark(final ServerLevel level, final Mob mob) {
+        final BlockPos cell = mob.blockPosition();
+        for (int dy = -1; dy <= 2; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    if ((dy == 0 || dy == 1) && dx == 0 && dz == 0) {
+                        continue;
+                    }
+                    level.setBlockAndUpdate(cell.offset(dx, dy, dz), Blocks.STONE.defaultBlockState());
+                }
+            }
+        }
     }
 
     /** The reference's 32/16/32 box around the mob's own box ({@code :255-258}). */
