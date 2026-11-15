@@ -593,3 +593,56 @@ restores both and `diff -q` reports byte-identical.
   subject to control *when* a rule fires, verify the park cell is really unticked — print the rule's own
   precondition (`restrictDistSqr`) on the tick before the draw; a precondition already satisfied means
   the hand-driven tick is not the write tick and the draw is a budget.
+- **A 1.0-health mob probe has to CLAIM its own mob box, and the channel a pad-sharing claim can NOT
+  close is fire.** `theHarmlessFuseDiscardsPast1200TicksAndANormalSpiderNeverExpires`
+  (`gametest/MindSpiderMobGameTest`) runs a 1.0-health armed harmless spider and a control spider over
+  1300 ticks with a full-health assert every 20 ticks, and went red on the shipped line
+  `the armed spider lost health at checkpoint 20 (pad burn/fall) — health 0.0, tickCount=20` at **1/4**
+  with-Curios legs on `046f3d32` (t_43022b00 `fixstress#2`) and **1/5** with-Curios legs on `3b5a49ae`
+  (t_47951c77 `cens_land_4`) — attributed by probe NAME. `tickCount=20` is ONE damage instance inside
+  the probe's first 20 ticks, and the probe owns no damage source: the hazard walks in from the pad the
+  grid handed over. Two channels belong in the rule's set because a claim reaches both: a colliding
+  block in the mob cell (`LivingEntity#pushEntities` → `makeStuckInBlock`, lethal at 1.0 hp), and a
+  foreign entity inside the mob box — the pech-blast pellet flies 12 blocks at 0.5/tick and a 1×1×1 pad
+  strides 6 cells (`StructureGridSpawner`: `width + 5` / `depth + 6`), so a neighbour's corridor crosses
+  this pad, and its hit is `damage().setExplosion`, 1.5 + knockback, dead in one hit. The second is the
+  natural channel, and the claim that PROVES it is a claim that LOGS its catch: on one leg of seven
+  landing legs the fuse probe's pad was handed over a `barrier` and a `stone` in the mob cell column
+  plus a live `EntityPechBlast['Pech Blast'/12763]` inside its mob box (mid-batch, not a plant probe),
+  the claim removed all three and the grid ran 504/504; the other six legs were handed a clean pad
+  (t_21b2160d, `teeth2/fixed1.gradle.log`).
+  Fire is NOT reachable by a probe-side claim and must NOT be added to one: fire set on a tick takes its
+  boundary damage in THAT tick when the ticks are a multiple of 20 (`LivingEntity#baseTick`) and the
+  harness's tick runs after the entity pass (t_89eee704's measurement), so no probe-side `clearFire` can
+  precede it — measured: a planted `ignite(300)` kills the spider on the ignite tick with the guard in
+  place — and fire is not the observed natural channel either: the sampler under the burn/fall red saw
+  `remainingFireTicks = 0` on both spiders on every green leg (8 legs × 1201 ticks) and the pad set no
+  fire on 24/24 sampled legs.
+  Shape (t_21b2160d): `claimMobPad` sweeps the lane's own `mobBox` (±6/7, 10 tall) of foreign entities,
+  clears the colliding blocks of the mob cell column, LOGS what the batch handed over, and asserts the
+  claim; it runs at setup and `onEachTick` for the probe's own window — the set the gate measures. The
+  plinth (the barriers at z+1, z+2) sits outside the column and is untouched; health, fire immunity, the
+  checkpoints' `clearFire` and the fuse asserts are untouched — the claim moves contaminants, never the
+  subject's state. Teeth: disable the claim and a plant probe (stone in the mob cell + a pech blast
+  fired into the box) reddens with the shipped line on 2 of 2 legs (`teeth2/mut1`, `mut2`); with the
+  claim in place the same plants are swept. Census (base = no claim, landing = claim, curios arm, 5
+  interleaved pairs, full grid, `census2/`): **0/5** base vs **0/5** landing (Fisher p=1.0), pooled with
+  the historical base legs **2/14 vs 0/7, p=0.43** — the census ran at loadavg 3.6-4.9 with 2 concurrent
+  JVMs, where P(0 reds in 5 legs) is 0.33 at the historical 1/5 rate, so the census CANNOT resolve the
+  rate and no rate claim rides on it; the deterministic planted teeth are the causation lever.
+- **A box query reads the level's ENTITY list, not `level.players()` — so the rule above (the sweep's
+  hazard set is the GATE's scan set) is a rule for gates that scan the player list, and its
+  registered-resident arm must NOT be copied into a gate that scans boxes.** Measured on t_21b2160d by
+  PLANTING, while testing the opposite hypothesis: a `ServerPlayer` registered through
+  `level.players()` (the crab fixture's shape, `EldritchCrabGameTest:672`) planted ON the warp pad is
+  reported by that pad's own `getEntitiesOfClass` census **0 times on every leg that planted it**
+  (3 legs, `teeth2/fixed1-3.gradle.log`), and the scripted warp probes stay green on all three of those
+  legs — `WarpEvents`' `:298`/`:301` arms are `level.getEntities`
+  over the entity list, and `Entity#discard` can never run on something the sweep cannot see, so the
+  plant cannot produce the queue overrun the lane reports. The player arm is therefore NOT this lane's
+  lever: the measured lever for the scripted-queue probe is the BLOCK claim
+  (`theScanRejectsOccupiedAndFlooredCellsAndSpendsItsSecondAttempt`, t_6119f491, `claimScanCells`), and
+  a probe that sizes its sweep to a gate reading `level.players()` (`getNearestPlayer`) sizes it
+  correctly ONLY for that gate. A claim arm that can never fire is not free — it reads as coverage and
+  measures nothing. Census for that probe: **0/5** base vs **0/5** landing (both arms carry t_6119f491's
+  claim), pooled with the historical base legs **3/37 vs 0/5, p=0.68**.
