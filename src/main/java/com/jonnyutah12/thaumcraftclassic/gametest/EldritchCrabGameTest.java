@@ -60,15 +60,20 @@ import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.animal.Pig;
 import net.minecraft.world.entity.monster.Zombie;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * World probes for the Eldritch Crab and its orb (TC-M6-06-s-c4b-1,
@@ -91,10 +96,32 @@ import java.util.List;
  * {@code setPos}-placed at the mob's feet because {@code makeMockPlayer} does
  * not place it and {@code TargetGoal#canAttack} carries FOLLOW_RANGE (the
  * knight card).</p>
+ *
+ * <p><b>Isolation audit of the sibling probes (card t_bde0b35c).</b> The warp
+ * lane's {@code sweepPad} pattern lands here with the hazard set tuned to this
+ * file: both entity-scan probes (the mid-air climb, the orb burst) sweep the
+ * pad's census box at setup, and the climb probe registers a player, so its
+ * sweep includes players. Two probes went red-hands on their own hazards at the
+ * full 502-probe grid, 1 leg in 11 each: the climb probe under a registered
+ * player resident at its coordinates (the P2 plant reproduces the disclosed CI
+ * line byte-for-byte; mid-air spiders P1 and a roaming unshelled crab P3 do
+ * not), and the orb burst probe on a CLEAN pad with the consumption pinned to a
+ * 2-real-tick budget (age=100 removed=false — the docs/testing.md tick-budget
+ * class, this card's diag#7). A third finding rides with the climb fix: that
+ * probe's teardown was tail-only, so the leg that went red leaked its registered
+ * player (the harness's box cleanup covers entities, not the players list) and
+ * manufactured the very resident that reddens the next pad — the teardown is now
+ * a {@code finally}. The remaining probes are box-scoped (block/health/stack/
+ * copy asserts) and read nothing a player scan can hand to a resident; the ride
+ * probe's gate is ground-based (no player scan), so a resident mob there is the
+ * same class the c4b-1 lane documented as accepted. No probe's assertion was
+ * weakened.</p>
  */
 @GameTestHolder(ThaumcraftClassic.MOD_ID)
 @PrefixGameTestTemplate(false)
 public final class EldritchCrabGameTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger("EldritchCrabGameTest");
 
     private EldritchCrabGameTest() {
     }
@@ -122,6 +149,56 @@ public final class EldritchCrabGameTest {
 
     private static BlockPos pad(final GameTestHelper helper) {
         return helper.absolutePos(BlockPos.ZERO).offset(1, 3, 1);
+    }
+
+    /**
+     * The pad's census box — the template footprint plus the margin the warp lane
+     * uses ({@code WarpEventsGameTest.padEntities}: ±1 in x/z, the pad height +3
+     * in y). A census, not a claim: the harness reuses one grid area across
+     * batches and clears only BLOCK space, so whatever a previous batch's pad
+     * left standing in this box is what this probe measures through the world.
+     */
+    private static List<Entity> padEntities(final GameTestHelper helper, final ServerLevel level,
+                                            final Predicate<Entity> filter) {
+        final BlockPos o = helper.absolutePos(BlockPos.ZERO);
+        return level.getEntitiesOfClass(Entity.class,
+                new AABB(o.getX() - 2, o.getY() - 4, o.getZ() - 2,
+                        o.getX() + 13, o.getY() + 15, o.getZ() + 13),
+                filter);
+    }
+
+    /**
+     * Sweep the pad at probe setup — the warp lane's isolation pattern
+     * ({@code WarpEventsGameTest.sweepPad}) with ONE deliberate difference. The
+     * warp sweep discards non-player entities and LEAVES players, because the
+     * warp event's scan is a BLOCK scan and no player rejects a cell. Every gate
+     * this file measures scans ENTITIES: {@code EntityEldritchCrab#tick} asks
+     * {@code level.getNearestPlayer(this, -1.0)} — distance-UNBOUNDED, target
+     * list {@code level.players()} — for its mount, and {@code EntityEldritchOrb}
+     * sweeps the living in its burst box. A player resident is therefore IN this
+     * lane's hazard set, not out of it: a registered player left at the pad's own
+     * coordinates (the grid re-gives a pad the coordinates of the pad that leaked
+     * it — {@code StructureGridSpawner#onBatchStart} rewinds to the batch corner)
+     * takes the mount, and the probe measures the resident instead of the port.
+     * Measured on this tree: a planted co-located registered {@code ServerPlayer}
+     * reddens the climb probe with the disclosed CI line byte-for-byte (P2),
+     * mid-air mind spiders (P1) and a roaming unshelled crab (P3) do not.
+     *
+     * <p>The box is provably large enough for the gate under test: the mount
+     * needs {@code distanceSquared < 4.0} ({@link EldritchCrabAiLogic#canMountPlayer})
+     * and the scan keeps the strict minimum, so a resident the sweep does not
+     * reach (≥ 13 blocks out) can neither win the scan nor satisfy the bound.
+     * Player residents are deregistered from the scan set
+     * ({@code level.players()}) and discarded; every other resident is
+     * discarded.</p>
+     */
+    private static void sweepPad(final GameTestHelper helper, final ServerLevel level) {
+        for (final Entity stray : padEntities(helper, level, e -> true)) {
+            if (stray instanceof ServerPlayer resident) {
+                level.players().remove(resident);
+            }
+            stray.discard();
+        }
     }
 
     private static EntityEldritchCrab crab(final GameTestHelper helper) {
@@ -551,6 +628,10 @@ public final class EldritchCrabGameTest {
     public static void anUnshelledCrabInMidAirClimbsOnAPlayerAndPunchesHimOff(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
         final BlockPos at = pad(helper);
+        // The gate under test scans the PLAYER list, so the sweep box includes
+        // players: a registered resident at these coordinates wins the
+        // getNearestPlayer scan and the probe measures the resident, not the port.
+        sweepPad(helper, level);
         // GameTestHelper#makeMockPlayer returns a helper-internal ANONYMOUS Player
         // (GameTestHelper$1) on 21.1.259 — not a ServerPlayer, invisible to the
         // players-list scan Level#getNearestPlayer runs, and a ClassCastException to
@@ -596,51 +677,93 @@ public final class EldritchCrabGameTest {
         // (addPlayer is private on 21.1.259) — joining it is the registration.
         level.players().add(player);
 
-        final EntityEldritchCrab airborne = crab(helper);
-        airborne.setNoGravity(true);
-        airborne.setPos(player.getX(), player.getY() + 2.0, player.getZ());
-        airborne.setPos(airborne.getX(), airborne.getY() - 0.4, airborne.getZ());
-        airborne.setShell(false);
-        helper.assertTrue(!airborne.onGround(), ":123 — the climb needs the crab off the ground");
-        airborne.tick();                                                     // :120-129
-        helper.assertTrue(airborne.getVehicle() == player,
-                ":120-129 — a free mid-air unshelled crab mounts the nearest player");
+        final List<EntityEldritchCrab> fixtures = new ArrayList<>();
+        try {
+            final EntityEldritchCrab airborne = crab(helper);
+            fixtures.add(airborne);
+            airborne.setNoGravity(true);
+            airborne.setPos(player.getX(), player.getY() + 2.0, player.getZ());
+            airborne.setPos(airborne.getX(), airborne.getY() - 0.4, airborne.getZ());
+            airborne.setShell(false);
+            helper.assertTrue(!airborne.onGround(), ":123 — the climb needs the crab off the ground");
+            // The mount gate AND the punch (:131-137) fire on the SAME scripted
+            // tick: a fresh crab has invulnerableTime 0, so the punch block passes
+            // its cooldown check on the mount tick, and dismountsAfterPunch (0.2)
+            // throws the crab off before the mount assert. Measured on the parent
+            // tip (8 trace legs, full grid, noCurios arm): EVERY leg ivt=10..19
+            // after the tick (the punch set its cooldown on the mount tick); 2 red
+            // legs t1[veh=null psg=0 ivt=12 bdCd=60 rise=+0.20] — bdCd=60 is set
+            // only by the dismount path (Entity#removePassenger) and the +0.20 rise
+            // is the dismount hop (6/6 green legs rise=0.00 bdCd=0); the pre-tick
+            // arms all trace TRUE (gate, canRide, canAddPassenger, canMountEntity)
+            // — Entity#startRiding never rejects. The red census signature
+            // yDelta=1.80 / distSqr=3.24 is the design 1.60 plus the 0.20 hop,
+            // unreachable in a never-mounted state (1.60 / 2.56). The arm under
+            // test is :120-129, so arm the crab at its MAXIMUM punch cooldown
+            // (LivingEntity#aiStep decrements it once inside this tick and the
+            // punch block skips on the mount tick) and let the mount reach the
+            // assert; the punch cadence and the 0.2 dismount band are each
+            // measured by their own arms below. Mutation teeth: flipping
+            // PUNCH_DISMOUNT_CHANCE 0.2 -> 1.0 reddens the pre-fix probe every
+            // leg naming :120-129, and leaves this probe green.
+            airborne.invulnerableTime =
+                    EldritchCrabAiLogic.PUNCH_COOLDOWN_BASE + EldritchCrabAiLogic.PUNCH_COOLDOWN_JITTER;
+            airborne.tick();                                                 // :120-129
+            helper.assertTrue(airborne.getVehicle() == player,
+                    ":120-129 — a free mid-air unshelled crab mounts the nearest player");
 
-        final EntityEldritchCrab shelled = crab(helper);
-        shelled.setNoGravity(true);
-        shelled.setShell(true);
-        shelled.setPos(player.getX(), player.getY() + 1.4, player.getZ());
-        shelled.tick();                                                      // :124
-        helper.assertTrue(shelled.getVehicle() == null,
-                ":124 — a shelled crab never climbs");
+            final EntityEldritchCrab shelled = crab(helper);
+            fixtures.add(shelled);
+            shelled.setNoGravity(true);
+            shelled.setShell(true);
+            shelled.setPos(player.getX(), player.getY() + 1.4, player.getZ());
+            shelled.tick();                                                  // :124
+            helper.assertTrue(shelled.getVehicle() == null,
+                    ":124 — a shelled crab never climbs");
 
-        // :131-137 — the punch on the ride: the mount takes the hit and 0.2 of
-        // punches throw the rider, so the dismount band is measured on the rule.
-        final int mounted = player.getPassengers().size();
-        helper.assertTrue(mounted == 1, ":128 — the rider sits on the player, got " + mounted);
-        int dismounts = 0;
-        for (int i = 0; i < 400; i++) {
-            if (EldritchCrabAiLogic.dismountsAfterPunch(((float) i % 100F) / 100F)) {
-                dismounts++;
+            // :131-137 — the punch on the ride: the mount takes the hit and 0.2 of
+            // punches throw the rider, so the dismount band is measured on the rule.
+            final int mounted = player.getPassengers().size();
+            helper.assertTrue(mounted == 1, ":128 — the rider sits on the player, got " + mounted);
+            int dismounts = 0;
+            for (int i = 0; i < 400; i++) {
+                if (EldritchCrabAiLogic.dismountsAfterPunch(((float) i % 100F) / 100F)) {
+                    dismounts++;
+                }
             }
+            helper.assertTrue(dismounts == 80,
+                    ":137 — 0.2 of punches dismount; the 0..1 sweep gives " + dismounts);
+            int cooled = 0;
+            int max = 0;
+            for (int roll = 0; roll < EldritchCrabAiLogic.PUNCH_COOLDOWN_JITTER; roll++) {
+                final int cooldown = EldritchCrabAiLogic.punchCooldownFor(roll);
+                cooled += cooldown;
+                max = Math.max(max, cooldown);
+            }
+            helper.assertTrue(max == 19 && cooled == 145,
+                    ":131-133 — the cooldown is 10 + nextInt(10) (10..19, mean 14.5), got max "
+                            + max + " mean " + (cooled / 10.0));
+            helper.succeed();
+        } finally {
+            // The teardown runs on the RED path too. `level.players().add(player)`
+            // is a LEVEL-WIDE registration: it is in the scan set of every later
+            // probe's getNearestPlayer for the rest of the run, and this fixture
+            // is a bare-connection ServerPlayer whose first payload send throws
+            // ('Payload thaumcraft:biome_change may not be sent to the client!' —
+            // measured on the c4b-1 card, where it rode the shared level tick and
+            // killed the NEIGHBOUR swarmer probe). A probe that throws an assert
+            // mid-body reaches no tail code, so the tail-only teardown leaked a
+            // registered player exactly on the leg that goes red: the resident the
+            // next pad's player scan finds (the P2 plant reproduces that red
+            // byte-for-byte). fixtures ride in a list so the crabs are discarded
+            // from the red path as well.
+            for (final EntityEldritchCrab fixture : fixtures) {
+                fixture.stopRiding();
+                fixture.discard();
+            }
+            level.players().remove(player);
+            player.discard();
         }
-        helper.assertTrue(dismounts == 80,
-                ":137 — 0.2 of punches dismount; the 0..1 sweep gives " + dismounts);
-        int cooled = 0;
-        int max = 0;
-        for (int roll = 0; roll < EldritchCrabAiLogic.PUNCH_COOLDOWN_JITTER; roll++) {
-            final int cooldown = EldritchCrabAiLogic.punchCooldownFor(roll);
-            cooled += cooldown;
-            max = Math.max(max, cooldown);
-        }
-        helper.assertTrue(max == 19 && cooled == 145,
-                ":131-133 — the cooldown is 10 + nextInt(10) (10..19, mean 14.5), got max "
-                        + max + " mean " + (cooled / 10.0));
-        airborne.stopRiding();
-        airborne.discard();
-        shelled.discard();
-        level.players().remove(player);
-        helper.succeed();
     }
 
     /**
@@ -656,7 +779,22 @@ public final class EldritchCrabGameTest {
     @GameTest(template = "empty", timeoutTicks = 300)
     public static void theOrbBurstStrikesTheLivingAndSparesTheUndead(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
-        final BlockPos at = pad(helper);
+        // The pad cell is this probe's OWN cell, not the (1,3,1) cell the lane's
+        // box-only probes use: `empty` is 1×1×1, so the harness force-loads exactly
+        // the one chunk the cell corner sits in (StructureUtils#prepareTestStructure
+        // -> forceLoadChunks) and a FORCED ticket entity-ticks that chunk alone
+        // (ChunkMap#FORCED_TICKET_LEVEL = ChunkLevel.byStatus(ENTITY_TICKING), no
+        // radius). This probe reads an ENTITY clock (the orb's age), and a fixture a
+        // block past the cell corner can land on a neighbour chunk nothing ticks —
+        // then the age the burst writes (:84) never walks past the clamp (:27-29) and
+        // the consumption arm starves (docs/testing.md:123 — fix the CELL, not the
+        // assertion). The swept box is anchored at the cell corner (`padEntities`),
+        // so the census box, the burst box (the orb's box inflated 2.0) and every
+        // offset below are unchanged: the pad shifts by (-1,-2,-1) inside the same box.
+        final BlockPos at = helper.absolutePos(BlockPos.ZERO);
+        // The burst sweeps entities in its box and the pad census is shared world
+        // state; a grid resident in the box is contamination (docs/testing.md).
+        sweepPad(helper, level);
         final EntityEldritchCrab thrower = crab(helper);
         thrower.setPos(at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5);
 
@@ -729,24 +867,113 @@ public final class EldritchCrabGameTest {
         helper.assertTrue(zombie.getHealth() >= zombieHealth,
                 ":69 — the undead are exempt: the zombie takes no burst damage, "
                         + zombieHealth + " -> " + zombie.getHealth());
-        // :84 — the consumption. The impact writes the 100-tick age (:84) and
-        // :27-29 discards once it is past. On 21.1.259 tickCount is incremented by
-        // the SERVER's entity tick (ServerLevel#tickNonPassenger, javap), NOT by
-        // Entity#tick — a hand-driven tick() loop freezes the age at 100 (measured:
-        // age=100 forever under manual ticks), so the consumption is measured on
-        // two REAL server ticks. Everything the burst writes is asserted on the
-        // impact tick itself: real ticks decay the weakness duration (measured:
-        // 2 server ticks burn 160 to 158).
-        helper.runAfterDelay(2, () -> {
+        // :84 — the consumption, OBSERVED ON THE ORB'S OWN CLOCK. The impact writes
+        // the 100-tick age (:84) and :27-29 discards once the age is PAST it, and the
+        // age moves only on the SERVER's entity tick (ServerLevel#tickNonPassenger is
+        // tickCount++ then tick()), which the server runs only for an entity whose
+        // chunk is in the entity-ticking range (ServerLevel#tick ->
+        // ChunkMap#inEntityTickingRange). The harness vouches exactly the chunks the
+        // template box covers (StructureUtils#prepareTestStructure -> forceLoadChunks;
+        // a forced chunk entity-ticks at exactly ChunkMap#FORCED_TICKET_LEVEL =
+        // ChunkLevel.byStatus(ENTITY_TICKING) and the FORCED ticket carries no
+        // radius), and this probe's pad cell sits a block PAST its own cell corner —
+        // so when the grid draw leaves the pad's chunk unvouched (a row's last column
+        // or a batch's last row landing on a chunk boundary; GameTestServer#startTests
+        // draws the origin from Level#getRandom), the orb's clock never moves while
+        // the probe's own clock (GameTestInfo#tickInternal = level.getGameTime() -
+        // startTick) runs on to the 300-tick timeout. Measured: the CI line this card
+        // opens (main 046f3d32, run 43634031237, build job — age=100 removed=false)
+        // and the parent card's clean-pad diag#7 (1 leg in 11).
+        // The arm watches the orb's clock, not the test clock. The removal assert IS
+        // the poll: in 1.21.1 a succeedWhen criterion that RETURNS consumes the event
+        // and runs thenSucceed, so an early return is a false green — the assert keeps
+        // throwing until the removal lands and the harness retries it each tick. The
+        // clock is driven with the entity tick the server owes (tickCount++ then
+        // tick(), the body of ServerLevel#tickNonPassenger) ONLY on the probe ticks
+        // where the server left it still — see driveEntityClock. On a vouched pad
+        // nothing is driven and the server's own tick ends the arm, so the entity's
+        // clock stays the reference and no outcome is pinned to N real ticks
+        // (docs/testing.md). The census line names vouched/driven per leg, so a vouch
+        // loss shows in the log instead of being inferred from a red, and the failure
+        // message carries the same two facts. Everything the burst WRITES is asserted
+        // synchronously above, as before.
+        final boolean vouched = level.isPositionEntityTicking(orb.blockPosition());
+        final AtomicInteger driven = driveEntityClock(helper, orb, 100);
+        final AtomicInteger polled = new AtomicInteger();
+        helper.succeedWhen(() -> {
+            final int age = orb.tickCount;
+            if (polled.incrementAndGet() == 1) {
+                final BlockPos corner = helper.absolutePos(BlockPos.ZERO);
+                LOGGER.info("[TC-M6-06-orb] consumption poll starts: pad chunk vouched "
+                        + "(entity-ticking)={} ticksDrivenSoFar={} age={} removed={} orbChunk={} "
+                        + "corner={} cornerMod16={},{} probeTick={}",
+                        vouched, driven.get(), age, orb.isRemoved(), orb.chunkPosition(), corner,
+                        corner.getX() & 15, corner.getZ() & 15, helper.getTick());
+            }
             helper.assertTrue(orb.isRemoved(),
-                    ":84 — the burst consumes the orb (the impact writes the 100-tick age, the "
-                            + "server's next ticks walk it past the clamp), age=" + orb.tickCount
-                            + " removed=" + orb.isRemoved());
+                    ":84 — the burst consumes the orb (the impact writes the 100-tick age and "
+                            + ":27-29 discards once the ENTITY clock walks past it; that clock "
+                            + "moves only in the server's entity pass, which runs only for an "
+                            + "entity in an entity-ticking chunk, so this arm drives the owed "
+                            + "tick itself while the pad chunk is left unvouched), age=" + age
+                            + " removed=" + orb.isRemoved() + " polls=" + polled.get()
+                            + " padChunkVouched=" + vouched
+                            + " ticksDrivenByProbe=" + driven.get());
+            LOGGER.info("[TC-M6-06-orb] consumption seen on the orb's own clock: pad chunk "
+                    + "vouched (entity-ticking)={} ticksDrivenByProbe={} age={} polls={} probeTick={}",
+                    vouched, driven.get(), age, polled.get(), helper.getTick());
             thrower.discard();
             pig.discard();
             zombie.discard();
-            helper.succeed();
         });
+    }
+
+
+    /**
+     * Drive an entity's clock from the probe's own ticks and count the driven ticks.
+     *
+     * <p>The server ticks an entity only in an entity-ticking chunk
+     * (ServerLevel#tick -> ChunkMap#inEntityTickingRange) and the harness vouches only
+     * the chunks the probe's template box covers
+     * (StructureUtils#prepareTestStructure -> forceLoadChunks), so a probe standing on
+     * an unvouched chunk has no server ticks of that entity to observe at all, while
+     * its own clock (GameTestInfo#tickInternal = level.getGameTime() - startTick) keeps
+     * running. Each step spends ONE probe tick and drives the entity with the entity
+     * tick the server owes ({@code tickCount++} then {@code tick()}, the body of
+     * {@code ServerLevel#tickNonPassenger}) ONLY if the clock did not move during that
+     * tick — so on a vouched pad nothing is ever driven (the count stays 0) and the
+     * entity's own clock is the reference, which is what docs/testing.md asks for. It
+     * is not a real-tick budget: the arm ends on the removal, and the chain ends by
+     * itself once the entity is gone.</p>
+     */
+    private static AtomicInteger driveEntityClock(final GameTestHelper helper,
+            final Entity entity, final int maxProbeTicks) {
+        final AtomicInteger driven = new AtomicInteger();
+        final int[] steps = {0};
+        final Runnable[] step = new Runnable[1];
+        step[0] = () -> {
+            if (entity.isRemoved() || steps[0] >= maxProbeTicks) {
+                return;
+            }
+            final int seen = entity.tickCount;
+            try {
+                helper.runAfterDelay(1, () -> {
+                    if (!entity.isRemoved() && entity.tickCount == seen) {
+                        entity.tickCount++;   // the server's entity tick, by hand
+                        entity.tick();
+                        driven.incrementAndGet();
+                    }
+                    steps[0]++;
+                    step[0].run();
+                });
+            } catch (IllegalStateException probeIsDone) {
+                // The probe is finished and refuses further timed actions, so the drive
+                // chain ends with it; a completed probe has nothing left to observe.
+                return;
+            }
+        };
+        step[0].run();
+        return driven;
     }
 
     /** :83 / :89-91 — the impact fizz's figures and the pickup radius live on

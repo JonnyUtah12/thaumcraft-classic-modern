@@ -141,6 +141,35 @@ without the evidence for its stages.
   (x, z) (`ZombieMobGameTest.MOB_CELL = (0,3,0)`), and assert the cell is entity-ticking BEFORE
   reading a per-tick counter, so a harness/layout change reports the precondition by name instead of
   arriving as a rate that cannot be measured.
+- **An arm that waits for an outcome the ENTITY'S CLOCK produces starves on that same vouch wall — and
+  `return` is not a poll.** The bullet above reads a per-tick counter; the harder shape is a poll that
+  waits for an outcome the entity's own clock produces, e.g. a lifetime clamp (`EntityEldritchOrb#tick`:
+  discard once `tickCount > 100`, and the burst writes `tickCount = 100` at :84). The age moves only in
+  `ServerLevel#tickNonPassenger` (`tickCount++` then `tick()`), so on an unvouched chunk it never crosses,
+  the assert throws on every retry, and the probe dies at the watchdog naming the frozen state — measured
+  as `theOrbBurstStrikesTheLivingAndSparesTheUndead` → `age=100 removed=false` (CI run `43634031237` on
+  main `046f3d32`, with-Curios `build` job; the parent card measured the same on a clean pad, 1 leg in 11,
+  and 36 local legs produced 0, so a leg sweep is not a denominator for this class). The wall reproduces
+  on demand: in a throwaway worktree release the pad's FORCED ticket with the harness's own batch-edge call
+  (`ServerLevel#setChunkForced(x, z, false)` — what `GameTestRunner#testCompleted` runs over
+  `level.getForcedChunks()`). Measured that way on the landing tree: **8 of 10** legs red with that
+  byte-exact line; **0 of 10** on the fixed arm, census `ticksDrivenByProbe=1 age=101`. Two shapes close
+  it, and the card ships both: put the fixtures on the vouched cell (above), and drive the owed entity
+  tick from the probe's clock ONLY on the ticks where the server left the clock still (`tickCount++` then
+  `tick()`), counting the driven ticks — the arm ends on the outcome, so nothing is pinned to N real ticks
+  (the tick-budget bullet below), `driven = 0` on a vouched pad, and `driven = 1` is the signature of a
+  vouch loss; both facts ride the poll's census line AND the assert message, so the wall reports itself
+  instead of arriving as a rate.
+  The harness fact that turns the tempting shape into a silent pass: in 1.21.1 `succeedWhen(criterion)` is
+  `createSequence().thenWaitUntil(criterion).thenSucceed()`, and `GameTestSequence#tick` removes an event
+  only when it runs WITHOUT throwing (`tickAndContinue` retries only a `GameTestAssertException`). A
+  criterion that RETURNS early consumes the event, runs `thenSucceed`, and passes the probe with its
+  asserts NEVER executed. `CultistClericGameTest.theOrbLifetimeClampDiesAtSixteenForPlainAndTwoFortyForRed`
+  is on that path — its "has not crossed the edge: poll again" `return` arms — so a mutation that deletes
+  the golem orb's `discard()` leaves the 502-probe suite GREEN (measured at `046f3d32` + that mutation,
+  one leg, card t_43022b00), while the same
+  mutation on the orb burst probe turns that one RED through the poll. The assert is the poll; never
+  `return` out of a final clause.
 - **A goal left on a live selector is armed by the ENGINE, and a route gate closes off the ground.**
   `Mob.serverAiStep` ticks the goal selector and `GoalSelector#tick` starts a goal on the
   `(tickCount + id) % 2` parity tick (`GoalSelector.java:74-105`). A probe that hand-drives a goal's
@@ -373,3 +402,69 @@ restores both and `diff -q` reports byte-identical.
   a positional stream and per-spawn tolerance are mutually exclusive. Prove the causal lever by PLANTING
   the stray: planted before the sweep the fixed probe is GREEN, planted after the sweep (or on the
   unswept tree) it goes RED naming the queue overrun — the CI signature, on demand.
+
+- **The sweep's hazard set is the GATE's scan set, and a probe that registers into a level-wide list has
+  to tear down on the RED path.** The rule above sweeps non-player entities and LEAVES players, because the
+  warp event's scan is a BLOCK scan and no player rejects a cell. A gate that scans ENTITIES has to size
+  the set to its own scan: `EntityEldritchCrab#tick`'s mount asks `level.getNearestPlayer(this, -1.0)` —
+  distance-UNBOUNDED, target list `level.players()` — so a registered player resident is IN the set, and
+  the grid re-gives a pad the coordinates of the pad that leaked it. Measured on this tree:
+  `anunshelledCrabInMidAirClimbsOnAPlayerAndPunchesHimOff` went red **1 of 12** full-grid legs
+  (`:120-129 — a free mid-air unshelled crab mounts the nearest player`, the parent's disclosed CI line),
+  and a planted co-located **registered** `ServerPlayer` reproduces that line **byte-for-byte** on the
+  base tree (`P2`) and on the fixed tree (`Q1`), while 10 mid-air mind spiders (`P1`) and a roaming
+  unshelled crab (`P3`) leave the probe green (3 legs each) — mob residents are not this gate's hazard,
+  player residents are. `EldritchCrabGameTest.sweepPad` deregisters player residents from
+  `level.players()` and discards them; the box (2,-4,-2 .. 13,15,13) is provably big enough because the
+  mount needs `distanceSquared < 4.0` and the scan keeps the strict minimum. Second half of the rule:
+  `level.players().add(player)` is a LEVEL-WIDE registration, the harness's box cleanup cleans entities
+  and not the players list, and a probe that throws an assert reaches NO tail code — so a tail-only
+  teardown leaks the registered player exactly on the leg that goes red, and the next pad is re-given
+  those coordinates: the flake manufactures its own next trigger. That fixture is also a bare-connection
+  `ServerPlayer` whose first payload send throws (`Payload thaumcraft:biome_change may not be sent to the
+  client!`, measured on the c4b-1 card), and the throw rides the shared level tick into the NEIGHBOUR
+  probe. Teardowns of level-wide registrations belong in a `finally` (the crab fixtures ride a list so the
+  red path discards them too). Third: `runAfterDelay(N, …)` is `runAtTickTime(getTick() + N)` — the
+  TEST sequence's clock, not the entity's — so the line-192 rule ("assert the outcome, never a tick
+  budget") applies to it verbatim: `theOrbBurstStrikesTheLivingAndSparesTheUndead` pinned the impact's
+  consumption to 2 real ticks and went red on a **clean** pad **1 of 11** legs with `age=100
+  removed=false` (the impact landed, the entity's own survival walk had not reached the clamp), the same
+  signature as the shipped Energy Orb probe's planted E2b. The consumption is polled
+  (`helper.succeedWhen`) and every write of the impact stays asserted synchronously.
+  Teeth on the FIXED tree, legs in this card's keep dir: the P2 plant moved AFTER the sweep — a
+  resident the sweep cannot remove — reddens the climb probe with the disclosed line (`Q1`); the P1
+  spider plant, also post-sweep, leaves climb + orb green (`Q2`); and the tick-budget mutation
+  `runAfterDelay(0, …)` on the consumption arm, which fires before any real server tick, reddens the
+  burst probe 3 of 3 legs naming `:84 … age=100 removed=false` with the climb probe green 3/3
+  (`Q6d`). The 2-real-tick budget's natural rate is 1/11, so three legs of the exact pre-fix budget
+  show no teeth (measured: 0 of 3) — the deterministic delay-0 mutation is the teeth leg, the 1/11
+  natural rate is the motivation. Plant-script lesson from the failed first pass: plant anchors pin
+  the probe's setup text, so a probe refactor silently UNPLANTS the script and the legs run clean —
+  a planted leg must print its plant line, and every leg verdict is read, never assumed.
+
+- **A scripted ride assert must arm off the mount's own same-tick punch.** The crab's climb gate
+  (`EntityEldritchCrab#tick` :120-129) and its punch block (:131-137) run in the SAME `tick()`, and a
+  freshly spawned crab has `invulnerableTime == 0` — the punch's cooldown gate is wide open on the
+  mount tick, and `dismountsAfterPunch` (`PUNCH_DISMOUNT_CHANCE 0.2`) throws the rider off on ~1/5 of
+  scripted ticks, before the assert reads the vehicle. Measured on `cab7305c` (the pad-contamination
+  fix tip, 8 full-grid noCurios legs with a per-tick ride trace): EVERY leg ends the tick with
+  `invulnerableTime 10..19` (the punch fired on the mount tick); the 2 red legs trace
+  `veh=null psg=0 ivt=12 boardingCooldown=60 rise=+0.20` while the 6 green legs trace
+  `veh=ServerPlayer psg=1 ivt=10..19 bdCd=0 rise=0.00`. `boardingCooldown=60` is set only by the
+  dismount path (`Entity#removePassenger`) — it is the tell that the ride happened and was LOST, not
+  rejected. This kills the `Entity#startRiding`-rejection reading from the earlier census: every arm
+  of the 21.1.259 gate (`vehicle.couldAcceptPassenger()`, the vehicle-chain cycle,
+  `EventHooks.canMountEntity`, `canRide` = `!sneak && boardingCooldown <= 0`, `canAddPassenger` =
+  `passengers.isEmpty()`) traces TRUE on the fresh pre-tick fixture state, and the red census
+  `yDelta=1.80 / distSqr=3.24` is arithmetic the rejection story cannot produce — the design spawn is
+  1.60 above the fixture (`distSqr 2.56`); 1.80/3.24 is 1.60 + the 0.20 dismount hop. A census that
+  re-reads state AFTER the tick sequence measures the tick's outcomes, so it must not be read as the
+  pre-tick gate state; the arms have to be captured pre-tick to name a rejection. Fix: probe fixture
+  hygiene, not assert weakening — arm the crab at its maximum punch cooldown
+  (`PUNCH_COOLDOWN_BASE + PUNCH_COOLDOWN_JITTER`) before the scripted mount tick (aiStep decrements
+  once inside the tick, the punch block skips) and measure the punch cadence and the 0.2 band on
+  their own dedicated arms. Teeth: the mutation `PUNCH_DISMOUNT_CHANCE 0.2 -> 1.0` reddens the
+  pre-fix probe on EVERY leg naming `:120-129 — a free mid-air unshelled crab mounts the nearest
+  player`, and leaves the armed probe green — the dismount arm, named on demand. The
+  layout-draw/red-coordinate axis from the parent card is dead: the event is a `nextFloat()` roll,
+  the pad coordinates are uniform in both outcomes, and no grid-origin change can fix a 20 % punch.
