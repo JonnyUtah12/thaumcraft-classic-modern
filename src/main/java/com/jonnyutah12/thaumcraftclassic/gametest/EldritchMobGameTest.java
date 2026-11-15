@@ -125,6 +125,15 @@ public final class EldritchMobGameTest {
         final BlockPos at = pad(helper).offset(dx, 0, dz);
         mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0.0F, 0.0F);
         mob.setNoGravity(true);
+        // Mob:745-756 (21.1.259) — checkDespawn discards a mob that is not
+        // persistence-required once getNearestPlayer answers a player beyond the
+        // category despawn distance. The harness's mock players live on far pads
+        // (the runner's own mock PLAYER + the menu probes), so an unpinned
+        // fixture mob is DISCARDED mid-probe and its per-tick legs freeze — the
+        // measured curios-arm run at 7a0d0ba4 showed air stuck at exactly the
+        // -20 it was set to across 4 probe ticks (no tick ran). Persistence is
+        // the fixture-side immunity: the same lever EldritchCrabGameTest:809 ships.
+        mob.setPersistenceRequired();
         mob.clearFire();
         level.addFreshEntity(mob);
         return mob;
@@ -443,6 +452,24 @@ public final class EldritchMobGameTest {
         // 1.21.1's seam for 1.7.10's func_70015_d(seconds) is NeoForge's
         // Entity#igniteForSeconds (the same seam the guardian's own hit uses at
         // :139); the read stays getRemainingFireTicks.
+        //
+        // The dry legs need a WEATHER-FREE pad, so the probe builds its own
+        // stone chamber around the mob's cell and ignites only after the
+        // chamber's sky removal flushes (20 ticks; the flush is queued per
+        // chunk tick, ServerChunkCache:573 lightEngine.tryScheduleUpdate, and
+        // the engine's forced-flush entry point is unusable here —
+        // ThreadedLevelLightEngine:54-55 throws on a ServerLevel). The pad is
+        // open sky, Level:1079-1083 isRainingAt = isRaining() && canSeeSky(pos),
+        // Entity#isInRain reads it on the feet cell AND the AABB-maxY cell into
+        // isInWaterRainOrBubble (:1248-1250), and Entity:743-744 rewrites a
+        // burning mob's ticks to -getFireImmuneTicks() = -1 (:3253). The
+        // measured noCurios run at 7a0d0ba4: igniteForSeconds (Entity:539-545,
+        // no water gate — it always lands) set 200, the air leg WALKED (the mob
+        // ticked), and the dry fire read -1: the weather reached the pad
+        // mid-probe. The air reset moves to the ignite tick so the +4 walkback
+        // (LivingEntity:455-457/596-597) is measured over exactly 4 ticks.
+        dryChamber(level, mob.blockPosition());
+        helper.runAfterDelay(20, () -> {
         mob.setAirSupply(-20);
         mob.igniteForSeconds(10.0F);
         helper.runAfterDelay(4, () -> {
@@ -526,17 +553,27 @@ public final class EldritchMobGameTest {
                     // that ramp — air -19, one in-water tick, and the trigger at
                     // LivingEntity:437-448 fires (setAirSupply(0) + hurt(drown, 2)).
                     mob.setAirSupply(-19);
-                    helper.runAfterDelay(2, () -> {
+                    helper.runAfterDelay(1, () -> {
                         helper.assertTrue(mob.getHealth() < 50.0F,
                                 ":155-157 — the breath runs out: the drown trigger (LivingEntity:437-448) "
                                         + "hit a 500-breath guardian, health " + mob.getHealth()
                                         + " (eye in water: " + mob.isEyeInFluid(
                                                 net.minecraft.tags.FluidTags.WATER) + ")");
                         final float drownedHealth = mob.getHealth();
-                        helper.assertTrue(mob.getAirSupply() >= 0,
-                                ":437-448 — the trigger resets the air to 0 (setAirSupply(0) at :438), "
-                                        + "got " + mob.getAirSupply());
+                        helper.assertTrue(mob.getAirSupply() == 0,
+                                ":436-448 — the trigger TICK is the reset: air -19 walks to -20 at "
+                                        + "decreaseAirSupply (:584-592; the mob carries no OXYGEN_BONUS "
+                                        + "attribute, :428 reads it as 0, so the drain is exactly -1), "
+                                        + "the trigger at :437-438 fires setAirSupply(0) + "
+                                        + "hurt(drown, 2), and only the NEXT in-water tick drains -1 "
+                                        + "again — the 2-tick leg at 7a0d0ba4 measured that -1. got "
+                                        + mob.getAirSupply());
                         drain(level, cell, 6);
+                        // The drain (dy -1..+6) took the chamber's floor, ring
+                        // and cap with it; re-cap so the final dry fire leg is
+                        // weather-free again (Entity:743-744 on the open pad was
+                        // the measured -1).
+                        dryChamber(level, cell);
                         mob.setAirSupply(300);
                         mob.setNoGravity(true);
                         helper.runAfterDelay(4, () -> {
@@ -563,6 +600,7 @@ public final class EldritchMobGameTest {
                     });
                 });
             });
+        });
         });
     }
 
@@ -812,12 +850,13 @@ public final class EldritchMobGameTest {
         helper.runAfterDelay(2, () -> {
             // The pad is fully lit (measured raw light 15 at the mob's cell at
             // this tip), and the platform's half of the reference's ternary
-            // refuses a lit cell: PathfinderMob#checkSpawnRules is
+            // refuses a lit cell: PathfinderMob#checkSpawnRules (:29-31) is
             // getWalkTargetValue(pos, level) >= 0.0F and Monster#getWalkTargetValue
-            // is -getPathfindingCostFromLightLevels, which is
-            // getLightLevelDependentMagicValue(pos) - 0.5F (measured here: raw 15
-            // -> cost 0.5 -> walk-target value -0.5). 1.7.10 composes the same
-            // way at EntityInhabitedZombie.java:113
+            // (:85-86) is -level.getPathfindingCostFromLightLevels(pos), which is
+            // getLightLevelDependentMagicValue(pos) - 0.5F (LevelReader:121-131;
+            // measured here: raw 15 -> magic 1.0 -> cost 0.5 -> walk-target
+            // value -0.5, and raw 0 -> magic 0.0 -> +0.5 passes). 1.7.10 composes
+            // the same way at EntityInhabitedZombie.java:113
             // ({@code ents.size() > 0 ? false : super.func_70601_bi()}), so the
             // probe seals the mob's own cell in the dark - the family's
             // pad-fixture pattern, written through the ABSOLUTE level for the
@@ -828,108 +867,103 @@ public final class EldritchMobGameTest {
             // stayed 15). With the cell dark the platform half PASSES, so every
             // gate leg below is the census's bite, not the platform's.
             sealInDark(level, zombieMob);
-            level.getLightEngine().runLightUpdates();
-            final BlockPos zCell = zombieMob.blockPosition();
-            final StringBuilder ldiag = new StringBuilder("[c4b2diag] light block=")
-                    .append(level.getBrightness(net.minecraft.world.level.LightLayer.BLOCK, zCell))
-                    .append(" sky=").append(level.getBrightness(net.minecraft.world.level.LightLayer.SKY, zCell))
-                    .append(" raw=").append(level.getRawBrightness(zCell, 0))
-                    .append(" at ").append(zCell.toShortString()).append(" states:");
-            for (int ldy = -2; ldy <= 3; ldy++) {
-                for (int ldx = -2; ldx <= 2; ldx++) {
-                    for (int ldz = -2; ldz <= 2; ldz++) {
-                        final net.minecraft.world.level.block.state.BlockState ls =
-                                level.getBlockState(zCell.offset(ldx, ldy, ldz));
-                        if (!ls.isAir()) {
-                            ldiag.append(' ').append(ldx).append(',').append(ldy).append(',').append(ldz)
-                                    .append('=').append(ls.getBlock()).append("/l")
-                                    .append(ls.getLightEmission());
-                        }
-                    }
-                }
-            }
-            LOGGER.info(ldiag.toString());
-            final float walkTarget = zombieMob.getWalkTargetValue(zombieMob.blockPosition(), level);
-            final boolean obstructionFree = zombieMob.checkSpawnObstruction(level);
-            helper.assertTrue(walkTarget >= 0.0F && obstructionFree,
-                    "the sealed cell must pass the platform half of :113's ternary (walkTargetValue "
-                            + walkTarget + ", raw light "
-                            + level.getRawBrightness(zombieMob.blockPosition(), 0) + ", unobstructed "
-                            + obstructionFree + " at " + zombieMob.blockPosition().toShortString() + ")");
-            final int aloneKind = kindInGate(level, zombieMob, EntityInhabitedZombie.class);
-            helper.assertTrue(aloneKind == 0 && zombieMob.checkSpawnRules(level, MobSpawnType.NATURAL),
-                    ":104-113 — alone in its own 32/16/32 box and in the dark, the census is empty, "
-                            + "super passes and the gate OPENS (census " + aloneKind + ", verdict "
-                            + zombieMob.checkSpawnRules(level, MobSpawnType.NATURAL) + ", box "
-                            + gateBox(zombieMob) + ")");
-            helper.assertTrue(kindInGateInclusive(level, zombieMob, EntityInhabitedZombie.class) >= 1
-                            && kindInGate(level, zombieMob, EntityInhabitedZombie.class) == 0,
-                    ":104-113 against the port - the original's func_72872_a(Class, bb) excludes NO "
-                            + "entity, so the mob's own body sits in its own box (census self-inclusive "
-                            + ">= 1) while the shipped zombie census skips it (self-excluded 0). The "
-                            + "asymmetry is BD-123: the zombie's gate opens where the original's never "
-                            + "would for its own body");
-            final int guardianKind = kindInGateInclusive(level, guardianMob,
-                    EntityEldritchGuardian.class);
-            final int zombieKind = kindInGate(level, zombieMob, EntityInhabitedZombie.class);
-            helper.assertTrue(guardianMob.checkSpawnRules(level, MobSpawnType.NATURAL)
-                            == (guardianKind == 0),
-                    ":253-260 — the guardian's verdict is its own class in the 32/16/32 box, and that "
-                            + "census counts the mob itself (1.7.10 func_72872_a(Class, AABB) excludes "
-                            + "no entity; the port ships getEntitiesOfClass at :460), so a live "
-                            + "guardian refuses (census "
-                            + guardianKind + ", verdict " + guardianMob.checkSpawnRules(level,
-                                    MobSpawnType.NATURAL) + ", box " + gateBox(guardianMob) + ")");
-            helper.assertTrue(guardianKind >= 1,
-                    ":253-256 — the guardian is inside its own expanded box, so the shipped census is "
-                            + "at least 1 (census " + guardianKind + ", box " + gateBox(guardianMob) + ")");
-            helper.assertTrue(zombieMob.checkSpawnRules(level, MobSpawnType.NATURAL)
-                            == (zombieKind == 0),
-                    ":105-113 — the zombie's verdict is its own class in the 32/16/32 box (census "
-                            + zombieKind + ", verdict " + zombieMob.checkSpawnRules(level,
-                                    MobSpawnType.NATURAL) + ", box " + gateBox(zombieMob) + ")");
-
-            // An IEldritchMob of the c4b-1 family, 2 blocks from the guardian:
-            // :253-256 scans EntityEldritchGuardian.class, so it is invisible
-            // to the census and the verdict must not move.
-            final EntityEldritchCrab crab =
-                    spawn(helper, "eldritchcrab", EntityEldritchCrab.class, 2, 0);
-            helper.assertTrue(crab.isAlive(), "the fixture crab must stay alive for the probe");
-            helper.assertTrue(!(crab instanceof com.jonnyutah12.thaumcraftclassic.api.entities.IEldritchMob),
-                    "the invented contract's premise is not in the original: EntityEldritchCrab declares "
-                            + "no interface (its class header), IEldritchMob rides the guardian "
-                            + "(reference :47) and the golem — so 'every IEldritchMob refuses' never "
-                            + "applied to a crab in any reading of :251-261");
-            helper.runAfterDelay(2, () -> {
-                final int withCrab = kindInGateInclusive(level, guardianMob,
+            // The seal's sky removal is QUEUED: the chunk tick schedules the
+            // flush (ServerChunkCache:573 lightEngine.tryScheduleUpdate), so the
+            // probe asserts on a later tick (the family's measured 20-tick
+            // recipe). It must NOT force the flush: on a ServerLevel
+            // getLightEngine() is the ThreadedLevelLightEngine, and
+            // ThreadedLevelLightEngine:54-55 (21.1.259) IS
+            // `throw new UnsupportedOperationException("Ran automatically on a
+            // different thread!")` — the d3c993b4 flush call was that throw and
+            // killed the probe at 7a0d0ba4 (diag run, 23:01) before any leg ran.
+            helper.runAfterDelay(20, () -> {
+                final BlockPos zCell = zombieMob.blockPosition();
+                final int rawLight = level.getRawBrightness(zCell, 0);
+                final float walkTarget = zombieMob.getWalkTargetValue(zCell, level);
+                final boolean obstructionFree = zombieMob.checkSpawnObstruction(level);
+                LOGGER.info("[c4b2census] sealed cell {} raw={} walkTarget={} obstructionFree={}",
+                        zCell.toShortString(), rawLight, walkTarget, obstructionFree);
+                helper.assertTrue(walkTarget >= 0.0F && obstructionFree,
+                        "the sealed cell must pass the platform half of :113's ternary (walkTargetValue "
+                                + walkTarget + ", raw light " + rawLight + ", unobstructed "
+                                + obstructionFree + " at " + zCell.toShortString() + ") — the queued sky"
+                                + " flush must have landed 20 ticks after the seal (raw 15 refuses, raw 0"
+                                + " passes: Monster:85-86 + LevelReader:121-131)");
+                final int aloneKind = kindInGate(level, zombieMob, EntityInhabitedZombie.class);
+                helper.assertTrue(aloneKind == 0 && zombieMob.checkSpawnRules(level, MobSpawnType.NATURAL),
+                        ":104-113 — alone in its own 32/16/32 box and in the dark, the census is empty, "
+                                + "super passes and the gate OPENS (census " + aloneKind + ", verdict "
+                                + zombieMob.checkSpawnRules(level, MobSpawnType.NATURAL) + ", box "
+                                + gateBox(zombieMob) + ")");
+                helper.assertTrue(kindInGateInclusive(level, zombieMob, EntityInhabitedZombie.class) >= 1
+                                && kindInGate(level, zombieMob, EntityInhabitedZombie.class) == 0,
+                        ":104-113 against the port - the original's func_72872_a(Class, bb) excludes NO "
+                                + "entity, so the mob's own body sits in its own box (census self-inclusive "
+                                + ">= 1) while the shipped zombie census skips it (self-excluded 0). The "
+                                + "asymmetry is BD-123: the zombie's gate opens where the original's never "
+                                + "would for its own body");
+                final int guardianKind = kindInGateInclusive(level, guardianMob,
                         EntityEldritchGuardian.class);
-                helper.assertTrue(withCrab == guardianKind,
-                        ":253-256 — the census is the mob's OWN class: a crab is EntityEldritchCrab, so "
-                                + "it never enters the guardian's census (census " + guardianKind
-                                + " before the crab, " + withCrab + " with it in the box)");
+                final int zombieKind = kindInGate(level, zombieMob, EntityInhabitedZombie.class);
                 helper.assertTrue(guardianMob.checkSpawnRules(level, MobSpawnType.NATURAL)
-                                == (withCrab == 0),
-                        ":253-260 — a crab (IEldritchMob, not EntityEldritchGuardian) inside the box "
-                                + "does not move the guardian's verdict; census " + withCrab);
-                // The delta: a same-kind neighbour 2 blocks away is inside both
-                // boxes and refuses, and the verdict returns when it is removed.
-                final EntityInhabitedZombie neighbour = zombie(helper, 8, 0);
-                helper.assertTrue(neighbour.isAlive(), "the fixture zombie must stay alive");
+                                == (guardianKind == 0),
+                        ":253-260 — the guardian's verdict is its own class in the 32/16/32 box, and that "
+                                + "census counts the mob itself (1.7.10 func_72872_a(Class, AABB) excludes "
+                                + "no entity; the port ships getEntitiesOfClass at :460), so a live "
+                                + "guardian refuses (census "
+                                + guardianKind + ", verdict " + guardianMob.checkSpawnRules(level,
+                                        MobSpawnType.NATURAL) + ", box " + gateBox(guardianMob) + ")");
+                helper.assertTrue(guardianKind >= 1,
+                        ":253-256 — the guardian is inside its own expanded box, so the shipped census is "
+                                + "at least 1 (census " + guardianKind + ", box " + gateBox(guardianMob) + ")");
+                helper.assertTrue(zombieMob.checkSpawnRules(level, MobSpawnType.NATURAL)
+                                == (zombieKind == 0),
+                        ":105-113 — the zombie's verdict is its own class in the 32/16/32 box (census "
+                                + zombieKind + ", verdict " + zombieMob.checkSpawnRules(level,
+                                        MobSpawnType.NATURAL) + ", box " + gateBox(zombieMob) + ")");
+
+                // An IEldritchMob of the c4b-1 family, 2 blocks from the guardian:
+                // :253-256 scans EntityEldritchGuardian.class, so it is invisible
+                // to the census and the verdict must not move.
+                final EntityEldritchCrab crab =
+                        spawn(helper, "eldritchcrab", EntityEldritchCrab.class, 2, 0);
+                helper.assertTrue(crab.isAlive(), "the fixture crab must stay alive for the probe");
+                helper.assertTrue(!(crab instanceof com.jonnyutah12.thaumcraftclassic.api.entities.IEldritchMob),
+                        "the invented contract's premise is not in the original: EntityEldritchCrab declares "
+                                + "no interface (its class header), IEldritchMob rides the guardian "
+                                + "(reference :47) and the golem — so 'every IEldritchMob refuses' never "
+                                + "applied to a crab in any reading of :251-261");
                 helper.runAfterDelay(2, () -> {
-                    helper.assertTrue(kindInGate(level, zombieMob, EntityInhabitedZombie.class) >= 1,
-                            ":105-108 — the fixture zombie at 8,0 is inside the 32/16/32 box of 6,0");
-                    helper.assertTrue(!zombieMob.checkSpawnRules(level, MobSpawnType.NATURAL),
-                            ":113 — a same-kind neighbour inside the box refuses the spawn (census "
-                                    + kindInGate(level, zombieMob, EntityInhabitedZombie.class) + ")");
-                    neighbour.discard();
+                    final int withCrab = kindInGateInclusive(level, guardianMob,
+                            EntityEldritchGuardian.class);
+                    helper.assertTrue(withCrab == guardianKind,
+                            ":253-256 — the census is the mob's OWN class: a crab is EntityEldritchCrab, so "
+                                    + "it never enters the guardian's census (census " + guardianKind
+                                    + " before the crab, " + withCrab + " with it in the box)");
+                    helper.assertTrue(guardianMob.checkSpawnRules(level, MobSpawnType.NATURAL)
+                                    == (withCrab == 0),
+                            ":253-260 — a crab (IEldritchMob, not EntityEldritchGuardian) inside the box "
+                                    + "does not move the guardian's verdict; census " + withCrab);
+                    // The delta: a same-kind neighbour 2 blocks away is inside both
+                    // boxes and refuses, and the verdict returns when it is removed.
+                    final EntityInhabitedZombie neighbour = zombie(helper, 8, 0);
+                    helper.assertTrue(neighbour.isAlive(), "the fixture zombie must stay alive");
                     helper.runAfterDelay(2, () -> {
-                        helper.assertTrue(zombieMob.checkSpawnRules(level, MobSpawnType.NATURAL)
-                                        == (kindInGate(level, zombieMob,
-                                                EntityInhabitedZombie.class) == 0),
-                                ":113 — the verdict is the census: with the neighbour gone the gate "
-                                        + "opens again (census " + kindInGate(level, zombieMob,
-                                                EntityInhabitedZombie.class) + ")");
-                        helper.succeed();
+                        helper.assertTrue(kindInGate(level, zombieMob, EntityInhabitedZombie.class) >= 1,
+                                ":105-108 — the fixture zombie at 8,0 is inside the 32/16/32 box of 6,0");
+                        helper.assertTrue(!zombieMob.checkSpawnRules(level, MobSpawnType.NATURAL),
+                                ":113 — a same-kind neighbour inside the box refuses the spawn (census "
+                                        + kindInGate(level, zombieMob, EntityInhabitedZombie.class) + ")");
+                        neighbour.discard();
+                        helper.runAfterDelay(2, () -> {
+                            helper.assertTrue(zombieMob.checkSpawnRules(level, MobSpawnType.NATURAL)
+                                            == (kindInGate(level, zombieMob,
+                                                    EntityInhabitedZombie.class) == 0),
+                                    ":113 — the verdict is the census: with the neighbour gone the gate "
+                                            + "opens again (census " + kindInGate(level, zombieMob,
+                                                    EntityInhabitedZombie.class) + ")");
+                            helper.succeed();
+                        });
                     });
                 });
             });
@@ -983,6 +1017,33 @@ public final class EldritchMobGameTest {
                         continue;
                     }
                     level.setBlockAndUpdate(cell.offset(dx, dy, dz), Blocks.STONE.defaultBlockState());
+                }
+            }
+        }
+    }
+
+    /**
+     * A weather-proof stone chamber around the mob's own cells — the floor one
+     * cell below the feet, the 3 x 3 ring on the feet and head cells, and a
+     * cap THREE cells above the feet — written through the ABSOLUTE level (the
+     * flood/drain/seal pattern above; the mob's own cells stay air and the
+     * walls sit outside the 0.8 x 2.25 box of {@code
+     * EntityEldritchGuardian.java:80}, so {@code Mob#checkSpawnObstruction}
+     * stays free). The cap kills {@code canSeeSky} for the mob's feet cell AND
+     * the AABB-maxY cell that {@code Entity#isInRain} reads, so
+     * {@code isInWaterRainOrBubble} (Entity:1248-1250) answers false in dry
+     * weather and the burn legs of {@code
+     * theGuardianBreathesForFiveHundredTicksAndBurns} stop depending on the
+     * world's weather (Entity:743-744 on the open pad measured fire -1).
+     */
+    private static void dryChamber(final ServerLevel level, final BlockPos cell) {
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                level.setBlockAndUpdate(cell.offset(dx, -1, dz), Blocks.STONE.defaultBlockState());
+                level.setBlockAndUpdate(cell.offset(dx, 3, dz), Blocks.STONE.defaultBlockState());
+                if (dx != 0 || dz != 0) {
+                    level.setBlockAndUpdate(cell.offset(dx, 0, dz), Blocks.STONE.defaultBlockState());
+                    level.setBlockAndUpdate(cell.offset(dx, 1, dz), Blocks.STONE.defaultBlockState());
                 }
             }
         }
