@@ -742,10 +742,10 @@ public final class CultistClericGameTest {
      * ({@code tickCount++} then {@code tick()}), which the server runs only for an entity
      * in an entity-ticking chunk, and the harness vouches exactly the chunks the
      * template box covers — so the fixtures ride the vouched cell
-     * ({@code helper.absolutePos(BlockPos.ZERO)}, docs/testing.md:123) and the arm drives
+     * ({@code helper.absolutePos(BlockPos.ZERO)}, docs/testing.md:131) and the arm drives
      * the owed entity tick ONLY on the probe ticks the server left the clock still
-     * ({@link #driveEntityClock}, docs/testing.md:158). Nothing is pinned to N real
-     * ticks (docs/testing.md:240): the arm ends on the <b>observed removal</b>, {@code driven = 0}
+     * ({@link #driveEntityClock}, docs/testing.md:166). Nothing is pinned to N real
+     * ticks (docs/testing.md:248): the arm ends on the <b>observed removal</b>, {@code driven = 0}
      * on a vouched pad, and {@code padChunkVouched} / {@code ticksDrivenByProbe} ride the census line
      * AND every failure message, so a vouch loss names itself.</p>
      *
@@ -766,7 +766,7 @@ public final class CultistClericGameTest {
      * {@code PROBE BROKEN}, and (b) pins the age at removal to {@code edge+1} — 161
      * plain, 241 red — which is the clamp's signature, because the clamp fires on the
      * first entity tick past the edge and a removed entity stops ticking
-     * (docs/testing.md:201). Teeth for this
+     * (docs/testing.md:209). Teeth for this
      * card, one leg each, each RED naming this probe: the clamp never discarding, the
      * PLAIN edge alone stopping, the RED edge alone stopping, and the two edges
      * swapping.</p>
@@ -775,12 +775,12 @@ public final class CultistClericGameTest {
     public static void theOrbLifetimeClampDiesAtSixteenForPlainAndTwoFortyForRed(
             final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
-        // docs/testing.md:123 — the fixtures ride the cell the harness VOUCHES: `empty`
+        // docs/testing.md:131 — the fixtures ride the cell the harness VOUCHES: `empty`
         // is 1x1x1, so StructureUtils#prepareTestStructure -> forceLoadChunks vouches
         // exactly the chunk of this corner, and a FORCED ticket entity-ticks that chunk
         // alone. The lane's (1,3,1) cell leaves the vouched chunk on ~1/16 per axis with
         // the batch's origin draw, and this probe reads the ORB'S CLOCK, so a block off
-        // the corner is a probe that can starve (docs/testing.md:172, card t_43022b00).
+        // the corner is a probe that can starve (docs/testing.md:181, card t_43022b00).
         final BlockPos at = helper.absolutePos(BlockPos.ZERO);
         final EntityCultistCleric cleric = cleric(helper);
         final Player target = attackerAt(helper, cleric);
@@ -918,7 +918,7 @@ public final class CultistClericGameTest {
 
     /**
      * Drive an entity's clock from the probe's own ticks and count the driven ticks —
-     * the landed shape of {@code EldritchCrabGameTest#driveEntityClock} (docs/testing.md:158),
+     * the landed shape of {@code EldritchCrabGameTest#driveEntityClock} (docs/testing.md:166),
      * kept local because every GameTest file in this lane is self-contained.
      *
      * <p>The server ticks an entity only in an entity-ticking chunk
