@@ -827,9 +827,11 @@ public final class WarpEventsGameTest {
         private final List<Rejection> rejections = new ArrayList<>();
         private int[] marks = new int[0];
         private WindowShadow shadow;
+        /** The landing-slot roll's bound — {@code :283}/:343 {@code nextInt(50)}, the window boundary. */
+        private static final int LANDING_SLOT_BOUND = 50;
         private final int[] served = new int[6];
-        private int servedCount;
-        private int windowCount;
+        private int pending;        // scan draws still owed by the spider whose slot roll just came
+        private int windowsFired;
 
         /** Record the window the builder is about to offer, so the shadow can name it. */
         void key(final int a, final int k) {
@@ -877,16 +879,35 @@ public final class WarpEventsGameTest {
                         + " — the port rolled with the wrong bound");
             }
             consumed++;
-            if (shadow != null && consumed > 2) {          // :45 gate roll, :50 event roll precede the scan
-                served[servedCount++] = v;
-                if (servedCount == 6) {
-                    servedCount = 0;
-                    final int[] key = keys.get(windowCount++);
-                    final String offender = shadow.reject(key[0], key[1], served.clone());
-                    if (offender != null) {
-                        final Rejection r = new Rejection(key[0], key[1], scriptedCell(key[0], key[1]), offender);
-                        rejections.add(r);
-                        if (!(key[1] == 0 && isMarked(marks, key[0]))) {
+            if (shadow != null) {
+                // Align on the DRAW SHAPE, never on a counted offset. The scan attempt is
+                // the six draws (offset 7..24 = nextInt(18), sign -1..1 = nextInt(3), per
+                // axis, :292-297) that FOLLOW the spider's landing-slot roll (:283/:343 —
+                // nextInt(50)); the pre-scan rolls all have other bounds (:45 = 100,
+                // :50 = warp, :57 = 4, :59-61 band = 101). Counting draws misses the band
+                // roll and shadows cells the product never reads — measured on this code's
+                // first version, where every scan probe went red on every leg.
+                if (bound == LANDING_SLOT_BOUND) {
+                    pending = 6;
+                } else if (pending > 0) {
+                    if (bound != 18 && bound != 3) {
+                        throw new IllegalStateException("the scripted scan window drew bound " + bound
+                                + " — a scan attempt is nextInt(18)/nextInt(3) per axis (:292-297), so the"
+                                + " shadow's window alignment no longer matches the port's draw shape");
+                    }
+                    served[6 - pending] = v;
+                    if (--pending == 0) {
+                        if (windowsFired >= keys.size()) {
+                            throw new IllegalStateException("the scan ran " + (windowsFired + 1)
+                                    + " windows and the script scripted " + keys.size()
+                                    + " — the queue overran at a window boundary, not at the tail");
+                        }
+                        final int[] key = keys.get(windowsFired++);
+                        final String offender = shadow.reject(key[0], key[1], served.clone());
+                        if (offender != null) {
+                            final Rejection r = new Rejection(key[0], key[1], scriptedCell(key[0], key[1]), offender);
+                            rejections.add(r);
+                            if (!(key[1] == 0 && isMarked(marks, key[0]))) {
                             throw new GameTestAssertException("the warp scan rejected the scripted window (a="
                                     + key[0] + ", k=" + key[1] + ") at pad-relative " + r.cell() + " — " + offender
                                     + ". This pad's entities are swept (sweepPad) and its blocks are claimed"
@@ -895,6 +916,7 @@ public final class WarpEventsGameTest {
                                     + " stream — one unmarked rejection hands the next spider's window to this"
                                     + " spider, shifts every later landing, and overruns the draw queue, which is"
                                     + " the shape CI runs 43656053623 and 43662060834 reported.");
+                            }
                         }
                     }
                 }
