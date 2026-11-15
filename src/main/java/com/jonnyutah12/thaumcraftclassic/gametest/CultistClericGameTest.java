@@ -745,7 +745,7 @@ public final class CultistClericGameTest {
      * ({@code helper.absolutePos(BlockPos.ZERO)}, docs/testing.md:131) and the arm drives
      * the owed entity tick ONLY on the probe ticks the server left the clock still
      * ({@link #driveEntityClock}, docs/testing.md:166). Nothing is pinned to N real
-     * ticks (docs/testing.md:248): the arm ends on the <b>observed removal</b>, {@code driven = 0}
+     * ticks (docs/testing.md:252): the arm ends on the <b>observed removal</b>, {@code driven = 0}
      * on a vouched pad, and {@code padChunkVouched} / {@code ticksDrivenByProbe} ride the census line
      * AND every failure message, so a vouch loss names itself.</p>
      *
