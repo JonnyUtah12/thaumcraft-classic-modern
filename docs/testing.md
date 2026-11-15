@@ -141,6 +141,35 @@ without the evidence for its stages.
   (x, z) (`ZombieMobGameTest.MOB_CELL = (0,3,0)`), and assert the cell is entity-ticking BEFORE
   reading a per-tick counter, so a harness/layout change reports the precondition by name instead of
   arriving as a rate that cannot be measured.
+- **An arm that waits for an outcome the ENTITY'S CLOCK produces starves on that same vouch wall — and
+  `return` is not a poll.** The bullet above reads a per-tick counter; the harder shape is a poll that
+  waits for an outcome the entity's own clock produces, e.g. a lifetime clamp (`EntityEldritchOrb#tick`:
+  discard once `tickCount > 100`, and the burst writes `tickCount = 100` at :84). The age moves only in
+  `ServerLevel#tickNonPassenger` (`tickCount++` then `tick()`), so on an unvouched chunk it never crosses,
+  the assert throws on every retry, and the probe dies at the watchdog naming the frozen state — measured
+  as `theOrbBurstStrikesTheLivingAndSparesTheUndead` → `age=100 removed=false` (CI run `43634031237` on
+  main `046f3d32`, with-Curios `build` job; the parent card measured the same on a clean pad, 1 leg in 11,
+  and 36 local legs produced 0, so a leg sweep is not a denominator for this class). The wall reproduces
+  on demand: in a throwaway worktree release the pad's FORCED ticket with the harness's own batch-edge call
+  (`ServerLevel#setChunkForced(x, z, false)` — what `GameTestRunner#testCompleted` runs over
+  `level.getForcedChunks()`). Measured that way on the landing tree: **8 of 10** legs red with that
+  byte-exact line; **0 of 10** on the fixed arm, census `ticksDrivenByProbe=1 age=101`. Two shapes close
+  it, and the card ships both: put the fixtures on the vouched cell (above), and drive the owed entity
+  tick from the probe's clock ONLY on the ticks where the server left the clock still (`tickCount++` then
+  `tick()`), counting the driven ticks — the arm ends on the outcome, so nothing is pinned to N real ticks
+  (the tick-budget bullet below), `driven = 0` on a vouched pad, and `driven = 1` is the signature of a
+  vouch loss; both facts ride the poll's census line AND the assert message, so the wall reports itself
+  instead of arriving as a rate.
+  The harness fact that turns the tempting shape into a silent pass: in 1.21.1 `succeedWhen(criterion)` is
+  `createSequence().thenWaitUntil(criterion).thenSucceed()`, and `GameTestSequence#tick` removes an event
+  only when it runs WITHOUT throwing (`tickAndContinue` retries only a `GameTestAssertException`). A
+  criterion that RETURNS early consumes the event, runs `thenSucceed`, and passes the probe with its
+  asserts NEVER executed. `CultistClericGameTest.theOrbLifetimeClampDiesAtSixteenForPlainAndTwoFortyForRed`
+  is on that path — its "has not crossed the edge: poll again" `return` arms — so a mutation that deletes
+  the golem orb's `discard()` leaves the 502-probe suite GREEN (measured at `046f3d32` + that mutation,
+  one leg, card t_43022b00), while the same
+  mutation on the orb burst probe turns that one RED through the poll. The assert is the poll; never
+  `return` out of a final clause.
 - **A goal left on a live selector is armed by the ENGINE, and a route gate closes off the ground.**
   `Mob.serverAiStep` ticks the goal selector and `GoalSelector#tick` starts a goal on the
   `(tickCount + id) % 2` parity tick (`GoalSelector.java:74-105`). A probe that hand-drives a goal's
