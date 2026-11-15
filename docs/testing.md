@@ -10,7 +10,15 @@
    registration, block/entity behavior, crafting flows, vis flows, research
    progression, persistence across save/reload. Run by
    `./gradlew runGameTestServer`; CI asserts the "required tests passed"
-   line explicitly (a green exit with zero tests is a failure).
+   line explicitly (a green exit with zero tests is a failure). The assert
+   greps the **per-run** sources — the job's own gradle console output
+   (`run/gametest-console.log`, tee'd by the game step) and `run/logs/debug.log`,
+   the complete per-run log — and never `run/logs/latest.log`: log4j rolls that
+   file on the server **shutdown** path, so the file sitting at that path when
+   the assert runs can be the post-rotation one with no summary line in it
+   (measured: run 43662060834 on `6a05ba14`, `game-test-no-curios` attempt 1 —
+   `All 502 required tests passed :)` and `BUILD SUCCESSFUL in 57s` in the same
+   job, no probe failed, assert step RED; the same sha green on the re-run).
    Dual-configuration matrix (TC-M8-01): the accessory suite runs under both
    provider backends — default (Curios on the runtime classpath) and
    `-Ptc.noCurios` (built-in fallback; separate CI job
@@ -487,3 +495,48 @@ restores both and `diff -q` reports byte-identical.
   player`, and leaves the armed probe green — the dismount arm, named on demand. The
   layout-draw/red-coordinate axis from the parent card is dead: the event is a `nextFloat()` roll,
   the pad coordinates are uniform in both outcomes, and no grid-origin change can fix a 20 % punch.
+
+- **A consumption poll must carry its own survival drive; a 3-sigma band on a shared-seed stream is not 3 sigma.** Two `EldritchCrabGameTest` arms flaked the with-Curios 502 streak at tip `a29bbc06` (card t_d0cc96e9), each exactly a docs rule wearing a compliant costume. (1) The orb-burst consumption arm was already a `helper.succeedWhen` outcome-poll — and still starved: the harness's level pin is a FINITE `setForcedTicks(1000)` pool, and at a batch edge the test sequence's clock outlives the ENTITY clock, so the orb never receives the one server tick (`tickCount` is incremented by `ServerLevel#tickNonPassenger`, not `Entity#tick`) that walks it from the impact's written age 100 past the `:27-29` `> 100` clamp — the watchdog fired 1 leg in ~14 with `age=100 removed=false`, impact landed, walk never arrived. The poll shape is only half the contract; where the outcome lives on the entity's clock and the harness's pool can die, the probe feeds the subject its survival step IN THE SERVER'S SHAPE (`tickCount++` then `tick()`) on every poll tick and the assert stays on the outcome (`removed`). Teeth: the clamp mutation `> LIFETIME_TICKS` → `> LIFETIME_TICKS * 10` puts the consumption 1000 steps past the 300-tick watchdog and reddens the probe on EVERY leg naming `:84 … age=… removed=false` (measured 2/2, the parent Q6d budget teeth stay intact as the record on the pre-poll shape; the `:84` write→0 mutation walks green past the watchdog on the drive shape — the consumption arm asserts BY the clamp, not at its tick). (2) The hardspawn rate arm `rolled >= 9 && rolled <= 31` is ±3.0 sd of ONE `Binom(60, 0.33)` (mean 19.8, sd 3.64, nominal trip 1.37e-3) — a legal band by the 4-sd rule's arithmetic only at 4 sd — fed by 60 per-mob `RandomSource`s seeded off the shared LCG stream: the correlation inflates the effective sd and it measured 1 red in 17 legs (the red leg drew 8, a 3.24-sd tail under the nominal sum). Same lesson as the 30 % band floor entries above: on correlated streams the NOMINAL binomial is optimistic; widen to 4 sd of the sum (`[5, 35]`, exact 1.75e-5 on the nominal, tolerating the ~3× effective inflation the 1/17 implies) and pair it with the deterministic arm the rate can never hide from — here the observed OUTCOME SET of the 60 draws must be exactly {shelled, unshelled} (the whole support [0, 60] of a 1/3 roll contains both), which a roll rule collapsed to one outcome reddens on 100 % of legs (teeth: `nextFloat() < 0.33F` → `< 0.0F` → `0/60`, measured red naming `:74-75`).
+
+- **A draw taken N ticks after a rule WRITES is a tick budget, even when the asserted value is an
+  outcome: park the subject, drive ONE tick, and read what that tick wrote.** Measured on
+  `combat_returnhomeusestheradiusandteleportsfrombeyond48` (`gametest/GolemCombatAiGameTest`, golem
+  lane, 502-probe grid): the probe parks the golem 52 blocks out along +z at `SETTLE+40`, hand-drives
+  one `EntityGolemBase.tick()` at `SETTLE+45`, and asserts the golem stands in the home cell's 3x3
+  footprint within 3.0 squared of the placer's centre (`AIReturnHome.java:33`'s own gate). Its javadoc
+  premise — the 52-block cell is outside the template's ticking area, so only the probe's hand tick can
+  fire the rule — is FALSE on most legs: instrumented legs print `restrictDistSqr=2.0` on the PRE line,
+  i.e. the shipped rule (`EntityGolemBase.java:1362-1380`, 2304.0 squared) had already fired on an
+  ENGINE tick between the park and the draw. The rule writes a `moveTo` into the scan's first
+  qualifying triple — the deterministic `(dy=0, dx=-1, dz=-1)` cell, 2.25 squared — and calls
+  `navigation.stop()`, but it does not zero the velocity, so the walk phase's carried `deltaMovement`
+  keeps moving the golem after its own write. Measured over 14 legs: 12 legs fire on an engine tick and
+  draw the drifted state (1.2400 ×4, 1.5560, 2.6461 ×7 — `dmv=(0.0, -0.0784, -0.0042)`), 2 legs never
+  got an engine tick and drew exactly 2.2500. The threshold sits in that drift tail: the red this card
+  chases drew **3.212850838329566** in the same cell, and the fixed margin on the mode is 0.35. So the
+  probe is a rate, and the card's suspected cause — the crab burst arm's `tickCount++`/`tick()` drive
+  adding shared-level tick weight — is EXONERATED by planting, not by more streaks: widening that drive
+  to 24 orbs driven on every poll tick for the ~50 ticks the pool takes to drain (`[PLANT t_d67dc22f]
+  pool=24`, ~+100 extra ticks a leg, a 24x dose of the landed shape) gave **0 target reds in 17 legs**,
+  0/14 on the pool=0 control, 0/12 on `eca312f0` (the tree whose cold leg produced the red), 0/10 on the
+  untouched base and 0/10 at current main; P(0/17 | the hypothesised 1/5) = 0.023. The tick-weight
+  channel is closed for this probe — the coupling is its own 5-tick draw. Fix shape: park + drive ONE
+  entity tick + assert what the rule wrote, all inside one tick, and repeat that trial 8 times as the
+  deadline the envelope is polled on (far inside `timeoutTicks=400`); every trial asserts, so a product
+  that stops teleporting, lands outside the 3x3 footprint, or lands past the home radius reddens on
+  trial 1 of every leg — and the trial registrations all come from the probe body, never a nested
+  `runAfterDelay`. Teeth (disposable worktree at the tip + this fix, mutations in the PRODUCT, reverted,
+  tree removed): `>= 2304.0` → `>= 1.0e18` (the rule never fires) reddens the fixed probe on 2/2 legs
+  naming `trial 1/8 of the 48-block rule: the golem stands in the home cell's 3x3 footprint on the tick
+  the rule wrote it`; landing at `var2 + dz + 0.0` (the footprint still passes, squared 3.5) reddens it
+  on 3/3 legs naming `inside the goal's home radius again: squared distance 3.5`; landing at
+  `var1 + dx + 3.5` (`|dx| = 2`) reddens the footprint arm on 2/2 legs. Landing at `var1 + dx + 2.5`
+  stays GREEN and is contract-EQUIVALENT — the scan's first triple is `dx=-1`, so +2 is the mirrored
+  `+1` corner: `|dx| = 1`, squared 2.25, inside both arms the probe asserts. The probe claims the
+  outcome class (home, in the 3x3 footprint, inside the 3.0 radius), not which corner the scan picks; a
+  mutation that only mirrors the corner is not a hole. Do not weaken the
+  radius arm to dodge the flake: the shipped write is 2.25 and the arm is 3.0, so the arm has margin the
+  moment it is read on the tick the write happens. Corollary for probe authors: if a probe parks a
+  subject to control *when* a rule fires, verify the park cell is really unticked — print the rule's own
+  precondition (`restrictDistSqr`) on the tick before the draw; a precondition already satisfied means
+  the hand-driven tick is not the write tick and the draw is a budget.
