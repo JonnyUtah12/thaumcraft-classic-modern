@@ -22,6 +22,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -122,6 +123,22 @@ public final class GolemInteractAiGameTest {
 
     /** The matching test-tick phase: {@code MOB_SETTLE} plus the 6-tick spawn delay. */
     private static final int SETTLE = MOB_SETTLE + 10;
+
+    /**
+     * The crop fixture lands here, NOT at setup: the section the pad sits in relights from
+     * queued data, and the engine applies the sky channel before the block channel has
+     * propagated, so a crop planted at setup can be popped by the first neighbour update
+     * inside that window (measured: 7 of 8 cells were Block{air} on the drive's first draw).
+     */
+    private static final int PLANT_TICK = 40;
+
+    /**
+     * Sentinel for a crop cell the probe can no longer read as a crop. The age census
+     * classifies the {@link BlockState} first and only then asks for
+     * {@code CropBlock.AGE}: that property does not exist on {@code Block{minecraft:air}},
+     * so the draws that feed the outcome asserts can never crash on a popped cell.
+     */
+    private static final int VANISHED = -2;
 
     private GolemInteractAiGameTest() {
     }
@@ -258,12 +275,48 @@ public final class GolemInteractAiGameTest {
         };
         final BlockPos[] crops = new BlockPos[cells.length];
         for (int i = 0; i < crops.length; i++) {
-            final int x = cells[i][0];
-            final int z = cells[i][1];
-            crops[i] = new BlockPos(x, 1, z);
-            helper.setBlock(x, 0, z, Blocks.FARMLAND.defaultBlockState());
-            helper.setBlock(x, 1, z, Blocks.WHEAT.defaultBlockState().setValue(CropBlock.AGE, 7));
+            crops[i] = new BlockPos(cells[i][0], 1, cells[i][1]);
         }
+        // FIXTURE LIGHT, paid at setup, BEFORE the crop exists
+        // (docs/testing.md#crop-light-propagation-depth). CropBlock#canSurvive
+        // (CropBlock.java:164-171) is the light gate (hasSufficientLight:
+        // getRawBrightness(pos, 0) >= 8) AND the soil gate, and BushBlock#updateShape
+        // (BushBlock.java:30-35) turns the crop into Block{air} on the FIRST neighbour
+        // update whose canSurvive fails. The section the pad sits in carries QUEUED light
+        // data, and the engine relights the SKY channel before the block channel has
+        // propagated to the far cells: in the dark half of the world clock that window is
+        // raw = 15 - skyDarken(11) = 4, so a crop planted at setup pops on the first
+        // neighbour update inside it and never comes back. Measured on the 515-probe grid:
+        // the drive's FIRST draw found 7 of 8 cells already Block{air} with intact farmland
+        // below and raw 10-12 read AFTER the fact — the block channel had arrived late
+        // (15 - Manhattan), exactly the propagation-depth signature: the cells at depth 4-5
+        // from the single source died, the one at depth 2 survived.
+        // So the probe pays for light with a SHORT propagation depth: one source directly
+        // under every crop cell (two steps to the crop, through the farmland) plus one above
+        // the middle. The block channel then stands at 13-15 in every cell, permanently, and
+        // max(block, sky - skyDarken) can never fall under the >= 8 gate — the sky transient
+        // has nothing left to take away. Sources sit BELOW the soil, so the golem's walk
+        // cells and the crops' headroom are untouched.
+        for (final int[] cell : cells) {
+            helper.setBlock(cell[0], -1, cell[1], Blocks.GLOWSTONE.defaultBlockState());
+        }
+        helper.setBlock(4, 3, 4, Blocks.GLOWSTONE.defaultBlockState());
+        // The crop lands only after that light has settled: planting at setup plants into
+        // the unlit window, which is where the pop comes from.
+        helper.runAtTickTime(PLANT_TICK, () -> {
+            final StringBuilder lit = new StringBuilder();
+            for (int i = 0; i < crops.length; i++) {
+                final int x = cells[i][0];
+                final int z = cells[i][1];
+                helper.setBlock(x, 0, z, Blocks.FARMLAND.defaultBlockState()
+                        .setValue(BlockStateProperties.MOISTURE, 7));
+                helper.setBlock(x, 1, z, Blocks.WHEAT.defaultBlockState().setValue(CropBlock.AGE, 7));
+                lit.append(" [").append(x).append(',').append(z).append("] raw=")
+                        .append(helper.getLevel().getRawBrightness(
+                                helper.absolutePos(crops[i]), 0));
+            }
+            System.out.println("HARVEST-FIXTURE plant tick=" + helper.getTick() + ":" + lit);
+        });
 
         final AIHarvestCrops[] goal = new AIHarvestCrops[1];
         final EntityGolemBase[] golems = new EntityGolemBase[1];
@@ -274,6 +327,9 @@ public final class GolemInteractAiGameTest {
         });
 
         final AtomicInteger harvested = new AtomicInteger(0);
+        final AtomicBoolean vanished = new AtomicBoolean(false);
+        final AtomicBoolean gateChecked = new AtomicBoolean(false);
+        final AtomicInteger repaired = new AtomicInteger(0);
         final int[] ages = new int[crops.length];
         drive(helper, SETTLE + 460, () -> {
             if (goal[0] == null) {
@@ -283,8 +339,58 @@ public final class GolemInteractAiGameTest {
             if (golem.tickCount < MOB_SETTLE) {
                 return;
             }
+            if (gateChecked.compareAndSet(false, true)) {
+                // The fixture owns these cells. If the settle window's light transient (or a
+                // neighbour pad's block write) popped a cell before the drive opened, restore
+                // the fixture and PRINT it — the drive's draws then measure the harvest goal's
+                // work on a crop patch that exists, and a repaired cell is on the record. A pop
+                // AFTER this tick is a real observation and stays a red arm below.
+                final StringBuilder healed = new StringBuilder();
+                for (int i = 0; i < crops.length; i++) {
+                    final BlockPos abs = helper.absolutePos(crops[i]);
+                    final BlockState here = helper.getLevel().getBlockState(abs);
+                    if (here.hasProperty(CropBlock.AGE)) {
+                        continue;
+                    }
+                    healed.append(" cell[").append(i).append("]=").append(crops[i])
+                            .append(" was ").append(here).append(" below=")
+                            .append(helper.getLevel().getBlockState(abs.below())).append(" raw=")
+                            .append(helper.getLevel().getRawBrightness(abs, 0));
+                    if (!helper.getLevel().getBlockState(abs.below()).is(Blocks.FARMLAND)) {
+                        helper.setBlock(crops[i].getX(), 0, crops[i].getZ(),
+                                Blocks.FARMLAND.defaultBlockState().setValue(BlockStateProperties.MOISTURE, 7));
+                    }
+                    helper.setBlock(crops[i].getX(), crops[i].getY(), crops[i].getZ(),
+                            Blocks.WHEAT.defaultBlockState().setValue(CropBlock.AGE, 7));
+                    repaired.incrementAndGet();
+                    ages[i] = 7;
+                }
+                if (repaired.get() > 0) {
+                    System.out.println("HARVEST-FIXTURE repaired=" + repaired.get()
+                            + " at tick " + helper.getTick() + ":" + healed);
+                }
+                // The survival gate CropBlock itself consults, asserted on the drive's
+                // first tick — before any draw depends on it — in the probe's own message.
+                for (final BlockPos crop : crops) {
+                    final BlockPos abs = helper.absolutePos(crop);
+                    helper.assertTrue(helper.getLevel().getRawBrightness(abs, 0) >= 8,
+                            "the crop patch sits under CropBlock#hasSufficientLight"
+                                    + " (getRawBrightness < 8) at " + crop + " (abs " + abs + ", state "
+                                    + helper.getLevel().getBlockState(abs) + ", below "
+                                    + helper.getLevel().getBlockState(abs.below()) + ", tick "
+                                    + helper.getTick() + "); BushBlock#updateShape pops such a crop to"
+                                    + " Block{air} on the next neighbour update");
+                }
+            }
             for (int i = 0; i < crops.length; i++) {
-                final int age = helper.getBlockState(crops[i]).getValue(CropBlock.AGE);
+                // Classify the state, then read the property: IntegerProperty{name=age}
+                // does not exist on Block{minecraft:air}, and asking for it there is the
+                // disclosed crash (CI run 43675329931, job 132694099034, tip e50113cc).
+                final BlockState state = helper.getBlockState(crops[i]);
+                final int age = state.hasProperty(CropBlock.AGE) ? state.getValue(CropBlock.AGE) : VANISHED;
+                if (age == VANISHED) {
+                    vanished.set(true);
+                }
                 if (ages[i] > 0 && age == 0) {
                     harvested.incrementAndGet();
                 }
@@ -300,30 +406,77 @@ public final class GolemInteractAiGameTest {
             }
         });
 
-        helper.runAfterDelay(SETTLE + 460, () -> {
-            clearGolemCaches();
-            assertAlive(golems[0]);
+        // The arm ends on the OBSERVED outcome, not on a tick budget: every draw classifies
+        // the cell, and the poll asserts reaped >= 3 and replanted >= 3 off those draws.
+        // A criterion that returns is success, so the asserts throw to keep polling — and the
+        // two hard arms (a vanished cell, a deadline) throw a plain exception, which the
+        // reporter prints as `<probe> failed at <coords>! <census>` instead of a bare
+        // watchdog. No fixed verdict tick is asserted on.
+        helper.succeedWhen(() -> {
+            if (golems[0] == null || goal[0] == null || helper.getTick() < SETTLE) {
+                throw new GameTestAssertException("the harvest drive is not open at tick "
+                        + helper.getTick() + " (golem spawns at tick 6, drive opens at " + SETTLE + ")");
+            }
+            final EntityGolemBase golem = golems[0];
             int replanted = 0;
             int grown = 0;
-            for (final BlockPos crop : crops) {
-                final BlockState state = helper.getBlockState(crop);
-                if (state.is(Blocks.WHEAT)) {
-                    if (state.getValue(CropBlock.AGE) == 0) {
-                        replanted++;
-                    } else {
-                        grown++;
-                    }
+            int vanishedCells = 0;
+            for (final int age : ages) {
+                if (age == VANISHED) {
+                    vanishedCells++;
+                } else if (age == 0) {
+                    replanted++;
+                } else if (age > 0) {
+                    grown++;
                 }
             }
-            helper.assertTrue(harvested.get() >= 3,
-                    "the harvest goal never reaped the ripe wheat (harvested=" + harvested.get()
-                            + ", replanted=" + replanted + ", still grown=" + grown + "; "
-                            + state(golems[0]) + ")");
-            helper.assertTrue(replanted >= 3,
-                    "the harvest goal reaped " + harvested.get() + " crops but replanted only " + replanted
-                            + " (the original sows a seed back onto the farmland)");
+            final int reaped = harvested.get();
+            final String census = "harvested=" + reaped + ", replanted=" + replanted + ", stillRipe="
+                    + grown + ", vanished=" + vanishedCells + " of " + crops.length + " cells, repaired="
+                    + repaired.get() + "; " + state(golem);
+            if (vanished.get() || vanishedCells > 0) {
+                final StringBuilder lost = new StringBuilder();
+                for (int i = 0; i < crops.length; i++) {
+                    if (ages[i] == VANISHED) {
+                        final BlockPos abs = helper.absolutePos(crops[i]);
+                        lost.append(" cell[").append(i).append("]=").append(crops[i]).append(" (abs ")
+                                .append(abs).append(") state=").append(helper.getLevel().getBlockState(abs))
+                                .append(" below=").append(helper.getLevel().getBlockState(abs.below()))
+                                .append(" raw=").append(helper.getLevel().getRawBrightness(abs, 0));
+                    }
+                }
+                throw new IllegalStateException("the crop patch lost a cell to a non-crop state at tick "
+                        + helper.getTick() + ": " + census + ";" + lost
+                        + " — CropBlock#canSurvive (CropBlock.java:164-171) is the raw-brightness >= 8"
+                        + " gate AND the soil gate, and BushBlock#updateShape (BushBlock.java:30-35) pops"
+                        + " such a crop to Block{air} on the first neighbour update; AIHarvestCrops#harvest"
+                        + " replants only when the cell still holds a crop at the chop tick, so a popped"
+                        + " cell is never replanted and the goal parks on it. The probe pays for its"
+                        + " light (glowstone at (4,3,4)) and asserts raw >= 8 on the drive's first tick.");
+            }
+            final boolean windowClosed = helper.getTick() >= SETTLE + 460 + 20;
+            if (reaped < 3) {
+                if (windowClosed) {
+                    throw new IllegalStateException("the harvest goal never reaped the ripe wheat by the"
+                            + " deadline at tick " + helper.getTick() + " (drive window closed at "
+                            + (SETTLE + 460) + "): " + census);
+                }
+                throw new GameTestAssertException("waiting for the harvest goal to reap three crops: "
+                        + census);
+            }
+            if (replanted < 3) {
+                if (windowClosed) {
+                    throw new IllegalStateException("the harvest goal reaped " + reaped
+                            + " crops but replanted only " + replanted + " by the deadline at tick "
+                            + helper.getTick() + " (the original sows a seed back onto the farmland): "
+                            + census);
+                }
+                throw new GameTestAssertException("waiting for three crops to land as replanted"
+                        + " (age 0) after the reap: " + census);
+            }
+            clearGolemCaches();
+            assertAlive(golem);
             passed("interact_harvestCropsCoreReapsRipeWheatAndReplantsIt");
-            helper.succeed();
         });
     }
 

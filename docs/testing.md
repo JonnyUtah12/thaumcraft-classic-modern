@@ -334,6 +334,19 @@ without the evidence for its stages.
   **98-142** / **100-130** (giant), against binomial means 15 and 120 — so no vanilla zombie loot table rides a modded id — and every stack in the
   25-block box was owned, **16/16** legs, foreign = 0 (8 legs per tree, the two sweeps above; both ran 10 kills, so the angry mean there is 15,
   not the shipped probe's 45).
+<a id="mob-seed-stream-rate-arm"></a>
+- **A rate arm drawn one roll per fresh mob is not n independent draws: name the seed source, measure the sum's variance inflation PER ARM, and de-correlate by reading draw j of generator j.**
+  A mob's `RandomSource` is seeded by `RandomSupport.generateUniqueSeed()` = `SEED_UNIQUIFIER.updateAndGet(p -> p * 118178349727652981L) ^ System.nanoTime()`, so consecutive spawns differ by the
+  **wall-clock cost of a spawn** and each roll is ONE point of a seed rotation whose step is that cost times the LCG multiplier: the leg's count moves as a block, its realised rate rides on
+  machine speed, and because that cost differs between the arms CI runs, the distribution is **arm-specific**. Measured on the crab hardspawn arm, 20 legs each, 60 draws (tree `1b6eda86`):
+  **18.2 ± 3.14** with-Curios vs **21.7 ± 4.39** no-Curios — variance 0.74× / 1.45× the binomial, realised 0.303 / 0.362 against the shipped `0.33F`, Mann-Whitney p = **0.015**, deviation
+  tracking leg wall-time r = +0.30 over legs of 61-151 s. A band on that stream is a band on the runner: the no-Curios arm's tail is what reached 8/60 and breached `9..31`, and widening the
+  band on the same shape just moves the wall. Fix the SHAPE: burn `j` throws on the SAME generator before reading draw `j`, so the phase advances with the draw index (equidistributed, Weyl)
+  at any spawn cost. The same 40 legs, 360 rolls: sd **8.46** / **9.70** (variance 0.90× / 1.18× the binomial of the sum), arm split p = **0.797**, lag-1 −0.025 / +0.004, transitions
+  162.4 / 158.2 and longest run 13.1 / 12.9 inside the independent-stream Monte-Carlo (158.9 / 12.8), load coupling r = −0.095, realised 0.331 / 0.333 — the binomial the band claims.
+  Set the band from the **measured** per-leg sd (mean ± 4 sd, widened outward to the quantum), never the nominal, keep the deterministic pair (the guaranteed branch, and the outcome set the
+  rate can never hide from), and state the power as the fraction of legs a doubled / halved rule body reddens (**98.8 %** / **99.7 %** at n = 360) plus the blind spot (a 0.25 body reddens on
+  **9.9 %**): **widen n for power, never the band** (t_8b63e037).
 
 - A `@GameTest` body that touches a block entity must not park the server
   thread. The game test server shuts down by unloading chunks
@@ -399,6 +412,69 @@ without the evidence for its stages.
   window), and it is not a window. Clear every mob in the template's box that is not the probe's
   own golem and herd, at spawn and at settle, and print them; the animal the probe measures then
   dies only to the probe's own fixture.
+<a id="crop-light-propagation-depth"></a>
+- **A fixture that leans on a block's LIGHT gate has to pay for its light, and a probe must classify
+  the `BlockState` before reading a property that not every state of that block carries.** Measured on
+  this tree: `interact_harvestcropscorereapsripewheatandreplantsit` reddened the with-Curios `build`
+  job on CI (run `43675329931`, job `132694099034`, tip `e50113cc`) with `Cannot get property
+  IntegerProperty{name=age, clazz=class java.lang.Integer, values=[0..7]} as it does not exist in
+  Block{minecraft:air}`; the sanctioned same-sha rerun is green on all 3 jobs, the identical line sits
+  in the c4a2 legs, and **0 of the 42** red `build` jobs in a 120-run window name it (16 of 16 local
+  legs on the landing tree green — 8 with-Curios + 8 no-Curios, 502/502 each, probe never named), so it
+  is a rate and the file that crashes is the probe, not the product. The mechanism is the crop's own
+  survival gate: `CropBlock#canSurvive` (`CropBlock.java:164-171`) is `hasSufficientLight` =
+  `getRawBrightness(pos, 0) >= 8` AND the soil gate, and `BushBlock#updateShape`
+  (`BushBlock.java:30-35`) turns the crop into `Block{air}` on the FIRST neighbour update that fails
+  it — and the harvest goal's own `setBlock` IS that neighbour update, so the cell the next draw reads
+  can be air, and asking `CropBlock.AGE` of it is the disclosed line. The light that gate consults is
+  `Level#updateSkyBrightness` (from `ServerLevel#tick`): `skyDarken = (1 − d2)·11` with
+  `d2 = 0.5 + 2·clamp(cos(2π·dayTime/24000), −0.25, 0.25)`, so a crop under open sky survives at
+  midnight (`dayTime 18000` → skyDarken 5 → raw 10) and pops at dusk (`dayTime 13000` → skyDarken 11 →
+  raw 4). The game-test box pays for none of it: every crop cell in the patch reads raw **15**, the
+  uncomputed-section value, printed on every leg of an 11-leg sweep — the patch's survival is inherited
+  from a number the fixture does not own. The first shape the card shipped — one glowstone at
+  `(4,3,4)`, Manhattan ≤ 5 from every crop cell, block channel 15 − Manhattan — measured
+  INSUFFICIENT: on the 515-probe grid the drive's FIRST draw found **7 of 8** cells `Block{air}` with
+  the farmland intact and raw 10-12 read AFTER the fact (`the crop patch lost a cell to a non-crop
+  state at tick 190 … vanished=7 of 8 cells`), and the survivor was exactly the cell at propagation
+  depth 2. That is a light engine mid-flush (`ServerChunkCache:573` schedules the flush per chunk tick,
+  `ThreadedLevelLightEngine:54-55` is the queue): the SKY channel is applied before the block channel
+  has propagated to the far cells, so inside that window a cell reads `max(0, 15 − skyDarken(11)) = 4`
+  and `BushBlock#updateShape` pops it on the first neighbour update inside it, permanently. The rule is
+  therefore not "pay for light" but **pay for light at propagation depth 2**: a source directly under
+  EVERY crop cell (2 steps to the crop through the farmland, block channel 13-15 permanently; BELOW the
+  soil, so the golem's walk cells and the crops' headroom are untouched), the crop planted at
+  `PLANT_TICK = 40` — after that flush, never into it — the farmland paid wet (`FarmBlock#randomTick`
+  turns dry farmland to dirt, `FarmBlock.java:95-104`; the crop above holds it through
+  `MAINTAINS_FARMLAND`, `:124-126`), and any cell the window popped before the drive opened is restored
+  AND PRINTED (`HARVEST-FIXTURE repaired=N`, with the state / soil / raw it found) so a fixture repair
+  is on the record. Measured on that shape: **8 of 8** gate legs green (4 with-Curios + 4 no-Curios,
+  515/515 each, `repaired=0`, the census arm never named), and the raw at plant tick is still 15 — the
+  uncomputed value — which is why the draw classifies the state first
+  (`state.hasProperty(CropBlock.AGE) ? … : VANISHED`): no draw can ask an `IntegerProperty` of
+  `Block{air}`, and `getRawBrightness >= 8` is asserted on the drive's first tick in the probe's own
+  message. The arm then ends on the OBSERVED reap+replant (`reaped >= 3`, `replanted >= 3`, polled by
+  `succeedWhen`, no fixed verdict tick — the `return`-is-not-a-poll rule above) and the two hard arms
+  (a cell that stopped being a crop, the drive window closed) throw a plain exception carrying the
+  census: per-cell state, soil below, raw, golem state, repaired count. Teeth, RED by name on the fix
+  tree: replant disabled (`if (false && broken && …)`) → `the crop patch lost a cell to a non-crop
+  state at tick 203 … vanished=1 of 8 cells, repaired=0` (2/2 legs); harvest disabled
+  (`final boolean broken = false`) → `the harvest goal never reaped the ripe wheat by the deadline at
+  tick 670 … harvested=0, replanted=0, stillRipe=8, vanished=0` (2/2 legs). The crash class is
+  reproducible on demand and closed structurally: the SHIPPED probe plus a planted pop
+  (`setBlock … Blocks.AIR` at `SETTLE + 40`) went 2/2 RED with the CI line byte-exact (`Cannot get
+  property IntegerProperty{name=age, clazz=class java.lang.Integer, values=[0..7]} as it does not exist
+  in Block{minecraft:air}`), and the FIXED probe with the SAME pop went 2/2 RED naming the census arm
+  (`… at tick 231: harvested=2, replanted=2, …, vanished=1 of 8 cells, repaired=0`) — the age read is
+  gone, the pop is named, and that is also why the drive-open repair keeps its teeth: a pop landing
+  after the drive opens is a red. Recorded so
+  the next reader does not re-chase it: planting the phase clock into the shipped probe
+  (`setDayTime(13000)`) went 1 red / 1 green and the red named
+  `combat_woundedguardretaliatesanddoesnotrecruititsneighbour`, never the age read, and the probe's own
+  raw read stayed 15 — inside the box the section's light is never computed at the read tick, so the
+  daylight pop is not armable from the probe side (`setDayTime(18000)` = 4/4 green on the fix tree). The
+  daylight gate is the source-level formula; the flush that actually bites inside the box is the queued
+  one above, and the crash is closed structurally by the classification.
 
 ## Standing acceptance gates
 **`PlayableAcceptanceGameTest` is the PLAYABLE gate** (TC-M9-01-s, `t_8ea70fda`). The 2026-10-30 intake asked
@@ -455,6 +531,7 @@ restores both and `diff -q` reports byte-identical.
   the stray: planted before the sweep the fixed probe is GREEN, planted after the sweep (or on the
   unswept tree) it goes RED naming the queue overrun — the CI signature, on demand.
 
+<a id="sweep-hazard-set-is-scan-set"></a>
 - **The sweep's hazard set is the GATE's scan set, and a probe that registers into a level-wide list has
   to tear down on the RED path.** The rule above sweeps non-player entities and LEAVES players, because the
   warp event's scan is a BLOCK scan and no player rejects a cell. A gate that scans ENTITIES has to size
@@ -570,7 +647,7 @@ restores both and `diff -q` reports byte-identical.
   layout-draw/red-coordinate axis from the parent card is dead: the event is a `nextFloat()` roll,
   the pad coordinates are uniform in both outcomes, and no grid-origin change can fix a 20 % punch.
 
-- **A consumption poll must carry its own survival drive; a 3-sigma band on a shared-seed stream is not 3 sigma.** Two `EldritchCrabGameTest` arms flaked the with-Curios 502 streak at tip `a29bbc06` (card t_d0cc96e9), each exactly a docs rule wearing a compliant costume. (1) The orb-burst consumption arm was already a `helper.succeedWhen` outcome-poll — and still starved: the harness's level pin is a FINITE `setForcedTicks(1000)` pool, and at a batch edge the test sequence's clock outlives the ENTITY clock, so the orb never receives the one server tick (`tickCount` is incremented by `ServerLevel#tickNonPassenger`, not `Entity#tick`) that walks it from the impact's written age 100 past the `:27-29` `> 100` clamp — the watchdog fired 1 leg in ~14 with `age=100 removed=false`, impact landed, walk never arrived. The poll shape is only half the contract; where the outcome lives on the entity's clock and the harness's pool can die, the probe feeds the subject its survival step IN THE SERVER'S SHAPE (`tickCount++` then `tick()`) on every poll tick and the assert stays on the outcome (`removed`). Teeth: the clamp mutation `> LIFETIME_TICKS` → `> LIFETIME_TICKS * 10` puts the consumption 1000 steps past the 300-tick watchdog and reddens the probe on EVERY leg naming `:84 … age=… removed=false` (measured 2/2, the parent Q6d budget teeth stay intact as the record on the pre-poll shape; the `:84` write→0 mutation walks green past the watchdog on the drive shape — the consumption arm asserts BY the clamp, not at its tick). (2) The hardspawn rate arm `rolled >= 9 && rolled <= 31` is ±3.0 sd of ONE `Binom(60, 0.33)` (mean 19.8, sd 3.64, nominal trip 1.37e-3) — a legal band by the 4-sd rule's arithmetic only at 4 sd — fed by 60 per-mob `RandomSource`s seeded off the shared LCG stream: the correlation inflates the effective sd and it measured 1 red in 17 legs (the red leg drew 8, a 3.24-sd tail under the nominal sum). Same lesson as the 30 % band floor entries above: on correlated streams the NOMINAL binomial is optimistic; widen to 4 sd of the sum (`[5, 35]`, exact 1.75e-5 on the nominal, tolerating the ~3× effective inflation the 1/17 implies) and pair it with the deterministic arm the rate can never hide from — here the observed OUTCOME SET of the 60 draws must be exactly {shelled, unshelled} (the whole support [0, 60] of a 1/3 roll contains both), which a roll rule collapsed to one outcome reddens on 100 % of legs (teeth: `nextFloat() < 0.33F` → `< 0.0F` → `0/60`, measured red naming `:74-75`).
+- **A consumption poll must carry its own survival drive; a 3-sigma band on a shared-seed stream is not 3 sigma.** Two `EldritchCrabGameTest` arms flaked the with-Curios 502 streak at tip `a29bbc06` (card t_d0cc96e9), each exactly a docs rule wearing a compliant costume. (1) The orb-burst consumption arm was already a `helper.succeedWhen` outcome-poll — and still starved: the harness's level pin is a FINITE `setForcedTicks(1000)` pool, and at a batch edge the test sequence's clock outlives the ENTITY clock, so the orb never receives the one server tick (`tickCount` is incremented by `ServerLevel#tickNonPassenger`, not `Entity#tick`) that walks it from the impact's written age 100 past the `:27-29` `> 100` clamp — the watchdog fired 1 leg in ~14 with `age=100 removed=false`, impact landed, walk never arrived. The poll shape is only half the contract; where the outcome lives on the entity's clock and the harness's pool can die, the probe feeds the subject its survival step IN THE SERVER'S SHAPE (`tickCount++` then `tick()`) on every poll tick and the assert stays on the outcome (`removed`). Teeth: the clamp mutation `> LIFETIME_TICKS` → `> LIFETIME_TICKS * 10` puts the consumption 1000 steps past the 300-tick watchdog and reddens the probe on EVERY leg naming `:84 … age=… removed=false` (measured 2/2, the parent Q6d budget teeth stay intact as the record on the pre-poll shape; the `:84` write→0 mutation walks green past the watchdog on the drive shape — the consumption arm asserts BY the clamp, not at its tick). (2) The hardspawn rate arm `rolled >= 9 && rolled <= 31` is ±3.0 sd of ONE `Binom(60, 0.33)` (mean 19.8, sd 3.64, nominal trip 1.37e-3) — a legal band by the 4-sd rule's arithmetic only at 4 sd — fed by 60 per-mob `RandomSource`s seeded off the shared LCG stream: the correlation inflates the effective sd and it measured 1 red in 17 legs (the red leg drew 8, a 3.24-sd tail under the nominal sum). Same lesson as the 30 % band floor entries above: on correlated streams the NOMINAL binomial is optimistic; widen to 4 sd of the sum (`[5, 35]`, exact 1.75e-5 on the nominal, tolerating the ~3× effective inflation the 1/17 implies) and pair it with the deterministic arm the rate can never hide from — here the observed OUTCOME SET of the 60 draws must be exactly {shelled, unshelled} (the whole support [0, 60] of a 1/3 roll contains both), which a roll rule collapsed to one outcome reddens on 100 % of legs (teeth: `nextFloat() < 0.33F` → `< 0.0F` → `0/60`, measured red naming `:74-75`). **The 1/17 has a mechanism, and it is the STREAM, not the band width (t_8b63e037): each per-mob `RandomSource` carries `uniquefier × 118178349727652981L ^ System.nanoTime()`, so 60 consecutive rolls are one point of 60 near-identical seed rotations — measured arm-specific over 20 legs per arm: 18.2 ± 3.14 with-Curios vs 21.7 ± 4.39 no-Curios, realised 0.303 / 0.362, split p = 0.015, deviation tracking leg wall-time r = +0.30 — and the no-Curios arm's tail is the 8/60 that breached `9..31` on the `game-test-no-curios` leg. `[5, 35]` on that shape widens the wall, not the distribution. The arm now reads draw j of generator j (j throws burned on the SAME generator before `finalizeSpawn`) at 360 rolls — sd 8.46 / 9.70, variance 0.90× / 1.18× the binomial, split p = 0.797, lag-1 ≈ 0, load coupling r = −0.095 — and the band is the MEASURED one: 118.8 ± 4 · 9.70 widened outward = `80..158`, exact trip 9.3e-6, 0 of 40 census legs outside (observed 103..140), power 98.8 % / 99.7 % against a doubled / halved roll body and 9.9 % against a 0.25 body, the declared blind spot. Rule: docs/testing.md#mob-seed-stream-rate-arm.**
 
 - **A draw taken N ticks after a rule WRITES is a tick budget, even when the asserted value is an
   outcome: park the subject, drive ONE tick, and read what that tick wrote.** Measured on
@@ -615,6 +692,61 @@ restores both and `diff -q` reports byte-identical.
   precondition (`restrictDistSqr`) on the tick before the draw; a precondition already satisfied means
   the hand-driven tick is not the write tick and the draw is a budget.
 
+- **A 1.0-health mob probe has to CLAIM its own mob box, and the channel a pad-sharing claim can NOT
+  close is fire.** `theHarmlessFuseDiscardsPast1200TicksAndANormalSpiderNeverExpires`
+  (`gametest/MindSpiderMobGameTest`) runs a 1.0-health armed harmless spider and a control spider over
+  1300 ticks with a full-health assert every 20 ticks, and went red on the shipped line
+  `the armed spider lost health at checkpoint 20 (pad burn/fall) — health 0.0, tickCount=20` at **1/4**
+  with-Curios legs on `046f3d32` (t_43022b00 `fixstress#2`) and **1/5** with-Curios legs on `3b5a49ae`
+  (t_47951c77 `cens_land_4`) — attributed by probe NAME. `tickCount=20` is ONE damage instance inside
+  the probe's first 20 ticks, and the probe owns no damage source: the hazard walks in from the pad the
+  grid handed over. Two channels belong in the rule's set because a claim reaches both: a colliding
+  block in the mob cell (`LivingEntity#pushEntities` → `makeStuckInBlock`, lethal at 1.0 hp), and a
+  foreign entity inside the mob box — the pech-blast pellet flies 12 blocks at 0.5/tick and a 1×1×1 pad
+  strides 6 cells (`StructureGridSpawner`: `width + 5` / `depth + 6`), so a neighbour's corridor crosses
+  this pad, and its hit is `damage().setExplosion`, 1.5 + knockback, dead in one hit. The second is the
+  natural channel, and the claim that PROVES it is a claim that LOGS its catch: on one leg of seven
+  landing legs the fuse probe's pad was handed over a `barrier` and a `stone` in the mob cell column
+  plus a live `EntityPechBlast['Pech Blast'/12763]` inside its mob box (mid-batch, not a plant probe),
+  the claim removed all three and the grid ran 504/504; the other six legs were handed a clean pad
+  (t_21b2160d, `teeth2/fixed1.gradle.log`).
+  Fire is NOT reachable by a probe-side claim and must NOT be added to one: fire set on a tick takes its
+  boundary damage in THAT tick when the ticks are a multiple of 20 (`LivingEntity#baseTick`) and the
+  harness's tick runs after the entity pass (t_89eee704's measurement), so no probe-side `clearFire` can
+  precede it — measured: a planted `ignite(300)` kills the spider on the ignite tick with the guard in
+  place — and fire is not the observed natural channel either: the sampler under the burn/fall red saw
+  `remainingFireTicks = 0` on both spiders on every green leg (8 legs × 1201 ticks) and the pad set no
+  fire on 24/24 sampled legs.
+  Shape (t_21b2160d): `claimMobPad` sweeps the lane's own `mobBox` (±6/7, 10 tall) of foreign entities,
+  clears the colliding blocks of the mob cell column, LOGS what the batch handed over, and asserts the
+  claim; it runs at setup and `onEachTick` for the probe's own window — the set the gate measures. The
+  plinth (the barriers at z+1, z+2) sits outside the column and is untouched; health, fire immunity, the
+  checkpoints' `clearFire` and the fuse asserts are untouched — the claim moves contaminants, never the
+  subject's state. Teeth: disable the claim and a plant probe (stone in the mob cell + a pech blast
+  fired into the box) reddens with the shipped line on 2 of 2 legs (`teeth2/mut1`, `mut2`); with the
+  claim in place the same plants are swept. Census (base = no claim, landing = claim, curios arm, 5
+  interleaved pairs, full grid, `census2/`): **0/5** base vs **0/5** landing (Fisher p=1.0), pooled with
+  the historical base legs **2/14 vs 0/7, p=0.43** — the census ran at loadavg 3.6-4.9 with 2 concurrent
+  JVMs, where P(0 reds in 5 legs) is 0.33 at the historical 1/5 rate, so the census CANNOT resolve the
+  rate and no rate claim rides on it; the deterministic planted teeth are the causation lever.
+
+- **A box query reads the level's ENTITY list, not `level.players()` — so the rule above (the sweep's
+  hazard set is the GATE's scan set) is a rule for gates that scan the player list, and its
+  registered-resident arm must NOT be copied into a gate that scans boxes.** Measured on t_21b2160d by
+  PLANTING, while testing the opposite hypothesis: a `ServerPlayer` registered through
+  `level.players()` (the crab fixture's shape, `EldritchCrabGameTest:672`) planted ON the warp pad is
+  reported by that pad's own `getEntitiesOfClass` census **0 times on every leg that planted it**
+  (3 legs, `teeth2/fixed1-3.gradle.log`), and the scripted warp probes stay green on all three of those
+  legs — `WarpEvents`' `:298`/`:301` arms are `level.getEntities`
+  over the entity list, and `Entity#discard` can never run on something the sweep cannot see, so the
+  plant cannot produce the queue overrun the lane reports. The player arm is therefore NOT this lane's
+  lever: the measured lever for the scripted-queue probe is the BLOCK claim
+  (`theScanRejectsOccupiedAndFlooredCellsAndSpendsItsSecondAttempt`, t_6119f491, `claimScanCells`), and
+  a probe that sizes its sweep to a gate reading `level.players()` (`getNearestPlayer`) sizes it
+  correctly ONLY for that gate. A claim arm that can never fire is not free — it reads as coverage and
+  measures nothing. Census for that probe: **0/5** base vs **0/5** landing (both arms carry t_6119f491's
+  claim), pooled with the historical base legs **3/37 vs 0/5, p=0.68**.
+
 ## Cite audit
 
 Every cite of a Rules bullet — in `src` probes, in this file, anywhere — is an **anchor**:
@@ -638,4 +770,5 @@ whose TARGET is not the rule the citing comment describes. A missing or duplicat
 the last one is converted; no NEW line-number cite is accepted anywhere.
 
 Anchors minted for the cited bullets (t_867b394f): `vouched-cell`, `entity-clock-poll`,
-`removal-age-names-mechanism`, `outcome-not-tick-budget`.
+`removal-age-names-mechanism`, `outcome-not-tick-budget`, `sweep-hazard-set-is-scan-set` (t_b33916a2, the mind-spider mob-box claim). Minted by t_8b63e037:
+`mob-seed-stream-rate-arm`.
