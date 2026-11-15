@@ -441,3 +441,30 @@ restores both and `diff -q` reports byte-identical.
   natural rate is the motivation. Plant-script lesson from the failed first pass: plant anchors pin
   the probe's setup text, so a probe refactor silently UNPLANTS the script and the legs run clean —
   a planted leg must print its plant line, and every leg verdict is read, never assumed.
+
+- **A scripted ride assert must arm off the mount's own same-tick punch.** The crab's climb gate
+  (`EntityEldritchCrab#tick` :120-129) and its punch block (:131-137) run in the SAME `tick()`, and a
+  freshly spawned crab has `invulnerableTime == 0` — the punch's cooldown gate is wide open on the
+  mount tick, and `dismountsAfterPunch` (`PUNCH_DISMOUNT_CHANCE 0.2`) throws the rider off on ~1/5 of
+  scripted ticks, before the assert reads the vehicle. Measured on `cab7305c` (the pad-contamination
+  fix tip, 8 full-grid noCurios legs with a per-tick ride trace): EVERY leg ends the tick with
+  `invulnerableTime 10..19` (the punch fired on the mount tick); the 2 red legs trace
+  `veh=null psg=0 ivt=12 boardingCooldown=60 rise=+0.20` while the 6 green legs trace
+  `veh=ServerPlayer psg=1 ivt=10..19 bdCd=0 rise=0.00`. `boardingCooldown=60` is set only by the
+  dismount path (`Entity#removePassenger`) — it is the tell that the ride happened and was LOST, not
+  rejected. This kills the `Entity#startRiding`-rejection reading from the earlier census: every arm
+  of the 21.1.259 gate (`vehicle.couldAcceptPassenger()`, the vehicle-chain cycle,
+  `EventHooks.canMountEntity`, `canRide` = `!sneak && boardingCooldown <= 0`, `canAddPassenger` =
+  `passengers.isEmpty()`) traces TRUE on the fresh pre-tick fixture state, and the red census
+  `yDelta=1.80 / distSqr=3.24` is arithmetic the rejection story cannot produce — the design spawn is
+  1.60 above the fixture (`distSqr 2.56`); 1.80/3.24 is 1.60 + the 0.20 dismount hop. A census that
+  re-reads state AFTER the tick sequence measures the tick's outcomes, so it must not be read as the
+  pre-tick gate state; the arms have to be captured pre-tick to name a rejection. Fix: probe fixture
+  hygiene, not assert weakening — arm the crab at its maximum punch cooldown
+  (`PUNCH_COOLDOWN_BASE + PUNCH_COOLDOWN_JITTER`) before the scripted mount tick (aiStep decrements
+  once inside the tick, the punch block skips) and measure the punch cadence and the 0.2 band on
+  their own dedicated arms. Teeth: the mutation `PUNCH_DISMOUNT_CHANCE 0.2 -> 1.0` reddens the
+  pre-fix probe on EVERY leg naming `:120-129 — a free mid-air unshelled crab mounts the nearest
+  player`, and leaves the armed probe green — the dismount arm, named on demand. The
+  layout-draw/red-coordinate axis from the parent card is dead: the event is a `nextFloat()` roll,
+  the pad coordinates are uniform in both outcomes, and no grid-origin change can fix a 20 % punch.
