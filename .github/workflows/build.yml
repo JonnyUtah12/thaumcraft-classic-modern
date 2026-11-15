@@ -44,6 +44,18 @@ jobs:
         run: ./gradlew runGameTestServer
         timeout-minutes: 20
 
+      # t_6ecbd49a PROOF PLANT (throwaway — removed by the next commit):
+      # reproduce the CI-lane race deterministically. log4j's shutdown rollover
+      # replaces latest.log with a fresh post-rotation file, so the assert below
+      # greps a file that no longer carries the summary line.
+      - name: PROOF PLANT reproduce the shutdown log rotation
+        run: |
+          mv -f run/logs/latest.log run/logs/latest.pre-rotation.log
+          : > run/logs/latest.log
+          echo "planted rotation; latest.log is now the post-rotation file:"
+          ls -la run/logs | head -5
+          echo "summary hits in planted latest.log: $(grep -c 'required tests passed' run/logs/latest.log || true)"
+
       # runGameTestServer can exit 0 even when the server crashes during mod
       # loading (no tests ever run), so assert the summary line explicitly.
       - name: Assert game tests ran and passed
@@ -71,6 +83,16 @@ jobs:
       - name: Game tests without Curios
         run: ./gradlew -Ptc.noCurios runGameTestServer
         timeout-minutes: 20
+
+      # t_6ecbd49a PROOF PLANT (throwaway — removed by the next commit): the job
+      # that went RED on run 43662060834 attempt 1 with 502/502 probes green.
+      - name: PROOF PLANT reproduce the shutdown log rotation
+        run: |
+          mv -f run/logs/latest.log run/logs/latest.pre-rotation.log
+          : > run/logs/latest.log
+          echo "planted rotation; latest.log is now the post-rotation file:"
+          ls -la run/logs | head -5
+          echo "summary hits in planted latest.log: $(grep -c 'required tests passed' run/logs/latest.log || true)"
 
       - name: Assert game tests ran and passed
         run: grep -q "required tests passed" run/logs/latest.log
