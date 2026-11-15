@@ -10,7 +10,15 @@
    registration, block/entity behavior, crafting flows, vis flows, research
    progression, persistence across save/reload. Run by
    `./gradlew runGameTestServer`; CI asserts the "required tests passed"
-   line explicitly (a green exit with zero tests is a failure).
+   line explicitly (a green exit with zero tests is a failure). The assert
+   greps the **per-run** sources — the job's own gradle console output
+   (`run/gametest-console.log`, tee'd by the game step) and `run/logs/debug.log`,
+   the complete per-run log — and never `run/logs/latest.log`: log4j rolls that
+   file on the server **shutdown** path, so the file sitting at that path when
+   the assert runs can be the post-rotation one with no summary line in it
+   (measured: run 43662060834 on `6a05ba14`, `game-test-no-curios` attempt 1 —
+   `All 502 required tests passed :)` and `BUILD SUCCESSFUL in 57s` in the same
+   job, no probe failed, assert step RED; the same sha green on the re-run).
    Dual-configuration matrix (TC-M8-01): the accessory suite runs under both
    provider backends — default (Curios on the runtime classpath) and
    `-Ptc.noCurios` (built-in fallback; separate CI job
