@@ -413,6 +413,30 @@ restores both and `diff -q` reports byte-identical.
   the probe's setup text, so a probe refactor silently UNPLANTS the script and the legs run clean —
   a planted leg must print its plant line, and every leg verdict is read, never assumed.
 
+- **A sweep is only HALF a scan probe's isolation: the claim has to cover every arm the gate reads, and
+  the probe's own fixtures are claimed LAST.** The rule at :390 sweeps non-player ENTITIES, and the
+  hazard census that justified it (49 mind spiders at y = 8) is a shape the BLOCK arm cannot produce.
+  `cellFits` (`WarpEvents.java:390-392`) is `noCollision` on the 1×1×1 box **plus** the player arm, and
+  `:300` reads the spider's own `getBoundingBox()`, so a block inside a scripted cell rejects a window
+  the sweep cannot see. Blocks are the half the grid hands over dirty: a 1×1×1 pad strides 6 cells
+  (`StructureGridSpawner`: stride = `template width + 5` / `depth + 6`), so sixteen pack inside a
+  24-wide pad, their bodies run in the SAME tick, and `clearSpaceForStructure` clears BLOCK space only
+  — a neighbour's `setBlock` at its own cell (1, 1, 1) lands on a scripted landing cell HERE. Measured
+  on this tree: one `Blocks.STONE` at rel (18, 0, 8) (slot 5's `:298` floor cell) reproduces the CI line
+  byte-for-byte on `6a05ba14` in BOTH arms, and the same leg took
+  `theScanRejectsOccupiedAndFlooredCellsAndSpendsItsSecondAttempt` red on the identical line with no
+  plant in it; the base tree with no plant went red **1 of 8** full-grid legs on the no-Curios arm
+  naming `theIllusionBandSpawnsTheWarpCappedHarmlessViewerBoundSwarm … drew beyond the scripted queue
+  (bound 18)` — the natural channel, on demand. The layout draw is the ALIGNMENT, not the cell: the
+  intruder's position is a function of the grid origin, so no named cell can be excluded — only claimed.
+  Shape (t_6119f491, `WarpEventsGameTest`): `claimScanCells` clears and NAMES the blocks of every cell
+  this scan can read (each scripted landing cell and its `:298` cell) at setup,
+  `attachScanShadow` replays the scan's four arms on every scripted window at the window's own draw —
+  so an unmarked rejection fails BY NAME (block state / entity type + id / cell) at the instant it
+  lands, instead of ending as the unattributable queue overrun that made this lane unrateable — and
+  `assertScanOutcome` asserts the marked rejections are PRESENT, so the probe cannot pass on a pad that
+  was handed over clean. Claim first, fixtures after: a claim that runs after the fixtures eats them.
+
 - **A scripted ride assert must arm off the mount's own same-tick punch.** The crab's climb gate
   (`EntityEldritchCrab#tick` :120-129) and its punch block (:131-137) run in the SAME `tick()`, and a
   freshly spawned crab has `invulnerableTime == 0` — the punch's cooldown gate is wide open on the
