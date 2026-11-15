@@ -68,7 +68,11 @@ public abstract class EntityThaumcraftBoss extends Monster {
             final Level level) {
         super(type, level);
         this.xpReward = ThaumcraftBossAiLogic.EXPERIENCE;                               // :31
-        this.setCanPickUpLoot(ThaumcraftBossAiLogic.CAN_PICK_UP_LOOT);                  // :191
+        this.setCanPickUpLoot(ThaumcraftBossAiLogic.CAN_PICK_UP_LOOT);                  // :176 func_70648_aU()=true
+        // :191 func_98052_bS()=false is 1.7.10's Entity#isAIDisabled — the NoAi-flag answer.
+        // 21.1.259 has no overridable isAIDisabled seam on LivingEntity (javap: the flag is read
+        // from the NoAI nbt byte in the spawn path), and the port never sets the flag, so the
+        // original's `false` is the platform default and no override is needed.
     }
 
     /** {@code :51-55} — the base's attribute pass on top of {@code Monster}'s. */
@@ -160,8 +164,8 @@ public abstract class EntityThaumcraftBoss extends Monster {
                     net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE,
                     ThaumcraftBossAiLogic.RAGE_POTION_TICKS, rage.resistanceAmplifier())); // :238
             addEffect(new net.minecraft.world.effect.MobEffectInstance(
-                    net.minecraft.world.effect.MobEffects.STRENGTH,
-                    ThaumcraftBossAiLogic.RAGE_POTION_TICKS, rage.strengthAmplifier())); // :239
+                    net.minecraft.world.effect.MobEffects.DAMAGE_BOOST,
+                    ThaumcraftBossAiLogic.RAGE_POTION_TICKS, rage.strengthAmplifier())); // :239 (Potion.field_76424_c = strength = 21.1.259 MobEffects.DAMAGE_BOOST)
         }
         return rage.damageAfterClamp();                                                 // :250
     }
@@ -189,7 +193,15 @@ public abstract class EntityThaumcraftBoss extends Monster {
         final int currentId = current.getId();
         final ThaumcraftBossAiLogic.AggroScan scan = ThaumcraftBossAiLogic.scanAggro(this.aggro,
                 currentId, this.aggro.getOrDefault(currentId, 0).intValue(),
-                this.level()::getEntity, this::distanceToSqr);
+                // 1.7.10's server lookup answers null for a removed entity (:131-132's
+                // liveness half); 21.1.259's Optional carries removed entities, so the
+                // adapter answers null for them.
+                id -> {
+                    final Entity found = this.level().getEntity(id);
+                    return found == null || found.isRemoved() ? null : found;
+                },
+                entity -> this.distanceToSqr(entity),                                   // :132
+                entity -> entity instanceof net.minecraft.world.entity.player.Player);  // :135
         scan.dropIds().forEach(this.aggro::remove);                                     // :139
         if (scan.switched()) {                                                          // :147-149
             final Entity next = this.level().getEntity(scan.targetId());
@@ -234,6 +246,12 @@ public abstract class EntityThaumcraftBoss extends Monster {
             spawnAngerPuffClient();
             return;
         }
+        final LivingEntity toAttack = this.getTarget();                                 // :105
+        if (toAttack != null
+                && toAttack.distanceToSqr(this.getX(), this.getY(), this.getZ())
+                        > ThaumcraftBossAiLogic.TARGET_DROP_DISTANCE_SQR) {             // :106-107
+            this.setTarget(null);                                                       // :108
+        }
         if (this.tickCount % ThaumcraftBossAiLogic.HEAL_PERIOD_TICKS == 0) {            // :116-118
             this.heal(ThaumcraftBossAiLogic.HEAL_AMOUNT);
         }
@@ -255,13 +273,15 @@ public abstract class EntityThaumcraftBoss extends Monster {
 
     /**
      * {@code :63-65} — "the goals tick only while the spawn-in timer is idle". 1.21.1's goal-tick
-     * pass is {@code Mob#serverAiStep()}, which is {@code final} and has no seam, so the gate rides
-     * the goals themselves: every Thaumcraft goal class the family ships
-     * ({@code AIAttackOnCollide}, {@code AILongRangeAttack}, {@code AICultistHurtByTarget},
-     * {@code AINearestAttackableTarget}, {@code AIWander}, ...) asks {@link #goalsMayTick()} from
-     * its {@code canUse}. The four vanilla goals the original also installs ({@code Swimming},
-     * {@code MoveTowardsRestriction}, {@code WatchClosest}, {@code LookIdle}) have no such hook, so
-     * during the 100/150-tick materialisation they can still fire — recorded as a deviation.
+     * pass is {@code Mob#serverAiStep()}, which is {@code final} and has no seam, so the gate
+     * lives in each goal's {@code canUse}: the family's own {@code ai/boss/AIAttackOnCollide}
+     * asks {@link #goalsMayTick()} (the goal the boss family lands first, cited there). The
+     * goals the cleric lane landed ({@code AILongRangeAttack}, {@code AICultistHurtByTarget})
+     * and the vanilla goals the original also installs ({@code Swimming},
+     * {@code MoveTowardsRestriction}, {@code Wander}, {@code WatchClosest}, {@code LookIdle},
+     * the player-target scan) have no such hook and can still fire during the 100/150-tick
+     * materialisation — recorded as a deviation on the row; a later family pass can thread
+     * the gate through those classes without moving any figure.
      */
     public boolean goalsMayTick() {
         return this.spawnTimer == ThaumcraftBossAiLogic.SPAWN_TIMER_MIN;                // :63
@@ -297,6 +317,36 @@ public abstract class EntityThaumcraftBoss extends Monster {
     @Override
     public boolean shouldDropLoot() {
         return ThaumcraftBossAiLogic.DAPS_LOOT;
+    }
+
+    /**
+     * {@code :213-216} — the base's custom drops: eldritch object meta 3, then
+     * {@code itemLootbag} meta 2 at 1.5F. Both items are unregistered content (BD-68
+     * gate shape) and the {@code :205} false flag ({@link #shouldDropLoot()}) gates
+     * 21.1.259's whole {@code Mob#dropAllDeathLoot} block, so this hook is unreachable
+     * exactly as it was in 1.7.10 (the same flag gated the same block there) — a probe
+     * measures that a killed boss leaves no items. The Leader overrides the hook with
+     * the lootbag-only rule ({@code EntityCultistLeader:147-150}).
+     */
+    @Override
+    protected void dropCustomDeathLoot(final net.minecraft.server.level.ServerLevel level,
+            final DamageSource source, final boolean recentlyHit) {
+        if (net.minecraft.core.registries.BuiltInRegistries.ITEM.containsKey(
+                ThaumcraftBossAiLogic.ELDRITCH_OBJECT)) {                               // :214
+            final net.minecraft.world.item.ItemStack object = new net.minecraft.world.item.ItemStack(
+                    net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
+                            ThaumcraftBossAiLogic.ELDRITCH_OBJECT));
+            object.setDamageValue(ThaumcraftBossAiLogic.ELDRITCH_OBJECT_META);          // :214 meta 3
+            this.spawnAtLocation(object, 0.0F);                                         // :214 func_146069_c: no roll
+        }
+        if (net.minecraft.core.registries.BuiltInRegistries.ITEM.containsKey(
+                ThaumcraftBossAiLogic.LOOTBAG)) {                                       // :215
+            final net.minecraft.world.item.ItemStack bag = new net.minecraft.world.item.ItemStack(
+                    net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
+                            ThaumcraftBossAiLogic.LOOTBAG));
+            bag.setDamageValue(ThaumcraftBossAiLogic.LOOTBAG_META);                     // :215 meta 2
+            this.spawnAtLocation(bag, ThaumcraftBossAiLogic.LOOTBAG_CHANCE);            // :215
+        }
     }
 
     /**

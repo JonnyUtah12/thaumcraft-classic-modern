@@ -66,8 +66,14 @@ public final class ThaumcraftBossAiLogic {
     public static final int HEAL_PERIOD_TICKS = 30;
     public static final float HEAL_AMOUNT = 1.0F;
 
-    /** {@code :120} — the aggro/retarget pass runs every 20 ticks, with a target. */
+    /** {@code :120} — the aggro pass runs every 20 ticks. */
     public static final int AGGRO_PERIOD_TICKS = 20;
+
+    /**
+     * {@code :106-107} — the boss family's chase-cut, the {@code 224.0} literal as written:
+     * a target further than sqrt(224.0) ≈ 14.97 blocks is dropped at {@code :108}.
+     */
+    public static final double TARGET_DROP_DISTANCE_SQR = 224.0;
 
     /** {@code :132} — {@code !(func_70068_e(newTarget) > 16384.0)}: 128 blocks, squared. */
     public static final double AGGRO_MAX_DISTANCE_SQ = 16384.0;
@@ -153,9 +159,10 @@ public final class ThaumcraftBossAiLogic {
     public record AggroScan(int targetId, int players, List<Integer> dropIds, boolean switched) {
     }
 
-    public static AggroScan scanAggro(final Map<Integer, Integer> aggro, final int currentId,
-            final int currentScore, final IntFunction<net.minecraft.world.entity.Entity> byId,
-            final ToDoubleFunction<net.minecraft.world.entity.Entity> distanceSquared) {
+    public static <T> AggroScan scanAggro(final Map<Integer, Integer> aggro, final int currentId,
+            final int currentScore, final IntFunction<T> byId,
+            final ToDoubleFunction<T> distanceSquared,
+            final java.util.function.Predicate<T> isPlayer) {
         final List<Integer> dropIds = new ArrayList<>();
         int players = 0;
         int hei = currentId;
@@ -167,12 +174,11 @@ public final class ThaumcraftBossAiLogic {
             final int ei = entry.getKey();
             final int ca = entry.getValue();
             if (ca > ad + AGGRO_MIN_GAIN && ca > ad * AGGRO_RATIO && ca > ld) {         // :130
-                final net.minecraft.world.entity.Entity newTarget = byId.apply(hei);    // :131 — hei, verbatim
-                if (newTarget != null && !newTarget.isRemoved()
-                        && distanceSquared.applyAsDouble(newTarget) <= AGGRO_MAX_DISTANCE_SQ) { // :132
+                final T newTarget = byId.apply(hei);                                    // :131 — hei, verbatim
+                if (newTarget != null && distanceSquared.applyAsDouble(newTarget) <= AGGRO_MAX_DISTANCE_SQ) { // :132
                     hei = ei;                                                           // :133
                     ld = ei;                                                            // :134 — verbatim
-                    if (newTarget instanceof net.minecraft.world.entity.player.Player) { // :135
+                    if (isPlayer.test(newTarget)) {                                     // :135
                         players++;                                                      // :136
                     }
                     haveCandidate = true;
@@ -251,11 +257,35 @@ public final class ThaumcraftBossAiLogic {
         return roll == 0;
     }
 
-    /** {@code :191} — {@code func_98052_bS()} false: bosses pick up nothing. */
-    public static final boolean CAN_PICK_UP_LOOT = false;
+    /**
+     * {@code :176} — {@code func_70648_aU()} ({@code EntityLivingBase#getCanPickUpLoot})
+     * true: a boss picks up looted gear. ({@code :191} {@code func_98052_bS()} false is
+     * 1.7.10's {@code Entity#isAIDisabled} — the NoAi-flag answer, the platform default;
+     * no 21.1.259 override seam is needed, recorded on the entity's constructor.)
+     */
+    public static final boolean CAN_PICK_UP_LOOT = true;
 
     /** {@code :205} — {@code func_70692_ba()} false: bosses drop no death loot. */
     public static final boolean DAPS_LOOT = false;
+
+    // ---------------------------------------------------------------- death drops (:213-216)
+
+    /**
+     * {@code :213-216} — the base's custom drops: the eldritch object meta 3
+     * ({@code func_146069_c}: unconditional drop) and {@code itemLootbag} meta 2 at
+     * 1.5F. Both items are unregistered content (their rows are {@code not_started}),
+     * and — exactly as in 1.7.10 — the {@code :205} false flag gates the whole
+     * death-loot block, so the block is unreachable by the original's own design:
+     * the rules ship pinned and gated, the gate ships verbatim, and a probe measures
+     * that a killed boss leaves nothing.
+     */
+    public static final net.minecraft.resources.ResourceLocation ELDRITCH_OBJECT =
+            net.minecraft.resources.ResourceLocation.parse("thaumcraft:itemeldritchobject");
+    public static final int ELDRITCH_OBJECT_META = 3;                                   // :214
+    public static final net.minecraft.resources.ResourceLocation LOOTBAG =
+            net.minecraft.resources.ResourceLocation.parse("thaumcraft:itemlootbag");
+    public static final int LOOTBAG_META = 2;                                           // :215
+    public static final float LOOTBAG_CHANCE = 1.5F;                                    // :215
 
     /** The attributes the base's {@code createAttributes} adds on top of {@code Monster}'s. */
     public static net.minecraft.world.entity.ai.attributes.AttributeSupplier.Builder
