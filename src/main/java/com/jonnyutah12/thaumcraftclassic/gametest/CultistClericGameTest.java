@@ -222,7 +222,9 @@ public final class CultistClericGameTest {
                 "the lane's statement is that the base is unregistered; the constant says "
                         + CultistAiLogic.BASE_IS_REGISTERED);
         absent(helper, "cultist");
-        absent(helper, "cultistleader");
+        // c5-1 (t_1c7d7967) LANDED the Leader: this probe was written "the day the
+        // Leader lands it says so by name" — that day is now; the id joins the roster.
+        registered(helper, "cultistleader");
         registered(helper, "cultistknight");
         registered(helper, "cultistcleric");
         // The base is abstract, so it cannot even be instantiated as a spawnable mob.
@@ -238,8 +240,10 @@ public final class CultistClericGameTest {
             }
         }
         java.util.Collections.sort(shipped);
-        helper.assertTrue(shipped.equals(List.of("cultistcleric", "cultistknight")),
-                "the shipped cultist ids must be exactly [cultistcleric, cultistknight] after this card"
+        helper.assertTrue(shipped.equals(
+                        List.of("cultistcleric", "cultistknight", "cultistleader")),
+                "the shipped cultist ids are [cultistcleric, cultistknight, cultistleader] "
+                        + "(cultistleader joined with TC-M6-06-s-c5-1 / t_1c7d7967)"
                         + " — found " + shipped + " (Leader = card c5, base = unregistered by design)");
         // The faction test of EntityCultist:105-107 in its EntityType form.
         helper.assertTrue(CatalogCultists.isCultistType(CatalogCultists.CULTIST_CLERIC.get())

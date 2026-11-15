@@ -339,8 +339,9 @@ public final class BossMobGameTest {
         final Player striker = mockAt(helper, mob);
         final var source = helper.getLevel().damageSources().playerAttack(striker);
         helper.assertTrue(mob.hurt(source, 40.0F), ":222 — the hit must land");
-        helper.assertTrue(Math.abs(mob.getHealth() - 90.0F) < 1.0E-3,
-                ":250 — the 40.0 hit is clamped to 35.0 (125 - 35 = 90), got " + mob.getHealth());
+        helper.assertTrue(Math.abs(mob.getHealth() - 104.0F) < 1.0E-3,
+                ":250 — the 40.0 hit clamps to 35.0 and 35.0 then rides the resistance the SAME leg "
+                        + "applied (:238, amp 1 = 40%): 125 - 35*0.6 = 104, got " + mob.getHealth());
         helper.assertTrue(mob.getAnger() == 200, ":240 — anger must be 200, got " + mob.getAnger());
         helper.assertTrue(mob.hasEffect(MobEffects.DIG_SPEED)
                         && mob.getEffect(MobEffects.DIG_SPEED).getAmplifier() == 2,
@@ -354,9 +355,11 @@ public final class BossMobGameTest {
         helper.assertTrue(mob.aggroMap().get(striker.getId()) == 40,
                 ":222-232 — the RAW 40 (not the clamped 35) rides the aggro map, got "
                         + mob.aggroMap().get(striker.getId()));
+        mob.invulnerableTime = 0;                                                 // vanilla's 10-tick invuln window
         mob.hurt(source, 40.0F);
-        helper.assertTrue(Math.abs(mob.getHealth() - 55.0F) < 1.0E-3,
-                ":250 — the second 40.0 hit is clamped to 35.0 (90 - 35 = 55), got " + mob.getHealth());
+        helper.assertTrue(Math.abs(mob.getHealth() - 83.0F) < 1.0E-3,
+                ":250 — the second 40.0 hit clamps to 35.0 and the running resistance (amp 1, 40%) "
+                        + "takes 35 -> 21 (104 - 21 = 83), got " + mob.getHealth());
         helper.assertTrue(mob.aggroMap().get(striker.getId()) == 80,
                 ":227-229 — the aggro entry accumulates (40 + 40), got "
                         + mob.aggroMap().get(striker.getId()));
@@ -519,7 +522,7 @@ public final class BossMobGameTest {
         helper.assertTrue(reloaded.getTitle() == 7, ":110 — the byte reads back");
         helper.assertTrue(!mob.hasCustomName(),
                 ":83-91 — no name is set while the champion attribute is absent (deviation)");
-        helper.assertTrue(mob.getDisplayName().getString().equals("Praetor %s the %d"),
+        helper.assertTrue(mob.getDisplayName().getString().equals("Praetor %s the %s"),
                 "the plain label is the lang key's answer, got " + mob.getDisplayName().getString());
         reloaded.discard();
         mob.discard();
@@ -538,8 +541,15 @@ public final class BossMobGameTest {
         final EntityCultistLeader mob = leader(helper);
         mob.setSpawnTimer(0);
         mob.setAnger(0);
-        mob.kill();
-        helper.assertTrue(mob.isDeadOrDying(), ":205 — the kill lands");
+        final Player striker = mockAt(helper, mob);
+        for (int hit = 0; hit < 10 && !mob.isDeadOrDying(); hit++) {
+            mob.invulnerableTime = 0;
+            // 40.0F: the clamp arm (35.0) with the rage the FIRST hit applied (resistance
+            // amp (int)(40/40) = 1, 40%) — 21 per hit, so ten hits walk 125 health down
+            // through zero. A 1000.0F hit would rage resistance to amp 25 and land 0.
+            mob.hurt(helper.getLevel().damageSources().playerAttack(striker), 40.0F);
+        }
+        helper.assertTrue(mob.isDeadOrDying(), ":205 — repeated hits land the kill");
         helper.assertTrue(helper.getLevel().getEntitiesOfClass(ItemEntity.class,
                         mob.getBoundingBox().inflate(8.0)).isEmpty(),
                 ":205 — the loot gate leaves no ItemEntity behind (lootbag :149 and the "

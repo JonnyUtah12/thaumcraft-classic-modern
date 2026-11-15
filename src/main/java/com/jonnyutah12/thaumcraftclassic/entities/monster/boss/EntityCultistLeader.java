@@ -386,7 +386,11 @@ public class EntityCultistLeader extends EntityThaumcraftBoss implements RangedA
      */
     @Override
     public void performRangedAttack(final LivingEntity target, final float distanceFactor) {
-        if (!this.canAttack(target)) {                                                  // :181
+        // :181 func_70685_l(Entity) is the CLASS twin (it rides func_70686_a,
+        // :139-141) - NOT the faction predicate of :135-137 (that overload is the
+        // goal's faction gate and answers TRUE only for kin, the knight lane's
+        // twin idiom). The orb seam therefore fires at players through the twin.
+        if (target == this || !this.canAttackType(target.getType())) {                  // :181
             return;
         }
         playAmbientSound();                                                           // :182
