@@ -55,6 +55,10 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * World probes for the Crimson Cleric and the Energy Orb (TC-M6-06-s-c4a-2,
@@ -84,6 +88,11 @@ import java.util.List;
 @GameTestHolder(ThaumcraftClassic.MOD_ID)
 @PrefixGameTestTemplate(false)
 public final class CultistClericGameTest {
+
+    /** The probe census lines. The family's shape: the facts a green leg does not
+     *  print (the pad's vouch, the ticks the probe had to drive) ride the log so a
+     *  harness-layout change reports itself in the leg instead of arriving as a rate. */
+    private static final Logger LOGGER = LoggerFactory.getLogger("CultistClericGameTest");
 
     private CultistClericGameTest() {
     }
@@ -701,59 +710,257 @@ public final class CultistClericGameTest {
 
     /**
      * {@code EntityGolemOrb:85} — the lifetime clamp: {@code tickCount > (red ? 240 :
-     * 160)} → {@code discard()}. The pair runs as entities ADDED TO THE LEVEL, because
-     * a detached instance has no removal path to observe (measured: the clamp's
-     * {@code discard()} left a level-less orb readable, so the first cut of this probe
-     * asserted an unobservable state) and {@code GameTestHelper} has no synchronous
-     * tick step — the pad's own tick loop is the age step, and the poll reads the pair
-     * at the tick where the plain orb is gone, then pushes the red one to its own edge.
+     * 160)} → {@code discard()}, <b>BOTH edges, observed on the orb's own clock</b>. The
+     * pair runs as entities ADDED TO THE LEVEL, because a detached instance has no
+     * removal path to observe (measured: the clamp's {@code discard()} left a level-less
+     * orb readable, so the first cut of this probe asserted an unobservable state).
      *
      * <p>The clamp is what 1.7.10 wrote on the plain orb (20 ticks of flight at
      * 0.32/block ≈ 6 blocks of reach); the red arm's 240 is the homing orb's budget.
-     * Both edges are pinned: 160/161 for the plain, 240/241 for the red.</p>
+     * Both edges are pinned — 160/161 for the plain, 240/241 for the red — and the pair
+     * is what pins the <b>flag</b>: at the plain's 160 edge the red orb must still be
+     * alive, so swapping the two figures goes RED, not green.</p>
+     *
+     * <p><b>The assert IS the poll. This probe used to be the suite's false green.</b>
+     * Its earlier shape (the one docs/testing.md cites as the family's model) was two
+     * "has not crossed the edge: poll again" {@code return}s. That is a silent pass,
+     * measured: in 1.21.1 {@code succeedWhen(criterion)} is
+     * {@code createSequence().thenWaitUntil(criterion).thenSucceed()} and
+     * {@code GameTestSequence#tick} runs {@code assertion.run(); iterator.remove();}, so
+     * an event that runs WITHOUT throwing is removed and the same loop immediately runs
+     * {@code thenSucceed}'s event ({@code tickAndContinue} retries ONLY a
+     * {@code GameTestAssertException}). A criterion that returned therefore consumed the
+     * event and succeeded the probe on the FIRST poll, with every assert after the
+     * return NEVER executed. Deleting the clamp — {@code EntityGolemOrb:85-86} never
+     * discards — left the whole 502-probe suite GREEN, at {@code 046f3d32} (card
+     * t_43022b00) and again on this card's base {@code 89b2a31d} (leg {@code preteethoff},
+     * with-Curios: {@code All 502 required tests passed :}, failed=[]). Every non-final
+     * clause here now THROWS {@code GameTestAssertException} — carrying the observed
+     * age / edge / isReduced / vouched / driven facts — and only the removal passes.</p>
+     *
+     * <p><b>The clock.</b> The age moves only in {@code ServerLevel#tickNonPassenger}
+     * ({@code tickCount++} then {@code tick()}), which the server runs only for an entity
+     * in an entity-ticking chunk, and the harness vouches exactly the chunks the
+     * template box covers — so the fixtures ride the vouched cell
+     * ({@code helper.absolutePos(BlockPos.ZERO)}, docs/testing.md:131) and the arm drives
+     * the owed entity tick ONLY on the probe ticks the server left the clock still
+     * ({@link #driveEntityClock}, docs/testing.md:166). Nothing is pinned to N real
+     * ticks (docs/testing.md:248): the arm ends on the <b>observed removal</b>, {@code driven = 0}
+     * on a vouched pad, and {@code padChunkVouched} / {@code ticksDrivenByProbe} ride the census line
+     * AND every failure message, so a vouch loss names itself.</p>
+     *
+     * <p><b>A removal is only evidence when its age names the mechanism.</b> The first
+     * shape of this rewrite armed the pair at the pad's corner cell and asserted the
+     * removals. It went RED on the plain-clamp mutation for the WRONG reason and GREEN
+     * on the red-clamp mutation, measured (legs {@code teeth_golemorb-plain},
+     * {@code teeth_golemorb-red}): the {@code empty} template's origin column carries
+     * the harness's marker pair — {@code structure_block} at the corner, a full-cube
+     * {@code jigsaw} one above — so an orb armed there stands inside a solid block, and
+     * the homing step gives it velocity on the tick it is armed, so the next tick
+     * {@code Projectile} lands a BLOCK hit and {@code EntityGolemOrb:63} discards it.
+     * A throwaway probe that logs every hit and the removal reason (worktree
+     * {@code t_d29d6aa8-diag}, leg {@code diag_1}, clamp mutated off) wrote the
+     * mechanism byte-exact: {@code onHit type=BLOCK pos=… Block{minecraft:jigsaw}} →
+     * {@code REMOVAL … age=162 reason=DISCARDED}. So the arm now (a) rides cells the pad
+     * leaves AIR, asserted air so a block landing there reports itself as
+     * {@code PROBE BROKEN}, and (b) pins the age at removal to {@code edge+1} — 161
+     * plain, 241 red — which is the clamp's signature, because the clamp fires on the
+     * first entity tick past the edge and a removed entity stops ticking
+     * (docs/testing.md:209). Teeth for this
+     * card, one leg each, each RED naming this probe: the clamp never discarding, the
+     * PLAIN edge alone stopping, the RED edge alone stopping, and the two edges
+     * swapping.</p>
      */
     @GameTest(template = "empty", timeoutTicks = 300)
     public static void theOrbLifetimeClampDiesAtSixteenForPlainAndTwoFortyForRed(
             final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
+        // docs/testing.md:131 — the fixtures ride the cell the harness VOUCHES: `empty`
+        // is 1x1x1, so StructureUtils#prepareTestStructure -> forceLoadChunks vouches
+        // exactly the chunk of this corner, and a FORCED ticket entity-ticks that chunk
+        // alone. The lane's (1,3,1) cell leaves the vouched chunk on ~1/16 per axis with
+        // the batch's origin draw, and this probe reads the ORB'S CLOCK, so a block off
+        // the corner is a probe that can starve (docs/testing.md:181, card t_43022b00).
+        final BlockPos at = helper.absolutePos(BlockPos.ZERO);
         final EntityCultistCleric cleric = cleric(helper);
         final Player target = attackerAt(helper, cleric);
         final EntityGolemOrb plain = orb(helper, cleric, target, false);
         final EntityGolemOrb red = orb(helper, cleric, target, true);
-        plain.setPos(cleric.getX(), cleric.getY(), cleric.getZ());
-        red.setPos(cleric.getX(), cleric.getY(), cleric.getZ());
+        // The pair rides the CELLS THE PAD LEAVES AIR, one block off the corner column.
+        // Measured on this card (throwaway `ClampDiag` probe, leg diag_1, clamp mutated
+        // off so nothing else could remove the orbs): the `empty` template's origin
+        // column carries the harness's marker pair — `structure_block` at the corner and
+        // a FULL-CUBE `jigsaw` one above it — so an orb armed at the corner stands
+        // INSIDE a solid block, and the homing step gives it velocity on the tick it is
+        // armed, so the NEXT tick `Projectile` lands a BLOCK hit and
+        // {@code EntityGolemOrb:63} discards. Observed byte-exact at age 162 with the
+        // clamp disabled: `onHit type=BLOCK pos=(x,-59,z) Block{minecraft:jigsaw}`.
+        // A clamp probe with a second removal path in its cell reports the WRONG age and
+        // passes a mutation on the other edge, so the cells are asserted air HERE (a
+        // block landing in one reports itself as PROBE BROKEN) and the removal age is
+        // pinned to edge+1 below, which names the clamp as the mechanism.
+        final BlockPos plainCell = at.offset(1, 4, 1);
+        final BlockPos redCell = at.offset(2, 4, 1);
+        helper.assertTrue(level.getBlockState(plainCell).isAir() && level.getBlockState(redCell).isAir(),
+                "PROBE BROKEN: the orb cells must be AIR — got " + level.getBlockState(plainCell)
+                        + " at " + plainCell + " and " + level.getBlockState(redCell) + " at " + redCell
+                        + " (pad corner " + at + "); a solid cell is a hit path"
+                        + " (EntityGolemOrb:63 discards on a block hit, measured at age 162) and it"
+                        + " steals the clamp's edge from this probe");
+        plain.setPos(plainCell.getX() + 0.5, plainCell.getY() + 0.5, plainCell.getZ() + 0.5);
+        red.setPos(redCell.getX() + 0.5, redCell.getY() + 0.5, redCell.getZ() + 0.5);
         plain.tickCount = EntityGolemOrb.LIFETIME;                                    // :85 plain edge
         red.tickCount = EntityGolemOrb.LIFETIME;                                      // :85 inside the red clamp
         level.addFreshEntity(plain);
         level.addFreshEntity(red);
+        final boolean vouched = level.isPositionEntityTicking(plain.blockPosition());
+        LOGGER.info("[TC-M6-06-cleric-orb] clamp arms armed: agePlain={} ageRed={} edgePlain={}"
+                        + " edgeRed={} plainCell={}{} redCell={}{} plainChunk={} cornerMod16={},{}"
+                        + " padChunkVouched={} probeTick={}",
+                plain.tickCount, red.tickCount, EntityGolemOrb.LIFETIME, EntityGolemOrb.LIFETIME_RED,
+                plainCell, level.getBlockState(plainCell), redCell, level.getBlockState(redCell),
+                plain.chunkPosition(), at.getX() & 15, at.getZ() & 15, vouched, helper.getTick());
+        // The clock the clamp needs, driven in the server's shape ONLY when the server
+        // left it still (counted, bounded by the drive, never a real-tick budget).
+        final AtomicInteger drivenPlain = driveEntityClock(helper, plain, 100);
+        final AtomicInteger drivenRed = driveEntityClock(helper, red, 100);
+        final AtomicInteger polls = new AtomicInteger();
         final int[] phase = {0};
         // The pad's success poll can run BEFORE the level has ticked the pair, and an
         // orb sitting ON its clamp edge has not been discarded yet. Measured on CI's
-        // no-Curios job at 9d4b882a: the first phase read age=160 red=false — the
-        // clamp tick had not run — and the removal assert reddened a probe that was
-        // green on every local leg. An orb at its edge is therefore keep-polling, not
-        // a failure; the removal is asserted once the age has actually crossed.
+        // no-Curios job at 9d4b882a: the first phase read age=160 red=false — the clamp
+        // tick had not run. "Not crossed YET" is a poll, and the ONLY way to poll from a
+        // final-check criterion is to THROW: a `return` consumes the event (see the
+        // javadoc) and passes the probe with the removal asserts never executed.
         helper.succeedWhen(() -> {
+            final int n = polls.incrementAndGet();
             if (phase[0] == 0) {
-                if (plain.tickCount <= EntityGolemOrb.LIFETIME) {
-                    return;  // the plain orb has not crossed its 160 edge: poll again
-                }
+                // Edge 1 — the plain orb's 160. Throwing here is the poll.
                 helper.assertTrue(plain.isRemoved(),
-                        ":85 — a plain orb past 160 discards; age=" + plain.tickCount
-                                + " red=" + plain.isRed());
-                helper.assertTrue(red.tickCount > EntityGolemOrb.LIFETIME && !red.isRemoved(),
-                        ":85 — a red orb past 160 sits inside its 240-tick clamp and survives; age="
-                                + red.tickCount);
+                        ":85 PLAIN EDGE — a plain orb discards once the ENTITY clock walks past"
+                                + " tickCount > 160 (isReduced=false, so the clamp is LIFETIME=160 and not"
+                                + " LIFETIME_RED=240). The age moves only in the server's entity pass, on a"
+                                + " chunk the harness vouched, or in the probe's driven tick, so age/edge/"
+                                + " isReduced/vouched/driven all ride this message; age=" + plain.tickCount
+                                + " edge=" + EntityGolemOrb.LIFETIME + " isReduced=" + plain.isRed()
+                                + " removed=" + plain.isRemoved() + " polls=" + n
+                                + " padChunkVouched=" + vouched
+                                + " ticksDrivenByProbe=" + drivenPlain.get()
+                                + " ageRed=" + red.tickCount);
+                // The MECHANISM pin, not just the fact of a removal. The clamp discards on
+                // the FIRST entity tick past the edge, and a removed entity stops ticking,
+                // so a clamp removal reads age == edge+1 exactly (161 plain). Measured on
+                // this card: in the corner-cell shape the red orb died at age 162 of the
+                // marker column's BLOCK hit (EntityGolemOrb:63) — a real removal at the
+                // wrong age — and that is exactly what let the RED-edge mutation pass the
+                // suite. age == 161 is the clamp's signature; nothing else in an air cell
+                // can produce it for a gravity-free, owner-excluded, non-colliding orb.
+                final int plainAge = plain.tickCount;
+                helper.assertTrue(plainAge == EntityGolemOrb.LIFETIME + 1,
+                        ":85 PLAIN EDGE MECHANISM — the plain orb's removal must be the CLAMP at"
+                                + " tickCount > 160: it fires on the first entity tick past the edge and"
+                                + " a removed entity's clock stops, so the age at removal reads exactly"
+                                + " 161; any other age is a DIFFERENT removal path (measured: a block hit"
+                                + " in the pad's marker column discards at 162). plainAge=" + plainAge
+                                + " pin=" + (EntityGolemOrb.LIFETIME + 1) + " isReduced=" + plain.isRed()
+                                + " polls=" + n + " padChunkVouched=" + vouched
+                                + " ticksDrivenByProbe=" + drivenPlain.get());
+                // The pair that pins the flag: at the plain's edge the red orb sits INSIDE
+                // its 240 clamp, so it must be alive. An inverted `red ?` ternary dies here.
+                final int redAge = red.tickCount;
+                helper.assertTrue(redAge > EntityGolemOrb.LIFETIME && !red.isRemoved(),
+                        ":85 RED INSIDE ITS CLAMP — at the plain's 160 edge the RED orb (isReduced=true)"
+                                + " sits inside its own 240-tick clamp and is still alive, which is what"
+                                + " makes the flag drive the clamp pair: a red orb dead at 161 (or an age"
+                                + " that has not crossed 160) is a product defect, not a poll; age=" + redAge
+                                + " edge=" + EntityGolemOrb.LIFETIME_RED + " isReduced=" + red.isRed()
+                                + " removed=" + red.isRemoved() + " polls=" + n
+                                + " padChunkVouched=" + vouched
+                                + " ticksDrivenByProbe=" + drivenRed.get());
                 red.tickCount = EntityGolemOrb.LIFETIME_RED;                          // :85 red edge
                 phase[0] = 1;
-            } else {
-                if (red.tickCount <= EntityGolemOrb.LIFETIME_RED) {
-                    return;  // the red orb has not crossed its 240 edge: poll again
-                }
-                helper.assertTrue(red.isRemoved(),
-                        ":85 — a red orb past 240 discards; age=" + red.tickCount);
             }
+            // Edge 2 — the red orb's 240. Same shape: throw to poll, pass on the removal.
+            helper.assertTrue(red.isRemoved(),
+                    ":85 RED EDGE — a red orb discards once the ENTITY clock walks past tickCount > 240"
+                            + " (isReduced=true → LIFETIME_RED=240); age=" + red.tickCount
+                            + " edge=" + EntityGolemOrb.LIFETIME_RED + " isReduced=" + red.isRed()
+                            + " removed=" + red.isRemoved() + " polls=" + n
+                            + " phase=" + phase[0] + " padChunkVouched=" + vouched
+                            + " ticksDrivenByProbe=" + drivenRed.get()
+                            + " ticksDrivenPlain=" + drivenPlain.get());
+            // Same mechanism pin on the red edge: the phase above walks the red orb's age
+            // to the 240 edge, so the clamp's removal reads age == 241. Measured on this
+            // card, the RED-edge mutation (red clamp → never discards) was GREEN on the
+            // corner-cell shape because the marker column's block hit removed the red orb
+            // at 162 and the plain phase's pair assert read that as "removed past 160".
+            // 241 is the clamp's signature and nothing else in an air cell can write it.
+            final int redEdgeAge = red.tickCount;
+            helper.assertTrue(redEdgeAge == EntityGolemOrb.LIFETIME_RED + 1,
+                    ":85 RED EDGE MECHANISM — the red orb's removal must be the CLAMP at tickCount > 240"
+                            + " (its age was walked to the 240 edge in the plain's phase), firing on the"
+                            + " first entity tick past the edge of an entity that then stops ticking, so"
+                            + " the age at removal reads exactly 241; any other age is a DIFFERENT removal"
+                            + " path. redAge=" + redEdgeAge + " pin=" + (EntityGolemOrb.LIFETIME_RED + 1)
+                            + " isReduced=" + red.isRed() + " polls=" + n + " phase=" + phase[0]
+                            + " padChunkVouched=" + vouched
+                            + " ticksDrivenByProbe=" + drivenRed.get());
+            LOGGER.info("[TC-M6-06-cleric-orb] BOTH edges observed on the orbs' own clock: plainAge={}"
+                            + " plainPin={} redAge={} redPin={} plainRemoved=true redRemoved=true polls={}"
+                            + " padChunkVouched={} ticksDrivenByProbe(plain)={} ticksDrivenByProbe(red)={}"
+                            + " probeTick={}",
+                    plain.tickCount, EntityGolemOrb.LIFETIME + 1, red.tickCount,
+                    EntityGolemOrb.LIFETIME_RED + 1, n, vouched, drivenPlain.get(), drivenRed.get(),
+                    helper.getTick());
+            cleric.discard();
         });
+    }
+
+    /**
+     * Drive an entity's clock from the probe's own ticks and count the driven ticks —
+     * the landed shape of {@code EldritchCrabGameTest#driveEntityClock} (docs/testing.md:166),
+     * kept local because every GameTest file in this lane is self-contained.
+     *
+     * <p>The server ticks an entity only in an entity-ticking chunk
+     * ({@code ServerLevel#tick} → {@code ChunkMap#inEntityTickingRange}) and the harness
+     * vouches only the chunks the probe's template box covers, so a probe standing on an
+     * unvouched chunk has no server ticks of that entity to observe at all while its own
+     * clock ({@code GameTestInfo#tickInternal}) keeps running. Each step spends ONE probe
+     * tick and drives the entity with the entity tick the server owes ({@code tickCount++}
+     * then {@code tick()}, the body of {@code ServerLevel#tickNonPassenger}) ONLY if the
+     * clock did not move during that tick — so on a vouched pad nothing is ever driven
+     * (the count stays 0) and the entity's own clock is the reference. It is not a
+     * real-tick budget: the arm ends on the observed outcome and the chain ends by itself
+     * once the entity is gone.</p>
+     */
+    private static AtomicInteger driveEntityClock(final GameTestHelper helper,
+            final Entity entity, final int maxProbeTicks) {
+        final AtomicInteger driven = new AtomicInteger();
+        final int[] steps = {0};
+        final Runnable[] step = new Runnable[1];
+        step[0] = () -> {
+            if (entity.isRemoved() || steps[0] >= maxProbeTicks) {
+                return;
+            }
+            final int seen = entity.tickCount;
+            try {
+                helper.runAfterDelay(1, () -> {
+                    if (!entity.isRemoved() && entity.tickCount == seen) {
+                        entity.tickCount++;   // the server's entity tick, by hand
+                        entity.tick();
+                        driven.incrementAndGet();
+                    }
+                    steps[0]++;
+                    step[0].run();
+                });
+            } catch (IllegalStateException probeIsDone) {
+                // The probe is finished and refuses further timed actions, so the drive
+                // chain ends with it; a completed probe has nothing left to observe.
+                return;
+            }
+        };
+        step[0].run();
+        return driven;
     }
 
     /**

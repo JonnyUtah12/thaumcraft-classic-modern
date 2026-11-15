@@ -10,7 +10,15 @@
    registration, block/entity behavior, crafting flows, vis flows, research
    progression, persistence across save/reload. Run by
    `./gradlew runGameTestServer`; CI asserts the "required tests passed"
-   line explicitly (a green exit with zero tests is a failure).
+   line explicitly (a green exit with zero tests is a failure). The assert
+   greps the **per-run** sources — the job's own gradle console output
+   (`run/gametest-console.log`, tee'd by the game step) and `run/logs/debug.log`,
+   the complete per-run log — and never `run/logs/latest.log`: log4j rolls that
+   file on the server **shutdown** path, so the file sitting at that path when
+   the assert runs can be the post-rotation one with no summary line in it
+   (measured: run 43662060834 on `6a05ba14`, `game-test-no-curios` attempt 1 —
+   `All 502 required tests passed :)` and `BUILD SUCCESSFUL in 57s` in the same
+   job, no probe failed, assert step RED; the same sha green on the re-run).
    Dual-configuration matrix (TC-M8-01): the accessory suite runs under both
    provider backends — default (Curios on the runtime classpath) and
    `-Ptc.noCurios` (built-in fallback; separate CI job
@@ -141,6 +149,36 @@ without the evidence for its stages.
   (x, z) (`ZombieMobGameTest.MOB_CELL = (0,3,0)`), and assert the cell is entity-ticking BEFORE
   reading a per-tick counter, so a harness/layout change reports the precondition by name instead of
   arriving as a rate that cannot be measured.
+- **An arm that waits for an outcome the ENTITY'S CLOCK produces starves on that same vouch wall — and
+  `return` is not a poll.** The bullet above reads a per-tick counter; the harder shape is a poll that
+  waits for an outcome the entity's own clock produces, e.g. a lifetime clamp (`EntityEldritchOrb#tick`:
+  discard once `tickCount > 100`, and the burst writes `tickCount = 100` at :84). The age moves only in
+  `ServerLevel#tickNonPassenger` (`tickCount++` then `tick()`), so on an unvouched chunk it never crosses,
+  the assert throws on every retry, and the probe dies at the watchdog naming the frozen state — measured
+  as `theOrbBurstStrikesTheLivingAndSparesTheUndead` → `age=100 removed=false` (CI run `43634031237` on
+  main `046f3d32`, with-Curios `build` job; the parent card measured the same on a clean pad, 1 leg in 11,
+  and 36 local legs produced 0, so a leg sweep is not a denominator for this class). The wall reproduces
+  on demand: in a throwaway worktree release the pad's FORCED ticket with the harness's own batch-edge call
+  (`ServerLevel#setChunkForced(x, z, false)` — what `GameTestRunner#testCompleted` runs over
+  `level.getForcedChunks()`). Measured that way on the landing tree: **8 of 10** legs red with that
+  byte-exact line; **0 of 10** on the fixed arm, census `ticksDrivenByProbe=1 age=101`. Two shapes close
+  it, and the card ships both: put the fixtures on the vouched cell (above), and drive the owed entity
+  tick from the probe's clock ONLY on the ticks where the server left the clock still (`tickCount++` then
+  `tick()`), counting the driven ticks — the arm ends on the outcome, so nothing is pinned to N real ticks
+  (the tick-budget bullet below), `driven = 0` on a vouched pad, and `driven = 1` is the signature of a
+  vouch loss; both facts ride the poll's census line AND the assert message, so the wall reports itself
+  instead of arriving as a rate.
+  The harness fact that turns the tempting shape into a silent pass: in 1.21.1 `succeedWhen(criterion)` is
+  `createSequence().thenWaitUntil(criterion).thenSucceed()`, and `GameTestSequence#tick` removes an event
+  only when it runs WITHOUT throwing (`tickAndContinue` retries only a `GameTestAssertException`). A
+  criterion that RETURNS early consumes the event, runs `thenSucceed`, and passes the probe with its
+  asserts NEVER executed. `CultistClericGameTest.theOrbLifetimeClampDiesAtSixteenForPlainAndTwoFortyForRed`
+  WAS on that path — its "has not crossed the edge: poll again" `return` arms — so a mutation that deletes
+  the golem orb's `discard()` left the 502-probe suite GREEN (`046f3d32` + that mutation, one leg, card
+  t_43022b00; again on `89b2a31d`, leg `preteethoff`), while the same mutation on the orb burst probe
+  turns that one RED through the poll. It is OFF that path now: every non-final clause throws
+  `GameTestAssertException` with the observed age/edge/vouch/driven, and the mutation reddens it by name
+  (card t_d29d6aa8). The assert is the poll; never `return` out of a final clause.
 - **A goal left on a live selector is armed by the ENGINE, and a route gate closes off the ground.**
   `Mob.serverAiStep` ticks the goal selector and `GoalSelector#tick` starts a goal on the
   `(tickCount + id) % 2` parity tick (`GoalSelector.java:74-105`). A probe that hand-drives a goal's
@@ -168,6 +206,28 @@ without the evidence for its stages.
   fleeDomainUnloaded=0`. Tick order decides mutations: `onGround` is recomputed in the physics step
   at the END of a tick, so a `setDeltaMovement` applied in the same tick as the probe's draws is
   invisible to those draws — an airborne mutation has to be established one tick early to be seen.
+- **A removal is only evidence when its age names the mechanism.** A probe that ends on "the entity is
+  gone" passes on ANY removal, and the pad itself hides one: the `empty` template's origin column carries
+  the harness's marker pair — `structure_block` in the corner cell and a **full-cube `jigsaw`** one above
+  it — so a projectile armed at the corner stands INSIDE a solid block, and `Projectile` answers its
+  first MOVING tick with a `BLOCK` hit; `EntityGolemOrb#onHit` (`:63`) answers that with `discard()`.
+  Measured with the orb's lifetime clamp mutated off, by a throwaway probe logging every hit, the removal
+  reason and the block states (card t_d29d6aa8, leg `diag_1`): `onHit type=BLOCK pos=…`
+  `Block{minecraft:jigsaw}` and then `REMOVAL observed: age=162 reason=DISCARDED`. The clamp probe that
+  armed its pair on that column went RED on the plain-edge mutation for the WRONG reason (`age=162
+  removed=true` on the pair assert) and GREEN on the red-edge mutation — a real removal at the wrong age
+  standing in for the clamp. The shape that closes it: put the fixtures in cells the pad leaves AIR and
+  ASSERT them air, so a block landing there reports itself as `PROBE BROKEN` instead of arriving as a
+  rate, and pin the age AT the removal to `edge+1` — the clamp fires on the first entity tick past the
+  edge and a removed entity stops ticking, so `161` plain / `241` red is the clamp's signature and no
+  other path writes it. Every edge's mutation then goes RED by name and by the right clause: on the fixed
+  arm, clamp off → `PLAIN EDGE … age=461 removed=false`, plain edge off → the same with `ageRed=241`
+  beside it, red edge off → `RED EDGE … age=540 removed=false`, edges swapped → `PLAIN EDGE MECHANISM
+  plainAge=241 pin=161` — one leg each, four of four RED, each naming the probe (card t_d29d6aa8).
+  Rules bullets here are cited **by line number**, so an insertion moves every cite below it: main's
+  bullet at `caef6cc7` shifted the `:123` / `:172` / `:192` cites by 8, and this bullet moves
+  everything below `:209` by 19. Insert at the END of the section and re-point the cites the change
+  touches, in the same commit — a stale cite reads as a rule that no longer exists.
 - **A route-OUTCOME gate goes red as a rate, on the leg that loads more.** Measured on this tree: the   scribing-ink family landing (`2fefa9b`, over main `104ccce`) ran `runGameTestServer` red ONCE in 4   legs on `combat_golemopensarealdoorandclosesitbehindit` — "the route reaches the far side with doors   openable: `path[1,reached=false]`" — with `All 328 required tests passed :)` on the `-Ptc.noCurios`   leg (rc 0) and on both re-runs of the with-Curios leg (rc 0, rc 0). `GolemCombatAiGameTest.java` is   byte-identical to main's tip (`b3bc00a6`), the landing's 27 paths contain zero golem/door/entity   files, and the red leg printed the landing's own probes passing (`[TC-M3-04-s-vi] Scribe2 craft:`,   `[TC-M3-04-s-iv] KnowFrag craft:`). `reached=false` over a node list that EXISTS is the ground /   tick-order wall above, not the change under test: read the failing probe's NAME before diagnosing,   then re-run the leg before touching code.
 - **A tick-budget-coupled probe goes red when a HEAVIER probe joins the suite — the suite's size is not the trigger, the added probes' weight is.** Measured on this tree: `bossroombuildsthroughtheseam` (`gametest/OuterLandsGameTest`, byte-identical to main, 0 diff lines) went red on **10 of 10** `runGameTestServer` legs on the `t_79eea20e` tree (**331** probes) and green on **5 of 5** legs on main's tip (**328**) and on **2 of 2** legs of main's tip with **three NO-OP probes added (also 331, `CtlThreeProbeGameTest`, deleted after the run)** — same host, warm caches, legs run singly and in pairs. So the suite size (328 → 331) is exonerated by the control, and the trigger is what this card's probes *do*: the probe builds the maze at cells (40,40)/(44,44) in the SHARED game-test level and then counts `blockEldritch` and eldritch stairs in the ABSOLUTE box `x 632..664, y ROOM_Y..ROOM_Y+16, z 632..664`, and the doorway pass that fills it is budgeted in ticks — the sweep has to have drained when the assertion runs, so a probe that occupies ticks ahead of it (this card's probes sweep the 201-entry research graph and resolve rows out of the live `RecipeManager`) starves the pass and the leg reports "the boss-room doorway placed no blockEldritch in the cell envelope". `required = false` does not help: the probes still run and still occupy ticks. This is main's own rule from `554ac56` — assert the outcome, not the tick budget — applied to a probe that does not: the fix is for the probe to poll its envelope on ticks with a deadline (or build in a cell window it owns), not for the joining card to thin its probes. Same family as the golem's inherited start cell (`t_67f61f59`). Until that probe is fixed, any leg whose added probes are heavy should expect this red name, and it is a probe-isolation gate, not a product regression: CI at the landing tip `f4bac9e` runs the same suite green (`build` + `game-test-no-curios` + `runServer`).
 - **A hand-driven `tick()` runs the FULL goal selector, and the goal's gate reads the world.**
@@ -488,3 +548,48 @@ restores both and `diff -q` reports byte-identical.
   player`, and leaves the armed probe green — the dismount arm, named on demand. The
   layout-draw/red-coordinate axis from the parent card is dead: the event is a `nextFloat()` roll,
   the pad coordinates are uniform in both outcomes, and no grid-origin change can fix a 20 % punch.
+
+- **A consumption poll must carry its own survival drive; a 3-sigma band on a shared-seed stream is not 3 sigma.** Two `EldritchCrabGameTest` arms flaked the with-Curios 502 streak at tip `a29bbc06` (card t_d0cc96e9), each exactly a docs rule wearing a compliant costume. (1) The orb-burst consumption arm was already a `helper.succeedWhen` outcome-poll — and still starved: the harness's level pin is a FINITE `setForcedTicks(1000)` pool, and at a batch edge the test sequence's clock outlives the ENTITY clock, so the orb never receives the one server tick (`tickCount` is incremented by `ServerLevel#tickNonPassenger`, not `Entity#tick`) that walks it from the impact's written age 100 past the `:27-29` `> 100` clamp — the watchdog fired 1 leg in ~14 with `age=100 removed=false`, impact landed, walk never arrived. The poll shape is only half the contract; where the outcome lives on the entity's clock and the harness's pool can die, the probe feeds the subject its survival step IN THE SERVER'S SHAPE (`tickCount++` then `tick()`) on every poll tick and the assert stays on the outcome (`removed`). Teeth: the clamp mutation `> LIFETIME_TICKS` → `> LIFETIME_TICKS * 10` puts the consumption 1000 steps past the 300-tick watchdog and reddens the probe on EVERY leg naming `:84 … age=… removed=false` (measured 2/2, the parent Q6d budget teeth stay intact as the record on the pre-poll shape; the `:84` write→0 mutation walks green past the watchdog on the drive shape — the consumption arm asserts BY the clamp, not at its tick). (2) The hardspawn rate arm `rolled >= 9 && rolled <= 31` is ±3.0 sd of ONE `Binom(60, 0.33)` (mean 19.8, sd 3.64, nominal trip 1.37e-3) — a legal band by the 4-sd rule's arithmetic only at 4 sd — fed by 60 per-mob `RandomSource`s seeded off the shared LCG stream: the correlation inflates the effective sd and it measured 1 red in 17 legs (the red leg drew 8, a 3.24-sd tail under the nominal sum). Same lesson as the 30 % band floor entries above: on correlated streams the NOMINAL binomial is optimistic; widen to 4 sd of the sum (`[5, 35]`, exact 1.75e-5 on the nominal, tolerating the ~3× effective inflation the 1/17 implies) and pair it with the deterministic arm the rate can never hide from — here the observed OUTCOME SET of the 60 draws must be exactly {shelled, unshelled} (the whole support [0, 60] of a 1/3 roll contains both), which a roll rule collapsed to one outcome reddens on 100 % of legs (teeth: `nextFloat() < 0.33F` → `< 0.0F` → `0/60`, measured red naming `:74-75`).
+
+- **A draw taken N ticks after a rule WRITES is a tick budget, even when the asserted value is an
+  outcome: park the subject, drive ONE tick, and read what that tick wrote.** Measured on
+  `combat_returnhomeusestheradiusandteleportsfrombeyond48` (`gametest/GolemCombatAiGameTest`, golem
+  lane, 502-probe grid): the probe parks the golem 52 blocks out along +z at `SETTLE+40`, hand-drives
+  one `EntityGolemBase.tick()` at `SETTLE+45`, and asserts the golem stands in the home cell's 3x3
+  footprint within 3.0 squared of the placer's centre (`AIReturnHome.java:33`'s own gate). Its javadoc
+  premise — the 52-block cell is outside the template's ticking area, so only the probe's hand tick can
+  fire the rule — is FALSE on most legs: instrumented legs print `restrictDistSqr=2.0` on the PRE line,
+  i.e. the shipped rule (`EntityGolemBase.java:1362-1380`, 2304.0 squared) had already fired on an
+  ENGINE tick between the park and the draw. The rule writes a `moveTo` into the scan's first
+  qualifying triple — the deterministic `(dy=0, dx=-1, dz=-1)` cell, 2.25 squared — and calls
+  `navigation.stop()`, but it does not zero the velocity, so the walk phase's carried `deltaMovement`
+  keeps moving the golem after its own write. Measured over 14 legs: 12 legs fire on an engine tick and
+  draw the drifted state (1.2400 ×4, 1.5560, 2.6461 ×7 — `dmv=(0.0, -0.0784, -0.0042)`), 2 legs never
+  got an engine tick and drew exactly 2.2500. The threshold sits in that drift tail: the red this card
+  chases drew **3.212850838329566** in the same cell, and the fixed margin on the mode is 0.35. So the
+  probe is a rate, and the card's suspected cause — the crab burst arm's `tickCount++`/`tick()` drive
+  adding shared-level tick weight — is EXONERATED by planting, not by more streaks: widening that drive
+  to 24 orbs driven on every poll tick for the ~50 ticks the pool takes to drain (`[PLANT t_d67dc22f]
+  pool=24`, ~+100 extra ticks a leg, a 24x dose of the landed shape) gave **0 target reds in 17 legs**,
+  0/14 on the pool=0 control, 0/12 on `eca312f0` (the tree whose cold leg produced the red), 0/10 on the
+  untouched base and 0/10 at current main; P(0/17 | the hypothesised 1/5) = 0.023. The tick-weight
+  channel is closed for this probe — the coupling is its own 5-tick draw. Fix shape: park + drive ONE
+  entity tick + assert what the rule wrote, all inside one tick, and repeat that trial 8 times as the
+  deadline the envelope is polled on (far inside `timeoutTicks=400`); every trial asserts, so a product
+  that stops teleporting, lands outside the 3x3 footprint, or lands past the home radius reddens on
+  trial 1 of every leg — and the trial registrations all come from the probe body, never a nested
+  `runAfterDelay`. Teeth (disposable worktree at the tip + this fix, mutations in the PRODUCT, reverted,
+  tree removed): `>= 2304.0` → `>= 1.0e18` (the rule never fires) reddens the fixed probe on 2/2 legs
+  naming `trial 1/8 of the 48-block rule: the golem stands in the home cell's 3x3 footprint on the tick
+  the rule wrote it`; landing at `var2 + dz + 0.0` (the footprint still passes, squared 3.5) reddens it
+  on 3/3 legs naming `inside the goal's home radius again: squared distance 3.5`; landing at
+  `var1 + dx + 3.5` (`|dx| = 2`) reddens the footprint arm on 2/2 legs. Landing at `var1 + dx + 2.5`
+  stays GREEN and is contract-EQUIVALENT — the scan's first triple is `dx=-1`, so +2 is the mirrored
+  `+1` corner: `|dx| = 1`, squared 2.25, inside both arms the probe asserts. The probe claims the
+  outcome class (home, in the 3x3 footprint, inside the 3.0 radius), not which corner the scan picks; a
+  mutation that only mirrors the corner is not a hole. Do not weaken the
+  radius arm to dodge the flake: the shipped write is 2.25 and the arm is 3.0, so the arm has margin the
+  moment it is read on the tick the write happens. Corollary for probe authors: if a probe parks a
+  subject to control *when* a rule fires, verify the park cell is really unticked — print the rule's own
+  precondition (`restrictDistSqr`) on the tick before the draw; a precondition already satisfied means
+  the hand-driven tick is not the write tick and the draw is a budget.
