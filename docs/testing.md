@@ -99,6 +99,7 @@ without the evidence for its stages.
   widens the packing footprint), and a probe whose assertions depend on a world
   scan measures DELTAS over an ambient baseline scan, never absolute totals.
   Prefer both over reordering tests: the layout is not stable across runs.
+<a id="attribute-not-filter"></a>
 - **A probe whose verdict is about item entities must attribute them, not just
   filter them.** A scan over a box wider than the probe's cell reads the
   neighbourhood — `mobBox` spans ±12 (25³) and a 1×1×1 `empty` neighbour sits 6
@@ -126,7 +127,17 @@ without the evidence for its stages.
   the fixture is still landing (`aForeignStackInAPadIsNamedAndNotCounted`), and sweep
   the mutation surface (the drop tables) to show the probe goes RED. The
   identity-filtered `ownedBy` pattern (`OreDropGameTest`) is the right tool only where
-  the contract names the item and the mutation surface is the count.
+  the contract names the item and the mutation surface is the count. Measured a third
+  time on a `dropAllLoot` seam: `theritualclosesthelootinggate` — a 40-call mid-ritual
+  "nothing appears here" arm over an `inflate(8)` box — went RED on **1 of 4**
+  with-Curios legs of tree `258bf0fb` and 0 of 3 of main `7b430bb1`, naming
+  `an item appeared on the pad: [1 minecraft:wheat_seeds @(4031868.125, -60.0,
+  1.2463378958683364E7)]` (land runner t_5bf13a7d, `v3/leg_curios_1.gradle.log`): a
+  draw on the grid origin, the same shape as the `stone_button` and tube readings
+  above, and a rate a green streak cannot see. `CultistClericGameTest.plantForeignStack`
+  is the twin of `breakForeignBlockInPad` with one difference: the planted stack goes in
+  the probe's **own column**, not out in the inflated box — a stack planted out there
+  reaches a neighbour's cell and hands the next probe this exact flake.
 
 <a id="vouched-cell"></a>
 - **A probe that lets the LEVEL tick its mob must place that mob in the chunk the harness vouches.**
