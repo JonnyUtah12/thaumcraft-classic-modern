@@ -507,9 +507,19 @@ public final class EldritchMobGameTest {
                                 + " at " + mob.blockPosition());
                 helper.runAfterDelay(6, () -> {
                     helper.assertTrue(mob.isAlive(), "the fixture guardian must stay alive for the fire leg");
-                    helper.assertTrue(mob.getRemainingFireTicks() > 0,
-                            ":92-94 — the guardian burns (no immunity on the type, and the fire survives "
-                                    + "the wet leg), fire ticks " + mob.getRemainingFireTicks());
+                    // The wet leg does NOT carry the burn, on either engine:
+                    // 1.21.1 extinguishes an entity in water (Entity.java:738-743
+                    // isOnFire() && isInWaterRainOrBubble() -> extinguishFire()
+                    // :796-801 -> clearFire() :557 = -fireImmuneTicks), and
+                    // 1.7.10's isWet() pass does the same. So the fire legs of
+                    // this probe run DRY, and the wet leg pins the platform's
+                    // extinguish on a mob the reference declares NOT fire-immune
+                    // (:92-94 func_98052_bS() = false - an immune mob keeps its
+                    // fire in water).
+                    helper.assertTrue(mob.getRemainingFireTicks() <= 0,
+                            "Entity:738-743/796-801/557 — water extinguishes the guardian's fire "
+                                    + "(clearFire = -fireImmuneTicks = -1 on a mob with no immunity); the "
+                                    + "fire legs run dry, fire ticks " + mob.getRemainingFireTicks());
                     // The drown trigger, pinned the way the platform reaches it:
                     // the drain needs 501 in-water ticks to walk 500 -> -20, far
                     // past the probe budget, so the probe walks the last tick of
@@ -538,6 +548,16 @@ public final class EldritchMobGameTest {
                                                     net.minecraft.tags.FluidTags.WATER) + ")");
                             helper.assertTrue(mob.getHealth() <= drownedHealth,
                                     "the dry legs cost the mob no health, health " + mob.getHealth());
+                            helper.assertTrue(!mob.isEyeInFluid(net.minecraft.tags.FluidTags.WATER),
+                                    "the drained column must be off the eye (the dry air walk of "
+                                            + "LivingEntity:455-457 is the leg above), eye "
+                                            + BlockPos.containing(mob.getEyePosition()).toShortString());
+                            mob.igniteForSeconds(10.0F);
+                            helper.assertTrue(mob.getRemainingFireTicks() > 0,
+                                    ":92-94 — func_98052_bS() = false: the guardian is NOT fire-immune, so "
+                                            + "fire takes hold the moment the water is off it (the wet leg "
+                                            + "above proves the platform extinguishes it), fire ticks "
+                                            + mob.getRemainingFireTicks());
                             helper.succeed();
                         });
                     });
@@ -808,6 +828,27 @@ public final class EldritchMobGameTest {
             // stayed 15). With the cell dark the platform half PASSES, so every
             // gate leg below is the census's bite, not the platform's.
             sealInDark(level, zombieMob);
+            level.getLightEngine().runLightUpdates();
+            final BlockPos zCell = zombieMob.blockPosition();
+            final StringBuilder ldiag = new StringBuilder("[c4b2diag] light block=")
+                    .append(level.getBrightness(net.minecraft.world.level.LightLayer.BLOCK, zCell))
+                    .append(" sky=").append(level.getBrightness(net.minecraft.world.level.LightLayer.SKY, zCell))
+                    .append(" raw=").append(level.getRawBrightness(zCell, 0))
+                    .append(" at ").append(zCell.toShortString()).append(" states:");
+            for (int ldy = -2; ldy <= 3; ldy++) {
+                for (int ldx = -2; ldx <= 2; ldx++) {
+                    for (int ldz = -2; ldz <= 2; ldz++) {
+                        final net.minecraft.world.level.block.state.BlockState ls =
+                                level.getBlockState(zCell.offset(ldx, ldy, ldz));
+                        if (!ls.isAir()) {
+                            ldiag.append(' ').append(ldx).append(',').append(ldy).append(',').append(ldz)
+                                    .append('=').append(ls.getBlock()).append("/l")
+                                    .append(ls.getLightEmission());
+                        }
+                    }
+                }
+            }
+            LOGGER.info(ldiag.toString());
             final float walkTarget = zombieMob.getWalkTargetValue(zombieMob.blockPosition(), level);
             final boolean obstructionFree = zombieMob.checkSpawnObstruction(level);
             helper.assertTrue(walkTarget >= 0.0F && obstructionFree,
