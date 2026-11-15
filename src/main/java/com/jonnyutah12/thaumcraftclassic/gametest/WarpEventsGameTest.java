@@ -723,35 +723,44 @@ public final class WarpEventsGameTest {
     private static String scanRejection(final Level level, final BlockPos origin,
                                         final EntityMindSpider probe, final int[] draws) {
         // :292-297 — offset = 7 + nextInt(18), sign = -1 + nextInt(3), per axis,
-        // measured from the player cell warpPlayer fixes at (1, 1, 1).
+        // measured from the player cell warpPlayer fixes at pad-relative (1, 1, 1).
+        // The scan works in ABSOLUTE coordinates (its base is the player's absolute
+        // blockPosition, :289-291), and a game-test pad sits at world coordinates in
+        // the millions, so every cell below goes through the pad origin: reading the
+        // pad-relative numbers as absolute reads the void at (8, 1, 8) — measured on
+        // the first version of this code, whose floor arm saw the sea-floor stone at
+        // absolute (8, 0, 8) and whose entity arm saw nothing, so it fired on every
+        // leg and never once on the pad.
         final int x = PLAYER_X + (7 + draws[0]) * (draws[1] - 1);
         final int y = PLAYER_Y + (7 + draws[2]) * (draws[3] - 1);
         final int z = PLAYER_Z + (7 + draws[4]) * (draws[5] - 1);
-        final BlockPos landing = new BlockPos(x, y, z);
+        final BlockPos rel = new BlockPos(x, y, z);
+        final BlockPos landing = origin.offset(rel);
         final BlockPos floor = landing.below();
         // cellFits (:390-392) verbatim: the same noCollision AABB, then the same
         // (Player) null entity arm, on the Level view the product uses.
         final AABB floorCell = new AABB(floor.getX(), floor.getY(), floor.getZ(),
                 floor.getX() + 1, floor.getY() + 1, floor.getZ() + 1);
         if (!level.noCollision(floorCell)) {
-            return "the :298 floor cell " + floor + " is not block-free: " + blocksIn(level, origin, floorCell);
+            return "the :298 floor cell " + rel.below() + " is not block-free: " + blocksIn(level, origin, floorCell);
         }
         final List<Entity> inFloor = level.getEntities((Player) null, floorCell);  // cellFits :391 arm
         if (!inFloor.isEmpty()) {
-            return "the :298 floor cell " + floor + " carries " + describe(origin, inFloor);
+            return "the :298 floor cell " + rel.below() + " carries " + describe(origin, inFloor);
         }
-        probe.moveTo(x, y, z, 0.0F, 0.0F);
+        // :299 — spider.moveTo(i1, j1, k1), then the box arms read its bounding box.
+        probe.moveTo(landing.getX(), landing.getY(), landing.getZ(), 0.0F, 0.0F);
         final AABB box = probe.getBoundingBox();
         if (!level.noCollision(box)) {
-            return "the spider box at " + landing + " collides with " + blocksIn(level, origin, box);
+            return "the spider box at " + rel + " collides with " + blocksIn(level, origin, box);
         }
         final List<Entity> hitting = level.getEntities(probe, box);
         if (!hitting.isEmpty()) {
-            return "the :301 entity arm at " + landing + " sees " + describe(origin, hitting);
+            return "the :301 entity arm at " + rel + " sees " + describe(origin, hitting);
         }
         final List<Entity> nonPlayer = level.getEntities((Entity) null, box, e -> !(e instanceof Player));
         if (!nonPlayer.isEmpty()) {
-            return "the :302 checkNoEntity arm at " + landing + " sees " + describe(origin, nonPlayer);
+            return "the :302 checkNoEntity arm at " + rel + " sees " + describe(origin, nonPlayer);
         }
         return null;
     }
