@@ -485,6 +485,8 @@
   "entity.thaumcraft.taintswarm": "Taint Swarm",
   "entity.thaumcraft.eldritchcrab": "Eldritch Crab",
   "entity.thaumcraft.eldritchorb": "Eldritch Orb",
+  "entity.thaumcraft.eldritchguardian": "Eldritch Guardian",
+  "entity.thaumcraft.inhabitedzombie": "Shambling Husk",
   "container.thaumcraft.gui_arcane_workbench": "Arcane Workbench",
   "container.thaumcraft.gui_research_table": "Research Table",
   "container.thaumcraft.gui_thaumatorium": "Thaumatorium",
