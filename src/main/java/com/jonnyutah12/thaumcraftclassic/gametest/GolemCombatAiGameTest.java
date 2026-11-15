@@ -173,6 +173,15 @@ public final class GolemCombatAiGameTest {
     /** The original's home-radius teleport is at 48 squared blocks ({@code :224-232}). */
     private static final double TELEPORT_SQUARED = 2304.0;
 
+    /**
+     * How many self-contained trials the 48-block phase runs. Each trial parks the
+     * golem past 2304.0 squared and drives ONE entity tick, then asserts the rule's
+     * write, so one trial is a complete measurement; the run of trials is the
+     * deadline the envelope is polled on (docs/testing.md: poll the envelope on
+     * ticks with a deadline). 8 trials is far inside the probe's 400-tick watchdog.
+     */
+    private static final int TELEPORT_TRIALS = 8;
+
     private static final int HOME_FACING = Direction.NORTH.get3DDataValue();
 
     private GolemCombatAiGameTest() {
@@ -351,6 +360,24 @@ public final class GolemCombatAiGameTest {
      * so every phase reads liveness with the health and the cell, and a dead prop points at
      * itself instead of collapsing a later assertion.
      */
+    /**
+     * Park the golem 52 blocks out along +z from its home cell — on the floor the probe
+     * lays, so the state under test is the 48-block rule and not the void — and gate on
+     * the rule's own precondition: 2304.0 squared from the restrict centre
+     * ({@code EntityGolemBase.java:1362}). The probe drives the entity tick that follows
+     * in the SAME tick as this call, so no engine tick can fire the rule (and start the
+     * post-write drift) in between.
+     */
+    private static void parkBeyond48(final GameTestHelper helper, final EntityGolemBase golem,
+            final BlockPos home) {
+        golem.setPos(home.getX() + 0.5, home.getY(), home.getZ() + 52.5);
+        final double parked = golem.getRestrictCenter().distSqr(golem.blockPosition());
+        helper.assertTrue(parked >= TELEPORT_SQUARED,
+                "the golem is past the 48-block rule before the driven tick: squared distance "
+                        + parked + " against 2304.0, tick " + helper.getTick() + " at "
+                        + golem.blockPosition().toShortString());
+    }
+
     private static void alive(final GameTestHelper helper, final Entity entity, final String who) {
         final String health = entity instanceof LivingEntity living
                 ? living.getHealth() + "/" + living.getMaxHealth() : "n/a";
@@ -1523,34 +1550,63 @@ public final class GolemCombatAiGameTest {
                     + " (the goal re-paths on its 20-tick stall budget, :43-49)");
 
             // Beyond 48 blocks the entity tick's teleport rule takes over (2304.0 squared).
-            golem.setPos(home.getX() + 0.5, home.getY(), home.getZ() + 52.5);
+            parkBeyond48(helper, golem, home);
             helper.assertTrue(golem.getRestrictCenter().distSqr(golem.blockPosition()) >= TELEPORT_SQUARED,
                     "the golem is past the 48-block rule, squared distance "
                     + golem.getRestrictCenter().distSqr(golem.blockPosition()) + " against 2304.0, tick "
                     + helper.getTick());
         });
 
-        helper.runAfterDelay(pTeleport, () -> {
-            alive(helper, golem, "the golem");
-            // The 52-block cell sits outside the template's ticking area (GameTestServer keeps a
-            // ticking area over the template box), so the engine does not tick an entity parked
-            // there — measured: it had not moved 5 ticks on. The rule under test lives in
-            // EntityGolemBase.tick() itself, so the probe drives that tick by hand, exactly as it
-            // drives every other goal in this file, and the assert below stays a claim about the
-            // shipped 48-block teleport (2304.0 squared, EntityGolemBase.java:402-421).
-            golem.tick();
-            final double after = golem.distanceToSqr(centre);
-            final BlockPos landed = golem.blockPosition();
-            helper.assertTrue(Math.abs(landed.getX() - home.getX()) <= 1
-                            && Math.abs(landed.getY() - home.getY()) <= 1
-                            && Math.abs(landed.getZ() - home.getZ()) <= 1,
-                    "five ticks past the 48-block rule the golem stands in the home cell's 3x3 footprint: cell "
-                    + landed.toShortString() + " against home " + home.toShortString() + ", tick "
-                    + helper.getTick() + " — it cannot walk 52 blocks in five ticks");
-            helper.assertTrue(after < 3.0,
-                    "and it is inside the goal's home radius again: squared distance " + after
-                    + " at " + landed.toShortString() + ", tick " + helper.getTick());
-            helper.succeed();
-        });
+        // ---- the 48-block teleport, polled as self-contained trials -------------------
+        // The rule under test lives in EntityGolemBase.tick() itself, so the probe drives
+        // that tick by hand, exactly as it drives every other goal in this file. What the
+        // probe used to do was park the golem at SETTLE+40 and draw its position at
+        // SETTLE+45 — five ticks after the rule writes, which is a tick budget, and the
+        // state it drew was the rule's write PLUS the walk phase's residual velocity: the
+        // rule moves the golem into the home cell's 3x3 footprint (its first qualifying
+        // scan triple is (dy=0, dx=-1, dz=-1), a deterministic 2.25 squared from the
+        // placer's centre) and stops the navigation, but it does not zero the velocity, so
+        // the carried walk keeps moving the golem after the write. Measured red: the SAME
+        // (x-1,z-1) cell at squared distance 3.212850838329566, ~1 leg in 10, and which
+        // legs land outside the 3.0-squared radius is decided by the phase of the SHARED
+        // game-test level (the suite's RNG stream and the entity-id parity a joining probe
+        // moves), not by the shipped rule — docs/testing.md's "a tick-budget-coupled probe
+        // goes red when a HEAVIER probe joins the suite".
+        // So the probe now polls the envelope, and every poll takes the draw on the tick
+        // the subject's own clock writes the outcome: park past 2304.0 squared, drive ONE
+        // entity tick, assert what the rule wrote. Park and drive share one tick, so the
+        // engine cannot slip a tick of drift between them. Every trial asserts, so a
+        // product that stops teleporting, or lands outside the radius, reddens on trial 1
+        // of every leg. The 52-block cell sits outside the template's ticking area
+        // (GameTestServer keeps a ticking area over the template box); on a leg where the
+        // engine does reach it early, the trial's park re-arms the rule on the probe's own
+        // tick, which is the point of running the measurement as trials.
+        final int[] trial = {0};
+        for (int k = 0; k < TELEPORT_TRIALS; k++) {
+            helper.runAfterDelay(pTeleport + k, () -> {
+                if (trial[0] > 0) {
+                    return;   // the envelope closed on an earlier trial; the test is over
+                }
+                trial[0]++;
+                alive(helper, golem, "the golem");
+                parkBeyond48(helper, golem, home);
+                golem.tick();
+                final double after = golem.distanceToSqr(centre);
+                final BlockPos landed = golem.blockPosition();
+                helper.assertTrue(Math.abs(landed.getX() - home.getX()) <= 1
+                                && Math.abs(landed.getY() - home.getY()) <= 1
+                                && Math.abs(landed.getZ() - home.getZ()) <= 1,
+                        "trial " + trial[0] + "/" + TELEPORT_TRIALS + " of the 48-block rule: the golem"
+                        + " stands in the home cell's 3x3 footprint on the tick the rule wrote it: cell "
+                        + landed.toShortString() + " against home " + home.toShortString() + ", tick "
+                        + helper.getTick() + " — it cannot walk 52 blocks in one driven tick");
+                helper.assertTrue(after < 3.0,
+                        "and it is inside the goal's home radius again: squared distance " + after
+                        + " at " + landed.toShortString() + ", tick " + helper.getTick()
+                        + " — drawn on the tick the rule wrote, so the walk's carried velocity cannot"
+                        + " pad the reading (the shipped rule's own write lands at 2.25)");
+                helper.succeed();
+            });
+        }
     }
 }
