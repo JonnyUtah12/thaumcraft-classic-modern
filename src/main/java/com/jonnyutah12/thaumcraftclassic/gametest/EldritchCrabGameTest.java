@@ -68,6 +68,7 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -486,22 +487,79 @@ public final class EldritchCrabGameTest {
         }
         helper.assertTrue(shelled == 60,
                 ":72-73 — HARD is the guaranteed branch (setHelm(true)), got " + shelled + "/60");
-        int rolled = 0;
-        boolean sawShelled = false;
-        boolean sawBare = false;
+
+        // ---- SHAPE A — the shipped shape, census-faithful: 20 draws per
+        // non-HARD difficulty, exactly ONE roll per fresh mob, nothing burned.
+        int rolledA = 0;
+        boolean sawShelledA = false;
+        boolean sawBareA = false;
+        final StringBuilder bitsA = new StringBuilder(60);
+        final int[] perModeA = new int[3];
+        int modeA = 0;
         for (final Difficulty mode : List.of(Difficulty.EASY, Difficulty.NORMAL, Difficulty.PEACEFUL)) {
             for (int i = 0; i < 20; i++) {
                 final EntityEldritchCrab crab = crab(helper);
                 crab.finalizeSpawn(level, difficulty(level, mode), MobSpawnType.NATURAL, null);
-                if (crab.hasShell()) {
-                    rolled++;
-                    sawShelled = true;
+                final boolean shellA = crab.hasShell();
+                if (shellA) {
+                    rolledA++;
+                    perModeA[modeA]++;
+                    sawShelledA = true;
                 } else {
-                    sawBare = true;
+                    sawBareA = true;
                 }
+                bitsA.append(shellA ? '1' : '0');
                 crab.discard();
             }
+            modeA++;
         }
+
+        // ---- SHAPE B — the decorrelated shape: 120 draws per non-HARD
+        // difficulty, and draw j burns j throws on the SAME generator the roll is
+        // read from before finalizeSpawn runs, so the j-th roll lands at offset j
+        // of generator j. A fresh mob's RandomSource is seeded by
+        // RandomSupport.generateUniqueSeed() = uniquefier * 1181783497276652981L
+        // ^ System.nanoTime(), so 60 consecutive mobs' rolls are ONE point of 60
+        // near-identical seed rotations: when the wall-clock step per spawn is
+        // small the rotations barely advance and the whole leg's count slides to
+        // a tail together (the 8/60). Reading draw j of generator j advances the
+        // phase by the LCG's own step times j, so the rolls spread over the whole
+        // circle at ANY wall-clock step and the per-leg sum becomes the binomial
+        // the band claims.
+        int rolledB = 0;
+        boolean sawShelledB = false;
+        boolean sawBareB = false;
+        final StringBuilder bitsB = new StringBuilder(360);
+        final int[] perModeB = new int[3];
+        int modeB = 0;
+        int draw = 0;
+        for (final Difficulty mode : List.of(Difficulty.EASY, Difficulty.NORMAL, Difficulty.PEACEFUL)) {
+            for (int i = 0; i < 120; i++) {
+                final EntityEldritchCrab crab = crab(helper);
+                for (int b = 0; b < draw; b++) {
+                    crab.getRandom().nextFloat();
+                }
+                crab.finalizeSpawn(level, difficulty(level, mode), MobSpawnType.NATURAL, null);
+                final boolean shellB = crab.hasShell();
+                if (shellB) {
+                    rolledB++;
+                    perModeB[modeB]++;
+                    sawShelledB = true;
+                } else {
+                    sawBareB = true;
+                }
+                bitsB.append(shellB ? '1' : '0');
+                draw++;
+                crab.discard();
+            }
+            modeB++;
+        }
+        ThaumcraftClassic.LOGGER.info(
+                "[t_8b63e037] hardspawn census A={}/60 modes={} B={}/360 modes={} Abits={} Bbits={}",
+                rolledA, Arrays.toString(perModeA), rolledB, Arrays.toString(perModeB), bitsA, bitsB);
+        final int rolled = rolledA;
+        final boolean sawShelled = sawShelledA;
+        final boolean sawBare = sawBareA;
         // :74-75 — the outcome set, deterministic: 60 draws of a 1/3 roll have
         // the whole support [0, 60] and both outcomes live inside it, so the
         // observed set must carry SHELL and NO_SHELL. A rule that made the shell
