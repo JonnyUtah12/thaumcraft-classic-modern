@@ -132,6 +132,40 @@ public abstract class EntityThaumcraftBoss extends Monster {
         return this.spawnTimer;
     }
 
+    /** {@code :63} / {@code :172-173} — the materialisation window. */
+    public boolean isSpawningIn() {
+        return this.spawnTimer > 0;
+    }
+
+    /**
+     * The damage leg of {@code :222-255}, run from every boss subclass' {@code hurt}:
+     * the aggro entry, the rage rule (200-tick haste {@code (int)(d/15)}, resistance and
+     * strength {@code (int)(d/40)}, anger 200) and the unconditional 35.0F clamp. The
+     * original's {@code tc.boss.enrage} chat broadcast ({@code :241-248}) has no 1.21.1
+     * seam in this tree — recorded in the rows' known_differences.
+     */
+    protected float bossDamageLeg(final DamageSource source, final float amount) {
+        final Entity attacker = source.getEntity();
+        if (attacker != null) {                                                         // :222-232
+            recordAggro(attacker.getId(), amount);
+        }
+        final ThaumcraftBossAiLogic.Rage rage =
+                ThaumcraftBossAiLogic.rageFor(amount, getAnger());                      // :234-251
+        if (rage.enrages() && !this.level().isClientSide) {                             // :235
+            setAnger(ThaumcraftBossAiLogic.RAGE_POTION_TICKS);                          // :240
+            addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                    net.minecraft.world.effect.MobEffects.DIG_SPEED,
+                    ThaumcraftBossAiLogic.RAGE_POTION_TICKS, rage.hasteAmplifier()));   // :237
+            addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                    net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE,
+                    ThaumcraftBossAiLogic.RAGE_POTION_TICKS, rage.resistanceAmplifier())); // :238
+            addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                    net.minecraft.world.effect.MobEffects.STRENGTH,
+                    ThaumcraftBossAiLogic.RAGE_POTION_TICKS, rage.strengthAmplifier())); // :239
+        }
+        return rage.damageAfterClamp();                                                 // :250
+    }
+
     public void setSpawnTimer(final int ticks) {
         this.spawnTimer = ticks;
     }
