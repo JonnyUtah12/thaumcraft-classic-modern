@@ -437,6 +437,31 @@ restores both and `diff -q` reports byte-identical.
   `assertScanOutcome` asserts the marked rejections are PRESENT, so the probe cannot pass on a pad that
   was handed over clean. Claim first, fixtures after: a claim that runs after the fixtures eats them.
 
+- **A window-shadow over a scripted stream aligns on the DRAW SHAPE, works in ABSOLUTE space, and
+  traces its first windows.** The shadow replays the gate's own cell checks on every scripted window
+  so an unmarked rejection names its intruder (block state / entity type + id / pad-relative cell)
+  instead of surfacing at the tail as "drew beyond the scripted queue" — the shape that made this lane
+  unrateable (t_6119f491: 2 CI reds on one lineage, base-tree rate **1/8** measured with no plant in
+  the tree). Three shipped versions read the stream plausibly and were wrong, and each failure mode is
+  cheap to name. (1) A counted pre-scan offset misses the band roll at `:59-61`, so every window is one
+  draw off and the shadow fires on all 502 legs. (2) Pad-relative cells used as world coordinates: a
+  game-test pad sits at world coordinates in the MILLIONS, so the arms read the void — the floor arm
+  finds the sea-floor stone at absolute (8, 0, 8) and fires on EVERY leg, the entity arm finds nothing,
+  and the fixture assert then names a "missing" fixture on every leg. (3) A boundary roll the port
+  never draws: the landing spot is the scan's RESULT, and `WarpEvents` draws `:45` (100), `:50` (warp),
+  `:57` (4, helm only), `:59-61` (101, band), then per attempt SIX draws shaped (offset `nextInt(18)`,
+  sign `nextInt(3)`) per axis (`:292-297`) — arming on a phantom bound-50 roll arms nothing, so the
+  shadow silently never runs at all. So: the boundary IS the shape, with the bound asserted at each
+  position; every cell goes through `helper.absolutePos(BlockPos.ZERO)`; and the first three windows
+  log `key / draws / consumed / verdict`, which is what made the mapping auditable at all. **Prove a
+  code path runs by counting its log line against a line known to be emitted on the same leg**
+  (measured: 0 `shadow window` lines vs 3 `claimed` lines in the same log) — one grep settles what
+  three rounds of static reasoning did not. Teeth, all deterministic on the fixed tree: stone planted
+  BEFORE the claim → `All 502 passed` with the claim line naming the clear; the same stone with the
+  claim disabled → RED; stone planted AFTER the claim → shadow RED naming `(a=5, k=0) … :298 floor cell
+  (18,0,8) … Block{minecraft:stone}`; `SCAN_MARKS {0,1,2}→{0,1}` → shadow RED naming slot 2's own
+  fixture window; the fixture stone removed → the positional stream shifts and the landing arm reddens.
+
 - **A scripted ride assert must arm off the mount's own same-tick punch.** The crab's climb gate
   (`EntityEldritchCrab#tick` :120-129) and its punch block (:131-137) run in the SAME `tick()`, and a
   freshly spawned crab has `invulnerableTime == 0` — the punch's cooldown gate is wide open on the
