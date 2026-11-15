@@ -128,6 +128,7 @@ without the evidence for its stages.
   identity-filtered `ownedBy` pattern (`OreDropGameTest`) is the right tool only where
   the contract names the item and the mutation surface is the count.
 
+<a id="vouched-cell"></a>
 - **A probe that lets the LEVEL tick its mob must place that mob in the chunk the harness vouches.**
   `StructureUtils#prepareTestStructure` calls `forceLoadChunks` on the **template's bounding box**,
   and `GameTestInfo#tick` refuses to start a probe until every one of those chunks answers
@@ -149,6 +150,7 @@ without the evidence for its stages.
   (x, z) (`ZombieMobGameTest.MOB_CELL = (0,3,0)`), and assert the cell is entity-ticking BEFORE
   reading a per-tick counter, so a harness/layout change reports the precondition by name instead of
   arriving as a rate that cannot be measured.
+<a id="entity-clock-poll"></a>
 - **An arm that waits for an outcome the ENTITY'S CLOCK produces starves on that same vouch wall — and
   `return` is not a poll.** The bullet above reads a per-tick counter; the harder shape is a poll that
   waits for an outcome the entity's own clock produces, e.g. a lifetime clamp (`EntityEldritchOrb#tick`:
@@ -206,6 +208,7 @@ without the evidence for its stages.
   fleeDomainUnloaded=0`. Tick order decides mutations: `onGround` is recomputed in the physics step
   at the END of a tick, so a `setDeltaMovement` applied in the same tick as the probe's draws is
   invisible to those draws — an airborne mutation has to be established one tick early to be seen.
+<a id="removal-age-names-mechanism"></a>
 - **A removal is only evidence when its age names the mechanism.** A probe that ends on "the entity is
   gone" passes on ANY removal, and the pad itself hides one: the `empty` template's origin column carries
   the harness's marker pair — `structure_block` in the corner cell and a **full-cube `jigsaw`** one above
@@ -224,10 +227,16 @@ without the evidence for its stages.
   arm, clamp off → `PLAIN EDGE … age=461 removed=false`, plain edge off → the same with `ageRed=241`
   beside it, red edge off → `RED EDGE … age=540 removed=false`, edges swapped → `PLAIN EDGE MECHANISM
   plainAge=241 pin=161` — one leg each, four of four RED, each naming the probe (card t_d29d6aa8).
-  Rules bullets here are cited **by line number**, so an insertion moves every cite below it: main's
-  bullet at `caef6cc7` shifted the `:123` / `:172` / `:192` cites by 8, and this bullet moves
-  everything below `:209` by 19. Insert at the END of the section and re-point the cites the change
-  touches, in the same commit — a stale cite reads as a rule that no longer exists.
+  Rules bullets here are cited **by anchor**: the cited bullet carries `<a id="<kebab>"></a>` on
+  the line directly above it and every cite reads `docs/testing.md#<kebab>`, so an insertion
+  cannot rot a cite — mint the anchor in the same commit as the first cite of a bullet, lowercase
+  kebab. New bullets keep appending at the END of the section (the lane's standing diff-clean
+  rule); with anchors no re-point is needed. History of the line-number scheme this replaces:
+  main's bullet at `caef6cc7` shifted the `:123` / `:172` / `:192` cites by 8, and this bullet
+  moved everything below `:209` by 19 (line-number cites, all converted by card t_867b394f). The
+  one-command audit prints every cite with its TARGET line, exits 1 on a missing anchor, and
+  marks any remaining `docs/testing.md:NNN` cite `LEGACY[...]`: `python3 scripts/check_docs_cites.py`
+  (see "Cite audit" at the end of this file).
 - **A route-OUTCOME gate goes red as a rate, on the leg that loads more.** Measured on this tree: the   scribing-ink family landing (`2fefa9b`, over main `104ccce`) ran `runGameTestServer` red ONCE in 4   legs on `combat_golemopensarealdoorandclosesitbehindit` — "the route reaches the far side with doors   openable: `path[1,reached=false]`" — with `All 328 required tests passed :)` on the `-Ptc.noCurios`   leg (rc 0) and on both re-runs of the with-Curios leg (rc 0, rc 0). `GolemCombatAiGameTest.java` is   byte-identical to main's tip (`b3bc00a6`), the landing's 27 paths contain zero golem/door/entity   files, and the red leg printed the landing's own probes passing (`[TC-M3-04-s-vi] Scribe2 craft:`,   `[TC-M3-04-s-iv] KnowFrag craft:`). `reached=false` over a node list that EXISTS is the ground /   tick-order wall above, not the change under test: read the failing probe's NAME before diagnosing,   then re-run the leg before touching code.
 - **A tick-budget-coupled probe goes red when a HEAVIER probe joins the suite — the suite's size is not the trigger, the added probes' weight is.** Measured on this tree: `bossroombuildsthroughtheseam` (`gametest/OuterLandsGameTest`, byte-identical to main, 0 diff lines) went red on **10 of 10** `runGameTestServer` legs on the `t_79eea20e` tree (**331** probes) and green on **5 of 5** legs on main's tip (**328**) and on **2 of 2** legs of main's tip with **three NO-OP probes added (also 331, `CtlThreeProbeGameTest`, deleted after the run)** — same host, warm caches, legs run singly and in pairs. So the suite size (328 → 331) is exonerated by the control, and the trigger is what this card's probes *do*: the probe builds the maze at cells (40,40)/(44,44) in the SHARED game-test level and then counts `blockEldritch` and eldritch stairs in the ABSOLUTE box `x 632..664, y ROOM_Y..ROOM_Y+16, z 632..664`, and the doorway pass that fills it is budgeted in ticks — the sweep has to have drained when the assertion runs, so a probe that occupies ticks ahead of it (this card's probes sweep the 201-entry research graph and resolve rows out of the live `RecipeManager`) starves the pass and the leg reports "the boss-room doorway placed no blockEldritch in the cell envelope". `required = false` does not help: the probes still run and still occupy ticks. This is main's own rule from `554ac56` — assert the outcome, not the tick budget — applied to a probe that does not: the fix is for the probe to poll its envelope on ticks with a deadline (or build in a cell window it owns), not for the joining card to thin its probes. Same family as the golem's inherited start cell (`t_67f61f59`). Until that probe is fixed, any leg whose added probes are heavy should expect this red name, and it is a probe-isolation gate, not a product regression: CI at the landing tip `f4bac9e` runs the same suite green (`build` + `game-test-no-curios` + `runServer`).
 - **A hand-driven `tick()` runs the FULL goal selector, and the goal's gate reads the world.**
@@ -249,6 +258,7 @@ without the evidence for its stages.
   (`setBlock` in the eye cell) so both arms of the gate are asserted, not drawn; clear the per-id
   `Sensing` cache (`getSensing().tick()`) when the pad changes, because `Mob#serverAiStep` clears it
   at the top of every AI tick and a stale `unseen` entry reads a block that is no longer there.
+<a id="outcome-not-tick-budget"></a>
 - **A probe asserts an OUTCOME, never a tick budget.** `helper.runAtTickTime(getTick() + N, …)` puts the
   harness's scheduler inside the port's contract: the assert fires on the **probe's** clock, while the
   fact it reads is produced by the **LEVEL** — an entity's AI tick, a chunk's block-tick pass — and
@@ -269,7 +279,7 @@ without the evidence for its stages.
   a latch must be **monotone and false on tick 0** (set once, never cleared), which is what stops a poll
   from succeeding vacuously on the probe's first tick; `GameTestSequence#tickAndFailIfNotComplete` fails
   the test with the **condition's own assertion message** at the watchdog, so the diagnosis survives the
-  conversion — name the precondition in the poll's **first** assert (the vouched-cell check above), so a
+  conversion — name the precondition in the poll's **first** assert (the vouched-cell rule, docs/testing.md#vouched-cell), so a
   layout change reports the precondition and not a downstream rate; and `GameTestSequence#tickAndContinue`
   swallows **only** `GameTestAssertException`, so a poll body that throws anything else escapes into the
   level tick and takes the batch with it.
@@ -378,6 +388,69 @@ without the evidence for its stages.
   window), and it is not a window. Clear every mob in the template's box that is not the probe's
   own golem and herd, at spawn and at settle, and print them; the animal the probe measures then
   dies only to the probe's own fixture.
+<a id="crop-light-propagation-depth"></a>
+- **A fixture that leans on a block's LIGHT gate has to pay for its light, and a probe must classify
+  the `BlockState` before reading a property that not every state of that block carries.** Measured on
+  this tree: `interact_harvestcropscorereapsripewheatandreplantsit` reddened the with-Curios `build`
+  job on CI (run `43675329931`, job `132694099034`, tip `e50113cc`) with `Cannot get property
+  IntegerProperty{name=age, clazz=class java.lang.Integer, values=[0..7]} as it does not exist in
+  Block{minecraft:air}`; the sanctioned same-sha rerun is green on all 3 jobs, the identical line sits
+  in the c4a2 legs, and **0 of the 42** red `build` jobs in a 120-run window name it (16 of 16 local
+  legs on the landing tree green — 8 with-Curios + 8 no-Curios, 502/502 each, probe never named), so it
+  is a rate and the file that crashes is the probe, not the product. The mechanism is the crop's own
+  survival gate: `CropBlock#canSurvive` (`CropBlock.java:164-171`) is `hasSufficientLight` =
+  `getRawBrightness(pos, 0) >= 8` AND the soil gate, and `BushBlock#updateShape`
+  (`BushBlock.java:30-35`) turns the crop into `Block{air}` on the FIRST neighbour update that fails
+  it — and the harvest goal's own `setBlock` IS that neighbour update, so the cell the next draw reads
+  can be air, and asking `CropBlock.AGE` of it is the disclosed line. The light that gate consults is
+  `Level#updateSkyBrightness` (from `ServerLevel#tick`): `skyDarken = (1 − d2)·11` with
+  `d2 = 0.5 + 2·clamp(cos(2π·dayTime/24000), −0.25, 0.25)`, so a crop under open sky survives at
+  midnight (`dayTime 18000` → skyDarken 5 → raw 10) and pops at dusk (`dayTime 13000` → skyDarken 11 →
+  raw 4). The game-test box pays for none of it: every crop cell in the patch reads raw **15**, the
+  uncomputed-section value, printed on every leg of an 11-leg sweep — the patch's survival is inherited
+  from a number the fixture does not own. The first shape the card shipped — one glowstone at
+  `(4,3,4)`, Manhattan ≤ 5 from every crop cell, block channel 15 − Manhattan — measured
+  INSUFFICIENT: on the 515-probe grid the drive's FIRST draw found **7 of 8** cells `Block{air}` with
+  the farmland intact and raw 10-12 read AFTER the fact (`the crop patch lost a cell to a non-crop
+  state at tick 190 … vanished=7 of 8 cells`), and the survivor was exactly the cell at propagation
+  depth 2. That is a light engine mid-flush (`ServerChunkCache:573` schedules the flush per chunk tick,
+  `ThreadedLevelLightEngine:54-55` is the queue): the SKY channel is applied before the block channel
+  has propagated to the far cells, so inside that window a cell reads `max(0, 15 − skyDarken(11)) = 4`
+  and `BushBlock#updateShape` pops it on the first neighbour update inside it, permanently. The rule is
+  therefore not "pay for light" but **pay for light at propagation depth 2**: a source directly under
+  EVERY crop cell (2 steps to the crop through the farmland, block channel 13-15 permanently; BELOW the
+  soil, so the golem's walk cells and the crops' headroom are untouched), the crop planted at
+  `PLANT_TICK = 40` — after that flush, never into it — the farmland paid wet (`FarmBlock#randomTick`
+  turns dry farmland to dirt, `FarmBlock.java:95-104`; the crop above holds it through
+  `MAINTAINS_FARMLAND`, `:124-126`), and any cell the window popped before the drive opened is restored
+  AND PRINTED (`HARVEST-FIXTURE repaired=N`, with the state / soil / raw it found) so a fixture repair
+  is on the record. Measured on that shape: **8 of 8** gate legs green (4 with-Curios + 4 no-Curios,
+  515/515 each, `repaired=0`, the census arm never named), and the raw at plant tick is still 15 — the
+  uncomputed value — which is why the draw classifies the state first
+  (`state.hasProperty(CropBlock.AGE) ? … : VANISHED`): no draw can ask an `IntegerProperty` of
+  `Block{air}`, and `getRawBrightness >= 8` is asserted on the drive's first tick in the probe's own
+  message. The arm then ends on the OBSERVED reap+replant (`reaped >= 3`, `replanted >= 3`, polled by
+  `succeedWhen`, no fixed verdict tick — the `return`-is-not-a-poll rule above) and the two hard arms
+  (a cell that stopped being a crop, the drive window closed) throw a plain exception carrying the
+  census: per-cell state, soil below, raw, golem state, repaired count. Teeth, RED by name on the fix
+  tree: replant disabled (`if (false && broken && …)`) → `the crop patch lost a cell to a non-crop
+  state at tick 203 … vanished=1 of 8 cells, repaired=0` (2/2 legs); harvest disabled
+  (`final boolean broken = false`) → `the harvest goal never reaped the ripe wheat by the deadline at
+  tick 670 … harvested=0, replanted=0, stillRipe=8, vanished=0` (2/2 legs). The crash class is
+  reproducible on demand and closed structurally: the SHIPPED probe plus a planted pop
+  (`setBlock … Blocks.AIR` at `SETTLE + 40`) went 2/2 RED with the CI line byte-exact (`Cannot get
+  property IntegerProperty{name=age, clazz=class java.lang.Integer, values=[0..7]} as it does not exist
+  in Block{minecraft:air}`), and the FIXED probe with the SAME pop went 2/2 RED naming the census arm
+  (`… at tick 231: harvested=2, replanted=2, …, vanished=1 of 8 cells, repaired=0`) — the age read is
+  gone, the pop is named, and that is also why the drive-open repair keeps its teeth: a pop landing
+  after the drive opens is a red. Recorded so
+  the next reader does not re-chase it: planting the phase clock into the shipped probe
+  (`setDayTime(13000)`) went 1 red / 1 green and the red named
+  `combat_woundedguardretaliatesanddoesnotrecruititsneighbour`, never the age read, and the probe's own
+  raw read stayed 15 — inside the box the section's light is never computed at the read tick, so the
+  daylight pop is not armable from the probe side (`setDayTime(18000)` = 4/4 green on the fix tree). The
+  daylight gate is the source-level formula; the flush that actually bites inside the box is the queued
+  one above, and the crash is closed structurally by the classification.
 
 ## Standing acceptance gates
 **`PlayableAcceptanceGameTest` is the PLAYABLE gate** (TC-M9-01-s, `t_8ea70fda`). The 2026-10-30 intake asked
@@ -434,6 +507,7 @@ restores both and `diff -q` reports byte-identical.
   the stray: planted before the sweep the fixed probe is GREEN, planted after the sweep (or on the
   unswept tree) it goes RED naming the queue overrun — the CI signature, on demand.
 
+<a id="sweep-hazard-set-is-scan-set"></a>
 - **The sweep's hazard set is the GATE's scan set, and a probe that registers into a level-wide list has
   to tear down on the RED path.** The rule above sweeps non-player entities and LEAVES players, because the
   warp event's scan is a BLOCK scan and no player rejects a cell. A gate that scans ENTITIES has to size
@@ -593,3 +667,83 @@ restores both and `diff -q` reports byte-identical.
   subject to control *when* a rule fires, verify the park cell is really unticked — print the rule's own
   precondition (`restrictDistSqr`) on the tick before the draw; a precondition already satisfied means
   the hand-driven tick is not the write tick and the draw is a budget.
+
+- **A 1.0-health mob probe has to CLAIM its own mob box, and the channel a pad-sharing claim can NOT
+  close is fire.** `theHarmlessFuseDiscardsPast1200TicksAndANormalSpiderNeverExpires`
+  (`gametest/MindSpiderMobGameTest`) runs a 1.0-health armed harmless spider and a control spider over
+  1300 ticks with a full-health assert every 20 ticks, and went red on the shipped line
+  `the armed spider lost health at checkpoint 20 (pad burn/fall) — health 0.0, tickCount=20` at **1/4**
+  with-Curios legs on `046f3d32` (t_43022b00 `fixstress#2`) and **1/5** with-Curios legs on `3b5a49ae`
+  (t_47951c77 `cens_land_4`) — attributed by probe NAME. `tickCount=20` is ONE damage instance inside
+  the probe's first 20 ticks, and the probe owns no damage source: the hazard walks in from the pad the
+  grid handed over. Two channels belong in the rule's set because a claim reaches both: a colliding
+  block in the mob cell (`LivingEntity#pushEntities` → `makeStuckInBlock`, lethal at 1.0 hp), and a
+  foreign entity inside the mob box — the pech-blast pellet flies 12 blocks at 0.5/tick and a 1×1×1 pad
+  strides 6 cells (`StructureGridSpawner`: `width + 5` / `depth + 6`), so a neighbour's corridor crosses
+  this pad, and its hit is `damage().setExplosion`, 1.5 + knockback, dead in one hit. The second is the
+  natural channel, and the claim that PROVES it is a claim that LOGS its catch: on one leg of seven
+  landing legs the fuse probe's pad was handed over a `barrier` and a `stone` in the mob cell column
+  plus a live `EntityPechBlast['Pech Blast'/12763]` inside its mob box (mid-batch, not a plant probe),
+  the claim removed all three and the grid ran 504/504; the other six legs were handed a clean pad
+  (t_21b2160d, `teeth2/fixed1.gradle.log`).
+  Fire is NOT reachable by a probe-side claim and must NOT be added to one: fire set on a tick takes its
+  boundary damage in THAT tick when the ticks are a multiple of 20 (`LivingEntity#baseTick`) and the
+  harness's tick runs after the entity pass (t_89eee704's measurement), so no probe-side `clearFire` can
+  precede it — measured: a planted `ignite(300)` kills the spider on the ignite tick with the guard in
+  place — and fire is not the observed natural channel either: the sampler under the burn/fall red saw
+  `remainingFireTicks = 0` on both spiders on every green leg (8 legs × 1201 ticks) and the pad set no
+  fire on 24/24 sampled legs.
+  Shape (t_21b2160d): `claimMobPad` sweeps the lane's own `mobBox` (±6/7, 10 tall) of foreign entities,
+  clears the colliding blocks of the mob cell column, LOGS what the batch handed over, and asserts the
+  claim; it runs at setup and `onEachTick` for the probe's own window — the set the gate measures. The
+  plinth (the barriers at z+1, z+2) sits outside the column and is untouched; health, fire immunity, the
+  checkpoints' `clearFire` and the fuse asserts are untouched — the claim moves contaminants, never the
+  subject's state. Teeth: disable the claim and a plant probe (stone in the mob cell + a pech blast
+  fired into the box) reddens with the shipped line on 2 of 2 legs (`teeth2/mut1`, `mut2`); with the
+  claim in place the same plants are swept. Census (base = no claim, landing = claim, curios arm, 5
+  interleaved pairs, full grid, `census2/`): **0/5** base vs **0/5** landing (Fisher p=1.0), pooled with
+  the historical base legs **2/14 vs 0/7, p=0.43** — the census ran at loadavg 3.6-4.9 with 2 concurrent
+  JVMs, where P(0 reds in 5 legs) is 0.33 at the historical 1/5 rate, so the census CANNOT resolve the
+  rate and no rate claim rides on it; the deterministic planted teeth are the causation lever.
+
+- **A box query reads the level's ENTITY list, not `level.players()` — so the rule above (the sweep's
+  hazard set is the GATE's scan set) is a rule for gates that scan the player list, and its
+  registered-resident arm must NOT be copied into a gate that scans boxes.** Measured on t_21b2160d by
+  PLANTING, while testing the opposite hypothesis: a `ServerPlayer` registered through
+  `level.players()` (the crab fixture's shape, `EldritchCrabGameTest:672`) planted ON the warp pad is
+  reported by that pad's own `getEntitiesOfClass` census **0 times on every leg that planted it**
+  (3 legs, `teeth2/fixed1-3.gradle.log`), and the scripted warp probes stay green on all three of those
+  legs — `WarpEvents`' `:298`/`:301` arms are `level.getEntities`
+  over the entity list, and `Entity#discard` can never run on something the sweep cannot see, so the
+  plant cannot produce the queue overrun the lane reports. The player arm is therefore NOT this lane's
+  lever: the measured lever for the scripted-queue probe is the BLOCK claim
+  (`theScanRejectsOccupiedAndFlooredCellsAndSpendsItsSecondAttempt`, t_6119f491, `claimScanCells`), and
+  a probe that sizes its sweep to a gate reading `level.players()` (`getNearestPlayer`) sizes it
+  correctly ONLY for that gate. A claim arm that can never fire is not free — it reads as coverage and
+  measures nothing. Census for that probe: **0/5** base vs **0/5** landing (both arms carry t_6119f491's
+  claim), pooled with the historical base legs **3/37 vs 0/5, p=0.68**.
+
+## Cite audit
+
+Every cite of a Rules bullet — in `src` probes, in this file, anywhere — is an **anchor**:
+`docs/testing.md#<kebab>`, with `<a id="<kebab>"></a>` on the line directly above the bullet it
+names (lowercase kebab, minted in the same commit as the first cite of that bullet). Anchors do
+not move when a bullet is inserted, so cites cannot rot the way line numbers did; the shift
+history that minted this scheme lives in the removal-age rule above.
+
+One-command check (exit 1 on a stale cite):
+
+    python3 scripts/check_docs_cites.py
+
+prints one line per cite in `src/` and this file, in the fixed shape
+
+    file:line -> :NNN TARGET[<the cited line>]
+
+where `:NNN` is the CURRENT line the cite resolves to (an anchor resolves to the bullet directly
+below its anchor line) and `TARGET[...]` is the text sitting there — a stale cite is the line
+whose TARGET is not the rule the citing comment describes. A missing or duplicated anchor prints
+`STALE[...]` and exits 1. A deprecated line-number cite prints `LEGACY[...]` and exits 0 until
+the last one is converted; no NEW line-number cite is accepted anywhere.
+
+Anchors minted for the cited bullets (t_867b394f): `vouched-cell`, `entity-clock-poll`,
+`removal-age-names-mechanism`, `outcome-not-tick-budget`, `sweep-hazard-set-is-scan-set` (t_b33916a2, the mind-spider mob-box claim).

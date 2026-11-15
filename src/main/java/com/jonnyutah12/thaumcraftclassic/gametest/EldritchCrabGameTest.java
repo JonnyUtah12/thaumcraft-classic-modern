@@ -825,7 +825,7 @@ public final class EldritchCrabGameTest {
         // radius). This probe reads an ENTITY clock (the orb's age), and a fixture a
         // block past the cell corner can land on a neighbour chunk nothing ticks —
         // then the age the burst writes (:84) never walks past the clamp (:27-29) and
-        // the consumption arm starves (docs/testing.md:123 — fix the CELL, not the
+        // the consumption arm starves (docs/testing.md#vouched-cell — fix the CELL, not the
         // assertion). The swept box is anchored at the cell corner (`padEntities`),
         // so the census box, the burst box (the orb's box inflated 2.0) and every
         // offset below are unchanged: the pad shifts by (-1,-2,-1) inside the same box.
