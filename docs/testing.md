@@ -128,6 +128,7 @@ without the evidence for its stages.
   identity-filtered `ownedBy` pattern (`OreDropGameTest`) is the right tool only where
   the contract names the item and the mutation surface is the count.
 
+<a id="vouched-cell"></a>
 - **A probe that lets the LEVEL tick its mob must place that mob in the chunk the harness vouches.**
   `StructureUtils#prepareTestStructure` calls `forceLoadChunks` on the **template's bounding box**,
   and `GameTestInfo#tick` refuses to start a probe until every one of those chunks answers
@@ -149,6 +150,7 @@ without the evidence for its stages.
   (x, z) (`ZombieMobGameTest.MOB_CELL = (0,3,0)`), and assert the cell is entity-ticking BEFORE
   reading a per-tick counter, so a harness/layout change reports the precondition by name instead of
   arriving as a rate that cannot be measured.
+<a id="entity-clock-poll"></a>
 - **An arm that waits for an outcome the ENTITY'S CLOCK produces starves on that same vouch wall — and
   `return` is not a poll.** The bullet above reads a per-tick counter; the harder shape is a poll that
   waits for an outcome the entity's own clock produces, e.g. a lifetime clamp (`EntityEldritchOrb#tick`:
@@ -206,6 +208,7 @@ without the evidence for its stages.
   fleeDomainUnloaded=0`. Tick order decides mutations: `onGround` is recomputed in the physics step
   at the END of a tick, so a `setDeltaMovement` applied in the same tick as the probe's draws is
   invisible to those draws — an airborne mutation has to be established one tick early to be seen.
+<a id="removal-age-names-mechanism"></a>
 - **A removal is only evidence when its age names the mechanism.** A probe that ends on "the entity is
   gone" passes on ANY removal, and the pad itself hides one: the `empty` template's origin column carries
   the harness's marker pair — `structure_block` in the corner cell and a **full-cube `jigsaw`** one above
@@ -224,10 +227,16 @@ without the evidence for its stages.
   arm, clamp off → `PLAIN EDGE … age=461 removed=false`, plain edge off → the same with `ageRed=241`
   beside it, red edge off → `RED EDGE … age=540 removed=false`, edges swapped → `PLAIN EDGE MECHANISM
   plainAge=241 pin=161` — one leg each, four of four RED, each naming the probe (card t_d29d6aa8).
-  Rules bullets here are cited **by line number**, so an insertion moves every cite below it: main's
-  bullet at `caef6cc7` shifted the `:123` / `:172` / `:192` cites by 8, and this bullet moves
-  everything below `:209` by 19. Insert at the END of the section and re-point the cites the change
-  touches, in the same commit — a stale cite reads as a rule that no longer exists.
+  Rules bullets here are cited **by anchor**: the cited bullet carries `<a id="<kebab>"></a>` on
+  the line directly above it and every cite reads `docs/testing.md#<kebab>`, so an insertion
+  cannot rot a cite — mint the anchor in the same commit as the first cite of a bullet, lowercase
+  kebab. New bullets keep appending at the END of the section (the lane's standing diff-clean
+  rule); with anchors no re-point is needed. History of the line-number scheme this replaces:
+  main's bullet at `caef6cc7` shifted the `:123` / `:172` / `:192` cites by 8, and this bullet
+  moved everything below `:209` by 19 (line-number cites, all converted by card t_867b394f). The
+  one-command audit prints every cite with its TARGET line, exits 1 on a missing anchor, and
+  marks any remaining `docs/testing.md:NNN` cite `LEGACY[...]`: `python3 scripts/check_docs_cites.py`
+  (see "Cite audit" at the end of this file).
 - **A route-OUTCOME gate goes red as a rate, on the leg that loads more.** Measured on this tree: the   scribing-ink family landing (`2fefa9b`, over main `104ccce`) ran `runGameTestServer` red ONCE in 4   legs on `combat_golemopensarealdoorandclosesitbehindit` — "the route reaches the far side with doors   openable: `path[1,reached=false]`" — with `All 328 required tests passed :)` on the `-Ptc.noCurios`   leg (rc 0) and on both re-runs of the with-Curios leg (rc 0, rc 0). `GolemCombatAiGameTest.java` is   byte-identical to main's tip (`b3bc00a6`), the landing's 27 paths contain zero golem/door/entity   files, and the red leg printed the landing's own probes passing (`[TC-M3-04-s-vi] Scribe2 craft:`,   `[TC-M3-04-s-iv] KnowFrag craft:`). `reached=false` over a node list that EXISTS is the ground /   tick-order wall above, not the change under test: read the failing probe's NAME before diagnosing,   then re-run the leg before touching code.
 - **A tick-budget-coupled probe goes red when a HEAVIER probe joins the suite — the suite's size is not the trigger, the added probes' weight is.** Measured on this tree: `bossroombuildsthroughtheseam` (`gametest/OuterLandsGameTest`, byte-identical to main, 0 diff lines) went red on **10 of 10** `runGameTestServer` legs on the `t_79eea20e` tree (**331** probes) and green on **5 of 5** legs on main's tip (**328**) and on **2 of 2** legs of main's tip with **three NO-OP probes added (also 331, `CtlThreeProbeGameTest`, deleted after the run)** — same host, warm caches, legs run singly and in pairs. So the suite size (328 → 331) is exonerated by the control, and the trigger is what this card's probes *do*: the probe builds the maze at cells (40,40)/(44,44) in the SHARED game-test level and then counts `blockEldritch` and eldritch stairs in the ABSOLUTE box `x 632..664, y ROOM_Y..ROOM_Y+16, z 632..664`, and the doorway pass that fills it is budgeted in ticks — the sweep has to have drained when the assertion runs, so a probe that occupies ticks ahead of it (this card's probes sweep the 201-entry research graph and resolve rows out of the live `RecipeManager`) starves the pass and the leg reports "the boss-room doorway placed no blockEldritch in the cell envelope". `required = false` does not help: the probes still run and still occupy ticks. This is main's own rule from `554ac56` — assert the outcome, not the tick budget — applied to a probe that does not: the fix is for the probe to poll its envelope on ticks with a deadline (or build in a cell window it owns), not for the joining card to thin its probes. Same family as the golem's inherited start cell (`t_67f61f59`). Until that probe is fixed, any leg whose added probes are heavy should expect this red name, and it is a probe-isolation gate, not a product regression: CI at the landing tip `f4bac9e` runs the same suite green (`build` + `game-test-no-curios` + `runServer`).
 - **A hand-driven `tick()` runs the FULL goal selector, and the goal's gate reads the world.**
@@ -249,6 +258,7 @@ without the evidence for its stages.
   (`setBlock` in the eye cell) so both arms of the gate are asserted, not drawn; clear the per-id
   `Sensing` cache (`getSensing().tick()`) when the pad changes, because `Mob#serverAiStep` clears it
   at the top of every AI tick and a stale `unseen` entry reads a block that is no longer there.
+<a id="outcome-not-tick-budget"></a>
 - **A probe asserts an OUTCOME, never a tick budget.** `helper.runAtTickTime(getTick() + N, …)` puts the
   harness's scheduler inside the port's contract: the assert fires on the **probe's** clock, while the
   fact it reads is produced by the **LEVEL** — an entity's AI tick, a chunk's block-tick pass — and
@@ -269,7 +279,7 @@ without the evidence for its stages.
   a latch must be **monotone and false on tick 0** (set once, never cleared), which is what stops a poll
   from succeeding vacuously on the probe's first tick; `GameTestSequence#tickAndFailIfNotComplete` fails
   the test with the **condition's own assertion message** at the watchdog, so the diagnosis survives the
-  conversion — name the precondition in the poll's **first** assert (the vouched-cell check above), so a
+  conversion — name the precondition in the poll's **first** assert (the vouched-cell rule, docs/testing.md#vouched-cell), so a
   layout change reports the precondition and not a downstream rate; and `GameTestSequence#tickAndContinue`
   swallows **only** `GameTestAssertException`, so a poll body that throws anything else escapes into the
   level tick and takes the batch with it.
@@ -544,3 +554,28 @@ restores both and `diff -q` reports byte-identical.
   subject to control *when* a rule fires, verify the park cell is really unticked — print the rule's own
   precondition (`restrictDistSqr`) on the tick before the draw; a precondition already satisfied means
   the hand-driven tick is not the write tick and the draw is a budget.
+
+## Cite audit
+
+Every cite of a Rules bullet — in `src` probes, in this file, anywhere — is an **anchor**:
+`docs/testing.md#<kebab>`, with `<a id="<kebab>"></a>` on the line directly above the bullet it
+names (lowercase kebab, minted in the same commit as the first cite of that bullet). Anchors do
+not move when a bullet is inserted, so cites cannot rot the way line numbers did; the shift
+history that minted this scheme lives in the removal-age rule above.
+
+One-command check (exit 1 on a stale cite):
+
+    python3 scripts/check_docs_cites.py
+
+prints one line per cite in `src/` and this file, in the fixed shape
+
+    file:line -> :NNN TARGET[<the cited line>]
+
+where `:NNN` is the CURRENT line the cite resolves to (an anchor resolves to the bullet directly
+below its anchor line) and `TARGET[...]` is the text sitting there — a stale cite is the line
+whose TARGET is not the rule the citing comment describes. A missing or duplicated anchor prints
+`STALE[...]` and exits 1. A deprecated line-number cite prints `LEGACY[...]` and exits 0 until
+the last one is converted; no NEW line-number cite is accepted anywhere.
+
+Anchors minted for the cited bullets (t_867b394f): `vouched-cell`, `entity-clock-poll`,
+`removal-age-names-mechanism`, `outcome-not-tick-budget`.
