@@ -10,7 +10,15 @@
    registration, block/entity behavior, crafting flows, vis flows, research
    progression, persistence across save/reload. Run by
    `./gradlew runGameTestServer`; CI asserts the "required tests passed"
-   line explicitly (a green exit with zero tests is a failure).
+   line explicitly (a green exit with zero tests is a failure). The assert
+   greps the **per-run** sources — the job's own gradle console output
+   (`run/gametest-console.log`, tee'd by the game step) and `run/logs/debug.log`,
+   the complete per-run log — and never `run/logs/latest.log`: log4j rolls that
+   file on the server **shutdown** path, so the file sitting at that path when
+   the assert runs can be the post-rotation one with no summary line in it
+   (measured: run 43662060834 on `6a05ba14`, `game-test-no-curios` attempt 1 —
+   `All 502 required tests passed :)` and `BUILD SUCCESSFUL in 57s` in the same
+   job, no probe failed, assert step RED; the same sha green on the re-run).
    Dual-configuration matrix (TC-M8-01): the accessory suite runs under both
    provider backends — default (Curios on the runtime classpath) and
    `-Ptc.noCurios` (built-in fallback; separate CI job
@@ -468,6 +476,8 @@ restores both and `diff -q` reports byte-identical.
   player`, and leaves the armed probe green — the dismount arm, named on demand. The
   layout-draw/red-coordinate axis from the parent card is dead: the event is a `nextFloat()` roll,
   the pad coordinates are uniform in both outcomes, and no grid-origin change can fix a 20 % punch.
+
+- **A consumption poll must carry its own survival drive; a 3-sigma band on a shared-seed stream is not 3 sigma.** Two `EldritchCrabGameTest` arms flaked the with-Curios 502 streak at tip `a29bbc06` (card t_d0cc96e9), each exactly a docs rule wearing a compliant costume. (1) The orb-burst consumption arm was already a `helper.succeedWhen` outcome-poll — and still starved: the harness's level pin is a FINITE `setForcedTicks(1000)` pool, and at a batch edge the test sequence's clock outlives the ENTITY clock, so the orb never receives the one server tick (`tickCount` is incremented by `ServerLevel#tickNonPassenger`, not `Entity#tick`) that walks it from the impact's written age 100 past the `:27-29` `> 100` clamp — the watchdog fired 1 leg in ~14 with `age=100 removed=false`, impact landed, walk never arrived. The poll shape is only half the contract; where the outcome lives on the entity's clock and the harness's pool can die, the probe feeds the subject its survival step IN THE SERVER'S SHAPE (`tickCount++` then `tick()`) on every poll tick and the assert stays on the outcome (`removed`). Teeth: the clamp mutation `> LIFETIME_TICKS` → `> LIFETIME_TICKS * 10` puts the consumption 1000 steps past the 300-tick watchdog and reddens the probe on EVERY leg naming `:84 … age=… removed=false` (measured 2/2, the parent Q6d budget teeth stay intact as the record on the pre-poll shape; the `:84` write→0 mutation walks green past the watchdog on the drive shape — the consumption arm asserts BY the clamp, not at its tick). (2) The hardspawn rate arm `rolled >= 9 && rolled <= 31` is ±3.0 sd of ONE `Binom(60, 0.33)` (mean 19.8, sd 3.64, nominal trip 1.37e-3) — a legal band by the 4-sd rule's arithmetic only at 4 sd — fed by 60 per-mob `RandomSource`s seeded off the shared LCG stream: the correlation inflates the effective sd and it measured 1 red in 17 legs (the red leg drew 8, a 3.24-sd tail under the nominal sum). Same lesson as the 30 % band floor entries above: on correlated streams the NOMINAL binomial is optimistic; widen to 4 sd of the sum (`[5, 35]`, exact 1.75e-5 on the nominal, tolerating the ~3× effective inflation the 1/17 implies) and pair it with the deterministic arm the rate can never hide from — here the observed OUTCOME SET of the 60 draws must be exactly {shelled, unshelled} (the whole support [0, 60] of a 1/3 roll contains both), which a roll rule collapsed to one outcome reddens on 100 % of legs (teeth: `nextFloat() < 0.33F` → `< 0.0F` → `0/60`, measured red naming `:74-75`).
 
 - **A draw taken N ticks after a rule WRITES is a tick budget, even when the asserted value is an
   outcome: park the subject, drive ONE tick, and read what that tick wrote.** Measured on
