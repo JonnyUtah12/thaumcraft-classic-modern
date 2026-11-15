@@ -277,7 +277,8 @@ public final class GolemInteractAiGameTest {
         for (int i = 0; i < crops.length; i++) {
             crops[i] = new BlockPos(cells[i][0], 1, cells[i][1]);
         }
-        // FIXTURE LIGHT, paid at setup, BEFORE the crop exists. CropBlock#canSurvive
+        // FIXTURE LIGHT, paid at setup, BEFORE the crop exists
+        // (docs/testing.md#crop-light-propagation-depth). CropBlock#canSurvive
         // (CropBlock.java:164-171) is the light gate (hasSufficientLight:
         // getRawBrightness(pos, 0) >= 8) AND the soil gate, and BushBlock#updateShape
         // (BushBlock.java:30-35) turns the crop into Block{air} on the FIRST neighbour

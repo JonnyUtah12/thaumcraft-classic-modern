@@ -388,6 +388,7 @@ without the evidence for its stages.
   window), and it is not a window. Clear every mob in the template's box that is not the probe's
   own golem and herd, at spawn and at settle, and print them; the animal the probe measures then
   dies only to the probe's own fixture.
+<a id="crop-light-propagation-depth"></a>
 - **A fixture that leans on a block's LIGHT gate has to pay for its light, and a probe must classify
   the `BlockState` before reading a property that not every state of that block carries.** Measured on
   this tree: `interact_harvestcropscorereapsripewheatandreplantsit` reddened the with-Curios `build`
