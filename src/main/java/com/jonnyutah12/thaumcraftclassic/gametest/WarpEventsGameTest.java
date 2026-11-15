@@ -836,8 +836,6 @@ public final class WarpEventsGameTest {
         private final List<Rejection> rejections = new ArrayList<>();
         private int[] marks = new int[0];
         private WindowShadow shadow;
-        /** The landing-slot roll's bound — {@code :283}/:343 {@code nextInt(50)}, the window boundary. */
-        private static final int LANDING_SLOT_BOUND = 50;
         private final int[] served = new int[6];
         private int pending;        // scan draws still owed by the spider whose slot roll just came
         private int windowsFired;
@@ -889,22 +887,29 @@ public final class WarpEventsGameTest {
             }
             consumed++;
             if (shadow != null) {
-                // Align on the DRAW SHAPE, never on a counted offset. The scan attempt is
-                // the six draws (offset 7..24 = nextInt(18), sign -1..1 = nextInt(3), per
-                // axis, :292-297) that FOLLOW the spider's landing-slot roll (:283/:343 —
-                // nextInt(50)); the pre-scan rolls all have other bounds (:45 = 100,
-                // :50 = warp, :57 = 4, :59-61 band = 101). Counting draws misses the band
-                // roll and shadows cells the product never reads — measured on this code's
-                // first version, where every scan probe went red on every leg.
-                if (bound == LANDING_SLOT_BOUND) {
-                    pending = 6;
-                } else if (pending > 0) {
-                    if (bound != 18 && bound != 3) {
+                // The window boundary IS the scan's draw shape. A scan attempt is six
+                // draws in the order (offset, sign) per axis — offset
+                // nextIntBetweenInclusive(7, 24) = nextInt(18), sign
+                // nextIntBetweenInclusive(-1, 1) = nextInt(3), :292-297 — and the port
+                // has NO per-spider roll at all: the landing spot is the scan's result
+                // (:156, :280-286), so the only draws in the stream are the pre-scan
+                // rolls (:45 = 100, :50 = warp, :57 = 4, :59-61 band = 101, all with
+                // other bounds) and then window after window of this shape. The probes
+                // fix warp at 90 (warpPlayer), so the :50 roll cannot pass for offset.
+                if (pending == 0 && bound == 18) {
+                    pending = 6;                                   // an offset opens a window
+                }
+                if (pending > 0) {
+                    final int index = 6 - pending;
+                    final int want = index % 2 == 0 ? 18 : 3;      // offset, then sign, per axis
+                    if (bound != want) {
                         throw new IllegalStateException("the scripted scan window drew bound " + bound
-                                + " — a scan attempt is nextInt(18)/nextInt(3) per axis (:292-297), so the"
-                                + " shadow's window alignment no longer matches the port's draw shape");
+                                + " at position " + index + " of the window, expected " + want
+                                + " — a scan attempt is (offset nextInt(18), sign nextInt(3)) per axis"
+                                + " (:292-297), so the shadow's window alignment no longer matches the"
+                                + " port's draw shape");
                     }
-                    served[6 - pending] = v;
+                    served[index] = v;
                     if (--pending == 0) {
                         if (windowsFired >= keys.size()) {
                             throw new IllegalStateException("the scan ran " + (windowsFired + 1)
@@ -913,18 +918,24 @@ public final class WarpEventsGameTest {
                         }
                         final int[] key = keys.get(windowsFired++);
                         final String offender = shadow.reject(key[0], key[1], served.clone());
+                        if (windowsFired <= 3) {        // a one-shot trace of the window mapping
+                            ThaumcraftClassic.LOGGER.info("[t_6119f491] shadow window #{} key=(a={},k={})"
+                                            + " draws={} consumed={} verdict={}",
+                                    windowsFired, key[0], key[1], java.util.Arrays.toString(served), consumed,
+                                    offender == null ? "FREE" : offender);
+                        }
                         if (offender != null) {
                             final Rejection r = new Rejection(key[0], key[1], scriptedCell(key[0], key[1]), offender);
                             rejections.add(r);
                             if (!(key[1] == 0 && isMarked(marks, key[0]))) {
-                            throw new GameTestAssertException("the warp scan rejected the scripted window (a="
-                                    + key[0] + ", k=" + key[1] + ") at pad-relative " + r.cell() + " — " + offender
-                                    + ". This pad's entities are swept (sweepPad) and its blocks are claimed"
-                                    + " (claimScanCells) over exactly the cells this scan reads, so this intruder"
-                                    + " arrived after the claim: layout, not the port, is what broke the positional"
-                                    + " stream — one unmarked rejection hands the next spider's window to this"
-                                    + " spider, shifts every later landing, and overruns the draw queue, which is"
-                                    + " the shape CI runs 43656053623 and 43662060834 reported.");
+                                throw new GameTestAssertException("the warp scan rejected the scripted window (a="
+                                        + key[0] + ", k=" + key[1] + ") at pad-relative " + r.cell() + " — " + offender
+                                        + ". This pad's entities are swept (sweepPad) and its blocks are claimed"
+                                        + " (claimScanCells) over exactly the cells this scan reads, so this intruder"
+                                        + " arrived after the claim: layout, not the port, is what broke the"
+                                        + " positional stream — one unmarked rejection hands the next spider's window"
+                                        + " to this spider, shifts every later landing, and overruns the draw queue,"
+                                        + " which is the shape CI runs 43656053623 and 43662060834 reported.");
                             }
                         }
                     }
