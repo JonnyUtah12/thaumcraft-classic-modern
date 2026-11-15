@@ -747,9 +747,28 @@ public final class CultistClericGameTest {
      * ({@link #driveEntityClock}, docs/testing.md:192). Nothing is pinned to N real
      * ticks: the arm ends on the <b>observed removal</b>, {@code driven = 0} on a vouched
      * pad, and {@code padChunkVouched} / {@code ticksDrivenByProbe} ride the census line
-     * AND every failure message, so a vouch loss names itself. Teeth (this card, each
-     * one leg, each RED by name): the clamp never discarding, the PLAIN edge alone
-     * stopping, the RED edge alone stopping, and the two edges swapping.</p>
+     * AND every failure message, so a vouch loss names itself.</p>
+     *
+     * <p><b>A removal is only evidence when its age names the mechanism.</b> The first
+     * shape of this rewrite armed the pair at the pad's corner cell and asserted the
+     * removals. It went RED on the plain-clamp mutation for the WRONG reason and GREEN
+     * on the red-clamp mutation, measured (legs {@code teeth_golemorb-plain},
+     * {@code teeth_golemorb-red}): the {@code empty} template's origin column carries
+     * the harness's marker pair — {@code structure_block} at the corner, a full-cube
+     * {@code jigsaw} one above — so an orb armed there stands inside a solid block, and
+     * the homing step gives it velocity on the tick it is armed, so the next tick
+     * {@code Projectile} lands a BLOCK hit and {@code EntityGolemOrb:63} discards it.
+     * A throwaway probe that logs every hit and the removal reason (worktree
+     * {@code t_d29d6aa8-diag}, leg {@code diag_1}, clamp mutated off) wrote the
+     * mechanism byte-exact: {@code onHit type=BLOCK pos=… Block{minecraft:jigsaw}} →
+     * {@code REMOVAL … age=162 reason=DISCARDED}. So the arm now (a) rides cells the pad
+     * leaves AIR, asserted air so a block landing there reports itself as
+     * {@code PROBE BROKEN}, and (b) pins the age at removal to {@code edge+1} — 161
+     * plain, 241 red — which is the clamp's signature, because the clamp fires on the
+     * first entity tick past the edge and a removed entity stops ticking. Teeth for this
+     * card, one leg each, each RED naming this probe: the clamp never discarding, the
+     * PLAIN edge alone stopping, the RED edge alone stopping, and the two edges
+     * swapping.</p>
      */
     @GameTest(template = "empty", timeoutTicks = 300)
     public static void theOrbLifetimeClampDiesAtSixteenForPlainAndTwoFortyForRed(
@@ -766,16 +785,39 @@ public final class CultistClericGameTest {
         final Player target = attackerAt(helper, cleric);
         final EntityGolemOrb plain = orb(helper, cleric, target, false);
         final EntityGolemOrb red = orb(helper, cleric, target, true);
-        plain.setPos(at.getX() + 0.5, at.getY() + 1.0, at.getZ() + 0.5);
-        red.setPos(at.getX() + 0.5, at.getY() + 1.0, at.getZ() + 0.5);
+        // The pair rides the CELLS THE PAD LEAVES AIR, one block off the corner column.
+        // Measured on this card (throwaway `ClampDiag` probe, leg diag_1, clamp mutated
+        // off so nothing else could remove the orbs): the `empty` template's origin
+        // column carries the harness's marker pair — `structure_block` at the corner and
+        // a FULL-CUBE `jigsaw` one above it — so an orb armed at the corner stands
+        // INSIDE a solid block, and the homing step gives it velocity on the tick it is
+        // armed, so the NEXT tick `Projectile` lands a BLOCK hit and
+        // {@code EntityGolemOrb:63} discards. Observed byte-exact at age 162 with the
+        // clamp disabled: `onHit type=BLOCK pos=(x,-59,z) Block{minecraft:jigsaw}`.
+        // A clamp probe with a second removal path in its cell reports the WRONG age and
+        // passes a mutation on the other edge, so the cells are asserted air HERE (a
+        // block landing in one reports itself as PROBE BROKEN) and the removal age is
+        // pinned to edge+1 below, which names the clamp as the mechanism.
+        final BlockPos plainCell = at.offset(1, 4, 1);
+        final BlockPos redCell = at.offset(2, 4, 1);
+        helper.assertTrue(level.getBlockState(plainCell).isAir() && level.getBlockState(redCell).isAir(),
+                "PROBE BROKEN: the orb cells must be AIR — got " + level.getBlockState(plainCell)
+                        + " at " + plainCell + " and " + level.getBlockState(redCell) + " at " + redCell
+                        + " (pad corner " + at + "); a solid cell is a hit path"
+                        + " (EntityGolemOrb:63 discards on a block hit, measured at age 162) and it"
+                        + " steals the clamp's edge from this probe");
+        plain.setPos(plainCell.getX() + 0.5, plainCell.getY() + 0.5, plainCell.getZ() + 0.5);
+        red.setPos(redCell.getX() + 0.5, redCell.getY() + 0.5, redCell.getZ() + 0.5);
         plain.tickCount = EntityGolemOrb.LIFETIME;                                    // :85 plain edge
         red.tickCount = EntityGolemOrb.LIFETIME;                                      // :85 inside the red clamp
         level.addFreshEntity(plain);
         level.addFreshEntity(red);
         final boolean vouched = level.isPositionEntityTicking(plain.blockPosition());
-        LOGGER.info("[TC-M6-06-cleric-orb] clamp arms armed: agePlain={} ageRed={} edgePlain={} edgeRed={}"
-                        + " plainChunk={} cornerMod16={},{} padChunkVouched={} probeTick={}",
+        LOGGER.info("[TC-M6-06-cleric-orb] clamp arms armed: agePlain={} ageRed={} edgePlain={}"
+                        + " edgeRed={} plainCell={}{} redCell={}{} plainChunk={} cornerMod16={},{}"
+                        + " padChunkVouched={} probeTick={}",
                 plain.tickCount, red.tickCount, EntityGolemOrb.LIFETIME, EntityGolemOrb.LIFETIME_RED,
+                plainCell, level.getBlockState(plainCell), redCell, level.getBlockState(redCell),
                 plain.chunkPosition(), at.getX() & 15, at.getZ() & 15, vouched, helper.getTick());
         // The clock the clamp needs, driven in the server's shape ONLY when the server
         // left it still (counted, bounded by the drive, never a real-tick budget).
@@ -804,6 +846,24 @@ public final class CultistClericGameTest {
                                 + " padChunkVouched=" + vouched
                                 + " ticksDrivenByProbe=" + drivenPlain.get()
                                 + " ageRed=" + red.tickCount);
+                // The MECHANISM pin, not just the fact of a removal. The clamp discards on
+                // the FIRST entity tick past the edge, and a removed entity stops ticking,
+                // so a clamp removal reads age == edge+1 exactly (161 plain). Measured on
+                // this card: in the corner-cell shape the red orb died at age 162 of the
+                // marker column's BLOCK hit (EntityGolemOrb:63) — a real removal at the
+                // wrong age — and that is exactly what let the RED-edge mutation pass the
+                // suite. age == 161 is the clamp's signature; nothing else in an air cell
+                // can produce it for a gravity-free, owner-excluded, non-colliding orb.
+                final int plainAge = plain.tickCount;
+                helper.assertTrue(plainAge == EntityGolemOrb.LIFETIME + 1,
+                        ":85 PLAIN EDGE MECHANISM — the plain orb's removal must be the CLAMP at"
+                                + " tickCount > 160: it fires on the first entity tick past the edge and"
+                                + " a removed entity's clock stops, so the age at removal reads exactly"
+                                + " 161; any other age is a DIFFERENT removal path (measured: a block hit"
+                                + " in the pad's marker column discards at 162). plainAge=" + plainAge
+                                + " pin=" + (EntityGolemOrb.LIFETIME + 1) + " isReduced=" + plain.isRed()
+                                + " polls=" + n + " padChunkVouched=" + vouched
+                                + " ticksDrivenByProbe=" + drivenPlain.get());
                 // The pair that pins the flag: at the plain's edge the red orb sits INSIDE
                 // its 240 clamp, so it must be alive. An inverted `red ?` ternary dies here.
                 final int redAge = red.tickCount;
@@ -828,10 +888,28 @@ public final class CultistClericGameTest {
                             + " phase=" + phase[0] + " padChunkVouched=" + vouched
                             + " ticksDrivenByProbe=" + drivenRed.get()
                             + " ticksDrivenPlain=" + drivenPlain.get());
+            // Same mechanism pin on the red edge: the phase above walks the red orb's age
+            // to the 240 edge, so the clamp's removal reads age == 241. Measured on this
+            // card, the RED-edge mutation (red clamp → never discards) was GREEN on the
+            // corner-cell shape because the marker column's block hit removed the red orb
+            // at 162 and the plain phase's pair assert read that as "removed past 160".
+            // 241 is the clamp's signature and nothing else in an air cell can write it.
+            final int redEdgeAge = red.tickCount;
+            helper.assertTrue(redEdgeAge == EntityGolemOrb.LIFETIME_RED + 1,
+                    ":85 RED EDGE MECHANISM — the red orb's removal must be the CLAMP at tickCount > 240"
+                            + " (its age was walked to the 240 edge in the plain's phase), firing on the"
+                            + " first entity tick past the edge of an entity that then stops ticking, so"
+                            + " the age at removal reads exactly 241; any other age is a DIFFERENT removal"
+                            + " path. redAge=" + redEdgeAge + " pin=" + (EntityGolemOrb.LIFETIME_RED + 1)
+                            + " isReduced=" + red.isRed() + " polls=" + n + " phase=" + phase[0]
+                            + " padChunkVouched=" + vouched
+                            + " ticksDrivenByProbe=" + drivenRed.get());
             LOGGER.info("[TC-M6-06-cleric-orb] BOTH edges observed on the orbs' own clock: plainAge={}"
-                            + " plainRemoved=true redAge={} redRemoved=true polls={} padChunkVouched={}"
-                            + " ticksDrivenByProbe(plain)={} ticksDrivenByProbe(red)={} probeTick={}",
-                    plain.tickCount, red.tickCount, n, vouched, drivenPlain.get(), drivenRed.get(),
+                            + " plainPin={} redAge={} redPin={} plainRemoved=true redRemoved=true polls={}"
+                            + " padChunkVouched={} ticksDrivenByProbe(plain)={} ticksDrivenByProbe(red)={}"
+                            + " probeTick={}",
+                    plain.tickCount, EntityGolemOrb.LIFETIME + 1, red.tickCount,
+                    EntityGolemOrb.LIFETIME_RED + 1, n, vouched, drivenPlain.get(), drivenRed.get(),
                     helper.getTick());
             cleric.discard();
         });
