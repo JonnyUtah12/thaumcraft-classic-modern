@@ -712,6 +712,39 @@ restores both and `diff -q` reports byte-identical.
   legs of in-flight trees whose pad grid differs from main's, where the sweeps here cannot land.
   **Census (t_764d1e8e): teeth 5 legs, all with-Curios, every leg printing its THREE plant lines — the shipped tree with no gate property at all (the pass live) RED 2/2, the gate tree with the gate ARMED (7-8 `CHUNKGEN-GATE … skipped N chunk(s)` lines on the leg, so the pass ran and was skipped) RED 2/2, and the gate tree re-armed with `-Ptc.chunkGenOn` RED 1/1; every red is `combat_butchercullstheoldestanimalonlyinaherdofthree failed at … the golem's pad: cell … is air with a solid floor under … got cell=Block{minecraft:grass_block} floor=Block{minecraft:stone} (tick 120) — a blocked cell is the block-support precondition closing under the pad` — the card's CI line is the same assert at the same tick with the same `cell=Block{minecraft:grass_block}`, and the FLOOR token is the byte-diff (`floor=Block{minecraft:dirt}` on the CI leg, `stone` on this tree's grid, where the pad's floor is the template's stone). The other two planted shapes did NOT redden their lanes on this grid (cobblestone in the guardian's own cell, dirt in the orb pair's plain arming cell, both planted after the lane's setup claim): the guardian's `got -20` walkback red and the orb clamp steal need an arrival inside the drive window, not a setup stamp, so this card mints no teeth for those two lanes and the per-probe claims stay the lever there. Arms on the gate tree (base `c4fe41ed`, probe census 529): gate ON NO-Curios 5/5 + with-Curios 5/5 GREEN 529/529 with 7-8 gate lines per leg, gate OFF (pass live) NO-Curios 5/5 + with-Curios 5/5 GREEN 529/529 — Fisher 10 vs 10 green, p=1.0, NO separation, which is what the 0/15 census says the natural rate is on this grid; the gate-OFF legs also cost wall time the gate-OFF grid explains (59-181 s per leg vs 58-89 s armed). Producer census legs: 15 (4 + 5 gate-OFF with the v1 tree, 2 gate-ON v1, 4 on the v2 census tree), `stamps=0` in EVERY registered region on EVERY leg. v1-gate red legs: every gate-armed leg on that tree went RED — the 2 completed with-Curios legs name `loadedchunksflowthroughthetickdriver` in the summary block with 1454 and 1444 pending chunks dropped, and 3 NO-Curios legs printed `1 required tests failed` each before the driver was killed, their logs cut before the lane line, so the lane identity in those three is unconfirmed here. `./gradlew --rerun-tasks build` rc 0 (unit XML 1186 tests / 0 failures / 0 errors / 2 skips), probe census 529 → 529 on the card tip (no probe added; the planted/census trees read 533 because main moved under them), cite gate on the landed tip 62 cites / 0 stale / 0 legacy. The card's own harvest-cite redirect is VOID AT LANDING and the merge keeps MAIN's cite text: main minted the kebab those cites already asked for in d253b67c (`harvest-pad-claims-its-light-layer`) and retired the kebab the branch redirects TO in f255dc5a (`harvest-pad-claims-and-services-its-cells`), so landing the redirect would have made 2 cites STALE (measured on the raw auto-merge: 62 cites / 2 stale / rc 1) — the same two fixes, ruled for main's landed pair. CI 43862280324 on the code tip `fe10290c`: `build` (with-Curios game tests), `game-test-no-curios` and `runServer` all success with `-Dtc.noChunkGen=true` armed in the gameTestServer run config — the dedicated-server job proves the gate touches only the harness run config.****
 
+<a id="mob-write-cells-ride-the-int-cast"></a>
+- **A mob's block-write cells ride the `(int)` CAST of its raw position, not `blockPosition()`, so a
+  probe asserts the cell the BUILDER computes and claims that same list.** 1.7.10 computes a write cell
+  as `(int)this.posX + offset` (`EntityCultistPortal.java:144`, `:146`, `:186`); a mob stands in the cell
+  CENTRE (`x = cell + 0.5`) and a Java cast truncates toward ZERO, so on the negative half of an axis the
+  cast origin sits ONE BLOCK HIGHER than the cell `blockPosition()` reports — the same rule a summon arm
+  pins for a minion's home centre (`BossMobGameTest:235`, `EntityCultist.java:135-137`). A probe that
+  pins `padCell + offset` asserts a cell the builder never touches, and a builder that computes its
+  offsets about `(0,0,0)` writes at the WORLD origin and never touches the pad at all: the Crimson
+  Portal's banner wall had BOTH defects at once — the write arm passed a `(0,0,0)` origin into
+  `bannerCell()` while the probe asserted `padCell + offset` — so the pad's wall cell read
+  `Block{minecraft:air}` on 3/3 arms (with-Curios ×2, noCurios) from the probe's own commit onward, with
+  the pad handed over clean (`cleared 0`, `swept 0`) and the probe's census printing no per-cell text
+  (c5-2 gate record `gate_record.md`, card t_2f9c86c8). Read the reference's write site before ruling
+  which side moves, then fix the BUILDER and the probe's cell list AS A PAIR: the builder passes the
+  cast origin, and the probe computes its expected cells by calling the port's own cell expression from
+  that same cast and passes THAT list to the claim
+  (`docs/testing.md#orb-claim-covers-asserted-cells`) so the claim, the census and the asserts ride one
+  list.
+<a id="pad-write-lands-only-in-a-loaded-chunk"></a>
+- **A world write on a cell whose CHUNK is not loaded is dropped SILENTLY, so a pad's far cells have to
+  be armed, claimed and asserted per loaded-CHUNK, not by "is it my origin chunk".** 1.21.1's
+  `Level#setBlock` asks the chunk source for a FULL chunk and a server answers null when it is not
+  loaded, so the write is never applied and never reported; and a game-test template force-loads only
+  its OWN intersecting chunks (`StructureUtils#forceLoadChunks`), so on a packed pad grid a pad's far
+  cells ride the NEIGHBOUR templates' forced chunks and the unforced gaps between them. Consequences: a
+  claim that writes such a cell is a no-op there (census it and skip it), an assert on it must be stated
+  per cell as loaded→written / unloaded→air, and a blanket "outside the origin chunk ⇒ air" is
+  OVER-SPECIFIED, because a neighbour's forced chunk does carry the write. Measured on the Crimson
+  Portal's banner wall — 6 blocks out from the cast origin, on the stride-6 pad packing — the loaded
+  cell set is a function of the pad's offset inside its own chunk, 1..4 of 4 cells across the three
+  arms (c5-2 gate record, card t_2f9c86c8).
+
 <a id="orb-claim-covers-asserted-cells"></a>
 - **A probe that asserts AIR on cells outside its own template box has to TAKE those cells at setup: a
   1×1×1 pad's clear pass reaches the corner cell only, so the assert reports the harness's terrain as a
