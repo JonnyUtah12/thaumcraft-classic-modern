@@ -99,6 +99,7 @@ without the evidence for its stages.
   widens the packing footprint), and a probe whose assertions depend on a world
   scan measures DELTAS over an ambient baseline scan, never absolute totals.
   Prefer both over reordering tests: the layout is not stable across runs.
+<a id="attribute-not-filter"></a>
 - **A probe whose verdict is about item entities must attribute them, not just
   filter them.** A scan over a box wider than the probe's cell reads the
   neighbourhood — `mobBox` spans ±12 (25³) and a 1×1×1 `empty` neighbour sits 6
@@ -126,7 +127,17 @@ without the evidence for its stages.
   the fixture is still landing (`aForeignStackInAPadIsNamedAndNotCounted`), and sweep
   the mutation surface (the drop tables) to show the probe goes RED. The
   identity-filtered `ownedBy` pattern (`OreDropGameTest`) is the right tool only where
-  the contract names the item and the mutation surface is the count.
+  the contract names the item and the mutation surface is the count. Measured a third
+  time on a `dropAllLoot` seam: `theritualclosesthelootinggate` — a 40-call mid-ritual
+  "nothing appears here" arm over an `inflate(8)` box — went RED on **1 of 4**
+  with-Curios legs of tree `258bf0fb` and 0 of 3 of main `7b430bb1`, naming
+  `an item appeared on the pad: [1 minecraft:wheat_seeds @(4031868.125, -60.0,
+  1.2463378958683364E7)]` (land runner t_5bf13a7d, `v3/leg_curios_1.gradle.log`): a
+  draw on the grid origin, the same shape as the `stone_button` and tube readings
+  above, and a rate a green streak cannot see. `CultistClericGameTest.plantForeignStack`
+  is the twin of `breakForeignBlockInPad` with one difference: the planted stack goes in
+  the probe's **own column**, not out in the inflated box — a stack planted out there
+  reaches a neighbour's cell and hands the next probe this exact flake.
 
 <a id="vouched-cell"></a>
 - **A probe that lets the LEVEL tick its mob must place that mob in the chunk the harness vouches.**
@@ -323,6 +334,19 @@ without the evidence for its stages.
   **98-142** / **100-130** (giant), against binomial means 15 and 120 — so no vanilla zombie loot table rides a modded id — and every stack in the
   25-block box was owned, **16/16** legs, foreign = 0 (8 legs per tree, the two sweeps above; both ran 10 kills, so the angry mean there is 15,
   not the shipped probe's 45).
+<a id="mob-seed-stream-rate-arm"></a>
+- **A rate arm drawn one roll per fresh mob is not n independent draws: name the seed source, measure the sum's variance inflation PER ARM, and de-correlate by reading draw j of generator j.**
+  A mob's `RandomSource` is seeded by `RandomSupport.generateUniqueSeed()` = `SEED_UNIQUIFIER.updateAndGet(p -> p * 118178349727652981L) ^ System.nanoTime()`, so consecutive spawns differ by the
+  **wall-clock cost of a spawn** and each roll is ONE point of a seed rotation whose step is that cost times the LCG multiplier: the leg's count moves as a block, its realised rate rides on
+  machine speed, and because that cost differs between the arms CI runs, the distribution is **arm-specific**. Measured on the crab hardspawn arm, 20 legs each, 60 draws (tree `1b6eda86`):
+  **18.2 ± 3.14** with-Curios vs **21.7 ± 4.39** no-Curios — variance 0.74× / 1.45× the binomial, realised 0.303 / 0.362 against the shipped `0.33F`, Mann-Whitney p = **0.015**, deviation
+  tracking leg wall-time r = +0.30 over legs of 61-151 s. A band on that stream is a band on the runner: the no-Curios arm's tail is what reached 8/60 and breached `9..31`, and widening the
+  band on the same shape just moves the wall. Fix the SHAPE: burn `j` throws on the SAME generator before reading draw `j`, so the phase advances with the draw index (equidistributed, Weyl)
+  at any spawn cost. The same 40 legs, 360 rolls: sd **8.46** / **9.70** (variance 0.90× / 1.18× the binomial of the sum), arm split p = **0.797**, lag-1 −0.025 / +0.004, transitions
+  162.4 / 158.2 and longest run 13.1 / 12.9 inside the independent-stream Monte-Carlo (158.9 / 12.8), load coupling r = −0.095, realised 0.331 / 0.333 — the binomial the band claims.
+  Set the band from the **measured** per-leg sd (mean ± 4 sd, widened outward to the quantum), never the nominal, keep the deterministic pair (the guaranteed branch, and the outcome set the
+  rate can never hide from), and state the power as the fraction of legs a doubled / halved rule body reddens (**98.8 %** / **99.7 %** at n = 360) plus the blind spot (a 0.25 body reddens on
+  **9.9 %**): **widen n for power, never the band** (t_8b63e037).
 
 - A `@GameTest` body that touches a block entity must not park the server
   thread. The game test server shuts down by unloading chunks
@@ -547,6 +571,9 @@ restores both and `diff -q` reports byte-identical.
   the probe's setup text, so a probe refactor silently UNPLANTS the script and the legs run clean —
   a planted leg must print its plant line, and every leg verdict is read, never assumed.
 
+<a id="scan-claim-covers-box-cells"></a>
+- **A pad claim's cell set is the GATE's block-arm set: the landing cell and its `:298` cell are 2 of the 5 cells a scan window reads.** The rule at `docs/testing.md#sweep-hazard-set-is-scan-set` says the claim has to cover every arm the gate reads, and the implementation of it shipped 2 of 5: `WarpEventsGameTest.claimScanCells` named each scripted landing cell and its `:298` cell, while `:300` is `noCollision(spider.getBoundingBox())` — `:299` `moveTo`'s the spider to the INTEGER cell corner and `Spider#defineDimensions` makes an adult spider 1.4 wide (the probe's own `EntityMindSpider` says so), so the box straddles x-1..x and z-1..z and reads FOUR cells, three of them outside the claim. Every red on the `a069e53e` lineage lands in one of those three, and each red's own claim line names the terrain the claim DID reach: main run 43748694926 (job 132934321588, `thescanrejectsoccupiedandflooredcellsandspendsitssecondattempt`) cleared `grass_block[snowy=false] @ rel (8, 0, 8)` — window a=0's `:298` cell — six ms before the same probe rejected window a=8's box cell `(7, 1, 9)` on the same block; custody-ref run 43756378800 (job 132941271802, `therealbandspawnsthewarpcappedhostileswarm`) cleared 30 foreign blocks (`dirt`, `grass_block`, `cobblestone`, `mossy_cobblestone`, `cobblestone_stairs`, y 0-1, e.g. `cobblestone_stairs @ rel (9, 0, 18)`) before rejecting box cell `(9, 1, 8)`. So **the probe's own sentence "this intruder arrived after the claim" was the wrong diagnosis**: the terrain wave is inside the pad at claim tick — it is *named* in cells the claim clears and *left standing* in the box cells the claim never named. Read the claim's `cleared N` as the channel census (`cleared 30` / `cleared 1` on the reds, `cleared 0` on a clean handoff). Shape (t_d8944aae): the claim derives its cells from the SAME detached entity the shadow measures with (`blockCellsOfWindow` = `moveTo` + `getBoundingBox()`, the probe's `boxFits`), and asserts `cells == 5 × windows` so a change in the mob's box moves the claim with it and names the box dimensions in the message. Keep it a SETUP claim: the scan is synchronous inside one tick (one draw per tick, `WarpEvents.java:266-272`), so a claim taken at the window's own draw buys nothing the setup claim cannot. Teeth, deterministic — no streak needed: `cobblestone_stairs[facing=east]` planted at rel `(9, 1, 8)` BEFORE the claim (the CI's cell) → shipped tree RED naming rel `(9, 1, 8)` byte-for-byte with the CI line, fixed tree GREEN with the claim line naming the cleared stair in its box-cell census; `grass_block` planted at rel `(7, 1, 9)` in the blocked-scan probe (the 4229b84e cell) → shipped RED naming `(7, 1, 9)`, fixed GREEN; the same plants in the illusion probe's `(7, 1, 20)` → shipped RED, fixed GREEN; and the claim reverted to its 2-cell set on the fixed tree with the plants kept → RED again, which makes the cell set the lever and not the plant's tick. **Census (t_d8944aae): teeth, one leg each, NO-Curios, the three cells planted BEFORE the claim by the plant helper, which prints its plant line on the leg — shipped claim RED naming rel `(9, 1, 8)`, `(7, 1, 9)` and `(7, 1, 20)` byte-for-byte the three reds it reproduces (main runs 43756378800 and 43748694926, and the natural landed-tree leg at 16:49:21), with every claim line in that leg reading `cleared 0`: the plants stood in cells a 2-cell claim never names. The same plants on the fixed claim: GREEN 515/515, each claim line `cleared 1 foreign block(s) — 1 of them sat in a :300 box cell`, naming the plant. Fixed tree with the claim widened only along the landing column (floor + landing + `landing.above()`, 3 of the 5 cells) and the plants kept: RED again on the same three cells — the cell set is the lever, not the plant's tick. Fix arm matrix: NO-Curios 10/10 GREEN (30/30 claim lines `cleared 0` — the channel is drawn by the CI-side terrain: 2 reds in 4 CI samples against 1 in 11 local shipped-tree legs), with-Curios 2/2, post-merge on main `bccc2312` NO-Curios 4/5 + with-Curios 2/2, probe census 515 → 515. The 5th merged leg reddened at 17:52:32 on `theorblifetimeclampdiesatsixteenforplainandtwofortyforred` (`PROBE BROKEN: the orb cells must be AIR — got Block{minecraft:dirt}`): the same terrain wave in the warp ORB probe's cells, a lane this rule does not cover and this fix does not lever.**
+
 - **A sweep is only HALF a scan probe's isolation: the claim has to cover every arm the gate reads, and
   the probe's own fixtures are claimed LAST.** The rule at :390 sweeps non-player ENTITIES, and the
   hazard census that justified it (49 mind spiders at y = 8) is a shape the BLOCK arm cannot produce.
@@ -623,7 +650,7 @@ restores both and `diff -q` reports byte-identical.
   layout-draw/red-coordinate axis from the parent card is dead: the event is a `nextFloat()` roll,
   the pad coordinates are uniform in both outcomes, and no grid-origin change can fix a 20 % punch.
 
-- **A consumption poll must carry its own survival drive; a 3-sigma band on a shared-seed stream is not 3 sigma.** Two `EldritchCrabGameTest` arms flaked the with-Curios 502 streak at tip `a29bbc06` (card t_d0cc96e9), each exactly a docs rule wearing a compliant costume. (1) The orb-burst consumption arm was already a `helper.succeedWhen` outcome-poll — and still starved: the harness's level pin is a FINITE `setForcedTicks(1000)` pool, and at a batch edge the test sequence's clock outlives the ENTITY clock, so the orb never receives the one server tick (`tickCount` is incremented by `ServerLevel#tickNonPassenger`, not `Entity#tick`) that walks it from the impact's written age 100 past the `:27-29` `> 100` clamp — the watchdog fired 1 leg in ~14 with `age=100 removed=false`, impact landed, walk never arrived. The poll shape is only half the contract; where the outcome lives on the entity's clock and the harness's pool can die, the probe feeds the subject its survival step IN THE SERVER'S SHAPE (`tickCount++` then `tick()`) on every poll tick and the assert stays on the outcome (`removed`). Teeth: the clamp mutation `> LIFETIME_TICKS` → `> LIFETIME_TICKS * 10` puts the consumption 1000 steps past the 300-tick watchdog and reddens the probe on EVERY leg naming `:84 … age=… removed=false` (measured 2/2, the parent Q6d budget teeth stay intact as the record on the pre-poll shape; the `:84` write→0 mutation walks green past the watchdog on the drive shape — the consumption arm asserts BY the clamp, not at its tick). (2) The hardspawn rate arm `rolled >= 9 && rolled <= 31` is ±3.0 sd of ONE `Binom(60, 0.33)` (mean 19.8, sd 3.64, nominal trip 1.37e-3) — a legal band by the 4-sd rule's arithmetic only at 4 sd — fed by 60 per-mob `RandomSource`s seeded off the shared LCG stream: the correlation inflates the effective sd and it measured 1 red in 17 legs (the red leg drew 8, a 3.24-sd tail under the nominal sum). Same lesson as the 30 % band floor entries above: on correlated streams the NOMINAL binomial is optimistic; widen to 4 sd of the sum (`[5, 35]`, exact 1.75e-5 on the nominal, tolerating the ~3× effective inflation the 1/17 implies) and pair it with the deterministic arm the rate can never hide from — here the observed OUTCOME SET of the 60 draws must be exactly {shelled, unshelled} (the whole support [0, 60] of a 1/3 roll contains both), which a roll rule collapsed to one outcome reddens on 100 % of legs (teeth: `nextFloat() < 0.33F` → `< 0.0F` → `0/60`, measured red naming `:74-75`).
+- **A consumption poll must carry its own survival drive; a 3-sigma band on a shared-seed stream is not 3 sigma.** Two `EldritchCrabGameTest` arms flaked the with-Curios 502 streak at tip `a29bbc06` (card t_d0cc96e9), each exactly a docs rule wearing a compliant costume. (1) The orb-burst consumption arm was already a `helper.succeedWhen` outcome-poll — and still starved: the harness's level pin is a FINITE `setForcedTicks(1000)` pool, and at a batch edge the test sequence's clock outlives the ENTITY clock, so the orb never receives the one server tick (`tickCount` is incremented by `ServerLevel#tickNonPassenger`, not `Entity#tick`) that walks it from the impact's written age 100 past the `:27-29` `> 100` clamp — the watchdog fired 1 leg in ~14 with `age=100 removed=false`, impact landed, walk never arrived. The poll shape is only half the contract; where the outcome lives on the entity's clock and the harness's pool can die, the probe feeds the subject its survival step IN THE SERVER'S SHAPE (`tickCount++` then `tick()`) on every poll tick and the assert stays on the outcome (`removed`). Teeth: the clamp mutation `> LIFETIME_TICKS` → `> LIFETIME_TICKS * 10` puts the consumption 1000 steps past the 300-tick watchdog and reddens the probe on EVERY leg naming `:84 … age=… removed=false` (measured 2/2, the parent Q6d budget teeth stay intact as the record on the pre-poll shape; the `:84` write→0 mutation walks green past the watchdog on the drive shape — the consumption arm asserts BY the clamp, not at its tick). (2) The hardspawn rate arm `rolled >= 9 && rolled <= 31` is ±3.0 sd of ONE `Binom(60, 0.33)` (mean 19.8, sd 3.64, nominal trip 1.37e-3) — a legal band by the 4-sd rule's arithmetic only at 4 sd — fed by 60 per-mob `RandomSource`s seeded off the shared LCG stream: the correlation inflates the effective sd and it measured 1 red in 17 legs (the red leg drew 8, a 3.24-sd tail under the nominal sum). Same lesson as the 30 % band floor entries above: on correlated streams the NOMINAL binomial is optimistic; widen to 4 sd of the sum (`[5, 35]`, exact 1.75e-5 on the nominal, tolerating the ~3× effective inflation the 1/17 implies) and pair it with the deterministic arm the rate can never hide from — here the observed OUTCOME SET of the 60 draws must be exactly {shelled, unshelled} (the whole support [0, 60] of a 1/3 roll contains both), which a roll rule collapsed to one outcome reddens on 100 % of legs (teeth: `nextFloat() < 0.33F` → `< 0.0F` → `0/60`, measured red naming `:74-75`). **The 1/17 has a mechanism, and it is the STREAM, not the band width (t_8b63e037): each per-mob `RandomSource` carries `uniquefier × 118178349727652981L ^ System.nanoTime()`, so 60 consecutive rolls are one point of 60 near-identical seed rotations — measured arm-specific over 20 legs per arm: 18.2 ± 3.14 with-Curios vs 21.7 ± 4.39 no-Curios, realised 0.303 / 0.362, split p = 0.015, deviation tracking leg wall-time r = +0.30 — and the no-Curios arm's tail is the 8/60 that breached `9..31` on the `game-test-no-curios` leg. `[5, 35]` on that shape widens the wall, not the distribution. The arm now reads draw j of generator j (j throws burned on the SAME generator before `finalizeSpawn`) at 360 rolls — sd 8.46 / 9.70, variance 0.90× / 1.18× the binomial, split p = 0.797, lag-1 ≈ 0, load coupling r = −0.095 — and the band is the MEASURED one: 118.8 ± 4 · 9.70 widened outward = `80..158`, exact trip 9.3e-6, 0 of 40 census legs outside (observed 103..140), power 98.8 % / 99.7 % against a doubled / halved roll body and 9.9 % against a 0.25 body, the declared blind spot. Rule: docs/testing.md#mob-seed-stream-rate-arm.**
 
 - **A draw taken N ticks after a rule WRITES is a tick budget, even when the asserted value is an
   outcome: park the subject, drive ONE tick, and read what that tick wrote.** Measured on
@@ -667,6 +694,29 @@ restores both and `diff -q` reports byte-identical.
   subject to control *when* a rule fires, verify the park cell is really unticked — print the rule's own
   precondition (`restrictDistSqr`) on the tick before the draw; a precondition already satisfied means
   the hand-driven tick is not the write tick and the draw is a budget.
+<a id="component-codec-save-path"></a>
+- **A vanilla data component's persistent codec can reject a mod's marker, and the save path
+  swallows the ITEM, not the write.** `minecraft:entity_data` and `minecraft:block_entity_data`
+  are registered with `CustomData.CODEC_WITH_ID` (`DataComponents.java:172`; `CustomData.java:33-35`
+  is `tag.contains("id", 8) ? success : error("Missing id for entity in: " + tag)`), so a compound
+  put there with no entity `id` string makes `ItemStack#save` throw
+  (`DataComponentUtil.wrapEncodingExceptions` logs `Error saving [15 minecraft:diamond]` and
+  **rethrows**) out of `ServerLevel#save:824` — the server logs it, the save keeps going, and that
+  stack silently never reaches the region file: a user-visible item loss. Measured here: 186
+  occurrences in 53/53 legs (both accessory arms, three trees) from the pech trade-window drop
+  stamping `{PechDropOwner:"PechDrop"}` into that component (t_04233450, BD-73's first shape);
+  renaming the key does not help, the gate reads the absence of `id`, not the key name.
+  Two consequences for probe authors. (1) A probe that asserts the component's VALUE on the live
+  stack — the pre-fix `stamped == 5` arm — is GREEN over a total item loss; a write that lands on
+  a component the platform cannot serialize needs a SAVE/RELOAD arm on the crashing frames
+  (`Entity#saveWithoutId` → `ItemEntity#addAdditionalSaveData:333` → `ItemStack#save:419`) and the
+  reload frames (`Entity#load` → `ItemEntity#readAdditionalSaveData:341` → `ItemStack#parse`), and
+  the marker must be read back through the CONSUMER's own reader
+  (`AIPechItemEntityGoto#pechDropOwnerOf`), never a hand-rolled key, or a marker that survives on a
+  key nobody reads passes. (2) This defect is invisible to exit codes: the harness prints
+  `All N required tests passed` while the signature rides the shutdown log, so a leg's green says
+  nothing — grep the retained per-leg log for `Missing id for entity in` (0 on a clean tree;
+  2-12 per leg before the fix).
 
 - **A 1.0-health mob probe has to CLAIM its own mob box, and the channel a pad-sharing claim can NOT
   close is fire.** `theHarmlessFuseDiscardsPast1200TicksAndANormalSpiderNeverExpires`
@@ -746,4 +796,7 @@ whose TARGET is not the rule the citing comment describes. A missing or duplicat
 the last one is converted; no NEW line-number cite is accepted anywhere.
 
 Anchors minted for the cited bullets (t_867b394f): `vouched-cell`, `entity-clock-poll`,
-`removal-age-names-mechanism`, `outcome-not-tick-budget`, `sweep-hazard-set-is-scan-set` (t_b33916a2, the mind-spider mob-box claim).
+`removal-age-names-mechanism`, `outcome-not-tick-budget`, `sweep-hazard-set-is-scan-set` (t_b33916a2, the mind-spider mob-box claim). Minted by t_8b63e037:
+`mob-seed-stream-rate-arm`. Minted by t_d8944aae (the pad-claim box-cell rule):
+`scan-claim-covers-box-cells`. Minted later (t_04233450): `component-codec-save-path` (the
+item-entity bullet keeps main's `attribute-not-filter`, which this card's probe cites).

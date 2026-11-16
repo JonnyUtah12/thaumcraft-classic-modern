@@ -68,6 +68,7 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -456,21 +457,49 @@ public final class EldritchCrabGameTest {
      * shells and the rest wear it about a third of the time. Both legs are
      * measured on the live {@code finalizeSpawn}.
      *
-     * <p>The rate arm follows the repo's band rule (docs/testing.md: mean ± 4 sd
-     * of the BINOMIAL SUM, widened outward to the quantum, never the only arm).
-     * The shipped band {@code 9..31} was ±3.0 sd of the 60-draw
-     * {@code Binom(60, 0.33)} (mean 19.8, sd 3.64) — a nominal 1.37e-3 per-leg
-     * trip — and the shared-stream seeding (every crab's fresh mob
-     * {@code RandomSource} is seeded off the same LCG, docs/testing.md's
-     * correlation warning) inflates the effective sd: it measured 1 red in 17
-     * legs at tip a29bbc06 (the red leg drew 8, a 3.24-sd tail). The band here
-     * is 19.8 ± 4·3.64 widened outward → {@code 5..35}: an exact 1.75e-5 trip on
-     * the nominal sum (1 leg in 57 268), so the ~3× effective-sd inflation the
-     * 1/17 rate implies is inside it with margin. The deterministic pair: the
-     * HARD arm (60/60) and the OUTCOME SET of the 60 non-HARD draws must be
-     * exactly {shelled, unshelled} — the whole support [0, 60] of a 1/3 roll
-     * contains both outcomes, and a roll rule collapsed to one outcome (always
-     * shells, never shells) reddens that arm on 100 % of legs.</p>
+     * <p><b>The stream.</b> One roll per fresh mob is not one independent draw.
+     * A mob's {@code RandomSource} is seeded by {@code RandomSupport
+     * .generateUniqueSeed()} = {@code SEED_UNIQUIFIER.updateAndGet(p -> p *
+     * 118178349727652981L) ^ System.nanoTime()}, so two consecutive crabs differ
+     * by the WALL-CLOCK cost of a spawn and each roll is ONE point of a seed
+     * rotation whose step is that cost times the LCG multiplier: the leg's count
+     * moves as a block, its centre rides on machine speed, and a band on such a
+     * stream is not arm-stable. Measured on 20 legs per arm at the census tree
+     * {@code 1b6eda86} (the 60-draw shape this probe shipped, both arms, per-leg
+     * prints): with-Curios mean <b>18.2</b> sd <b>3.14</b> (variance 0.74× the
+     * binomial), no-Curios mean <b>21.7</b> sd <b>4.39</b> (1.45×) —
+     * Mann-Whitney p = <b>0.015</b>, realised rate 0.303 vs 0.362 against the
+     * shipped {@code 0.33F}, and the deviation tracks leg wall-time (r = +0.30
+     * over legs of 61-151 s). The arm is not the shell RULE — the roll site
+     * {@link EntityEldritchCrab#finalizeSpawn} reads {@code this.random
+     * .nextFloat()} and no accessory slot — it is the stream's phase, and the
+     * 8/60 that breached the old {@code 9..31} band is the tail this shape
+     * reaches on the no-Curios arm (docs/testing.md#mob-seed-stream-rate-arm).</p>
+     *
+     * <p><b>The fix is the draw shape, not the band width.</b> The rate arm reads
+     * draw <i>j</i> of generator <i>j</i>: <i>j</i> throws are burned on the SAME
+     * generator before {@code finalizeSpawn} runs, so the phase advances with the
+     * draw index (equidistributed, Weyl) at ANY spawn cost. Same 20 legs per arm,
+     * 360 rolls: with-Curios mean <b>119.1</b> sd <b>8.46</b> (variance 0.90× the
+     * binomial), no-Curios mean <b>119.7</b> sd <b>9.70</b> (1.18×), nominal
+     * 118.8 / 8.92; arm split p = <b>0.797</b>, lag-1 −0.025 / +0.004,
+     * transitions 162.4 / 158.2 and longest run 13.1 / 12.9 inside the
+     * independent-stream Monte-Carlo (158.9 / 12.8), load coupling r = −0.095,
+     * realised rate 0.331 / 0.333. That is the binomial the band claims.</p>
+     *
+     * <p><b>The arms.</b> The deterministic pair first: the HARD arm (60/60
+     * shelled, {@code :72-73}) and the OUTCOME SET of the 360 rolls — the support
+     * of a 1/3 roll over 360 draws is [0, 360] and both outcomes live in it, so a
+     * roll rule collapsed to one outcome reddens on 100 % of legs. The rate arm is
+     * the band {@code 80..158} = 118.8 ± 4 · 9.70 (the larger arm's measured sd)
+     * widened outward to the quantum 1 over the support [0, 360]: exact trip
+     * <b>9.3e-6</b> on the independent sum, ≈2.5e-5 under the measured spread, and
+     * <b>0 of 40</b> census legs outside it (observed range 103..140). Power, as
+     * the fraction of legs on which the DEFECT reddens: a doubled roll body
+     * (p = 1/2, mean 180) on <b>98.8 %</b>, a halved body (p = 0.165, mean 59.4)
+     * on <b>99.7 %</b>, a 0.25 body (mean 90) on <b>9.9 %</b> — the band's
+     * declared blind spot, which no widening of this arm closes; the outcome-set
+     * arm covers collapses, not mild shifts.</p>
      */
     @GameTest(template = "empty", timeoutTicks = 300)
     public static void hardSpawnsAlwaysShellAndTheRestAreAboutAThird(final GameTestHelper helper) {
@@ -486,45 +515,81 @@ public final class EldritchCrabGameTest {
         }
         helper.assertTrue(shelled == 60,
                 ":72-73 — HARD is the guaranteed branch (setHelm(true)), got " + shelled + "/60");
+
+        // :74-75 — the roll arm: 360 draws (120 per non-HARD difficulty) taken at
+        // draw j of generator j — j throws burned on the generator the roll comes
+        // from — so the seed-rotation phase advances with the draw index and the
+        // per-leg sum is binomial at any spawn cost, on either arm (javadoc;
+        // docs/testing.md#mob-seed-stream-rate-arm; card t_8b63e037). A single roll per fresh mob is the
+        // shape that measured an arm-dependent distribution (p = 0.015) and the
+        // 8/60 tail; it is not a rate arm's shape.
+        final int rollsPerMode = 120;
+        final int rolls = 3 * rollsPerMode;
+        final int bandLo = 80;
+        final int bandHi = 158;
         int rolled = 0;
         boolean sawShelled = false;
         boolean sawBare = false;
+        final StringBuilder bits = new StringBuilder(rolls);
+        final int[] perMode = new int[3];
+        int modeIndex = 0;
+        int draw = 0;
         for (final Difficulty mode : List.of(Difficulty.EASY, Difficulty.NORMAL, Difficulty.PEACEFUL)) {
-            for (int i = 0; i < 20; i++) {
+            for (int i = 0; i < rollsPerMode; i++) {
                 final EntityEldritchCrab crab = crab(helper);
+                for (int b = 0; b < draw; b++) {
+                    crab.getRandom().nextFloat();
+                }
                 crab.finalizeSpawn(level, difficulty(level, mode), MobSpawnType.NATURAL, null);
-                if (crab.hasShell()) {
+                final boolean shell = crab.hasShell();
+                if (shell) {
                     rolled++;
+                    perMode[modeIndex]++;
                     sawShelled = true;
                 } else {
                     sawBare = true;
                 }
+                bits.append(shell ? '1' : '0');
+                draw++;
                 crab.discard();
             }
+            modeIndex++;
         }
-        // :74-75 — the outcome set, deterministic: 60 draws of a 1/3 roll have
-        // the whole support [0, 60] and both outcomes live inside it, so the
+        // The probe's own facts, every leg, green included: 0 breaches with no
+        // record is no evidence, so the measured count, the band and the outcome
+        // bits are logged for the next rate census (t_6119f491 rule).
+        ThaumcraftClassic.LOGGER.info(
+                "[t_8b63e037] hardspawn measured rolled={}/{} modes={} band=[{}, {}] bits={}",
+                rolled, rolls, Arrays.toString(perMode), bandLo, bandHi, bits);
+        // :74-75 — the outcome set, deterministic: 360 draws of a 1/3 roll have
+        // the whole support [0, 360] and both outcomes live inside it, so the
         // observed set must carry SHELL and NO_SHELL. A rule that made the shell
-        // HARD-only — the shape this probe first predicted — scores 0/60 and
-        // reddens this arm, like the band arm, on every leg.
+        // HARD-only — the shape this probe first predicted — scores 0/360 and
+        // reddens this arm on every leg (teeth: SHELL_CHANCE -> 0F, measured red
+        // naming :74-75).
         helper.assertTrue(sawShelled && sawBare,
-                ":74-75 — the 60 non-HARD draws must show BOTH shell outcomes (the support of a"
-                        + " 1/3 roll over 60 draws is [0, 60]); observed set = {"
+                ":74-75 — the 360 non-HARD draws must show BOTH shell outcomes (the support of"
+                        + " a 1/3 roll over 360 draws is [0, 360]); observed set = {"
                         + (sawShelled ? "shelled" : "") + (sawShelled && sawBare ? ", " : "")
-                        + (sawBare ? "unshelled" : "") + "} at " + rolled + "/60 — a one-outcome"
+                        + (sawBare ? "unshelled" : "") + "} at " + rolled + "/360 — a one-outcome"
                         + " set is a collapsed roll rule, not a draw");
-        // :74-75 — the rate arm: 60 flips of p=1/3 (quantum 1) is a binomial
-        // with mean 19.8 and sd 3.64, so the band is mean ± 4 sd widened outward
-        // to the quantum = [5, 35] over the whole support [0, 60]; exact trip on
-        // the nominal sum 1.75e-5 (the old ±3.0 sd [9,31] was 1.37e-3 and
-        // measured 1/17 legs red on the correlated streams at a29bbc06). A count
-        // this far out is a removed, added or re-probability'd roll body, not a
-        // draw.
-        helper.assertTrue(rolled >= 5 && rolled <= 35,
-                ":74-75 — 0.33 of the 60 non-HARD spawns wear a shell; measured " + rolled
-                        + " against mean 19.8, sd 3.64, 4 sd widened to quantum 1 = [5, 35] over"
-                        + " the support [0, 60] (exact 1.75e-5 trip): a total this far out is a"
-                        + " changed roll body, not a draw");
+        // :74-75 — the rate arm: 360 rolls of p=0.33F (quantum 1) over the support
+        // [0, 360], nominal mean 118.8 and sd 8.92. The MEASURED per-leg sd on
+        // this draw shape is 9.70 (no-Curios) / 8.46 (with-Curios) on 20 legs each
+        // — 1.18× / 0.90× the binomial variance — so the band is 118.8 ± 4 · 9.70
+        // widened outward to the quantum = [80, 158]: exact trip 9.3e-6 on the
+        // independent sum, ≈2.5e-5 under the measured spread, 0 legs outside it in
+        // the 40 census legs (observed 103..140). A total this far out is a
+        // removed, added or re-probability'd roll body — it reddens a doubled body
+        // (p = 1/2, mean 180) on 98.8 % of legs and a halved body (p = 0.165, mean
+        // 59.4) on 99.7 % — and because the draw shape is decorrelated, a breach
+        // here is the RULE and not the stream.
+        helper.assertTrue(rolled >= bandLo && rolled <= bandHi,
+                ":74-75 — 0.33 of the 360 non-HARD spawns wear a shell; measured " + rolled
+                        + " against nominal mean 118.8 / sd 8.92 and measured sd 9.70 (20 legs per"
+                        + " arm), 4 sd widened to quantum 1 = [80, 158] over the support [0, 360]"
+                        + " (exact 9.3e-6 trip): a total this far out is a changed roll body, not"
+                        + " a draw");
         helper.succeed();
     }
 

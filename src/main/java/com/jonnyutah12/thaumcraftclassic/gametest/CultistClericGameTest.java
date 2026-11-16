@@ -463,6 +463,39 @@ public final class CultistClericGameTest {
      * ({@code thaumcraft:itemeldritchobject}, {@link CultistAiLogic#ALL_LOOT_ITEM})
      * is unregistered on this tree, so the drop rides BD-68's live-registry gate
      * and no item may be invented.
+     *
+     * <p><b>Both item arms run their verdict on the owned delta, never on the box.</b>
+     * The box is {@code inflate(8)} around the cleric and the harness packs a
+     * 1×1×1 {@code empty} pad 6 apart from its neighbours, so the pad routinely holds
+     * a stack this probe never produced. Measured: this probe went RED
+     * <b>1 of 4</b> with-Curios legs on tree {@code 258bf0fb} (land runner
+     * t_5bf13a7d, {@code v3/leg_curios_1.gradle.log}) on
+     * {@code an item appeared on the pad: [1 minecraft:wheat_seeds @(4031868.125,
+     * -60.0, 1.2463378958683364E7)]} — the third wheat_seeds contamination recorded
+     * in this repo (the ore-drop probe 2026-11-04, the tube-storage probe 2026-11-13),
+     * the same grass-cell drop channel those two name, and the same
+     * identity-this-probe-can-never-emit shape as the zombie lane's
+     * {@code stone_button}. The scan therefore wraps each batch of producing calls
+     * and the verdict reads the UUID delta
+     * ({@code docs/testing.md#attribute-not-filter}); the server thread is
+     * single-threaded and {@code dropAllLoot} is not re-entered, so the delta is
+     * exactly the 40 calls' output — no clock, no position, no draw enters it.
+     * Item identity cannot carry ownership here: the mutation surface IS the drop
+     * seam, so the stack a defect produces is the probe's own eldritch object and an
+     * id filter is blind to the bug it guards.</p>
+     *
+     * <p>Green is not proof, so the arm carries its own foreign-stack fixture
+     * ({@link #plantForeignStack}, the twin of
+     * {@code ZombieMobGameTest.breakForeignBlockInPad}): a vanilla {@code wheat_seeds}
+     * — an id the cleric's seam can never emit, and the exact id of the measured
+     * contamination — stands in the pad on the producing tick, planted in the
+     * cleric's <b>own column</b> so it lands in this pad's cell and not a neighbour's,
+     * and the probe self-checks at the scan that the fixture is still standing in the
+     * foreign set, so the "named, not counted" half cannot pass on an empty one. The
+     * shipped {@code dropsLoot()} gate mutation (the real product defect: a cleric
+     * mid-ritual that drops) reddens the owned-delta arm on 100 % of legs, naming the
+     * 40 owned eldritch objects — the assert keeps biting after the ownership arm
+     * landed.</p>
      */
     @GameTest(template = "empty")
     public static void theRitualClosesTheLootingGate(final GameTestHelper helper) {
@@ -473,19 +506,35 @@ public final class CultistClericGameTest {
         cleric.setIsRitualist(true);
         helper.assertTrue(!cleric.isLootingGateOpen(),
                 ":92-94 — mid-ritual the gate is !getIsRitualist() = false");
+        final net.minecraft.world.entity.item.ItemEntity foreignStack =
+                plantForeignStack(helper, cleric.position());
+        final java.util.Set<java.util.UUID> ambient = padItemIds(level, box);
         for (int i = 0; i < 40; i++) {
             cleric.dropAllLoot();                                                     // :61 through :92-94
         }
-        final java.util.List<net.minecraft.world.entity.item.ItemEntity> padItems =
+        final java.util.List<net.minecraft.world.entity.item.ItemEntity> closedScan =
                 level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box);
-        helper.assertTrue(padItems.isEmpty(),
+        final java.util.List<net.minecraft.world.entity.item.ItemEntity> closedDrops =
+                deltaOf(ambient, closedScan);
+        final java.util.List<net.minecraft.world.entity.item.ItemEntity> closedForeign =
+                preexistingOf(ambient, closedScan);
+        helper.assertTrue(box.contains(foreignStack.position())
+                        && closedForeign.contains(foreignStack),
+                "PROBE BROKEN: the pad's foreign-stack fixture is not standing in the box inside the"
+                        + " predate set at the closed-gate scan, so this arm's named-not-counted half"
+                        + " ran on an empty foreign set (fixture alive = " + foreignStack.isAlive()
+                        + " at " + foreignStack.position() + ", pad foreign = "
+                        + describeStacks(closedForeign) + ")");
+        helper.assertTrue(closedDrops.isEmpty(),
                 ":92-94 — a cleric mid-ritual drops nothing, so the gate closed every one of 40 calls;"
-                        + " an item appeared on the pad: "
-                        + padItems.stream().map(it -> it.getItem() + " @" + it.position()).toList());
+                        + " the 40 calls produced " + describeStacks(closedDrops)
+                        + ". The pad also held " + describeStacks(closedForeign)
+                        + " that predated the calls: a 1x1x1 pad packs 6 apart from its neighbours and"
+                        + " this box is inflate(8), so foreign stacks are named here and never counted"
+                        + " (docs/testing.md#attribute-not-filter)");
         cleric.setIsRitualist(false);
         helper.assertTrue(cleric.isLootingGateOpen(), ":94 — out of the ritual the gate opens");
-        final int before = level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box)
-                .size();
+        final java.util.Set<java.util.UUID> baseline = padItemIds(level, box);
         for (int i = 0; i < 40; i++) {
             cleric.dropAllLoot();
         }
@@ -498,21 +547,121 @@ public final class CultistClericGameTest {
                         + CultistAiLogic.ALL_LOOT_ITEM + " is registered by CatalogEldritchRealm:196");
         final net.minecraft.world.item.Item looted =
                 BuiltInRegistries.ITEM.get(CultistAiLogic.ALL_LOOT_ITEM);
-        final java.util.List<net.minecraft.world.entity.item.ItemEntity> drops =
+        final java.util.List<net.minecraft.world.entity.item.ItemEntity> openScan =
                 level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box);
-        helper.assertTrue(drops.size() > before,
-                ":61/:94 — out of the ritual the open gate lets the seam drop "
-                        + CultistAiLogic.ALL_LOOT_ITEM + "; 40 calls produced "
-                        + (drops.size() - before) + " item entities");
-        helper.assertTrue(drops.stream().allMatch(e -> e.getItem().is(looted)),
-                ":61 — every drop on the pad is the eldritch object, not an invented item");
-        helper.assertTrue(drops.stream().anyMatch(e -> Integer.valueOf(CultistAiLogic.ALL_LOOT_META)
+        final java.util.List<net.minecraft.world.entity.item.ItemEntity> openDrops =
+                deltaOf(baseline, openScan);
+        final java.util.List<net.minecraft.world.entity.item.ItemEntity> openForeign =
+                preexistingOf(baseline, openScan);
+        // The seam drops exactly one stack per call, so the delta's size is pinned,
+        // not floored: a doubled loop widens it and a lost drop empties it, and a
+        // neighbour's stack can never satisfy it.
+        helper.assertTrue(openDrops.size() == 40,
+                ":61/:94 — out of the ritual the open gate lets the seam drop one "
+                        + CultistAiLogic.ALL_LOOT_ITEM + " per call, so 40 calls own 40 item entities;"
+                        + " the delta holds " + openDrops.size() + " " + describeStacks(openDrops)
+                        + ". The pad also held " + describeStacks(openForeign)
+                        + " that predated the calls — named, not counted");
+        helper.assertTrue(openDrops.stream().allMatch(e -> e.getItem().is(looted)),
+                ":61 — every drop the 40 calls produced is the eldritch object, not an invented item:"
+                        + " " + describeStacks(openDrops));
+        helper.assertTrue(openDrops.stream().allMatch(e -> Integer.valueOf(CultistAiLogic.ALL_LOOT_META)
                         .equals(e.getItem().get(
                                 com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents.ITEM_META))),
-                ":61 — the drop carries the pinned meta " + CultistAiLogic.ALL_LOOT_META
-                        + " (EntityCultist.withMeta), not a bare stack");
+                ":61 — every drop the 40 calls produced carries the pinned meta "
+                        + CultistAiLogic.ALL_LOOT_META + " (EntityCultist.withMeta), not a bare stack:"
+                        + " " + describeStacks(openDrops));
         cleric.discard();
+        foreignStack.discard();
         helper.succeed();
+    }
+
+    /** The item entities standing in the box right now, as ids — the ownership
+     *  baseline for a delta scan. A pad scan reads the neighbourhood (the batch
+     *  packs a 1×1×1 {@code empty} pad 6 apart from its neighbours and this
+     *  probe's box is {@code inflate(8)}), so a verdict is made on the delta
+     *  between two scans wrapped around the producing calls, never on the raw box
+     *  ({@code docs/testing.md#attribute-not-filter}). */
+    private static java.util.Set<java.util.UUID> padItemIds(final ServerLevel level,
+            final net.minecraft.world.phys.AABB box) {
+        final java.util.Set<java.util.UUID> ids = new java.util.HashSet<>();
+        for (final net.minecraft.world.entity.item.ItemEntity item
+                : level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box)) {
+            ids.add(item.getUUID());
+        }
+        return ids;
+    }
+
+    /** The scan entries the baseline did not already know: exactly what the calls
+     *  made between the two scans, because the server thread is single-threaded
+     *  and {@code dropAllLoot} is not re-entered. */
+    private static java.util.List<net.minecraft.world.entity.item.ItemEntity> deltaOf(
+            final java.util.Set<java.util.UUID> baseline,
+            final java.util.List<net.minecraft.world.entity.item.ItemEntity> scan) {
+        final java.util.List<net.minecraft.world.entity.item.ItemEntity> owned =
+                new java.util.ArrayList<>();
+        for (final net.minecraft.world.entity.item.ItemEntity item : scan) {
+            if (!baseline.contains(item.getUUID())) {
+                owned.add(item);
+            }
+        }
+        return owned;
+    }
+
+    /** The scan entries the baseline already knew: the neighbourhood's stacks, kept
+     *  as the diagnostic and never counted. */
+    private static java.util.List<net.minecraft.world.entity.item.ItemEntity> preexistingOf(
+            final java.util.Set<java.util.UUID> baseline,
+            final java.util.List<net.minecraft.world.entity.item.ItemEntity> scan) {
+        final java.util.List<net.minecraft.world.entity.item.ItemEntity> foreign =
+                new java.util.ArrayList<>();
+        for (final net.minecraft.world.entity.item.ItemEntity item : scan) {
+            if (baseline.contains(item.getUUID())) {
+                foreign.add(item);
+            }
+        }
+        return foreign;
+    }
+
+    /** A foreign stack standing in the pad on the producing tick, so the arms'
+     *  named-not-counted half is exercised on every leg and not on the draws that
+     *  happen to collide (the twin of {@code ZombieMobGameTest.breakForeignBlockInPad}).
+     *  The id is one the cleric's seam can NEVER emit — its only drop body is
+     *  {@code thaumcraft:itemeldritchobject} ({@code EntityCultist:61}) — and it is
+     *  the exact id of the measured contamination. It is planted in the cleric's own
+     *  column, NOT out in the inflated box: the box reaches a neighbour's cell, so a
+     *  stack planted out there would hand the next probe the very flake this card
+     *  closes. No gravity, so it cannot drift out of the cell either. */
+    private static net.minecraft.world.entity.item.ItemEntity plantForeignStack(
+            final GameTestHelper helper, final Vec3 at) {
+        final net.minecraft.world.entity.item.ItemEntity seeds =
+                new net.minecraft.world.entity.item.ItemEntity(helper.getLevel(),
+                        at.x, at.y, at.z,
+                        new ItemStack(net.minecraft.world.item.Items.WHEAT_SEEDS));
+        seeds.setNoGravity(true);
+        helper.getLevel().addFreshEntity(seeds);
+        return seeds;
+    }
+
+    /** {@code [40x thaumcraft:itemeldritchobject, 1x minecraft:wheat_seeds]} —
+     *  grouped by registered id so a pad full of a neighbour's stacks fits one
+     *  line. Item-entity {@code toString()}s are unregistered here, so the report
+     *  reads the registry. */
+    private static String describeStacks(
+            final java.util.List<net.minecraft.world.entity.item.ItemEntity> items) {
+        final java.util.Map<String, int[]> counts = new java.util.LinkedHashMap<>();
+        for (final net.minecraft.world.entity.item.ItemEntity item : items) {
+            final String key = BuiltInRegistries.ITEM.getKey(item.getItem().getItem()).toString();
+            counts.computeIfAbsent(key, k -> new int[1])[0] += item.getItem().getCount();
+        }
+        final StringBuilder out = new StringBuilder();
+        for (final java.util.Map.Entry<String, int[]> entry : counts.entrySet()) {
+            if (out.length() > 0) {
+                out.append(", ");
+            }
+            out.append(entry.getValue()[0]).append("x ").append(entry.getKey());
+        }
+        return "[" + out + "]";
     }
 
     // ------------------------------------------------------------- ranged attack
