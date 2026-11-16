@@ -1564,16 +1564,19 @@ public final class BossMobGameTest {
      * the mob's own cell (the crush row of {@code :160}), the cell east of it under the
      * footstep motion (the crush cell is {@code floor(posX + motionX)}), and the block row
      * {@code :137} reads at {@code floor(posY - 0.2F - this.height)} — with the 3.5 box that is
-     * FOUR cells under the feet (feet y - 3.7 floors down), not the cell under the feet, so the
-     * loot leg's cell sits at {@code (0, -4, 0)} and the cell at {@code (0, -1, 0)} is the decoy
-     * that proves the height term. The stride-6 grid packs the pads so those cells ride shared
+     * FOUR cells under the feet (feet y - 3.7 floors down), not the cell under the feet. The loot
+     * leg's cell is the stride cell {@code (1, -4, 0)} — measured: the tick applies the stride
+     * motion to the position before :136 reads, so a mob at its cell centre scores the cell ONE
+     * EAST — and the two decoys a wrong read breaks are {@code (0, -4, 0)} (the mob's own column
+     * at that row) and {@code (0, -1, 0)} (one under the feet, the reading that drops the height
+     * term). The stride-6 grid packs the pads so those cells ride shared
      * airspace/ground, and {@code StructureUtils#clearSpaceForStructure} clears only the template
      * box: the same claim discipline the portal lane's probes minted
      * (docs/testing.md#orb-claim-covers-asserted-cells), tagged to this card.
      */
     private static final List<BlockPos> GOLEM_BODY_CELLS = List.of(
             new BlockPos(0, 0, 0), new BlockPos(1, 0, 0), new BlockPos(0, -4, 0),
-            new BlockPos(0, -1, 0));
+            new BlockPos(1, -4, 0), new BlockPos(0, -1, 0));
 
     /**
      * The stride leg's tick budget. {@code :135} draws {@code nextInt(5) == 0} — one tick in five —
@@ -2123,11 +2126,14 @@ public final class BossMobGameTest {
      * {@code (floor(posX + motionX), floor(boundingBox.minY), floor(posZ + motionZ))} and removes
      * a block whose hardness sits in {@code [0.0, 0.15]}; the footstep leg needs real horizontal
      * motion, a one-in-five roll, and reads the row at {@code floor(posY - 0.2F - height)},
-     * breaking a {@code BlockLoot} cell it finds there. Stone (1.5) and air (-1) sit outside the
-     * crush window, a snow layer (0.1) sits inside it.
+     * breaking a {@code BlockLoot} cell it finds there. Measured on this pad, the stride's motion
+     * is already applied to the position when :136 reads, so the cell a mob at its cell centre
+     * scores is the one EAST of its column ({@code (1, -4, 0)}) — the loot sits there and the two
+     * cells a wrong read breaks ({@code (0, -4, 0)} and {@code (0, -1, 0)}) stay standing. Stone
+     * (1.5) and air (-1) sit outside the crush window, a snow layer (0.1) sits inside it.
      */
     @GameTest(template = "empty")
-    public static void theGolemCrushesASnowCellAndBreaksALootCellUnderfoot(
+    public static void theGolemCrushesASnowCellAndBreaksLootAheadOfItsStride(
             final GameTestHelper helper) {
         final BlockPos at = golemCell(helper);
         claimGolemCells(helper, at, GOLEM_BODY_CELLS);
