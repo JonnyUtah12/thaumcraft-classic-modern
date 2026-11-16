@@ -574,6 +574,38 @@ restores both and `diff -q` reports byte-identical.
 <a id="scan-claim-covers-box-cells"></a>
 - **A pad claim's cell set is the GATE's block-arm set: the landing cell and its `:298` cell are 2 of the 5 cells a scan window reads.** The rule at `docs/testing.md#sweep-hazard-set-is-scan-set` says the claim has to cover every arm the gate reads, and the implementation of it shipped 2 of 5: `WarpEventsGameTest.claimScanCells` named each scripted landing cell and its `:298` cell, while `:300` is `noCollision(spider.getBoundingBox())` — `:299` `moveTo`'s the spider to the INTEGER cell corner and `Spider#defineDimensions` makes an adult spider 1.4 wide (the probe's own `EntityMindSpider` says so), so the box straddles x-1..x and z-1..z and reads FOUR cells, three of them outside the claim. Every red on the `a069e53e` lineage lands in one of those three, and each red's own claim line names the terrain the claim DID reach: main run 43748694926 (job 132934321588, `thescanrejectsoccupiedandflooredcellsandspendsitssecondattempt`) cleared `grass_block[snowy=false] @ rel (8, 0, 8)` — window a=0's `:298` cell — six ms before the same probe rejected window a=8's box cell `(7, 1, 9)` on the same block; custody-ref run 43756378800 (job 132941271802, `therealbandspawnsthewarpcappedhostileswarm`) cleared 30 foreign blocks (`dirt`, `grass_block`, `cobblestone`, `mossy_cobblestone`, `cobblestone_stairs`, y 0-1, e.g. `cobblestone_stairs @ rel (9, 0, 18)`) before rejecting box cell `(9, 1, 8)`. So **the probe's own sentence "this intruder arrived after the claim" was the wrong diagnosis**: the terrain wave is inside the pad at claim tick — it is *named* in cells the claim clears and *left standing* in the box cells the claim never named. Read the claim's `cleared N` as the channel census (`cleared 30` / `cleared 1` on the reds, `cleared 0` on a clean handoff). Shape (t_d8944aae): the claim derives its cells from the SAME detached entity the shadow measures with (`blockCellsOfWindow` = `moveTo` + `getBoundingBox()`, the probe's `boxFits`), and asserts `cells == 5 × windows` so a change in the mob's box moves the claim with it and names the box dimensions in the message. Keep it a SETUP claim: the scan is synchronous inside one tick (one draw per tick, `WarpEvents.java:266-272`), so a claim taken at the window's own draw buys nothing the setup claim cannot. Teeth, deterministic — no streak needed: `cobblestone_stairs[facing=east]` planted at rel `(9, 1, 8)` BEFORE the claim (the CI's cell) → shipped tree RED naming rel `(9, 1, 8)` byte-for-byte with the CI line, fixed tree GREEN with the claim line naming the cleared stair in its box-cell census; `grass_block` planted at rel `(7, 1, 9)` in the blocked-scan probe (the 4229b84e cell) → shipped RED naming `(7, 1, 9)`, fixed GREEN; the same plants in the illusion probe's `(7, 1, 20)` → shipped RED, fixed GREEN; and the claim reverted to its 2-cell set on the fixed tree with the plants kept → RED again, which makes the cell set the lever and not the plant's tick. **Census (t_d8944aae): teeth, one leg each, NO-Curios, the three cells planted BEFORE the claim by the plant helper, which prints its plant line on the leg — shipped claim RED naming rel `(9, 1, 8)`, `(7, 1, 9)` and `(7, 1, 20)` byte-for-byte the three reds it reproduces (main runs 43756378800 and 43748694926, and the natural landed-tree leg at 16:49:21), with every claim line in that leg reading `cleared 0`: the plants stood in cells a 2-cell claim never names. The same plants on the fixed claim: GREEN 515/515, each claim line `cleared 1 foreign block(s) — 1 of them sat in a :300 box cell`, naming the plant. Fixed tree with the claim widened only along the landing column (floor + landing + `landing.above()`, 3 of the 5 cells) and the plants kept: RED again on the same three cells — the cell set is the lever, not the plant's tick. Fix arm matrix: NO-Curios 10/10 GREEN (30/30 claim lines `cleared 0` — the channel is drawn by the CI-side terrain: 2 reds in 4 CI samples against 1 in 11 local shipped-tree legs), with-Curios 2/2, post-merge on main `bccc2312` NO-Curios 4/5 + with-Curios 2/2, probe census 515 → 515. The 5th merged leg reddened at 17:52:32 on `theorblifetimeclampdiesatsixteenforplainandtwofortyforred` (`PROBE BROKEN: the orb cells must be AIR — got Block{minecraft:dirt}`): the same terrain wave in the warp ORB probe's cells, a lane this rule does not cover and this fix does not lever.**
 
+<a id="orb-claim-covers-asserted-cells"></a>
+- **A probe that asserts AIR on cells outside its own template box has to TAKE those cells at setup: a
+  1×1×1 pad's clear pass reaches the corner cell only, so the assert reports the harness's terrain as a
+  product defect.** `docs/testing.md#sweep-hazard-set-is-scan-set` says the claim has to cover every arm
+  the gate reads and `docs/testing.md#scan-claim-covers-box-cells` says the cell set is the gate's
+  block-arm set; the warp-ORB probe is the case where the set is wider than the pad in the other
+  direction. `CultistClericGameTest.theOrbLifetimeClampDiesAtSixteenForPlainAndTwoFortyForRed` arms its
+  plain+red pair at rel (1, 4, 1) and (2, 4, 1) — FOUR cells above the corner — and asserts those cells
+  are air, because a solid cell is a real removal path (`EntityGolemOrb:63` discards on a block hit,
+  measured at age 162). Its template is `empty` (1×1×1), so `StructureUtils#clearSpaceForStructure`
+  clears exactly the corner cell, the stride-6 grid packs sixteen of these pads inside a 24-wide
+  footprint, and the worldgen terrain wave the grid leaves behind (this lane's reds: `dirt`) stands in
+  the arming cells no structure pass reaches. Measured on the landed tree `bccc2312`+`t_d8944aae`,
+  NO-Curios leg `merged5#1` at 17:52:32: `PROBE BROKEN: the orb cells must be AIR — got
+  Block{minecraft:dirt} at BlockPos{x=-8356951, y=-56, z=-7582238} and Block{minecraft:dirt} at
+  BlockPos{x=-8356950, y=-56, z=-7582238} (pad corner BlockPos{x=-8356952, y=-60, z=-7582239})` — 1 red
+  of 5 legs, legs 2-5 green, so the assert is a rate, not a defect, and it costs the suite the clamp's
+  edge. **Blocks AND entities:** the block is the named hit path, and a foreign mob in an arming cell is
+  a removal at age 161, which is exactly the plain clamp's signature age the probe pins (
+  `docs/testing.md#removal-age-names-mechanism`), so the mechanism assert cannot separate it from the
+  clamp — the claim sweeps non-player entities too. Shape (t_b98f2601): ONE list
+  (`CultistClericGameTest.ORB_CELL_OFFSETS`) feeds the air assert, the claim and the `setPos` arms, so
+  the claim set cannot drift from the gate's block-arm set; the claim asserts its own size (one cell per
+  orb of the pair, naming the offsets) so moving the arming geometry moves the claim and says so by
+  name; it runs at setup BEFORE the probe's fixtures (a claim after the fixtures eats them); and it logs
+  `cleared N foreign block(s) … swept M foreign entity(ies)` on EVERY leg — `cleared 0` is the pad handed
+  over clean, `cleared N` names the wave, which is the channel census the scan lane reads the same way.
+  Teeth: plant the CI's `minecraft:dirt` in the arming cells BEFORE the fixtures — shipped probe RED
+  byte-for-byte the CI line, fixed probe GREEN on the same injection naming the dirt in its `cleared`
+  census, and the claim reverted with the plant kept RED again, which makes the claim the lever and not
+  the plant's tick.
+
 - **A sweep is only HALF a scan probe's isolation: the claim has to cover every arm the gate reads, and
   the probe's own fixtures are claimed LAST.** The rule at :390 sweeps non-player ENTITIES, and the
   hazard census that justified it (49 mind spiders at y = 8) is a shape the BLOCK arm cannot produce.
@@ -775,4 +807,5 @@ the last one is converted; no NEW line-number cite is accepted anywhere.
 Anchors minted for the cited bullets (t_867b394f): `vouched-cell`, `entity-clock-poll`,
 `removal-age-names-mechanism`, `outcome-not-tick-budget`, `sweep-hazard-set-is-scan-set` (t_b33916a2, the mind-spider mob-box claim). Minted by t_8b63e037:
 `mob-seed-stream-rate-arm`. Minted by t_d8944aae (the pad-claim box-cell rule):
-`scan-claim-covers-box-cells`.
+`scan-claim-covers-box-cells`. Minted by t_b98f2601 (the orb-cell claim rule):
+`orb-claim-covers-asserted-cells`.
