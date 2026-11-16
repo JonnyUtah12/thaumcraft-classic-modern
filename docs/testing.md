@@ -475,6 +475,100 @@ without the evidence for its stages.
   daylight pop is not armable from the probe side (`setDayTime(18000)` = 4/4 green on the fix tree). The
   daylight gate is the source-level formula; the flush that actually bites inside the box is the queued
   one above, and the crash is closed structurally by the classification.
+<a id="harvest-pad-claims-and-services-its-cells"></a>
+- **A probe that measures through a gate has to claim every layer that gate reads, not only the layer it
+  asserts, and it has to re-assert its precondition at its own QUIET tick.** Measured on the harvest lane,
+  no-Curios arm: `interact_harvestcropscorereapsripewheatandreplantsit` reddened **2 of 2** samples on the
+  `2eda098b` lineage (runs `43788415254` job `133035144147`, `43786472558` job `133041135`) with
+  `the crop patch sits under CropBlock#hasSufficientLight … at BlockPos{x=5, y=1, z=6} … wheat[age=7],
+  below farmland[moisture=7], tick 190`, and the rerun of the first run went green (all 529 required tests
+  ×3, 0 sig lines, marker present) — same sha, same lane, red then green: a channel, not a regression. The
+  reds landed on the 529-probe census; the greens were the 515 and 517 censuses (`f2d0cbbe`, `b1cead03`), so
+  the c5-1 packing shift moved this lane's grid, which is the mechanism the `packing-grid-collision` rule
+  names. The lane's own evidence lines say what moved: at `PLANT_TICK = 40` **six of the eight cells read
+  `raw=0`** and only the two whose source survived read `raw=13`, and at the gate tick `repaired=5` named
+  exactly the cells that then read 7-13 — the glowstone the fixture paid for at y=-1 was gone under six
+  cells before the crops went in, and `BushBlock#updateShape` fired on the first neighbour update after
+  the drive opened, in the cells the drive-open repair had just restored. The grid writers that rule names
+  (`LevelWriter#clearSpaceForStructure`, a sibling's `setBlock`) reach y=-1 (the source layer), y=0 (the
+  soil) and y=2 (the crop's headroom); the crop probe claimed none of them.
+  The shape, in this tree's words: the fixture names the cells it owns in a struct — source y=-1 under every
+  crop cell, soil y=0, crop y=1, headroom y=2, the golem's walk columns — and the pad **CLAIMS** them before
+  the fixture writes, **PLANTs** at `PLANT_TICK`, and **SERVICES** on every drive tick, printing every write
+  so the census carries `cleared=N` (the clean-handoff number: `cleared=0` on a clean leg) and `relit>0` (a
+  source that got eaten mid-drive). SERVICE repairs only PROVEN contamination: a foreign block standing in
+  the crop cell, a roof in the headroom, a source that is no longer a source. It never fills an air crop
+  cell during the drive, because that is what the probe's own chop looks like, and planting every tick would
+  fake the reap the reap arm measures (that arm needs a 7 → 0 transition, which only the goal's replant
+  makes). The fixture's precondition assert then runs on the drive's first **quiet** tick — after the pad's
+  last write, the lane's own light-settle rule — and at the depth the fixture pays for (`raw >= 13`), not at
+  the bare gate threshold: at the gate threshold 8, a cell whose channels have not propagated reads 7, which
+  is the value this rule measured mid-flush, so asserting 8 arms the flake the card is about.
+  Teeth, no-Curios arm, all measured: SHIPPED probe + a planted wave at tick 200 (the grid's own blocks —
+  `dirt` / `cobblestone` in the crop cells, the source replaced at y=-1, `grass_block` over the headroom)
+  → RED `the crop patch lost a cell to a non-crop state at tick 201 … vanished=2 of 8 cells, repaired=0;
+  … state=Block{minecraft:dirt} … raw=0`; the FIXED probe + the SAME wave → PASS, 529 required tests, with
+  the pad's writes printed; the FIXED probe with the `PadMode.SERVICE` call commented out + the SAME wave →
+  RED at tick 200, so the per-tick service is the lever, not the plant tick. The same wave at tick 20 —
+  before `PLANT_TICK` — is green on both trees: the fixture's own writes overwrite it, which is why the CI
+  shape is a mid-window arrival and not a setup miss. That planted wave also reddened a sibling
+  (`combat_golemopensarealdoorandclosesitbehindit`) on the fixed tree's leg, which is the packing-grid leak
+  in the other direction, caught in the act. Local legs cannot reach the light arm: inside the box the
+  section's light is never computed (the census reads `raw=15`, the uncomputed value, on every leg), so
+  locally the channel's rate is ~0 (15 legs, 0 reds on three trees) and the CI arm's rate is 2/N — which is
+  exactly why the pop's arm cannot be caught after the fact (the crop dies permanently on the first
+  neighbour update inside the window) and the precondition assert has to be airtight. The tell for the next
+  red on this lane is the pad census: `relit=0` on a light-assert red is the light engine, `relit>0` is the
+  wave eating a source and the printed writes name it; a vanish arm naming a cell with a foreign block names
+  the contaminant state. Test-side only — the product (a player farm under a slope) is untouched.
+
+<a id="empty-stack-sentinel-save"></a>
+- **A `!= null` guard is 1.7.10's empty sentinel: 1.21.1's empty stack is NON-NULL, its `save`
+  throws, and the entity-save path catches that by deleting the whole entity.** 1.7.10 stored "no
+  carried item" as `null`: the golem's read is
+  `ItemStack.func_77949_a(nbt.func_74775_l("ItemCarried"))`
+  (`reference/decompiled/thaumcraft/thaumcraft/common/entities/golems/EntityGolemBase.java:643-644`)
+  and 1.7.10's `loadItemStackFromNBT` answers null for the empty compound; the port's write guards
+  copied that habit (`:588-594` is the `!= null` item arm, `:580-581` the bucket's). 1.21.1's empty
+  value is `ItemStack.EMPTY`, which is non-null, and `ItemStack#save` refuses it
+  (`ItemStack.java:419-421`, the encode refusal) while `saveOptional` (`:428-430`) writes the empty
+  compound; vanilla's own hand-item arm is that same gate-then-write (`Mob.java:394-401`:
+  `isEmpty()` → an empty compound, else `save`). `ItemStack#parseOptional` hands that EMPTY back
+  for the original's empty compound (`ItemStack.java:299-301`: `tag.isEmpty() ? EMPTY : …`) — so the ORIGINAL'S OWN BYTES,
+  read on 1.21.1, turn a field that was null into a field that throws. `FluidStack#save` has the
+  same gate (`FluidStack.java:283-285` throws `Cannot encode empty FluidStack`, `:294-296` is the
+  gate, `:196` parses that EMPTY back out of a no-key write).
+  Two shapes of consequence. **(1) The frame that catches it drops an ENTITY, not a stack.**
+  NeoForge's patched `EntityStorage.storeEntities` wraps each entity's `Entity#save` in a catch
+  that logs the per-entity "has thrown an exception trying to write state. It will not persist"
+  line and never adds the tag to the chunk's `Entities` list: the mob is deleted by a world save,
+  silently (the item-component bullet `component-codec-save-path` loses one item; this loses the
+  actor). **(2) The FIRST save of a freshly constructed object cannot see it** — the ctor leaves
+  the field null (the original's ctor, and `setCarried` on the port), so the throw needs a load in
+  front of it. The probe's teeth are therefore the SECOND cycle, save → load → save: a one-cycle
+  round-trip
+  (`golemStateSurvivesSaveAndReload`, `gametest/GolemRuntimeGameTest`) is green over a total loss,
+  and an assert on the live field is green too. A probe must also not read a healing getter before
+  that save — the original's `getCarried()` routes an emptied field through `setCarried(null)`
+  (decompiled `EntityGolemBase.java:804-810`; the port's copy is `entities/golems/EntityGolemBase.java:737-740`),
+  and a probe that asserted on it first measured a golem that can
+  never reproduce the census (measured, this card's first leg). Census for the lane:
+  `grep -c "has thrown an exception trying to write state"` per retained leg log, split per entity
+  type (`entity.thaumcraft.golem` vs `entity.minecraft.item`) — the harness prints
+  `All N required tests passed` while the signature rides the shutdown save, so leg exit codes say
+  nothing. Three census hygiene rules, all measured on this card's legs. (1) Score the **entity**
+  variant: the same phrase is logged by the BlockEntity arm (`A BlockEntity type … has thrown an
+  exception trying to write state. It will not persist`), and on a leg where a probe FAILED the
+  harness writes that probe's over-length report into a lectern's book, which the 1024-char string
+  cap rejects — a red leg's raw phrase count is then inflated by the harness, not by a save loss
+  (measured: 1 such hit on a leg red with `interact_returnhomeusesthehomeradius…`, `LecternBlockEntity`,
+  `String "interact_returnhome… " is too long: 1105, expected range [0-1024]`). (2) Do NOT paste
+  the verbatim phrase into a probe message: the census counts it and the probe inflates its own
+  measurement (measured: 1 self-match, this card's first leg). (3) The `Cannot encode empty …`
+  strings appear in probe failure text too, so read them as diagnostics, not as the census. The fix shape is to gate the encode
+  (`saveOptional`) while keeping the original's bytes (the empty compound, or no key at all) and to
+  normalise the read back onto the sentinel; the mutation tooth is restoring the product hunk,
+  which reddens the second-cycle probes by name.
 
 ## Standing acceptance gates
 **`PlayableAcceptanceGameTest` is the PLAYABLE gate** (TC-M9-01-s, `t_8ea70fda`). The 2026-10-30 intake asked
@@ -573,6 +667,41 @@ restores both and `diff -q` reports byte-identical.
 
 <a id="scan-claim-covers-box-cells"></a>
 - **A pad claim's cell set is the GATE's block-arm set: the landing cell and its `:298` cell are 2 of the 5 cells a scan window reads.** The rule at `docs/testing.md#sweep-hazard-set-is-scan-set` says the claim has to cover every arm the gate reads, and the implementation of it shipped 2 of 5: `WarpEventsGameTest.claimScanCells` named each scripted landing cell and its `:298` cell, while `:300` is `noCollision(spider.getBoundingBox())` — `:299` `moveTo`'s the spider to the INTEGER cell corner and `Spider#defineDimensions` makes an adult spider 1.4 wide (the probe's own `EntityMindSpider` says so), so the box straddles x-1..x and z-1..z and reads FOUR cells, three of them outside the claim. Every red on the `a069e53e` lineage lands in one of those three, and each red's own claim line names the terrain the claim DID reach: main run 43748694926 (job 132934321588, `thescanrejectsoccupiedandflooredcellsandspendsitssecondattempt`) cleared `grass_block[snowy=false] @ rel (8, 0, 8)` — window a=0's `:298` cell — six ms before the same probe rejected window a=8's box cell `(7, 1, 9)` on the same block; custody-ref run 43756378800 (job 132941271802, `therealbandspawnsthewarpcappedhostileswarm`) cleared 30 foreign blocks (`dirt`, `grass_block`, `cobblestone`, `mossy_cobblestone`, `cobblestone_stairs`, y 0-1, e.g. `cobblestone_stairs @ rel (9, 0, 18)`) before rejecting box cell `(9, 1, 8)`. So **the probe's own sentence "this intruder arrived after the claim" was the wrong diagnosis**: the terrain wave is inside the pad at claim tick — it is *named* in cells the claim clears and *left standing* in the box cells the claim never named. Read the claim's `cleared N` as the channel census (`cleared 30` / `cleared 1` on the reds, `cleared 0` on a clean handoff). Shape (t_d8944aae): the claim derives its cells from the SAME detached entity the shadow measures with (`blockCellsOfWindow` = `moveTo` + `getBoundingBox()`, the probe's `boxFits`), and asserts `cells == 5 × windows` so a change in the mob's box moves the claim with it and names the box dimensions in the message. Keep it a SETUP claim: the scan is synchronous inside one tick (one draw per tick, `WarpEvents.java:266-272`), so a claim taken at the window's own draw buys nothing the setup claim cannot. Teeth, deterministic — no streak needed: `cobblestone_stairs[facing=east]` planted at rel `(9, 1, 8)` BEFORE the claim (the CI's cell) → shipped tree RED naming rel `(9, 1, 8)` byte-for-byte with the CI line, fixed tree GREEN with the claim line naming the cleared stair in its box-cell census; `grass_block` planted at rel `(7, 1, 9)` in the blocked-scan probe (the 4229b84e cell) → shipped RED naming `(7, 1, 9)`, fixed GREEN; the same plants in the illusion probe's `(7, 1, 20)` → shipped RED, fixed GREEN; and the claim reverted to its 2-cell set on the fixed tree with the plants kept → RED again, which makes the cell set the lever and not the plant's tick. **Census (t_d8944aae): teeth, one leg each, NO-Curios, the three cells planted BEFORE the claim by the plant helper, which prints its plant line on the leg — shipped claim RED naming rel `(9, 1, 8)`, `(7, 1, 9)` and `(7, 1, 20)` byte-for-byte the three reds it reproduces (main runs 43756378800 and 43748694926, and the natural landed-tree leg at 16:49:21), with every claim line in that leg reading `cleared 0`: the plants stood in cells a 2-cell claim never names. The same plants on the fixed claim: GREEN 515/515, each claim line `cleared 1 foreign block(s) — 1 of them sat in a :300 box cell`, naming the plant. Fixed tree with the claim widened only along the landing column (floor + landing + `landing.above()`, 3 of the 5 cells) and the plants kept: RED again on the same three cells — the cell set is the lever, not the plant's tick. Fix arm matrix: NO-Curios 10/10 GREEN (30/30 claim lines `cleared 0` — the channel is drawn by the CI-side terrain: 2 reds in 4 CI samples against 1 in 11 local shipped-tree legs), with-Curios 2/2, post-merge on main `bccc2312` NO-Curios 4/5 + with-Curios 2/2, probe census 515 → 515. The 5th merged leg reddened at 17:52:32 on `theorblifetimeclampdiesatsixteenforplainandtwofortyforred` (`PROBE BROKEN: the orb cells must be AIR — got Block{minecraft:dirt}`): the same terrain wave in the warp ORB probe's cells, a lane this rule does not cover and this fix does not lever.**
+
+<a id="deferred-chunkgen-stamps-pad-cells"></a>
+- **The producer of a probe cell can be the mod's OWN deferred chunk generation, not a neighbour pad — and for a tile-cast probe the claim must remove the BLOCK ENTITY, not just the block.** The altar/lock/spawner probe (`EldritchRealmGameTest.altarLockAndSpawnerRunTheirCounters`) died with a raw cast failure on a with-Curios leg of `af948d75` (`altarlockandspawnerruntheircounters failed at 7385228, -60, -10213806! class com.jonnyutah12.thaumcraftclassic.tiles.TileEldritchCap cannot be cast to class com.jonnyutah12.thaumcraftclassic.tiles.TileEldritchLock`, leg at 18:41:14): the probe read a `TileEldritchCap` in its LOCK cell — rel `(1, 0, 0)`, a mod block, so the producer is a foreign FIXTURE, and the 1×1×1 pads stride 6 cells with the probe's cells far from any pad edge, so it is not a neighbour template. The ownership capture (t_1dd9381c's shape: a delta WRAPPED on the producing call, ownership logged at the action on every leg) names the producer as the mod's deferred worldgen pass, not a probe at all: **854 of 867 cap-tile constructions sit at PAD coordinates (x/z in the millions, y=-60) across 6 with-Curios legs** of `af948d75`, and the producer stack is `AuraNodeChunkGen.onServerTickPost:75 → MagicChunkHooks.runPendingChunkGen:79 → StructureChunkGen.generateChunk:89 → rollStructures:163 → WorldGenEldritchRingGen.generate:156 → StructureGen.set:125 → Level.setBlock → BlockDeviceBase.newBlockEntity:68 → DeviceTileFactory.create:63`. The harness's pads live in millions-coordinate chunks; the probes force chunk access, the mod's hooks queue that chunk's generation, and a random server tick runs the pending queue and stamps eldritch-ring structures into the pad's own cells. `setBlock` over a standing block entity KEEPS that entity (skill fact, TC-M4-06-p), so when the stamp lands between the probe's plant and its read, the STATE is the probe's and the ENTITY is the ring's, and the cast dies naming the ring's tile. The ring rolls per chunk, so contamination is a rate, not an arm: with-Curios **1/6** on `af948d75` (the 18:41:14 red leg + 5 own trace legs 0/5) and **0/5** on base `bccc2312` (mergedcur2 x2 + 3 legs on this card), NO-Curios **0/5 on each tree** (10 legs) — Fisher 1/6 vs 0/5 p=1.0: the rate is tree-independent; the parent's "shape appears only on that arm" reading (n=1) does not survive its arms, and the main-CI warp-scan reds that named `dirt`/`grass_block`/`cobblestone` (run 43748694926) are the same deferred-terrain channel drawn on the NO-Curios arm. Shape (t_9687e91a): the tile-cast probe claims the cells it CASTS — air + `removeBlockEntity` (air alone leaves the stamped tile standing under the plant; the entity is what the probe reads), the pad's own structure block counted as the grid marker and not a foreign block, every leg logging `claimed the 3 cells … cleared N foreign block(s) [names]` as the channel census (`cleared 0` = clean handoff, a named clear = the deferred pass caught live); casts go through a checked `ownTile` that names the foreign entity and the state, so future contamination reddens with the channel instead of a raw CCE. Cites: `docs/testing.md#sweep-hazard-set-is-scan-set` (the claim covers every arm the gate reads — the tile-cast arm reads block entities, not just blocks) and `docs/testing.md#scan-claim-covers-box-cells` (the cell set is the probe's own arm set; a stride-6 neighbour claim is the wrong set because the producer is the pad's whole chunk). Teeth — `blockeldritch[variant=3]` (the cap) planted at rel `(1, 0, 0)` with the plant printed on the leg: shipped tree RED byte-for-byte the 18:41:14 cast line (leg teethA, plant line on the leg, CCE text identical), fixed tree GREEN 515/515 with the claim naming the planted cap in its cleared census (leg teethB), and fixed tree + plant kept + claim disabled RED again naming `got com.jonnyutah12.thaumcraftclassic.tiles.TileEldritchCap... under state Block{thaumcraft:blockeldritch}[variant=8]` (leg teethC) — the claim is the lever. Fixed-tree with-Curios legs reddened twice on SIBLING lanes: `taintcreeperkeepsitshandrolledfuseandblast` (the disclosed t_21b2160d family) and `combat_butchercullstheoldestanimalonlyinaherdofthree` (`cell ... is air with a solid floor under ... got cell=Block{minecraft:grass_block} floor=Block{minecraft:dirt}` — the terrain side of this same deferred channel standing in a golem-pad cell). Those lanes are named by this rule, claimed by neither fix: the sibling pads need their own claims. Fix arm matrix (`8ea37dd4`): NO-Curios 5/5 and with-Curios 4/5 with THIS probe green on all 10 legs (the 5th with-Curios leg reddened on the guardian lane, `theguardianbreathesforfivehundredticksandburns` reading out-of-water air -20 — water-tank cells, same channel, logged to the sibling card); the claim census read `cleared 65 foreign block(s)` on one green NO-Curios leg that still passed 515/515 — the deferred pass stamped 65 blocks into the cast cells and the claim removed them under green, the channel caught live. CI 3/3 on `8ea37dd4` (run 43807906429), `build` SUCCESSFUL. Probe census 515 → 515 (existing probe, no new rows).**
+
+<a id="orb-claim-covers-asserted-cells"></a>
+- **A probe that asserts AIR on cells outside its own template box has to TAKE those cells at setup: a
+  1×1×1 pad's clear pass reaches the corner cell only, so the assert reports the harness's terrain as a
+  product defect.** `docs/testing.md#sweep-hazard-set-is-scan-set` says the claim has to cover every arm
+  the gate reads and `docs/testing.md#scan-claim-covers-box-cells` says the cell set is the gate's
+  block-arm set; the warp-ORB probe is the case where the set is wider than the pad in the other
+  direction. `CultistClericGameTest.theOrbLifetimeClampDiesAtSixteenForPlainAndTwoFortyForRed` arms its
+  plain+red pair at rel (1, 4, 1) and (2, 4, 1) — FOUR cells above the corner — and asserts those cells
+  are air, because a solid cell is a real removal path (`EntityGolemOrb:63` discards on a block hit,
+  measured at age 162). Its template is `empty` (1×1×1), so `StructureUtils#clearSpaceForStructure`
+  clears exactly the corner cell, the stride-6 grid packs sixteen of these pads inside a 24-wide
+  footprint, and the worldgen terrain wave the grid leaves behind (this lane's reds: `dirt`) stands in
+  the arming cells no structure pass reaches. Measured on the landed tree `bccc2312`+`t_d8944aae`,
+  NO-Curios leg `merged5#1` at 17:52:32: `PROBE BROKEN: the orb cells must be AIR — got
+  Block{minecraft:dirt} at BlockPos{x=-8356951, y=-56, z=-7582238} and Block{minecraft:dirt} at
+  BlockPos{x=-8356950, y=-56, z=-7582238} (pad corner BlockPos{x=-8356952, y=-60, z=-7582239})` — 1 red
+  of 5 legs, legs 2-5 green, so the assert is a rate, not a defect, and it costs the suite the clamp's
+  edge. **Blocks AND entities:** the block is the named hit path, and a foreign mob in an arming cell is
+  a removal at age 161, which is exactly the plain clamp's signature age the probe pins (
+  `docs/testing.md#removal-age-names-mechanism`), so the mechanism assert cannot separate it from the
+  clamp — the claim sweeps non-player entities too. Shape (t_b98f2601): ONE list
+  (`CultistClericGameTest.ORB_CELL_OFFSETS`) feeds the air assert, the claim and the `setPos` arms, so
+  the claim set cannot drift from the gate's block-arm set; the claim asserts its own size (one cell per
+  orb of the pair, naming the offsets) so moving the arming geometry moves the claim and says so by
+  name; it runs at setup BEFORE the probe's fixtures (a claim after the fixtures eats them); and it logs
+  `cleared N foreign block(s) … swept M foreign entity(ies)` on EVERY leg — `cleared 0` is the pad handed
+  over clean, `cleared N` names the wave, which is the channel census the scan lane reads the same way.
+  Teeth: plant the CI's `minecraft:dirt` in the arming cells BEFORE the fixtures — shipped probe RED
+  byte-for-byte the CI line, fixed probe GREEN on the same injection naming the dirt in its `cleared`
+  census, and the claim reverted with the plant kept RED again, which makes the claim the lever and not
+  the plant's tick. **Census (t_b98f2601): teeth, NO-Curios, the throwaway plant helper writes the CI's `minecraft:dirt` at rel (1, 4, 1) and (2, 4, 1) FIRST and prints its plant line — shipped tree (`af948d75`) RED 2/2 naming the air assert byte-for-byte the CI line (legs `plantA#1/#2`, e.g. `got Block{minecraft:dirt} at BlockPos{x=-8062799, y=-56, z=8620314} and Block{minecraft:dirt} at BlockPos{x=-8062798, y=-56, z=8620314} (pad corner BlockPos{x=-8062800, y=-60, z=8620313})`), the same plants on the fixed tree GREEN 2/2 with the claim line naming them (`cleared 2 foreign block(s) [Block{minecraft:dirt} @ rel (1, 4, 1) = …, … @ rel (2, 4, 1) = …] swept 0 foreign entity(ies)`, legs `plantB#1/#2`), and the claim reverted with the plants kept RED again on the same cells (leg `plantC#1`) — the claim is the lever, not the plant's tick. Natural-rate control on the shipped tree with a log-only trace of the asserted volume at setup tick: 5/5 GREEN, `nonAir=0` on every leg — the wave is drawn CI/landing-side, matching the 1-in-5 landed-tree sample that opened this card and the 1-in-11 local read. Fix arms: NO-Curios 5/5 + with-Curios 2/2 GREEN, 7/7 claim lines `cleared 0 foreign block(s) … swept 0 foreign entity(ies)` (the pad handed over clean), `./gradlew --rerun-tasks build` rc 0 with the unit XML 1157 tests / 0 failures / 0 errors / 2 skips, probe census 515 → 515 on this card's base `af948d75` (main's census is 529 after the sibling boss-base and pech-drop landings; the 515-probe base legs are the grid this delta does not move). Fisher exact: natural legs 1 red/5 (the parent's `merged5` sample) + 0/5 (this card's trace legs) vs fixed 0/7 → p=0.42; pooled shipped 3/12 vs fixed 0/9 → p=0.23 — no streak arm reaches significance, so the DETERMINISTIC plant pair is the causal leg, as `docs/testing.md#scan-claim-covers-box-cells` prescribes. One disclosed foreign red on `plantA#1`: `combat_golemopensarealdoorandclosesitbehindit`, the route-outcome rate flake the Rules already carry ("A route-OUTCOME gate goes red as a rate, on the leg that loads more") — this delta adds no probes and the census is 515 == 515, so the packing grid is byte-identical.
 
 - **A sweep is only HALF a scan probe's isolation: the claim has to cover every arm the gate reads, and
   the probe's own fixtures are claimed LAST.** The rule at :390 sweeps non-player ENTITIES, and the
@@ -797,6 +926,8 @@ the last one is converted; no NEW line-number cite is accepted anywhere.
 
 Anchors minted for the cited bullets (t_867b394f): `vouched-cell`, `entity-clock-poll`,
 `removal-age-names-mechanism`, `outcome-not-tick-budget`, `sweep-hazard-set-is-scan-set` (t_b33916a2, the mind-spider mob-box claim). Minted by t_8b63e037:
-`mob-seed-stream-rate-arm`. Minted by t_d8944aae (the pad-claim box-cell rule):
+`mob-seed-stream-rate-arm`. Minted by t_83e5a20d: `empty-stack-sentinel-save` (the golem carry sentinel). Minted by t_d8944aae (the pad-claim box-cell rule):
 `scan-claim-covers-box-cells`. Minted later (t_04233450): `component-codec-save-path` (the
-item-entity bullet keeps main's `attribute-not-filter`, which this card's probe cites).
+item-entity bullet keeps main's `attribute-not-filter`, which this card's probe cites). Minted by t_b98f2601 (the orb-cell claim rule):
+`orb-claim-covers-asserted-cells`. Minted by t_9687e91a (the deferred-chunkgen producer rule):
+`deferred-chunkgen-stamps-pad-cells`.
