@@ -3,7 +3,7 @@ package com.jonnyutah12.thaumcraftclassic.client.entity;
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.entities.golems.EntityGolemBase;
 import com.jonnyutah12.thaumcraftclassic.entities.golems.EntityGolemBobber;
-import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityEldritchGolem;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EntityEldritchGolem;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityMindSpider;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogGolems;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogMindSpider;

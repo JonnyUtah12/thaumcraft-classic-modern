@@ -29,7 +29,8 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.SpawnEggItem;
-import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityEldritchGolem;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EldritchGolemAiLogic;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EntityEldritchGolem;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.neoforged.neoforge.common.DeferredSpawnEggItem;
@@ -251,9 +252,12 @@ public final class GolemMenuGameTest {
      */
     @GameTest(template = "empty")
     public static void siblingGolemFamilyTypesAreRegistered(final GameTestHelper helper) {
-        assertSiblingType(helper, "eldritchgolem", EntityEldritchGolem.WIDTH, EntityEldritchGolem.HEIGHT,
-                EntityEldritchGolem.TRACKING_RANGE, EntityEldritchGolem.UPDATE_INTERVAL, MobCategory.MONSTER,
-                "ConfigEntities.java:119 + EntityEldritchGolem.java:54 (func_70105_a(1.75F, 3.5F))");
+        assertSiblingType(helper, "eldritchgolem", EldritchGolemAiLogic.WIDTH, EldritchGolemAiLogic.HEIGHT,
+                EldritchGolemAiLogic.TRACK_RANGE_CHUNKS, EldritchGolemAiLogic.UPDATE_INTERVAL,
+                MobCategory.MONSTER,
+                "ConfigEntities.java:119 (the row's 64 blocks are 4 chunks in 21.1's unit) + "
+                        + "EntityEldritchGolem.java:54 (func_70105_a(1.75F, 3.5F)); the class is the boss "
+                        + "body since the TC-M6-06-s-c5-3 repoint");
         assertSiblingType(helper, "golembobber", 0.25F, 0.25F, 64, 64, MobCategory.MISC,
                 "ConfigEntities.java:154 (64, 64, velocity not synced)");
         assertSiblingType(helper, "golemorb", 0.25F, 0.25F, 64, 20, MobCategory.MISC,
@@ -318,9 +322,10 @@ public final class GolemMenuGameTest {
 
         // The constants are the original's literals, and the live item must
         // answer with them in the original's layer order.
-        helper.assertTrue(EntityEldritchGolem.EGG_PRIMARY == 5592405 && EntityEldritchGolem.EGG_SECONDARY == 4210752,
+        helper.assertTrue(EldritchGolemAiLogic.EGG_PRIMARY == 5592405
+                        && EldritchGolemAiLogic.EGG_SECONDARY == 4210752,
                 "the pinned constants must be the original's decimal literals 5592405 / 4210752, got "
-                        + EntityEldritchGolem.EGG_PRIMARY + " / " + EntityEldritchGolem.EGG_SECONDARY);
+                        + EldritchGolemAiLogic.EGG_PRIMARY + " / " + EldritchGolemAiLogic.EGG_SECONDARY);
         final SpawnEggItem spawnEgg = (SpawnEggItem) egg;
         helper.assertTrue(spawnEgg.getColor(0) == 5592405,
                 "egg layer 0 = 5592405 (0x555555) per ItemSpawnerEgg.addMapping / func_82790_a layer==0, got "
