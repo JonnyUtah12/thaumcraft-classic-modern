@@ -60,6 +60,33 @@ public final class MagicChunkHooks {
     }
 
     /**
+     * Harness gate for the deferred block-writing pass (t_764d1e8e, docs/testing.md#deferred-chunkgen-gated-in-gametest):
+     * {@code tc.noChunkGen} set as a system property makes {@link StructureChunkGen#generateChunk}
+     * skip the chunk. The game-test server places its pads in chunks whose coordinates sit in the
+     * millions, and that pass is what stamps those pad cells — eldritch rings write
+     * {@code thaumcraft:blockeldritch} and carve air, the mound/hilltop/totem pass writes
+     * {@code dirt}/{@code grass_block}/{@code cobblestone} — and a {@code setBlock} over a standing
+     * cell leaves the cell's block entity in place, so the stamp lands under the probe's fixture
+     * (docs/testing.md#scan-claim-covers-box-cells, docs/testing.md#orb-claim-covers-asserted-cells).
+     * A probe that asserts its own geometry therefore draws this pass on every leg. The game-test
+     * server has no use for millions-coordinate structures, so the harness gates the pass; the
+     * property follows the {@code tc.*} precedent ({@code tc.noCurios}, {@code tc.contentMappingFile})
+     * and {@code -Ptc.chunkGenOn} re-arms it for a measurement leg.
+     *
+     * <p>The gate sits on the STRUCTURE hook, not on the queue: measured on the first shape, a queue
+     * clear in {@link #runPendingChunkGen} dropped every pending chunk and reddened
+     * {@code loadedchunksflowthroughthetickdriver}, the lane that measures the driver draining the
+     * queue ({@code data.isMagicGenDone(chunk)}). The aura pass writes no blocks — it records vis
+     * density — so it stays live and the driver keeps its marking.</p>
+     */
+    public static final String NO_CHUNK_GEN_PROPERTY = "tc.noChunkGen";
+
+    /** True while the harness gate is armed for this JVM (read per call, so a leg can flip it). */
+    public static boolean deferredChunkGenGated() {
+        return Boolean.getBoolean(NO_CHUNK_GEN_PROPERTY);
+    }
+
+    /**
      * Drains the pending queue for this level, runs every registered hook, and marks
      * each chunk generation-complete in the world store. Call from a server-tick
      * context, never from a chunk-load callback (the chunk may not be FULL yet).

@@ -5,12 +5,15 @@ import com.jonnyutah12.thaumcraftclassic.config.TcConfig;
 import com.jonnyutah12.thaumcraftclassic.config.TcConfigCatalog;
 import com.jonnyutah12.thaumcraftclassic.world.MagicChunkHooks;
 import com.jonnyutah12.thaumcraftclassic.world.WorldMagicData;
+import com.mojang.logging.LogUtils;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
+import org.slf4j.Logger;
 
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Structure generation pass over the deferred chunk pipeline (TC-M5-05b):
@@ -70,8 +73,25 @@ public final class StructureChunkGen {
     private StructureChunkGen() {
     }
 
+    /** Chunks the harness gate skipped this JVM — the census line's counter (t_764d1e8e). */
+    private static final AtomicLong GATED_SKIPS = new AtomicLong();
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     /** One structure-generation pass for a chunk (public for the game test). */
     public static void generateChunk(final ServerLevel level, final ChunkPos pos, final WorldMagicData data) {
+        if (MagicChunkHooks.deferredChunkGenGated()) {
+            // t_764d1e8e: the game-test server gates this pass — it is the producer that stamps the
+            // pads' own cells (docs/testing.md#deferred-chunkgen-gated-in-gametest). Counted and
+            // logged so a leg carries the evidence the pass RAN and was skipped, not that it never ran.
+            final long skipped = GATED_SKIPS.incrementAndGet();
+            if (skipped == 1L || skipped % 200L == 0L) {
+                LOGGER.info("CHUNKGEN-GATE -D{} armed: the deferred structure pass skipped {} chunk(s) "
+                                + "(last chunk x={} z={} at gameTime {} in dimension {}); -Ptc.chunkGenOn re-arms it",
+                        MagicChunkHooks.NO_CHUNK_GEN_PROPERTY, skipped, pos.x, pos.z,
+                        level.getGameTime(), level.dimension().location());
+            }
+            return;
+        }
         if (!level.dimension().equals(Level.OVERWORLD)) {
             return; // original: structures are overworld-only (nether call site dead)
         }
