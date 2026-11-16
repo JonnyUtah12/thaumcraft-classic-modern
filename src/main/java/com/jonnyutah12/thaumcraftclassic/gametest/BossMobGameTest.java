@@ -1139,23 +1139,46 @@ public final class BossMobGameTest {
                 ":222 — the pick is nextFloat() > 0.33F: 40 draws sit in the four-sigma band"
                         + " " + low + " .. " + high + " (mean 26.8, sd 2.97), got knights "
                         + knights);
-        // The upkeep leg past stage 12 (:238-239). Raw 5 + nextInt(5) = 5 .. 9, landed
-        // through the statue's own armour 5 (:43-45) by 1.21.1's armour formula
-        // damage * (1 - min(20, max(armour/5, armour - damage/2)) / 20): 5 lands 4.375 and
-        // 9 lands 8.55, so the bracket is 4 .. 9 and a 5 -> 4 flip (3.4) or a roll 5 -> 6
-        // (9.5) both go red.
+        // The upkeep leg past stage 12 (:238-239). The arm fires the reference's own
+        // source — DamageSource.drown (field_76380_i: absolute, armour-bypassing) — for
+        // 5 + nextInt(5). On 21.1.259 that source is REFUSED by the statue's OWN fire
+        // immunity (:38 field_70178_ae = true, the port's .fireImmune()), because the
+        // platform's drown type is fire-family and LivingEntity#hurt answers false for
+        // IS_FIRE on a fire-immune mob. 1.7.10's drown is not a fire source, so the
+        // upkeep lands there: the cost vanishes on the port, recorded as BD-138. The two
+        // controls below name the mechanism by measurement — drown DOES damage this
+        // platform (a plain armoured-zero cow loses the raw 5.0) and the statue IS
+        // damageable (a mob-attack 5.0 goes through its armour 5 at 4.375). The arm's
+        // rule constants (the stage gate, the 5 + nextInt(5) roll, the drown id) ride
+        // CultistPortalAiLogicTest; the source ships verbatim, not swapped for one the
+        // port prefers.
         mob.setHealth(500.0F);
         mob.setStage(CultistPortalAiLogic.SELF_DAMAGE_STAGE_MIN);
         mob.setStageCounter(400);
         final float full = mob.getHealth();
         mob.spawnMinions();
         final float landed = full - mob.getHealth();
-        helper.assertTrue(landed >= 4.0F && landed <= 9.0F,
-                ":238-239 — past stage 12 the arm drowns the statue for 5 + nextInt(5)"
-                        + " (armour 5 lands 4.375 .. 8.55), got " + landed);
-        helper.assertTrue(mob.getLastDamageSource() != null
-                        && mob.getLastDamageSource().is(DamageTypes.DROWN),
-                ":239 — the upkeep is drown damage, got " + mob.getLastDamageSource());
+        helper.assertTrue(landed == 0.0F && mob.getLastDamageSource() == null,
+                ":238-239 / BD-138 — the arm fires drown at the statue and 21.1.259 refuses"
+                        + " it (the statue's :38 fire immunity over the platform's"
+                        + " fire-family drown type), so the upkeep lands NOTHING here while"
+                        + " the reference's absolute 5 + nextInt(5) lands on 1.7.10: got"
+                        + " damage " + landed + " lastSource " + mob.getLastDamageSource());
+        final net.minecraft.world.entity.LivingEntity cow =
+                (net.minecraft.world.entity.LivingEntity) animalAt(helper, EntityType.COW,
+                        at.offset(4, 0, -4));
+        final float cowFull = cow.getHealth();
+        cow.hurt(level.damageSources().drown(), 5.0F);
+        helper.assertTrue(cow.getHealth() == cowFull - 5.0F,
+                "the control — drown damages this platform (a plain cow takes the raw 5.0,"
+                        + " armour-bypassing), got " + (cowFull - cow.getHealth()));
+        final float before = mob.getHealth();
+        mob.hurt(level.damageSources().mobAttack(cow), 5.0F);
+        helper.assertTrue(mob.getHealth() < before && mob.getLastDamageSource() != null
+                        && mob.getLastDamageSource().is(DamageTypes.MOB_ATTACK),
+                "the control — the statue is damageable: a non-fire mob-attack 5.0 lands"
+                        + " 4.375 through its armour 5, got " + (before - mob.getHealth()));
+        cow.discard();
         mob.setHealth(500.0F);
         mob.setStage(CultistPortalAiLogic.STAGE_BOSS);
         mob.setStageCounter(400);
@@ -1185,12 +1208,21 @@ public final class BossMobGameTest {
                         + " dz " + (born.getZ() - mob.getZ()));
         helper.assertTrue(born.hasRestriction()
                         && born.getRestrictRadius() == CultistPortalAiLogic.MINION_HOME_RADIUS
-                        && born.getRestrictCenter().equals(mob.blockPosition()),
-                ":251 — the praetor is homed on the statue's block with a 32-block radius, got"
-                        + " radius " + born.getRestrictRadius());
+                        && born.getRestrictCenter().equals(new BlockPos((int) mob.getX(),
+                                (int) mob.getY(), (int) mob.getZ())),
+                ":251 — the praetor is homed on the statue's (int)-cast position at a"
+                        + " 32-block radius, got radius " + born.getRestrictRadius()
+                        + " centre=" + born.getRestrictCenter());
         helper.assertTrue(mob.getHealth() == 500.0F,
                 ":243-255 — the boss arm carries no upkeep leg, got health " + mob.getHealth());
         born.discard();
+        // Every cultist this probe's arms produced (the 40 draws are discarded per draw;
+        // the upkeep and stage legs each add one) goes back out: a summon with a 32-block
+        // home wandering off the pad is a fixture the neighbour pads inherit.
+        for (final EntityCultist leak : level.getEntitiesOfClass(EntityCultist.class,
+                mob.getBoundingBox().inflate(34.0))) {
+            leak.discard();
+        }
         mob.discard();
         census(helper, "summon arms: " + knights + " knights / " + clerics + " clerics of " + draws);
         helper.succeed();
@@ -1259,6 +1291,23 @@ public final class BossMobGameTest {
                     ":136 — 161 counts down to 160, the gate value, got " + mob.getStageCounter());
             final int originChunkX = SectionPos.blockToSectionCoord(at.getX());
             final int originChunkZ = SectionPos.blockToSectionCoord(at.getZ());
+            // The channel census: the cell this probe expects, the cell the PORT computed
+            // from the statue's (int)-cast position, the cell's chunk and the readback.
+            final StringBuilder wallCensus = new StringBuilder();
+            for (int wall = 0; wall < PORTAL_BANNER_CELLS.size(); wall++) {
+                final BlockPos cell = at.offset(PORTAL_BANNER_CELLS.get(wall));
+                wallCensus.append(' ').append(cell)
+                        .append(" port=").append(EntityCultistPortal.bannerCell(
+                                new BlockPos((int) mob.getX(), (int) mob.getY(),
+                                        (int) mob.getZ()),
+                                CultistPortalAiLogic.BANNER_DIRECTION_FROM + wall))
+                        .append(" chunk=").append(SectionPos.blockToSectionCoord(cell.getX()))
+                        .append(',').append(SectionPos.blockToSectionCoord(cell.getZ()))
+                        .append(" read=").append(level.getBlockState(cell));
+            }
+            LOGGER.info("[TC-M6-06-boss] [t_51dcbf51] wall census about {} origin chunk {},{}"
+                            + " mob {} state {}:", at, originChunkX, originChunkZ,
+                    mob.position(), mob.blockPosition(), wallCensus);
             int bannersInChunk = 0;
             for (int wall = 0; wall < PORTAL_BANNER_CELLS.size(); wall++) {
                 final BlockPos cell = at.offset(PORTAL_BANNER_CELLS.get(wall));
