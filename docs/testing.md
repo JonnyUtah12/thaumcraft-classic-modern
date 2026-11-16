@@ -522,6 +522,54 @@ without the evidence for its stages.
   wave eating a source and the printed writes name it; a vanish arm naming a cell with a foreign block names
   the contaminant state. Test-side only — the product (a player farm under a slope) is untouched.
 
+<a id="empty-stack-sentinel-save"></a>
+- **A `!= null` guard is 1.7.10's empty sentinel: 1.21.1's empty stack is NON-NULL, its `save`
+  throws, and the entity-save path catches that by deleting the whole entity.** 1.7.10 stored "no
+  carried item" as `null`: the golem's read is
+  `ItemStack.func_77949_a(nbt.func_74775_l("ItemCarried"))`
+  (`reference/decompiled/thaumcraft/thaumcraft/common/entities/golems/EntityGolemBase.java:643-644`)
+  and 1.7.10's `loadItemStackFromNBT` answers null for the empty compound; the port's write guards
+  copied that habit (`:588-594` is the `!= null` item arm, `:580-581` the bucket's). 1.21.1's empty
+  value is `ItemStack.EMPTY`, which is non-null, and `ItemStack#save` refuses it
+  (`ItemStack.java:419-421`, the encode refusal) while `saveOptional` (`:428-430`) writes the empty
+  compound; vanilla's own hand-item arm is that same gate-then-write (`Mob.java:394-401`:
+  `isEmpty()` → an empty compound, else `save`). `ItemStack#parseOptional` hands that EMPTY back
+  for the original's empty compound (`ItemStack.java:299-301`: `tag.isEmpty() ? EMPTY : …`) — so the ORIGINAL'S OWN BYTES,
+  read on 1.21.1, turn a field that was null into a field that throws. `FluidStack#save` has the
+  same gate (`FluidStack.java:283-285` throws `Cannot encode empty FluidStack`, `:294-296` is the
+  gate, `:196` parses that EMPTY back out of a no-key write).
+  Two shapes of consequence. **(1) The frame that catches it drops an ENTITY, not a stack.**
+  NeoForge's patched `EntityStorage.storeEntities` wraps each entity's `Entity#save` in a catch
+  that logs the per-entity "has thrown an exception trying to write state. It will not persist"
+  line and never adds the tag to the chunk's `Entities` list: the mob is deleted by a world save,
+  silently (the item-component bullet `component-codec-save-path` loses one item; this loses the
+  actor). **(2) The FIRST save of a freshly constructed object cannot see it** — the ctor leaves
+  the field null (the original's ctor, and `setCarried` on the port), so the throw needs a load in
+  front of it. The probe's teeth are therefore the SECOND cycle, save → load → save: a one-cycle
+  round-trip
+  (`golemStateSurvivesSaveAndReload`, `gametest/GolemRuntimeGameTest`) is green over a total loss,
+  and an assert on the live field is green too. A probe must also not read a healing getter before
+  that save — the original's `getCarried()` routes an emptied field through `setCarried(null)`
+  (decompiled `EntityGolemBase.java:804-810`; the port's copy is `entities/golems/EntityGolemBase.java:737-740`),
+  and a probe that asserted on it first measured a golem that can
+  never reproduce the census (measured, this card's first leg). Census for the lane:
+  `grep -c "has thrown an exception trying to write state"` per retained leg log, split per entity
+  type (`entity.thaumcraft.golem` vs `entity.minecraft.item`) — the harness prints
+  `All N required tests passed` while the signature rides the shutdown save, so leg exit codes say
+  nothing. Three census hygiene rules, all measured on this card's legs. (1) Score the **entity**
+  variant: the same phrase is logged by the BlockEntity arm (`A BlockEntity type … has thrown an
+  exception trying to write state. It will not persist`), and on a leg where a probe FAILED the
+  harness writes that probe's over-length report into a lectern's book, which the 1024-char string
+  cap rejects — a red leg's raw phrase count is then inflated by the harness, not by a save loss
+  (measured: 1 such hit on a leg red with `interact_returnhomeusesthehomeradius…`, `LecternBlockEntity`,
+  `String "interact_returnhome… " is too long: 1105, expected range [0-1024]`). (2) Do NOT paste
+  the verbatim phrase into a probe message: the census counts it and the probe inflates its own
+  measurement (measured: 1 self-match, this card's first leg). (3) The `Cannot encode empty …`
+  strings appear in probe failure text too, so read them as diagnostics, not as the census. The fix shape is to gate the encode
+  (`saveOptional`) while keeping the original's bytes (the empty compound, or no key at all) and to
+  normalise the read back onto the sentinel; the mutation tooth is restoring the product hunk,
+  which reddens the second-cycle probes by name.
+
 ## Standing acceptance gates
 **`PlayableAcceptanceGameTest` is the PLAYABLE gate** (TC-M9-01-s, `t_8ea70fda`). The 2026-10-30 intake asked
 for three observable behaviours — ores drop items, items appear in JEI, items are searchable in creative. The
@@ -878,7 +926,7 @@ the last one is converted; no NEW line-number cite is accepted anywhere.
 
 Anchors minted for the cited bullets (t_867b394f): `vouched-cell`, `entity-clock-poll`,
 `removal-age-names-mechanism`, `outcome-not-tick-budget`, `sweep-hazard-set-is-scan-set` (t_b33916a2, the mind-spider mob-box claim). Minted by t_8b63e037:
-`mob-seed-stream-rate-arm`. Minted by t_d8944aae (the pad-claim box-cell rule):
+`mob-seed-stream-rate-arm`. Minted by t_83e5a20d: `empty-stack-sentinel-save` (the golem carry sentinel). Minted by t_d8944aae (the pad-claim box-cell rule):
 `scan-claim-covers-box-cells`. Minted later (t_04233450): `component-codec-save-path` (the
 item-entity bullet keeps main's `attribute-not-filter`, which this card's probe cites). Minted by t_b98f2601 (the orb-cell claim rule):
 `orb-claim-covers-asserted-cells`. Minted by t_9687e91a (the deferred-chunkgen producer rule):

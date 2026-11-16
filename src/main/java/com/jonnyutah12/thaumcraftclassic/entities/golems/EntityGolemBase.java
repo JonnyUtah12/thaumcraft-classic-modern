@@ -182,9 +182,37 @@ public class EntityGolemBase extends AbstractGolem {
 
     /** Original {@code public InventoryMob inventory = new InventoryMob(this, 1)}. */
     private InventoryMob inventory;
-    /** Original {@code public ItemStack itemCarried} — the singe stack the act goals hold. */
+    /**
+     * Original {@code public ItemStack itemCarried} — the single stack the act goals hold.
+     *
+     * <p><b>The 1.7.10 idle sentinel is {@code null}, not {@link ItemStack#EMPTY}</b>
+     * (docs/testing.md#empty-stack-sentinel-save). The original assigned the read result straight
+     * through — {@code reference/decompiled/thaumcraft/thaumcraft/common/entities/golems/EntityGolemBase.java:643-644}
+     * is {@code ItemStack.func_77949_a(nbt.func_74775_l("ItemCarried"))}, and 1.7.10's
+     * {@code loadItemStackFromNBT} answers null for the empty compound — so an idle
+     * golem — placed, saved, loaded, saved again — keeps null in this field. Every
+     * {@code != null} guard in this class (the write in {@code addAdditionalSaveData}, the
+     * {@link #getCarrySpace()} branch, the act goals) is written against that sentinel. A
+     * platform-typed empty here is non-null, and {@code ItemStack#save} refuses it with
+     * {@code IllegalStateException: Cannot encode empty ItemStack}
+     * ({@code ItemStack.java:419-421}); the write it throws out of is the original's
+     * {@code != null} arm (decompiled {@code :588-594}), and NeoForge's
+     * {@code EntityStorage.storeEntities} catches that per entity and drops the whole golem out
+     * of the chunk's {@code Entities} list — the golem is deleted by a world save. The
+     * t_83e5a20d probes pin the SECOND save cycle (the first save of a constructed golem is
+     * green: the ctor leaves the field null).</p>
+     */
     private ItemStack itemCarried;
-    /** Original {@code public FluidStack fluidCarried} (core 5 / Decanting). */
+
+    /**
+     * Original {@code public FluidStack fluidCarried} (core 5 / Decanting) — the same null
+     * sentinel for the same reason. {@code FluidStack#save} refuses an empty stack
+     * ({@code reference/neoforge-src/net/neoforged/neoforge/fluids/FluidStack.java:283-285},
+     * {@code Cannot encode empty FluidStack}) and {@code FluidStack.parseOptional} (:196) answers
+     * that EMPTY for the original's no-key write (decompiled {@code :580-581} guard, {@code :629}
+     * read), so a bucket golem that has been loaded once and is now empty throws on every later
+     * save and is dropped with the same {@code EntityStorage} catch.
+     */
     private FluidStack fluidCarried;
     /** Original {@code public Aspect essentia} — the aspect the golem carries (core 6 / Alchemy). */
     private Aspect essentia;
@@ -677,12 +705,34 @@ public class EntityGolemBase extends AbstractGolem {
         return this.inventory;
     }
 
-    /** Original {@code setCarried(ItemStack)} — the carry field (the display stack is TC-M6-08-s-c). */
+    /**
+     * Original {@code setCarried(ItemStack)} — the carry field (the display stack is TC-M6-08-s-c).
+     *
+     * <p>Callers hand this an empty stack to mean "hands are now empty" ({@code AISortingPlace:175},
+     * {@code AIEmptyPlace:163}, {@code AIUseItem:210}), which in 1.7.10's field is the same event
+     * as null (the original's {@code getCarried()} routes an emptied stack through
+     * {@code setCarried(null)}, decompiled {@code :804-810}). Normalising here keeps the field on
+     * the sentinel the rest of the class is written against, so the save path never encodes an
+     * empty stack (docs/testing.md#empty-stack-sentinel-save).</p>
+     */
     public void setCarried(final ItemStack stack) {
-        this.itemCarried = stack;
+        this.itemCarried = stack == null || stack.isEmpty() ? null : stack;
     }
 
-    /** Original {@code getCarried()}: an emptied carried stack is dropped to null. */
+    /**
+     * Original {@code getCarried()} ({@code EntityGolemBase.java:812-816}'s field reader): an
+     * emptied carried stack is dropped to the original's null sentinel.
+     *
+     * <p>1.21.1's empty stack {@code ItemStack.EMPTY} has count 0 — {@code isEmpty()} is
+     * {@code this == EMPTY || item == Items.AIR || count <= 0} ({@code ItemStack.java:303-305}) —
+     * so the original's own test ({@code field_77994_a <= 0}, decompiled
+     * {@code EntityGolemBase.java:804-810}) already answers null for the platform's sentinel, and
+     * heals the field so the next write takes the original's null arm. The test stays
+     * {@code getCount() <= 0} rather than {@code isEmpty()} on purpose: {@code isEmpty()} also
+     * matches a stack of {@code Items.AIR}, which 1.7.10's reader kept. The self-heal is why a
+     * probe that reads this getter BEFORE saving cannot reproduce the save loss (measured in
+     * t_83e5a20d's first leg).</p>
+     */
     public ItemStack getCarried() {
         if (this.itemCarried != null && this.itemCarried.getCount() <= 0) {
             this.itemCarried = null;
@@ -719,12 +769,22 @@ public class EntityGolemBase extends AbstractGolem {
         }
     }
 
+    /**
+     * The carried bucket. An empty bucket is the original's null sentinel — the field is healed
+     * and null answered, the item arm's {@link #getCarried()} shape — because a platform-typed
+     * {@code FluidStack.EMPTY} is non-null and the write gate refuses it (the
+     * {@code fluidCarried} write in {@code addAdditionalSaveData}).
+     */
     public FluidStack getFluidCarried() {
+        if (this.fluidCarried != null && this.fluidCarried.isEmpty()) {
+            this.fluidCarried = null;
+        }
         return this.fluidCarried;
     }
 
+    /** The carried bucket; an empty stack is the original's "no bucket" null (see the getter). */
     public void setFluidCarried(final FluidStack fluid) {
-        this.fluidCarried = fluid;
+        this.fluidCarried = fluid == null || fluid.isEmpty() ? null : fluid;
     }
 
     public boolean isPaused() {
@@ -1192,18 +1252,30 @@ public class EntityGolemBase extends AbstractGolem {
         tag.putBoolean("advanced", this.isAdvanced());
         tag.putByteArray("colors", this.colors);
         tag.putByteArray("upgrades", this.upgrades);
-        if (this.getCore() == 5 && this.fluidCarried != null) {
-            tag.put("fluidCarried", this.fluidCarried.save(this.level().registryAccess()));
+        final FluidStack bucket = this.getFluidCarried();
+        if (this.getCore() == 5 && bucket != null) {
+            // saveOptional is the gate FluidStack#save refuses (FluidStack.java:283-285 throws,
+            // :294-296 is the gate): a filled bucket keeps its bytes,
+            // an empty one stays the original's no-key write (the original's null guard).
+            tag.put("fluidCarried", bucket.saveOptional(this.level().registryAccess()));
         }
         if (this.getCore() == 6 && this.essentia != null && this.essentiaAmount > 0) {
             tag.putString("essentia", this.essentia.getTag());
             tag.putByte("essentiaAmount", (byte) this.essentiaAmount);
         }
-        final CompoundTag carried = new CompoundTag();
-        if (this.itemCarried != null) {
-            tag.put("ItemCarried", this.itemCarried.save(this.level().registryAccess()));
+        // The carried stack, through the original's own reader so the field is read on the
+        // 1.7.10 sentinel. saveOptional is the gate ItemStack#save refuses (ItemStack.java:419-421
+        // throws Cannot encode empty ItemStack, :428-430 is the gate). Vanilla's own hand-item arm
+        // is this same shape — Mob.java:394-401 gates on isEmpty(), saves, else writes an empty
+        // compound — which is what the original's arm here did (decompiled EntityGolemBase.java:
+        // 588-594). Encoding an empty stack here threw, the
+        // EntityStorage catch dropped the entity, and the golem was gone on reload
+        // (docs/testing.md#empty-stack-sentinel-save).
+        final ItemStack payload = this.getCarried();
+        if (payload != null) {
+            tag.put("ItemCarried", payload.saveOptional(this.level().registryAccess()));
         } else {
-            tag.put("ItemCarried", carried);
+            tag.put("ItemCarried", new CompoundTag());
         }
         tag.putString("Owner", this.getOwnerName() == null ? "" : this.getOwnerName());
 
@@ -1237,8 +1309,12 @@ public class EntityGolemBase extends AbstractGolem {
         }
         this.setCore(tag.getByte("Core"));
         if (this.getCore() == 5) {
-            this.fluidCarried = FluidStack.parseOptional(this.level().registryAccess(),
-                    tag.getCompound("fluidCarried"));
+            // 1.21.1's parseOptional answers a NON-NULL empty stack for the original's empty
+            // compound (ItemStack.java:299-301: tag.isEmpty() ? EMPTY : ...); the setter puts it
+            // back on the null sentinel the original's read produced (decompiled
+            // EntityGolemBase.java:643-644, ItemStack.func_77949_a of the empty compound).
+            this.setFluidCarried(FluidStack.parseOptional(this.level().registryAccess(),
+                    tag.getCompound("fluidCarried")));
         }
         if (this.getCore() == 6) {
             final Aspect aspect = Aspect.getAspect(tag.getString("essentia"));
@@ -1248,7 +1324,7 @@ public class EntityGolemBase extends AbstractGolem {
             }
         }
         this.setTogglesValue(tag.getByte("toggles"));
-        this.itemCarried = ItemStack.parseOptional(this.level().registryAccess(), tag.getCompound("ItemCarried"));
+        this.setCarried(ItemStack.parseOptional(this.level().registryAccess(), tag.getCompound("ItemCarried")));
         this.decoration = tag.getString("Decoration");
         this.setDecoration(this.decoration);
         final String owner = tag.getString("Owner");
