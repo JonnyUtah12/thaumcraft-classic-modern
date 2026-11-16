@@ -87,19 +87,27 @@ public final class MobChunkClaim {
 
     /** Claim the chunk that contains {@code at}. Idempotent: the forced set is keyed on the chunk. */
     public static ChunkPos claim(final ServerLevel level, final BlockPos at) {
-        final ChunkPos pos = new ChunkPos(at);
+        return claim(level, new ChunkPos(at), at);
+    }
+
+    /** Claim {@code pos}'s chunk — the arm set for a probe that follows a mob's live chunk. */
+    public static ChunkPos claim(final ServerLevel level, final ChunkPos pos) {
+        return claim(level, pos, pos);
+    }
+
+    private static ChunkPos claim(final ServerLevel level, final ChunkPos pos, final Object where) {
         if (!armed()) {
-            LOGGER.info("[t_f9fe6e81] mob-chunk claim SKIPPED by -D{} — chunk ({}, {}) of cell {} keeps"
+            LOGGER.info("[t_f9fe6e81] mob-chunk claim SKIPPED by -D{} — chunk ({}, {}) of {} keeps"
                             + " whatever the harness gave it: entTick={} forcedHere={}"
                             + " (the harness forces only the pad corner's chunk,"
                             + " docs/testing.md#mob-tick-claim-covers-mob-chunk)",
-                    OFF_PROPERTY, pos.x, pos.z, at, entTicking(level, pos), forcedHere(level, pos));
+                    OFF_PROPERTY, pos.x, pos.z, where, entTicking(level, pos), forcedHere(level, pos));
             return pos;
         }
         level.setChunkForced(pos.x, pos.z, true);
-        LOGGER.info("[t_f9fe6e81] forced mob chunk ({}, {}) of cell {} — entTick={} forcedHere={}"
+        LOGGER.info("[t_f9fe6e81] forced mob chunk ({}, {}) of {} — entTick={} forcedHere={}"
                         + " (docs/testing.md#mob-tick-claim-covers-mob-chunk)",
-                pos.x, pos.z, at, entTicking(level, pos), forcedHere(level, pos));
+                pos.x, pos.z, where, entTicking(level, pos), forcedHere(level, pos));
         return pos;
     }
 
