@@ -1020,28 +1020,60 @@ restores both and `diff -q` reports byte-identical.
   and RELAYS the walk row rel (12,-1,12..70) cell by cell, writing only cells that read AIR. The row
   arm is assert-then-relay, never a sweep: on a clean pad it writes nothing (`relaid=0` — that row is
   solid from the template floor plus the neighbour pads), so a clean leg prints only its summary line,
-  and the eaten-row / trench plants are the shapes that make it write. It runs at setup AND on every
+  and the eaten-row / trench plants are the shapes that make it write. It runs at setup, on every
   tick of the drive window (`GameTestHelper#runAfterDelay(long, Runnable)` is
-  `runAtTickTime(getTick() + delay, task)` in vanilla `GameTestHelper`; the summary at tick 160 reports
-  `passes=161`). Every phase is registered from the probe BODY, never from inside a callback —
+  `runAtTickTime(getTick() + delay, task)` in vanilla `GameTestHelper`), and as the first statement of
+  both draw callbacks (next paragraph); the summary at tick 160 reports `passes=162-163`. Every
+  drive/setup phase is registered from the probe BODY, never from inside a callback —
   `GameTestInfo` keeps a per-probe `Object2LongMap<Runnable>` of tick actions that the harness iterates
   while running, and a nested registration is the known iterator hazard.
+  **The same-tick order is identity-hash order, and that is why the claim also runs INSIDE the draw
+  callbacks.** With `SETTLE`=120 the route draw is `pPath`=123 and the walk draw is 160, and the plants
+  land at 122 (`pPath-1`). Measured on the drive-pass-only tree (`d3cf1a0f`): the band plant was cleared
+  at 122 (`drive tick=122 cleared=12`, the pass ran after the plant in that tick) while the seal plant
+  was cleared at 123, the DRAW's own tick (`drive tick=123 cleared=36`) — so on that tree a plant
+  landing on the draw tick depended on hash order inside the tick (sealB GREEN 2/2 = a 0.25 read). The
+  fix removes the flip: the claim is the FIRST statement of the `pPath` and `pWalk` callbacks, so the
+  clear is in sequence before `returnHome.start()` draws and before the walk is measured, with the
+  per-tick drive passes as the backstop for terrain arriving between ticks. Measured on the shipped
+  claim (`ec6ebcc1`): the band leg prints `ROUTE-CLAIM drive tick=123 cleared=12` (the 123 drive pass,
+  running before the draw) and the seal leg prints `ROUTE-CLAIM route tick=123 cleared=36` (the
+  in-callback pass) — both GREEN 2/2 — and the summary at tick 160 reads `passes=162-163` (1 setup +
+  the drive ticks + the two draw-tick passes; the ±1 is a drive pass landing in the summary's tick).
   **Measured, all NO-Curios whole-grid legs (`ran=1`, `cachehits=0`, the built-in-fallback marker,
-  `loadavg(1m)` and `pgrep -c java` on every line — `keep/t_4c531ae6/`):** the stride-6 band plant
-  (rel x11..13, dy 0..1, z ∈ {13,19}, laid at tick 122 = `pPath-1`) is **RED 2/2 on BASE** naming this
-  probe on the WALK arm — `now 7.372057122818207 … away … tick 160`, the shipped tree's value family
-  reproduced — and **GREEN 2/2 on the FIX** printing
-  `ROUTE-CLAIM drive tick=122 cleared=12 relaid=0 [Block{minecraft:cobblestone} @ rel (11,0,13), …]`
-  and `ROUTE-CLAIM summary tick=160 passes=161 cleared=12 relaid=0`. The same plant with the drive
-  passes switched off (setup claim only) is **RED 1/1**; the same plant with the claim narrowed to rel
-  z11..17 (so the z19 wall survives) is **RED 1/1** — the extent is load-bearing, not the block count.
-  The 3-tall seal rel (11..13, 0..2, 13..18) is **RED 2/2 on BASE** (its leg 1 also reddened
-  `theguardianbreathesforfivehundredticksandburns`: my plant landing in that probe's pad, the fixture
-  leak the triage card measured, disclosed again) and **GREEN 2/2 on the FIX**. The four negative
-  controls — single column, 3-wide 2-tall wall, eaten floor row, full trench — are **GREEN 2/2 each on
-  the FIX**, and on the two row shapes the drive line names the relay (`relaid=6`), which is the row
-  arm doing its job on a shape the corridor arm never touches.
-  **Census:** ⟪CENSUS⟫
+  `loadavg(1m)` and `pgrep -c java` on every line — `keep/t_4c531ae6/`, 18 legs on the shipped claim
+  `ec6ebcc1`, tags `*D2`):** the stride-6 band plant (rel x11..13, dy 0..1, z ∈ {13,19}, laid at tick
+  122 = `pPath-1`) is **RED 2/2 on BASE** naming this probe on the WALK arm — `now 7.372057122818207 …
+  away … tick 160`, the shipped tree's value family reproduced (the triage card's 3/3 on `4a9ab8df`) —
+  and **GREEN 2/2 on the shipped claim** printing `ROUTE-CLAIM drive tick=123 cleared=12 relaid=0
+  [Block{minecraft:cobblestone} @ rel (11,0,13), …]` and `ROUTE-CLAIM summary tick=160 passes=163
+  cleared=12 relaid=0`. The same plant with the claim service switched off beyond setup
+  (`CLAIM_DRIVE=false`, tag `bandD_setup`) is **RED 2/2**, naming exactly this probe, and its red line
+  carries the published number: `the goal walked the golem from 10.0 blocks toward home, now
+  7.372061974048622 away … tick 160` — the triage card's own band-plant value, with `passes=1
+  cleared=0 relaid=0` proving only the setup claim ran. The same plant with the claim narrowed to rel
+  z ≤ 17 (`CLAIM_DZ_TO=5`, tag `narrowzD2`) is **RED 2/2** printing `route tick=123 cleared=6` — it
+  cleared the z13 wall and the z19 wall survived to redden the walk arm, so the EXTENT is load-bearing,
+  not the block count. The 3-tall seal rel (11..13, 0..2, 13..18) is **RED 2/2 on BASE** (its leg 1 also
+  reddened `theguardianbreathesforfivehundredticksandburns`: my plant landing in that probe's pad, the
+  fixture leak the triage card measured, disclosed again) and **GREEN 2/2 on the shipped claim** via
+  `route tick=123 cleared=36`. The four negative controls — single column rel (12,0..1,13), 3-wide 2-tall
+  wall rel (11..13,0..1,13), eaten floor row rel (12,-1,13..18), trench rel (12,-1..-4,13..18) — are
+  **GREEN 2/2 each**, with the claim naming what it touched: `cleared=2` (column), `cleared=6` (wall),
+  `relaid=6` (eaten row), `relaid=6` (trench): the row arm repairs cells the corridor arm never reaches,
+  and a control the claim clears is green *because* it was cleared, not because it was harmless. The
+  clean lane is **GREEN 2/2** with `passes=162 cleared=0 relaid=0`.
+  **Census (t_4c531ae6, on the pre-merge tree):** 10 interleaved pairs (base-first), base `c49132e6`
+  vs fix `d3cf1a0f`, all NO-Curios whole-grid legs, one gradle at a time — **20/20 `PASS533`, 0 reds
+  on this probe on either arm**, `ran=1` + `cachehits=0` + the built-in-fallback marker on every leg,
+  `loadavg(1m)` 2.32-5.70 with 1-4 JVMs, legs 60-134 s (`census_summary.txt`). Every fix leg carries
+  `ROUTE-CLAIM summary tick=160 passes=161 cleared=0 relaid=0` — the clean-handoff read, the claim
+  writing nothing on a pad it was handed clean — and every base leg carries no claim line at all, so
+  the two arms are distinguishable per leg. At the lane's published CI rate (1/24) P(0 reds in 10) =
+  0.65 and P(0 in 20) ≈ 0.43, so this census is the no-regression leg for the shared grid, NOT the
+  closure; the plant pair above is the causal leg, exactly as the triage rule says. The landing tree
+  is the merge of main `7413157e` (the c5-2 portal slice adds 6 probes: census 533 → 539, 83 probe
+  files unchanged, 0 probes added by this card), so the gate legs run on the 539 grid.
   **Fixture artifacts disclosed, not fixed.** The probe's own floor loop writes
   `new BlockPos(home.getX(), home.getY() - 1, z)` for ABSOLUTE `z` in 12..70 while this pad sits at
   `z ≈ -13,905,236`, so the "floor out to 52 blocks along +z" lands thousands of blocks away; the row
