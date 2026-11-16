@@ -730,8 +730,19 @@ public final class BossMobGameTest {
         final ServerLevel level = helper.getLevel();
         final List<String> cleared = new ArrayList<>();
         final List<String> swept = new ArrayList<>();
+        final List<String> unreachable = new ArrayList<>();
         for (final BlockPos cell : cells) {
             final BlockPos absolute = at.offset(cell);
+            if (!level.isLoaded(absolute)) {
+                // 1.21.1's setBlock on a cell whose chunk is not loaded is a SILENT no-op
+                // (Level#setBlock asks the chunk source for a FULL chunk and the server
+                // answers null), so this claim cannot reach the cell — the probe's own arm
+                // names the drop. Census it, skip the write and the sweep.
+                // docs/testing.md#pad-write-lands-only-in-a-loaded-chunk
+                unreachable.add("(" + absolute.getX() + ", " + absolute.getY() + ", "
+                        + absolute.getZ() + ")");
+                continue;
+            }
             final net.minecraft.world.level.block.state.BlockState state =
                     level.getBlockState(absolute);
             if (!state.isAir()) {
@@ -753,9 +764,11 @@ public final class BossMobGameTest {
                 "[t_51dcbf51] an empty claim list cannot cover the gate's cell set — "
                         + "docs/testing.md#orb-claim-covers-asserted-cells");
         LOGGER.info("[TC-M6-06-boss] [t_51dcbf51] claimed the {} cells this portal probe reads"
-                        + " about {}: cleared {} foreign block(s){} swept {} foreign entity(ies){}",
+                        + " about {}: cleared {} foreign block(s){} swept {} foreign entity(ies){}"
+                        + " skipped {} cell(s) in unloaded chunks{}",
                 cells.size(), at, cleared.size(), cleared.isEmpty() ? "" : " " + cleared,
-                swept.size(), swept.isEmpty() ? "" : " " + swept);
+                swept.size(), swept.isEmpty() ? "" : " " + swept, unreachable.size(),
+                unreachable.isEmpty() ? "" : " " + unreachable);
         return cleared;
     }
 
@@ -1153,25 +1166,33 @@ public final class BossMobGameTest {
         // immunity (:38 field_70178_ae = true, the port's .fireImmune()), because the
         // platform's drown type is fire-family and LivingEntity#hurt answers false for
         // IS_FIRE on a fire-immune mob. 1.7.10's drown is not a fire source, so the
-        // upkeep lands there: the cost vanishes on the port, recorded as BD-138. The two
+        // upkeep lands there: the cost vanishes on the port, recorded as BD-134. The two
         // controls below name the mechanism by measurement — drown DOES damage this
         // platform (a plain armoured-zero cow loses the raw 5.0) and the statue IS
         // damageable (a mob-attack 5.0 goes through its armour 5 at 4.375). The arm's
         // rule constants (the stage gate, the 5 + nextInt(5) roll, the drown id) ride
         // CultistPortalAiLogicTest; the source ships verbatim, not swapped for one the
-        // port prefers.
+        // port prefers. The refusal is what this leg pins, so it pins the REFUSED hurt —
+        // zero damage from a DROWN-SOURCED hurt. 21.1.259's LivingEntity#hurt RECORDS the
+        // source of a hurt it refuses (measured 3/3 arms on t_2f9c86c8: lastSource = the
+        // drown source, damage 0.0), and that record is the reference's arm running, so
+        // "no source recorded" is NOT part of the ruling: the port keeps hurt(drown).
         mob.setHealth(500.0F);
         mob.setStage(CultistPortalAiLogic.SELF_DAMAGE_STAGE_MIN);
         mob.setStageCounter(400);
         final float full = mob.getHealth();
         mob.spawnMinions();
         final float landed = full - mob.getHealth();
-        helper.assertTrue(landed == 0.0F && mob.getLastDamageSource() == null,
-                ":238-239 / BD-138 — the arm fires drown at the statue and 21.1.259 refuses"
+        final net.minecraft.world.damagesource.DamageSource upkeep =
+                mob.getLastDamageSource();
+        helper.assertTrue(landed == 0.0F && upkeep != null && upkeep.is(DamageTypes.DROWN),
+                ":238-239 / BD-134 — the arm fires drown at the statue and 21.1.259 refuses"
                         + " it (the statue's :38 fire immunity over the platform's"
                         + " fire-family drown type), so the upkeep lands NOTHING here while"
-                        + " the reference's absolute 5 + nextInt(5) lands on 1.7.10: got"
-                        + " damage " + landed + " lastSource " + mob.getLastDamageSource());
+                        + " the reference's absolute 5 + nextInt(5) lands on 1.7.10; the"
+                        + " refused hurt keeps its source on this platform, which is the"
+                        + " port's arm running: got damage " + landed + " lastSource "
+                        + upkeep);
         final net.minecraft.world.entity.LivingEntity cow =
                 (net.minecraft.world.entity.LivingEntity) animalAt(helper, EntityType.COW,
                         at.offset(4, 0, -4));
@@ -1180,12 +1201,29 @@ public final class BossMobGameTest {
         helper.assertTrue(cow.getHealth() == cowFull - 5.0F,
                 "the control — drown damages this platform (a plain cow takes the raw 5.0,"
                         + " armour-bypassing), got " + (cowFull - cow.getHealth()));
+        // The mob-attack control rides vanilla's damage cooldown: the REFUSED drown
+        // upkeep above arms LivingEntity#invulnerableTime and records the source of the
+        // hurt the statue's fire immunity refuses (measured 3/3 arms on t_2f9c86c8), so a
+        // 5.0 melee fired on the same tick is refused by the 10-tick window and lands 0.0
+        // — the gate legs' "got 0.0" was the window, not the statue. That refusal is the
+        // platform's, not the port's, so the leg pins BOTH sides: inside the window the
+        // melee lands nothing, cleared (this file's established reset, :373 / :561) the
+        // armour-5 statue is damageable.
+        // docs/testing.md#follow-up-hurts-clear-the-ten-tick-invuln-window
+        final float inWindow = mob.getHealth();
+        mob.hurt(level.damageSources().mobAttack(cow), 5.0F);
+        helper.assertTrue(inWindow - mob.getHealth() == 0.0F,
+                "the control — vanilla's 10-tick window, armed by the refused drown"
+                        + " upkeep, refuses the follow-up melee: got "
+                        + (inWindow - mob.getHealth()));
+        mob.invulnerableTime = 0;                                                 // vanilla's 10-tick invuln window
         final float before = mob.getHealth();
         mob.hurt(level.damageSources().mobAttack(cow), 5.0F);
         helper.assertTrue(mob.getHealth() < before && mob.getLastDamageSource() != null
                         && mob.getLastDamageSource().is(DamageTypes.MOB_ATTACK),
                 "the control — the statue is damageable: a non-fire mob-attack 5.0 lands"
-                        + " 4.375 through its armour 5, got " + (before - mob.getHealth()));
+                        + " on the armour-5 statue once the window is clear, got "
+                        + (before - mob.getHealth()));
         cow.discard();
         mob.setHealth(500.0F);
         mob.setStage(CultistPortalAiLogic.STAGE_BOSS);
@@ -1247,7 +1285,14 @@ public final class BossMobGameTest {
      * {@code :166}); the loot crate writes on a countdown inside (20, 150) that divides
      * by 13 ({@code :185}) — so 144 writes nothing and 143 writes one
      * {@code thaumcraft:blocklootcrate} ({@code :192}) in the 9 x 9 field, off the
-     * statue's own column on BOTH axes ({@code :188}); the firing arm with no player
+     * statue's own column on BOTH axes ({@code :188}). Both write arms read the cell the
+     * BUILDER computes — the {@code (int)} CAST of the statue's raw position plus the
+     * offset, {@code :144}/{@code :146}/{@code :186} — not the pad cell plus the offset;
+     * the statue stands in the cell centre and the cast truncates toward zero, so on a
+     * negative axis the two origins differ by one
+     * (docs/testing.md#mob-write-cells-ride-the-int-cast). A wall cell in a chunk this
+     * game test has not loaded is the platform's silent drop and reads air
+     * (docs/testing.md#pad-write-lands-only-in-a-loaded-chunk). The firing arm with no player
      * inside 48 blocks ({@code :103}) re-arms at 30 + nextInt(30) ({@code :133}) and does
      * NOT advance the stage; and the self-heal (+1) runs on every server tick below stage
      * 12 and stops at it ({@code :203-204}).
@@ -1261,6 +1306,27 @@ public final class BossMobGameTest {
         claimPortalCells(helper, at, claimed);
         final ServerLevel level = helper.getLevel();
         final EntityCultistPortal mob = portal(helper, at);
+        // :144 / :146 / :186 — the write origin of BOTH arms is the (int) CAST of the
+        // statue's raw position, and the port's bannerCell() is that cast plus the
+        // direction times 6. The statue stands in the cell CENTRE (at + 0.5 on x and z)
+        // and a Java cast truncates toward ZERO, so on the negative half of an axis the
+        // cast origin sits one block HIGHER than the pad cell — the same rule the summon
+        // arm pins for the minion's home centre at :235. The wall's cells are therefore
+        // NOT `at + (0,0,+-6)`: they are the builder's own cells, recomputed here from
+        // the same cast, so the claim, the census and the asserts all ride ONE list
+        // (docs/testing.md#mob-write-cells-ride-the-int-cast).
+        final BlockPos writeOrigin =
+                new BlockPos((int) mob.getX(), (int) mob.getY(), (int) mob.getZ());
+        final List<BlockPos> wallCells = new ArrayList<>();
+        for (int a = CultistPortalAiLogic.BANNER_DIRECTION_FROM;
+                a < CultistPortalAiLogic.BANNER_DIRECTION_TO; a++) {                   // :140
+            wallCells.add(EntityCultistPortal.bannerCell(writeOrigin, a));              // :141-146
+        }
+        final List<BlockPos> wallClaim = new ArrayList<>();
+        for (final BlockPos cell : wallCells) {
+            wallClaim.add(cell.subtract(at));
+        }
+        claimPortalCells(helper, at, wallClaim);
         try {
             // :136 — one decrement per tick, no fire above zero.
             mob.setStage(0);
@@ -1280,18 +1346,28 @@ public final class BossMobGameTest {
             mob.aiStep();
             helper.assertTrue(mob.getStageCounter() == 161,
                     ":136 — 162 counts down to 161, got " + mob.getStageCounter());
-            for (final BlockPos cell : PORTAL_BANNER_CELLS) {
-                helper.assertTrue(level.getBlockState(at.offset(cell)).isAir(),
+            for (final BlockPos cell : wallCells) {
+                if (!level.isLoaded(cell)) {
+                    continue; // an unloaded chunk drops the claim's clear as well
+                }
+                helper.assertTrue(level.getBlockState(cell).isAir(),
                         ":137 — the wall is gated on the single value 160, so 161 wrote a"
-                                + " device at " + at.offset(cell));
+                                + " device at " + cell);
             }
-            // :137-183 — and 160 writes the wall. The four cells sit 6 blocks out, so on
-            // the stride-6 packing SOME of them fall outside the origin chunk: the 1x1
-            // template force-loads ONE chunk and 1.21.1's Level#setBlock on an unloaded
-            // section is dropped silently (docs/testing.md#pad-claim-covers-writes). So
-            // every cell INSIDE the origin chunk must carry the device, the meta-8 variant
-            // and the banner tile with its facing; every cell outside it is the platform's
-            // silent drop and is asserted as air, with the chunk pair in the message.
+            // :137-183 — and 160 writes the wall. Each cell sits 6 blocks out from the
+            // (int)-cast origin, which on the stride-6 packing puts SOME of them in chunks
+            // this 1x1 template did not force-load: the template force-loads only its OWN
+            // intersecting chunks (StructureUtils#forceLoadChunks), and a world.setBlock on
+            // a cell whose chunk is not loaded is dropped SILENTLY by 1.21.1 (its
+            // Level#setBlock asks the chunk source for a FULL chunk and the server answers
+            // null, so the write is never applied). The cell list below is the builder's
+            // own, computed from the same (int)-cast origin, so the claim, the census and
+            // the asserts ride one list (docs/testing.md#mob-write-cells-ride-the-int-cast).
+            // Every wall cell in a LOADED chunk — the origin chunk, or a neighbour
+            // template's forced chunk — must carry the device, the meta-8 variant and the
+            // banner tile with its facing; every cell in an UNLOADED chunk is the platform's
+            // silent drop and is asserted as air, with the chunk and the loaded flag in the
+            // message (docs/testing.md#pad-write-lands-only-in-a-loaded-chunk).
             mob.setStage(0);
             mob.setStageCounter(161);
             mob.aiStep();
@@ -1299,43 +1375,49 @@ public final class BossMobGameTest {
                     ":136 — 161 counts down to 160, the gate value, got " + mob.getStageCounter());
             final int originChunkX = SectionPos.blockToSectionCoord(at.getX());
             final int originChunkZ = SectionPos.blockToSectionCoord(at.getZ());
-            // The channel census: the cell this probe expects, the cell the PORT computed
-            // from the statue's (int)-cast position, the cell's chunk and the readback.
+            // The channel census: the cell the probe expects, the cell the PORT computed
+            // from the same (int)-cast origin (identical by construction — a drift in the
+            // builder's cell expression shows up HERE as a name mismatch), the cell's chunk,
+            // whether that chunk is loaded, and the readback.
             final StringBuilder wallCensus = new StringBuilder();
-            for (int wall = 0; wall < PORTAL_BANNER_CELLS.size(); wall++) {
-                final BlockPos cell = at.offset(PORTAL_BANNER_CELLS.get(wall));
-                wallCensus.append(' ').append(cell)
-                        .append(" port=").append(EntityCultistPortal.bannerCell(
-                                new BlockPos((int) mob.getX(), (int) mob.getY(),
-                                        (int) mob.getZ()),
+            for (int wall = 0; wall < wallCells.size(); wall++) {
+                final BlockPos cell = wallCells.get(wall);
+                wallCensus.append(" dir")
+                        .append(CultistPortalAiLogic.BANNER_DIRECTION_FROM + wall)
+                        .append(' ').append(cell)
+                        .append(" port=").append(EntityCultistPortal.bannerCell(writeOrigin,
                                 CultistPortalAiLogic.BANNER_DIRECTION_FROM + wall))
                         .append(" chunk=").append(SectionPos.blockToSectionCoord(cell.getX()))
                         .append(',').append(SectionPos.blockToSectionCoord(cell.getZ()))
+                        .append(level.isLoaded(cell) ? " loaded=1" : " loaded=0")
                         .append(" read=").append(level.getBlockState(cell));
             }
-            LOGGER.info("[TC-M6-06-boss] [t_51dcbf51] wall census about {} origin chunk {},{}"
-                            + " mob {} state {}:", at, originChunkX, originChunkZ,
-                    mob.position(), mob.blockPosition(), wallCensus);
-            int bannersInChunk = 0;
-            for (int wall = 0; wall < PORTAL_BANNER_CELLS.size(); wall++) {
-                final BlockPos cell = at.offset(PORTAL_BANNER_CELLS.get(wall));
+            LOGGER.info("[TC-M6-06-boss] [t_2f9c86c8] wall census about {} write origin {} mob"
+                            + " {} state {} census {}:", at, writeOrigin, mob.position(),
+                    mob.blockPosition(), wallCensus);
+            int measuredCells = 0;
+            for (int wall = 0; wall < wallCells.size(); wall++) {
+                final BlockPos cell = wallCells.get(wall);
                 final net.minecraft.world.level.block.state.BlockState state =
                         level.getBlockState(cell);
                 final int cellChunkX = SectionPos.blockToSectionCoord(cell.getX());
                 final int cellChunkZ = SectionPos.blockToSectionCoord(cell.getZ());
-                if (cellChunkX != originChunkX || cellChunkZ != originChunkZ) {
+                if (!level.isLoaded(cell)) {
                     helper.assertTrue(state.isAir(),
-                            ":143-148 — the wall cell " + cell + " is in chunk (" + cellChunkX
-                                    + ", " + cellChunkZ + "), outside the template's force-loaded"
-                                    + " origin chunk (" + originChunkX + ", " + originChunkZ
-                                    + "), so 1.21.1 drops the write silently; the wall leg"
-                                    + " measures it as air, got " + state);
+                            ":143-148 — the wall cell " + cell + " sits in chunk (" + cellChunkX
+                                    + ", " + cellChunkZ + "), which this game test has not loaded"
+                                    + " (the template force-loads only chunk " + originChunkX
+                                    + ", " + originChunkZ + "), so 1.21.1 drops the write"
+                                    + " silently and the wall leg measures it as air, got "
+                                    + state);
                     continue;
                 }
-                bannersInChunk++;
+                measuredCells++;
                 helper.assertTrue(state.is(BuiltInRegistries.BLOCK
                                 .get(CultistPortalAiLogic.BLOCK_WOODEN_DEVICE)),
-                        ":142-148 — the wall cell " + cell + " carries"
+                        ":142-148 — the wall cell " + cell + " (dir "
+                                + (CultistPortalAiLogic.BANNER_DIRECTION_FROM + wall) + " from the"
+                                + " (int)-cast origin " + writeOrigin + ") carries"
                                 + " thaumcraft:blockwoodendevice, got " + state);
                 helper.assertTrue(state.getBlock() instanceof VariantDevice device
                                 && device.variant(state) == CultistPortalAiLogic.BANNER_VARIANT,
@@ -1346,12 +1428,12 @@ public final class BossMobGameTest {
                                 + cell + " carries facing " + PORTAL_BANNER_FACINGS[wall]
                                 + ", got " + level.getBlockEntity(cell));
             }
-            helper.assertTrue(bannersInChunk >= 1,
-                    ":143-148 — the harness packing left NO banner cell inside the origin chunk,"
-                            + " so the wall is unmeasurable here; the geometry is unit-pinned in"
+            helper.assertTrue(measuredCells >= 1,
+                    ":143-148 — the harness packing left NO banner cell in a loaded chunk, so"
+                            + " the wall is unmeasurable here; the geometry is unit-pinned in"
                             + " CultistPortalAiLogicTest and this probe needs at least one"
-                            + " measurable cell (origin chunk " + originChunkX + ", "
-                            + originChunkZ + ", cells " + PORTAL_BANNER_CELLS + ")");
+                            + " measurable cell (write origin " + writeOrigin + ", cells"
+                            + " " + wallCells + ")");
             // :185-199 — the crate region has to be filled for the gate to accept a cell.
             for (int dx = -CRATE_REGION_HALF; dx <= CRATE_REGION_HALF; dx++) {
                 for (int dz = -CRATE_REGION_HALF; dz <= CRATE_REGION_HALF; dz++) {
@@ -1377,8 +1459,12 @@ public final class BossMobGameTest {
             helper.assertTrue(mob.getStageCounter() == 143,
                     ":136, :185 — 144 counts down to 143, the first gate value on the way"
                             + " down from 200, got " + mob.getStageCounter());
-            final BlockPos crateCell = at.offset(CRATE_PICK);
-            helper.assertTrue(crateCell.getX() != at.getX() && crateCell.getZ() != at.getZ(),
+            // :186-188 — the crate cell is the SAME (int)-cast origin plus the pick, not
+            // the pad cell plus the pick: the source gates the pick on
+            // `crateX != (int)this.posX && crateZ != (int)this.posZ`.
+            final BlockPos crateCell = writeOrigin.offset(CRATE_PICK);
+            helper.assertTrue(crateCell.getX() != writeOrigin.getX()
+                            && crateCell.getZ() != writeOrigin.getZ(),
                     ":188 — the pick must leave the statue's column on BOTH axes, got "
                             + CRATE_PICK);
             final int crates = countCrates(level, at, crateBlock);
@@ -1437,7 +1523,9 @@ public final class BossMobGameTest {
                             net.minecraft.world.level.block.Blocks.AIR);
                 }
             }
-            clearWrittenCells(helper, PORTAL_BANNER_CELLS);
+            final List<BlockPos> written = new ArrayList<>(wallClaim);
+            written.addAll(PORTAL_BANNER_CELLS);
+            clearWrittenCells(helper, written);
             mob.discard();
         }
         census(helper, "stage machine");

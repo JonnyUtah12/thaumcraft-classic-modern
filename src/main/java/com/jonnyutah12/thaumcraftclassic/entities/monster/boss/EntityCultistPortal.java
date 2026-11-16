@@ -362,23 +362,37 @@ public class EntityCultistPortal extends Monster {
 
     /**
      * {@code :140-183} — the four banners. The loop walks {@code ForgeDirection}
-     * 2..5 (north, south, west, east), so the cell is {@code x - offsetX*6} /
-     * {@code z + offsetZ*6} ({@code :143}, {@code :144}): north lands at z-6, south
-     * at z+6, west at x+6 (the minus on x flips the -1 offset) and east at x-6. Each
+     * 2..5 (north, south, west, east), so the cell is {@code (int)x - offsetX*6} /
+     * {@code (int)z + offsetZ*6} ({@code :143}, {@code :144}): north lands at z-6, south
+     * at z+6, west at x+6 (the minus on x flips the -1 offset) and east at x-6, all three
+     * coordinates read as the {@code (int)} CAST of the statue's raw position — the mob
+     * stands in the cell CENTRE and the cast truncates toward zero, so this origin is one
+     * block HIGHER than {@code blockPosition()} on the negative half of an axis
+     * (docs/testing.md#mob-write-cells-ride-the-int-cast). Each
      * cell gets {@code blockWoodenDevice} meta 8 with update flags 3, unconditionally
      * — the reference has NO pre-check on the target cell — and the tile's facing is
      * written only if the cell's tile entity is a {@code TileBanner} ({@code :153}),
      * which is also what gates the arc FX packet ({@code :170-179}) and the
-     * wandfail track ({@code :180}).
+     * wandfail track ({@code :180}). A cell whose chunk is not loaded is dropped
+     * SILENTLY by 1.21.1's {@code Level#setBlock} (docs/testing.md#pad-write-lands-only-in-a-loaded-chunk).
      */
     public void spawnBanners() {
         final Block block = BuiltInRegistries.BLOCK.get(CultistPortalAiLogic.BLOCK_WOODEN_DEVICE);
         if (!(block instanceof BlockDeviceBase device)) {
             return;                                                                       // BD-68's shape: an unregistered target costs the leg
         }
+        // :143-148 — every write cell of this arm rides the (int) CAST of the statue's OWN
+        // raw position ((int)posX, (int)posY, (int)posZ). The origin is not optional: a
+        // loop that computed the offsets about (0,0,0) would stamp the wall at the world
+        // origin and leave the statue's own pad untouched (measured on t_2f9c86c8: the
+        // probe read Block{minecraft:air} in its own wall cell on 3/3 arms while the
+        // builder wrote 0,0+-6). docs/testing.md#mob-write-cells-ride-the-int-cast
+        final BlockPos origin = new BlockPos((int) this.getX(),                    // :143 ((int)this.posX)
+                (int) this.getY(),                                                // :143 ((int)this.posY)
+                (int) this.getZ());                                               // :144 ((int)this.posZ)
         for (int a = CultistPortalAiLogic.BANNER_DIRECTION_FROM;
                 a < CultistPortalAiLogic.BANNER_DIRECTION_TO; a++) {                      // :140
-            final BlockPos cell = bannerCell(a);                                          // :141-144
+            final BlockPos cell = bannerCell(origin, a);                                  // :141-144
             this.level().setBlock(cell, device.withVariant(CultistPortalAiLogic.BANNER_VARIANT),
                     Block.UPDATE_CLIENTS | Block.UPDATE_NEIGHBORS);                       // :143-148 (setBlock(block, meta 8, flags 3))
             if (this.level().getBlockEntity(cell) instanceof TileBanner banner) {         // :152-153
@@ -400,7 +414,13 @@ public class EntityCultistPortal extends Monster {
         return bannerCell(new BlockPos(0, 0, 0), directionIndex);
     }
 
-    /** The same cell relative to a given origin (the probe's geometry seam). */
+    /**
+     * The same cell relative to a given origin: the WRITE arm passes the {@code (int)}
+     * CAST of the statue's raw position ({@code :143-144}), and a probe passes the same
+     * cast, so the claim, the census and the asserts ride ONE list
+     * (docs/testing.md#mob-write-cells-ride-the-int-cast). The 1-arg overload above is the
+     * unit geometry seam — it pins the offset shape at the origin, not the write site.
+     */
     public static BlockPos bannerCell(final BlockPos origin, final int directionIndex) {
         final int offsetX = CultistPortalAiLogic.bannerOffsetX(directionIndex);           // :141
         final int offsetZ = CultistPortalAiLogic.bannerOffsetZ(directionIndex);           // :144
