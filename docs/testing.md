@@ -761,6 +761,92 @@ restores both and `diff -q` reports byte-identical.
   primary threw, so the "controls PASSED" that shipped on the card was not evidence from the gate legs.
   Order a control BEFORE the assert that can throw, or state in the card which arm measured it.
 
+<a id="mob-tick-claim-covers-mob-chunk"></a>
+- **A probe that gates on MOB ticks has to claim the mob's CHUNK — and survive that claim's LOAD: every
+  probe runs on a 1×1×1 `empty` template, so the harness force-loads the pad corner's chunk only, and a mob
+  armed one block off the corner stands in an unticketed chunk in every slot whose corner lands on a chunk
+  boundary.** `StructureUtils#forceLoadChunks` (framework:165-170) forces `boundingBox.intersectingChunks()`
+  — for `template = "empty"` the ONE chunk holding the pad corner — and `ServerLevel#tickEntities` (:390-395,
+  411) ticks an entity only where `getDistanceManager().inEntityTickingRange(entity.chunkPosition())` holds,
+  i.e. level-map ticket ≤ `ChunkLevel.byStatus(FullChunkStatus.ENTITY_TICKING)` = 31 (`ChunkLevel:47-49`
+  `isEntityTicking(level) = level <= 31`), and the iteration visits the entities of **LOADED** chunks only.
+  `EldritchMobGameTest#spawn` arms every family mob at `pad(1, 3, 1)` = corner + (1, 3, 1), so the mob sits in
+  the corner's own chunk when `corner.x mod 16 ≤ 14 && corner.z mod 16 ≤ 14`, in a **4-neighbour** chunk when
+  one coordinate crosses (measured `entTick=true`, ticks fine), and in the **DIAGONAL** neighbour when both
+  cross, which does not inherit: measured `entTick=false`, **`mobTick=0` from the first sample for the probe's
+  whole 400-tick life** with the mob `removed=false inLevel=true`. Both disclosed reds of the walkback lane sit
+  on a corner with `x mod 16 = 15` — CI `failed at 1657407, -60, 3623897` (job 133343432981, run 43880111452,
+  green on the rerun of the same sha) and local `failed at 10720063, -60, -3829490` (`gate1_leg_noCurios_2`) —
+  so the lane's `-20` is **the mob running NO entity ticks** (the air never walks back), not the deferred
+  terrain channel: that leg carried 8 `CHUNKGEN-GATE … skipped N chunk(s)` lines (the producer OFF), the
+  landing census separated nothing (Fisher 2×2 [[1,5],[0,5]] p=1.0, base `f255dc5a` 5/5 green), and
+  t_764d1e8e already disclosed that a cobblestone stamp in the mob's own cell at tick 21 does not redden this
+  arm. The producer is a CHUNK TICKET — a harness channel, not terrain. **Shape: per-probe, not a harness
+  gate** (the state is chunk-local — the CI red is 1 test of 533 with 533 pads on the grid; a level-wide gate
+  cannot put a ticking ticket on a chunk it does not know; forcing every pad's chunks is the grid-load packing
+  the standing hazard t_44055375 punishes). The claim pulls the harness's OWN lever — `ServerLevel#setChunkForced`
+  (`ForcedChunkManager.addForcedChunk` → `TicketType.FORCED_TICKET` + the level's forced set, which
+  `GameTestRunner#runBatch:100-103` clears for the WHOLE level at every batch end, so a setup-time claim cannot
+  outlive its batch) — and it also satisfies the `!players.isEmpty() || ForcedChunkManager.hasForcedChunks(level)`
+  precondition at `ServerLevel:390`, the 300-tick `emptyTime` wall. NOT `DistanceManager#addTicket(TicketType.FORCED,
+  …)`: on an unloaded chunk that ticket is queued as pending and the level map keeps `MAX_TICKET_LEVEL`, so a probe
+  reading mob ticks 20 ticks after setup measures `entTick=false` on the chunk it just claimed (measured
+  `fix1_leg_4`: `armed=true entTick=false`, 0 of 20). **No probe releases a claim**: the forced set is SHARED with
+  the harness and every sibling claim in the batch, so unforcing a chunk a sibling forced freezes that sibling
+  (t_44055375); the batch-end level-wide clear is the release. **A rate is not a green**: this lane reddens ~1/5
+  no-Curios legs (t_9687e91a's row: 1 of 5 with-Curios; t_c36620d6 measured the CI arm `game-test-no-curios` 40
+  green / 5 red over 45 runs), so a streak of greens proves nothing and the teeth are a pair, not a streak.
+  **Four measured rules set the shape of the pair.** (1) **The plant has to sit OUTSIDE the batch's forced band,
+  and the probe asserts it.** The batch packs pads along `+z`: measured pad-corner chunks x `462695..462702` =
+  **eight chunks of x** (z `769533..769646`) on `fixcur3_leg_2`. A plant at (+16,+16) is the 4-neighbour, which
+  ticks with the claim OFF (`mut1_leg_2`: `armed=false entTick=true`, 20 of 20); at (+64,+64) = corner + (4, 4)
+  chunks it is inside the band plus its one-hop `level+1` propagation, so the mutation arm is a rate — measured
+  **claim-OFF GREEN 3 of 4 legs** (`mut3_leg_1..4`), one red. The plant is therefore **512 blocks in `-x`** = 32
+  chunks out, 4× outside the band, and the probe fails fast on the premise (`the plant has to arm the mob OUTSIDE
+  the batch's forced set`, asserting `mob chunk x <= corner x - 16`). (2) **The claim follows the mob's LIVE
+  chunk, sampled every 5 ticks.** A fixture mob armed inside a neighbour pad's geometry is shoved out of it:
+  measured mob chunk = corner + (5, 4) for the (+64,+64) plant (`fix3_leg_5`) and corner + (2, 1) for the
+  (+16,+16) plant (`fixcur2_leg_2`), and the with-Curios leg `fixcur3_leg_2` ran 16 entity ticks in the head then
+  **0 of the last 40** with `entTick=true forcedHere=true` on the chunk captured at spawn — the mob had left it.
+  (3) **A self-rescheduling `helper.runAfterDelay` chain must allocate a FRESH lambda at every re-arm.**
+  `GameTestInfo` stores delayed tasks in an **`Object2LongMap<Runnable>` keyed on the task OBJECT**
+  (framework:34,169-171) and `tickInternal` fires an entry with `entry.getKey().run()` and THEN
+  `objectiterator.remove()` (:127-139): a chain that re-arms with the SAME `Runnable` instance has its re-arm
+  removed by the very iterator that ran it — it dies after the first sample and the probe ends as
+  `GameTestTimeoutException: Didn't succeed or fail within 400 ticks`. Measured on `fix4_leg_1..6`: 6 of 6 legs,
+  both arms, one census line at tick 5 and no failure text (the sampler had a `Runnable[]` self-reference);
+  `fixcur4_leg_1..3` the same on the with-Curios arm. (4) **A force is a LOAD request, and the tick loop visits
+  entities of LOADED chunks only.** `setChunkForced` writes the level map at once (the ticket census reads go
+  true immediately); the FULL load it requests has to pass the batch's shared queue. Measured `fix5_leg_3`: 285
+  ticks, `entTick=true forcedHere=true`, mob alive, unremoved, in the level's entity list, **0 entity ticks in 57
+  samples** — the chunk never reached FULL, so the mob was never in the tick loop at all. So the claim is taken at
+  **setup, before the mob exists** (the load queues for the probe's whole life), the census deadline is a LOAD
+  deadline (**600 ticks, with the harness `timeoutTicks` behind it at 900**, not in front of it), and
+  `MobChunkClaim#loaded`/`#status` sit next to the ticket reads so a red names the LOAD, not the ticket.
+  **Teeth (`theGuardianArmedOneChunkOffThePadCornerStillTicks`, the -512 plant, claim at setup, sampling every 5
+  ticks, re-claiming the live chunk):** armed passes only on a **40-tick ticking run** — `entTick=true
+  forcedHere=true loaded=true` at every sample AND the mob ticking every tick of the run — so the claim's own
+  load cost never reddens the armed arm (measured arrival ~77 ticks for a chunk 4 chunks out, `fix3_leg_1`; the
+  -512 plant passes at samples 12-23 = ticks 60-115); mutation `-Dtc.noMobChunkClaim` (gradle
+  `-Ptc.mobChunkClaimOff`) reads 0 ticks with `entTick=false` and fails with the census at 600, naming the probe.
+  **Census (t_f9fe6e81, gated tree `f3294226`, the merge of main `7413157e` with the triage tip `a2f95886`):**
+  mutation arm **RED 3 of 3** (`mut7_leg_1..3`: 121 samples over 600 ticks, longest ticking run 0, `entTick=false`
+  — with no claim the chunk is not even ticketed); armed **NO-Curios GREEN 3 of 3** (`fix6_leg_1..3`) and
+  **with-Curios GREEN 2 of 2** (`fixcur6_leg_1..2`), every armed leg `All 548 required tests passed` with the
+  verdict line `plant verdict GREEN … ticking run 40` — **no sibling probe reddened by the batch's 16 claims**;
+  probe count **548 runtime**, static `@GameTest` census **633 = main 632 + 1** over the same 83 gametest files,
+  no sibling probe retired; the walkback lane probe `theGuardianBreathesForFiveHundredTicksAndBurns` **green on
+  every one of the 14 local legs** that carried the fixture claim; `build` **rc 0** — unit **1231 tests / 0 failures / 0 errors / 2 skips** over
+  127 in-window XML, gameTest **548/548 on 3 merged-tree armed legs**, **66-88 s/leg armed and 104-122 s/leg on the 600-tick mutation
+  legs** at load average **1.9-5.2 on 8 cores**, `build` **12 s**, cite audit **100 cites / 0 stale / 0 legacy rc 0 at the landed tip (origin/main `2cc8df52` measures 87 / 0 / 0 rc 0; the delta's 13 cites resolve on this row)**, zero-residual
+  **3 files, 368 insertions / 1 deletion, 0 D rows (build.gradle 10/0, EldritchMobGameTest.java 210/1, MobChunkClaim.java 148/0) + this row, additive** (two java files + `build.gradle`'s claim-off property + this row; the docs commit is Markdown-only
+  and its cite audit re-ran at the landed tip). Disclosed on the way, each measured on this card: the v1 (+16,+16)
+  and (+64,+64) geometries above; the identity-bug reds (`fix4_leg_1..6`, `fixcur4_leg_1..3`); the cold-load red
+  (`fix5_leg_3`) that rule (4) fixes; v3's first armed sample **green 2 of 3 at 540/540** (`fix5_leg_1..2`) and the mutation-arm flag-name trap (`mut6_leg_1..3` read GREEN 3 of 3 because the driver passed `-Ptc.noMobChunkClaim`, the SYSTEM property name, where gradle reads the PROJECT property `tc.mobChunkClaimOff` — an OFF leg that is silently ON; `mut7` with the right flag is the measuring arm); and a
+  CI-arm rate measured on this repo's **last 120 runs** — 22 run-level failures, with **3 shas green on one ref and
+  red on another at the same sha** (`2eda098b`, `a069e53e`, `4229b84e`), i.e. an unchanged tree reddens, which is
+  the same floor t_c36620d6 measured as 40 green / 5 red over 45 runs.
+
 <a id="orb-claim-covers-asserted-cells"></a>
 - **A probe that asserts AIR on cells outside its own template box has to TAKE those cells at setup: a
   1×1×1 pad's clear pass reaches the corner cell only, so the assert reports the harness's terrain as a
@@ -1139,4 +1225,4 @@ Anchors minted for the cited bullets (t_867b394f): `vouched-cell`, `entity-clock
 item-entity bullet keeps main's `attribute-not-filter`, which this card's probe cites). Minted by t_b98f2601 (the orb-cell claim rule):
 `orb-claim-covers-asserted-cells`. Minted by t_9687e91a (the deferred-chunkgen producer rule):
 `deferred-chunkgen-stamps-pad-cells`. Minted by t_764d1e8e (the harness gate on that
-producer): `deferred-chunkgen-gated-in-gametest`. Minted by t_c36620d6 (the golem route-arm node-trail rule): `route-arm-node-trail-names-the-channel`. Minted by t_d6a23f78 (the stride-cell rule): `stride-motion-moves-the-read-cell` (the footstep arm's read cell is the stride's cell, measured).
+producer): `deferred-chunkgen-gated-in-gametest`. Minted by t_c36620d6 (the golem route-arm node-trail rule): `route-arm-node-trail-names-the-channel`. Minted by t_d6a23f78 (the stride-cell rule): `stride-motion-moves-the-read-cell` (the footstep arm's read cell is the stride's cell, measured). Minted by t_f9fe6e81 (the mob-tick chunk-claim rule): `mob-tick-claim-covers-mob-chunk`.
