@@ -12,6 +12,8 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogGolems;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileJarFillable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.entity.ai.goal.GoalSelector;
+import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
@@ -20,9 +22,13 @@ import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.material.Fluids;
+import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -474,5 +480,359 @@ public final class GolemRuntimeGameTest {
         helper.assertTrue(reloadedCarrier.getEssentia() == null && reloadedCarrier.getEssentiaAmount() == 0,
                 "a core that does not carry essentia writes no essentia payload (the original's core gate)");
         helper.succeed();
+    }
+
+    // --------------------------- persistence: the carried-stack sentinel (t_83e5a20d) ---
+
+    /**
+     * The idle golem's <b>second</b> save cycle — the standalone reproduction of the
+     * {@code An Entity type entity.thaumcraft.golem has thrown an exception trying to write
+     * state. It will not persist.} line the t_04233450 control measured on 5/10 base legs
+     * (docs/testing.md#empty-stack-sentinel-save).
+     *
+     * <p>Why the pre-existing {@link #golemStateSurvivesSaveAndReload} is GREEN over this loss:
+     * it saves a freshly <b>constructed</b> golem. The ctor leaves {@code itemCarried} null
+     * ({@code EntityGolemBase.java:186}) — 1.7.10's null sentinel, which is why the original's
+     * write is {@code if (itemCarried != null)} and an idle golem emits the empty compound
+     * ({@code reference/decompiled/thaumcraft/thaumcraft/common/entities/golems/EntityGolemBase.java:588-594}).
+     * The LOAD is the trap: 1.21.1's {@code ItemStack.parseOptional} answers
+     * {@code ItemStack.EMPTY} for that empty compound ({@code ItemStack.java:292-294}) where
+     * 1.7.10's {@code ItemStack.loadItemStackFromNBT} answered null
+     * (original's read, {@code :643-644}), so from the first reload on the field is non-null,
+     * the {@code != null} guard lets the encode run, and {@code ItemStack#save} throws
+     * {@code IllegalStateException: Cannot encode empty ItemStack} ({@code ItemStack.java:389-391}).
+     * NeoForge's patched {@code EntityStorage.storeEntities} catches that per entity — the
+     * {@code It will not persist} line, present in {@code compiledWithNeoForge_*.jar}'s
+     * {@code EntityStorage.class}, absent from the vanilla decompile — and does not add the tag
+     * to the chunk's {@code Entities} list. The golem is gone on the next load, and the game leg
+     * stays green because the harness prints {@code All N required tests passed} while the
+     * signature rides the shutdown save.</p>
+     *
+     * <p>So the teeth for this defect class are the SECOND cycle: save → load → save. One cycle
+     * cannot see it, and neither can an assert on the live field.</p>
+     */
+    @GameTest(template = "empty_24")
+    public static void anIdleGolemSurvivesASecondSaveCycle(final GameTestHelper helper) {
+        clearGolemCaches();
+        final ServerLevel level = helper.getLevel();
+        // The same populated fixture as golemStateSurvivesSaveAndReload MINUS setCarried:
+        // this golem has never held an item in its life.
+        final EntityGolemBase golem = spawn(level, at(helper, 2, 1, 2), EnumGolemType.IRON, 1);
+        populateIdleGolem(helper, golem);
+        helper.assertTrue(golem.getCarried() == null,
+                "the fixture has never carried an item, getCarried()=" + golem.getCarried());
+
+        // Cycle 1 — the write that has always worked (the field is still the 1.7.10 null).
+        final EntityGolemBase loaded = reloadOf(helper, golem);
+
+        // Cycle 2 — the write the census catches. NO carry read before it: the original's
+        // getCarried() nulls an emptied field as a side effect (EntityGolemBase.java:687-690),
+        // which HEALS the field and the next write — a probe that reads the getter first
+        // measures a golem that can never reproduce the census (measured: this probe passed
+        // with an assert on getCarried() sitting before this save).
+        final CompoundTag second = new CompoundTag();
+        try {
+            helper.assertTrue(loaded.saveAsPassenger(second),
+                    "the chunk-save frame (EntityStorage.storeEntities:95 -> Entity#save:1731 ->"
+                            + " Entity#saveAsPassenger) keeps the idle golem; false is the entity"
+                            + " being dropped out of the chunk's Entities list");
+        } catch (final RuntimeException e) {
+            helper.fail("the idle golem throws on its SECOND save, which is the line NeoForge's"
+                    + " EntityStorage catches with 'has thrown an exception trying to write state."
+                    + " It will not persist' - the entity never reaches the region file, so the"
+                    + " golem is gone on reload. Chain: " + describe(e));
+        }
+
+        // ... and the state that must survive it.
+        helper.assertTrue(loaded.getCarried() == null,
+                "the sentinel getter reads a loaded golem's EMPTY carry as the original's null —"
+                        + " and heals the field for the next write, got " + loaded.getCarried());
+        final EntityGolemBase back = CatalogGolems.GOLEM.get().create(level);
+        back.load(second);
+        back.setup(HOME_FACING);                                     // the load-path install (BD-31)
+        assertIdleGolemState(helper, golem, back, "the golem reloaded from the SECOND cycle's tag");
+        helper.succeed();
+    }
+
+    /**
+     * The drop arm on the frame that performs the drop: {@code Entity#save} is what
+     * {@code EntityStorage.storeEntities:95} calls, and its {@code false} answer is the entity
+     * leaving the chunk data. Both shapes are pinned — the idle golem (the census's) and the
+     * burdened golem, whose carried stack must still ENCODE (the fix must gate the encode, not
+     * delete the payload).
+     */
+    @GameTest(template = "empty_24")
+    public static void theChunkSaveFrameKeepsTheIdleAndTheBurdenedGolem(final GameTestHelper helper) {
+        clearGolemCaches();
+        final ServerLevel level = helper.getLevel();
+
+        final EntityGolemBase idle = spawn(level, at(helper, 2, 1, 2), EnumGolemType.WOOD, 4);
+        idle.setTogglesValue((byte) 0b0001_0010);
+        final CompoundTag idleTag = new CompoundTag();
+        try {
+            helper.assertTrue(idle.save(idleTag),
+                    "the storeEntities frame keeps a freshly placed idle golem");
+        } catch (final RuntimeException e) {
+            helper.fail("a freshly placed idle golem fails the chunk-save frame: " + describe(e));
+        }
+        helper.assertTrue("thaumcraft:golem".equals(idleTag.getString("id")),
+                "the idle golem's chunk entry carries its entity id, got '" + idleTag.getString("id") + "'");
+        helper.assertTrue(idleTag.get("ItemCarried") instanceof CompoundTag carriedIdle
+                        && carriedIdle.isEmpty(),
+                "an idle golem writes ItemCarried as the empty compound the original wrote"
+                        + " (EntityGolemBase.java:588-594), got " + idleTag.get("ItemCarried"));
+
+        // The burdened golem: the payload must survive as bytes, not as an empty compound.
+        final EntityGolemBase burdened = spawn(level, at(helper, 6, 1, 2), EnumGolemType.WOOD, 1);
+        burdened.setCarried(new ItemStack(Items.DIAMOND, 3));
+        final CompoundTag burdenedTag = new CompoundTag();
+        try {
+            helper.assertTrue(burdened.save(burdenedTag),
+                    "the storeEntities frame keeps a golem that carries a stack");
+        } catch (final RuntimeException e) {
+            helper.fail("a burdened golem fails the chunk-save frame: " + describe(e));
+        }
+        final CompoundTag carriedTag = burdenedTag.getCompound("ItemCarried");
+        // 1.21.1's ItemStack codec writes `count` (ItemStack.java:103-114, the CODEC's fields),
+        // not 1.7.10's `Count` — pin the key the platform writes, not the one the original wrote.
+        helper.assertTrue("minecraft:diamond".equals(carriedTag.getString("id"))
+                        && carriedTag.getInt("count") == 3,
+                "the carried stack encodes with its 1.21.1 id/count keys, got " + carriedTag);
+        final EntityGolemBase burdenedBack = CatalogGolems.GOLEM.get().create(level);
+        burdenedBack.load(burdenedTag);
+        helper.assertTrue(ItemStack.isSameItemSameComponents(burdenedBack.getCarried(), new ItemStack(Items.DIAMOND, 3)),
+                "the reload hands the payload back through the entity's own reader, got "
+                        + burdenedBack.getCarried());
+
+        // The census's own shape: the idle golem AFTER a load, saved by the same frame.
+        final EntityGolemBase reloaded = reloadOf(helper, idle);
+        final CompoundTag again = new CompoundTag();
+        try {
+            helper.assertTrue(reloaded.save(again),
+                    "the storeEntities frame keeps the idle golem on the save AFTER its reload —"
+                            + " the census's drop, in-frame");
+        } catch (final RuntimeException e) {
+            helper.fail("the idle golem fails the chunk-save frame once it has been loaded, so"
+                    + " NeoForge drops it from the chunk data: " + describe(e));
+        }
+        final EntityGolemBase third = CatalogGolems.GOLEM.get().create(level);
+        third.load(again);
+        helper.assertTrue(third.getType() == idle.getType() && third.getCore() == 4
+                        && third.getTogglesValue() == (byte) 0b0001_0010,
+                "the entity parses back as the same golem with its toggles, core " + third.getCore()
+                        + " toggles " + third.getTogglesValue());
+        helper.succeed();
+    }
+
+    /**
+     * The codec-level arms, pinned so a platform change that moves the sentinel reports by name.
+     * {@code ItemStack#save} refuses an empty stack and {@code saveOptional} is vanilla's own
+     * gate ({@code ItemStack.java:397-399}, and the same guard mob hand items go through at
+     * {@code Mob.java:395-401}); {@code FluidStack#save} refuses an empty one for the core-5
+     * bucket arm ({@code neoforge/fluids/FluidStack.java:270-276}). And
+     * {@code parseOptional} answers a NON-NULL empty stack, which is what turns the original's
+     * null sentinel into a throwing field on the second save (docs/testing.md#empty-stack-sentinel-save).
+     */
+    @GameTest(template = "empty_24")
+    public static void anEmptyCarriedStackIsNeverEncoded(final GameTestHelper helper) {
+        final var registries = helper.getLevel().registryAccess();
+
+        boolean itemThrew = false;
+        String itemMessage = "";
+        try {
+            ItemStack.EMPTY.save(registries);
+        } catch (final IllegalStateException e) {
+            itemThrew = true;
+            itemMessage = e.getMessage();
+        }
+        helper.assertTrue(itemThrew && itemMessage != null && itemMessage.contains("Cannot encode empty ItemStack"),
+                "the platform fact this card rests on: ItemStack#save refuses an empty stack, got threw="
+                        + itemThrew + " message=" + itemMessage);
+        helper.assertTrue(((CompoundTag) ItemStack.EMPTY.saveOptional(registries)).isEmpty(),
+                "ItemStack#saveOptional is the vanilla gate that writes the empty compound (ItemStack.java:397-399)");
+        helper.assertTrue(ItemStack.parseOptional(registries, new CompoundTag()).isEmpty(),
+                "parseOptional answers a NON-NULL empty stack for the empty compound - the load-side"
+                        + " half of the trap that makes a one-cycle save probe a false green");
+
+        boolean fluidThrew = false;
+        String fluidMessage = "";
+        try {
+            FluidStack.EMPTY.save(registries);
+        } catch (final IllegalStateException e) {
+            fluidThrew = true;
+            fluidMessage = e.getMessage();
+        }
+        helper.assertTrue(fluidThrew && fluidMessage != null && fluidMessage.contains("Cannot encode empty FluidStack"),
+                "the core-5 sibling: FluidStack#save refuses an empty stack (FluidStack.java:270-276),"
+                        + " got threw=" + fluidThrew + " message=" + fluidMessage);
+        helper.assertTrue(((CompoundTag) FluidStack.EMPTY.saveOptional(registries)).isEmpty(),
+                "FluidStack#saveOptional writes the empty compound for the empty stack");
+
+        // And the golem's own write: idle = empty compound, burdened = real bytes.
+        final EntityGolemBase idle = spawn(helper.getLevel(), at(helper, 2, 1, 2), EnumGolemType.STONE, 5);
+        final CompoundTag idleTag = idle.saveWithoutId(new CompoundTag());
+        helper.assertTrue(idleTag.get("ItemCarried") instanceof CompoundTag carried
+                        && carried.isEmpty(),
+                "an idle golem's ItemCarried bytes are the original's empty compound, got "
+                        + idleTag.get("ItemCarried"));
+        helper.assertTrue(!(idleTag.get("fluidCarried") instanceof CompoundTag fluid) || fluid.isEmpty(),
+                "a core-5 golem with nothing in the bucket writes no fluid payload (the original's"
+                        + " null guard), got " + idleTag.get("fluidCarried"));
+        final EntityGolemBase filled = spawn(helper.getLevel(), at(helper, 6, 1, 2), EnumGolemType.STONE, 5);
+        filled.setFluidCarried(new FluidStack(Fluids.WATER, 1000));
+        final CompoundTag filledTag = filled.saveWithoutId(new CompoundTag());
+        final FluidStack filledBack = FluidStack.parseOptional(registries, filledTag.getCompound("fluidCarried"));
+        helper.assertTrue(filledBack.getAmount() == 1000 && filledBack.is(Fluids.WATER),
+                "a filled bucket round-trips through the same key, got " + filledBack);
+        helper.succeed();
+    }
+
+    /**
+     * The core-5 (Decanting) sibling arm: the bucket payload is written under the same
+     * {@code != null} habit ({@code EntityGolemBase.java:1195}), so a bucket golem that has been
+     * loaded once — {@code fluidCarried} back as {@code FluidStack.EMPTY}, non-null — throws
+     * {@code Cannot encode empty FluidStack} on every later save and is dropped with the whole
+     * entity. Same second-cycle teeth as the item arm, plus the filled bucket's round-trip.
+     */
+    @GameTest(template = "empty_24")
+    public static void aBucketGolemSurvivesASecondSaveCycle(final GameTestHelper helper) {
+        clearGolemCaches();
+        final ServerLevel level = helper.getLevel();
+        final EntityGolemBase bucket = spawn(level, at(helper, 2, 1, 2), EnumGolemType.IRON, 5);
+        bucket.setDecoration("B");
+        helper.assertTrue(bucket.getFluidCarried() == null,
+                "the fixture bucket is empty on the field (the original's null sentinel)");
+
+        final EntityGolemBase loaded = reloadOf(helper, bucket);
+        // The fluid field has no healing getter (getFluidCarried is a plain read,
+        // EntityGolemBase.java:722-724), so this reads exactly what the load wrote: the
+        // original's null on a fixed tree, FluidStack.EMPTY on the pre-fix one.
+        helper.assertTrue(loaded.getFluidCarried() == null,
+                "the reload of a bucket golem with no fluid leaves the field at the original's null"
+                        + " sentinel, got " + loaded.getFluidCarried());
+        final CompoundTag second = new CompoundTag();
+        try {
+            helper.assertTrue(loaded.saveAsPassenger(second),
+                    "the chunk-save frame keeps the idle bucket golem on its second save");
+        } catch (final RuntimeException e) {
+            helper.fail("the idle bucket golem throws on its SECOND save (the fluid arm of the same"
+                    + " != null habit), so the entity is dropped from the chunk data: " + describe(e));
+        }
+
+        // The payload half: a real bucket survives the same two cycles.
+        final EntityGolemBase filled = reloadOf(helper, filledWith(level, bucket));
+        helper.assertTrue(filled.getFluidCarried() != null
+                        && filled.getFluidCarried().getAmount() == 1000
+                        && filled.getFluidCarried().is(Fluids.WATER),
+                "the 1000 mB of water round-trips through the second cycle, got " + filled.getFluidCarried());
+        helper.succeed();
+    }
+
+    // -------------------------------------------------- probe helpers for the arms above ---
+
+    /** A populated idle golem: upgrade, toggle, decoration, inventory, marker, health. No carry. */
+    private static void populateIdleGolem(final GameTestHelper helper, final EntityGolemBase golem) {
+        golem.setAdvanced(true);
+        golem.setDecoration("HGB");
+        golem.setUpgrades(new byte[] {1, 3});
+        golem.setTogglesValue((byte) 0b0010_0101);
+        golem.getInventory().setItem(0, new ItemStack(Items.STICK, 5));
+        golem.getInventory().setItem(1, new ItemStack(Items.IRON_INGOT, 2));
+        mark(golem, at(helper, 6, 1, 3), Direction.UP);
+        mark(golem, at(helper, 2, 1, 3), Direction.NORTH);
+        golem.setHealth(12.0F);
+    }
+
+    /** A copy of the golem that has been put through a filled-bucket write. */
+    private static EntityGolemBase filledWith(final ServerLevel level, final EntityGolemBase source) {
+        final EntityGolemBase copy = CatalogGolems.GOLEM.get().create(level);
+        copy.setMaterial(source.getMaterial());
+        copy.setCore(5);
+        copy.setDecoration("B");
+        copy.setFluidCarried(new FluidStack(Fluids.WATER, 1000));
+        copy.moveTo(source.getX(), source.getY(), source.getZ(), 0.0F, 0.0F);
+        copy.setup(HOME_FACING);
+        return copy;
+    }
+
+    /**
+     * One save/load cycle on the vanilla frames: {@code Entity#saveAsPassenger} (the frame
+     * {@code EntityStorage.storeEntities} calls) into a fresh tag, then {@code Entity#load} into a
+     * fresh entity of the same type. A throw out of the first frame is the census's signature and
+     * is NOT caught here.
+     */
+    private static EntityGolemBase reloadOf(final GameTestHelper helper, final EntityGolemBase source) {
+        final CompoundTag tag = new CompoundTag();
+        final boolean kept;
+        try {
+            kept = source.saveAsPassenger(tag);
+        } catch (final RuntimeException e) {
+            helper.fail("the save frame throws for " + source + ": " + describe(e));
+            return null;
+        }
+        helper.assertTrue(kept, "the save frame kept " + source + " in the chunk data");
+        final EntityGolemBase loaded = CatalogGolems.GOLEM.get().create(source.level());
+        loaded.load(tag);
+        return loaded;
+    }
+
+    /** Everything the card names as "the state survives": goal install, upgrades, toggles, payload. */
+    private static void assertIdleGolemState(final GameTestHelper helper, final EntityGolemBase source,
+                                             final EntityGolemBase back, final String when) {
+        helper.assertTrue(back.getOwnerName().equals(source.getOwnerName()),
+                when + ": the owner round-trips, got '" + back.getOwnerName() + "'");
+        helper.assertTrue(back.getCore() == source.getCore()
+                        && back.getCoreTask() == source.getCoreTask(),
+                when + ": the core and its task row round-trip, got " + back.getCore());
+        helper.assertTrue(back.getMaterial() == source.getMaterial(), when + ": the material round-trips");
+        helper.assertTrue(back.isAdvanced(), when + ": the advanced flag round-trips");
+        helper.assertTrue(back.getDecoration().equals(source.getDecoration()),
+                when + ": the decoration round-trips, got '" + back.getDecoration() + "'");
+        helper.assertTrue(back.getTogglesValue() == source.getTogglesValue(),
+                when + ": the toggle byte round-trips, got " + back.getTogglesValue());
+        helper.assertTrue(back.getGolemStrength() == source.getGolemStrength()
+                        && back.getRange() == source.getRange()
+                        && back.getCarryLimit() == source.getCarryLimit(),
+                when + ": the upgrade-derived figures round-trip, strength " + back.getGolemStrength()
+                        + " range " + back.getRange() + " carry limit " + back.getCarryLimit());
+        helper.assertTrue(back.upgradeSlotCount() == source.upgradeSlotCount(),
+                when + ": the upgrade slot count round-trips");
+        helper.assertTrue(back.getHomeFacing() == source.getHomeFacing()
+                        && back.getRestrictCenter().equals(source.getRestrictCenter()),
+                when + ": the home facing and area round-trip");
+        helper.assertTrue(back.getMarkers().size() == source.getMarkers().size()
+                        && back.getMarkers().containsAll(source.getMarkers()),
+                when + ": the markers round-trip, got " + back.getMarkers().size());
+        helper.assertTrue(countOf(back.getInventory(), new ItemStack(Items.STICK, 1)) == 5
+                        && countOf(back.getInventory(), new ItemStack(Items.IRON_INGOT, 1)) == 2,
+                when + ": the golem inventory round-trips");
+        helper.assertTrue(back.getHealth() == 12.0F, when + ": health round-trips, got " + back.getHealth());
+        helper.assertTrue(back.getCarried() == null,
+                when + ": the reload leaves an idle golem's carry at the null sentinel, got " + back.getCarried());
+        helper.assertTrue(back.getCarrySpace() == source.getCarrySpace(),
+                when + ": getCarrySpace keeps the original's null branch (EntityGolemBase.java:812-816),"
+                        + " got " + back.getCarrySpace() + " over " + source.getCarrySpace());
+        helper.assertTrue(goalInstall(back.goalSelector).equals(goalInstall(source.goalSelector)),
+                when + ": the load-path goal install matches the source's, source="
+                        + goalInstall(source.goalSelector) + " reloaded=" + goalInstall(back.goalSelector));
+    }
+
+    /** The goal set the load-path install produces: priority -> goal class, sorted. */
+    private static List<String> goalInstall(final GoalSelector selector) {
+        final List<String> out = new ArrayList<>();
+        for (final WrappedGoal entry : selector.getAvailableGoals()) {
+            out.add(entry.getPriority() + ":" + entry.getGoal().getClass().getSimpleName());
+        }
+        Collections.sort(out);
+        return out;
+    }
+
+    /** The full cause chain of a save failure, on one line, so a red names the mechanism. */
+    private static String describe(final Throwable error) {
+        final StringBuilder out = new StringBuilder();
+        for (Throwable t = error; t != null; t = t.getCause()) {
+            out.append(t.getClass().getName()).append(": ").append(t.getMessage()).append(" | ");
+        }
+        return out.toString();
     }
 }
