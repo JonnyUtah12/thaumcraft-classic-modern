@@ -712,6 +712,54 @@ restores both and `diff -q` reports byte-identical.
   legs of in-flight trees whose pad grid differs from main's, where the sweeps here cannot land.
   **Census (t_764d1e8e): teeth 5 legs, all with-Curios, every leg printing its THREE plant lines — the shipped tree with no gate property at all (the pass live) RED 2/2, the gate tree with the gate ARMED (7-8 `CHUNKGEN-GATE … skipped N chunk(s)` lines on the leg, so the pass ran and was skipped) RED 2/2, and the gate tree re-armed with `-Ptc.chunkGenOn` RED 1/1; every red is `combat_butchercullstheoldestanimalonlyinaherdofthree failed at … the golem's pad: cell … is air with a solid floor under … got cell=Block{minecraft:grass_block} floor=Block{minecraft:stone} (tick 120) — a blocked cell is the block-support precondition closing under the pad` — the card's CI line is the same assert at the same tick with the same `cell=Block{minecraft:grass_block}`, and the FLOOR token is the byte-diff (`floor=Block{minecraft:dirt}` on the CI leg, `stone` on this tree's grid, where the pad's floor is the template's stone). The other two planted shapes did NOT redden their lanes on this grid (cobblestone in the guardian's own cell, dirt in the orb pair's plain arming cell, both planted after the lane's setup claim): the guardian's `got -20` walkback red and the orb clamp steal need an arrival inside the drive window, not a setup stamp, so this card mints no teeth for those two lanes and the per-probe claims stay the lever there. Arms on the gate tree (base `c4fe41ed`, probe census 529): gate ON NO-Curios 5/5 + with-Curios 5/5 GREEN 529/529 with 7-8 gate lines per leg, gate OFF (pass live) NO-Curios 5/5 + with-Curios 5/5 GREEN 529/529 — Fisher 10 vs 10 green, p=1.0, NO separation, which is what the 0/15 census says the natural rate is on this grid; the gate-OFF legs also cost wall time the gate-OFF grid explains (59-181 s per leg vs 58-89 s armed). Producer census legs: 15 (4 + 5 gate-OFF with the v1 tree, 2 gate-ON v1, 4 on the v2 census tree), `stamps=0` in EVERY registered region on EVERY leg. v1-gate red legs: every gate-armed leg on that tree went RED — the 2 completed with-Curios legs name `loadedchunksflowthroughthetickdriver` in the summary block with 1454 and 1444 pending chunks dropped, and 3 NO-Curios legs printed `1 required tests failed` each before the driver was killed, their logs cut before the lane line, so the lane identity in those three is unconfirmed here. `./gradlew --rerun-tasks build` rc 0 (unit XML 1186 tests / 0 failures / 0 errors / 2 skips), probe census 529 → 529 on the card tip (no probe added; the planted/census trees read 533 because main moved under them), cite gate on the landed tip 62 cites / 0 stale / 0 legacy. The card's own harvest-cite redirect is VOID AT LANDING and the merge keeps MAIN's cite text: main minted the kebab those cites already asked for in d253b67c (`harvest-pad-claims-its-light-layer`) and retired the kebab the branch redirects TO in f255dc5a (`harvest-pad-claims-and-services-its-cells`), so landing the redirect would have made 2 cites STALE (measured on the raw auto-merge: 62 cites / 2 stale / rc 1) — the same two fixes, ruled for main's landed pair. CI 43862280324 on the code tip `fe10290c`: `build` (with-Curios game tests), `game-test-no-curios` and `runServer` all success with `-Dtc.noChunkGen=true` armed in the gameTestServer run config — the dedicated-server job proves the gate touches only the harness run config.****
 
+<a id="mob-write-cells-ride-the-int-cast"></a>
+- **A mob's block-write cells ride the `(int)` CAST of its raw position, not `blockPosition()`, so a
+  probe asserts the cell the BUILDER computes and claims that same list.** 1.7.10 computes a write cell
+  as `(int)this.posX + offset` (`EntityCultistPortal.java:144`, `:146`, `:186`); a mob stands in the cell
+  CENTRE (`x = cell + 0.5`) and a Java cast truncates toward ZERO, so on the negative half of an axis the
+  cast origin sits ONE BLOCK HIGHER than the cell `blockPosition()` reports — the same rule a summon arm
+  pins for a minion's home centre (`BossMobGameTest:235`, `EntityCultist.java:135-137`). A probe that
+  pins `padCell + offset` asserts a cell the builder never touches, and a builder that computes its
+  offsets about `(0,0,0)` writes at the WORLD origin and never touches the pad at all: the Crimson
+  Portal's banner wall had BOTH defects at once — the write arm passed a `(0,0,0)` origin into
+  `bannerCell()` while the probe asserted `padCell + offset` — so the pad's wall cell read
+  `Block{minecraft:air}` on 3/3 arms (with-Curios ×2, noCurios) from the probe's own commit onward, with
+  the pad handed over clean (`cleared 0`, `swept 0`) and the probe's census printing no per-cell text
+  (c5-2 gate record `gate_record.md`, card t_2f9c86c8). Read the reference's write site before ruling
+  which side moves, then fix the BUILDER and the probe's cell list AS A PAIR: the builder passes the
+  cast origin, and the probe computes its expected cells by calling the port's own cell expression from
+  that same cast and passes THAT list to the claim
+  (`docs/testing.md#orb-claim-covers-asserted-cells`) so the claim, the census and the asserts ride one
+  list.
+<a id="pad-write-lands-only-in-a-loaded-chunk"></a>
+- **A world write on a cell whose CHUNK is not loaded is dropped SILENTLY, so a pad's far cells have to
+  be armed, claimed and asserted per loaded-CHUNK, not by "is it my origin chunk".** 1.21.1's
+  `Level#setBlock` asks the chunk source for a FULL chunk and a server answers null when it is not
+  loaded, so the write is never applied and never reported; and a game-test template force-loads only
+  its OWN intersecting chunks (`StructureUtils#forceLoadChunks`), so on a packed pad grid a pad's far
+  cells ride the NEIGHBOUR templates' forced chunks and the unforced gaps between them. Consequences: a
+  claim that writes such a cell is a no-op there (census it and skip it), an assert on it must be stated
+  per cell as loaded→written / unloaded→air, and a blanket "outside the origin chunk ⇒ air" is
+  OVER-SPECIFIED, because a neighbour's forced chunk does carry the write. Measured on the Crimson
+  Portal's banner wall — 6 blocks out from the cast origin, on the stride-6 pad packing — the loaded
+  cell set is a function of the pad's offset inside its own chunk, 1..4 of 4 cells across the three
+  arms (c5-2 gate record, card t_2f9c86c8).
+<a id="follow-up-hurts-clear-the-ten-tick-invuln-window"></a>
+- **A scripted follow-up hurt has to clear `LivingEntity#invulnerableTime`, because 21.1.259 arms the
+  10-tick window on a hurt the target's immunity REFUSES, and a damageability control behind a
+  throwing assert is unmeasured.** Two measured facts from the Crimson Portal's upkeep leg (card
+  t_2f9c86c8, 3/3 arms). (1) A refused hurt is NOT inert: the fire-immune statue's refused
+  `DamageTypes.DROWN` hurt records its source (`lastSource = DamageSource (drown)`, `damage 0.0`), so a
+  refusal reads as `landed == 0.0` PLUS the source's type — `getLastDamageSource() == null` is
+  over-specified against the port's design and is not a way to detect one. (2) The same refused hurt
+  arms vanilla's 10-tick damage cooldown, so the melee fired on the following line is refused by the
+  PLATFORM and lands 0.0: the leg's control (`the statue is damageable: a mob-attack 5.0 …`) reported
+  `got 0.0` on 3/3 arms with the statue intact. Clear the window (`mob.invulnerableTime = 0`, this
+  file's established reset at `BossMobGameTest:373` and `:561`) and pin BOTH sides — in-window lands
+  nothing, cleared lands the armour-scaled hit — so the mechanism is measured, not assumed. (3) Control
+  asserts placed AFTER the primary assert never ran on any leg whose primary threw: the pre-fix tree's
+  primary threw, so the "controls PASSED" that shipped on the card was not evidence from the gate legs.
+  Order a control BEFORE the assert that can throw, or state in the card which arm measured it.
 <a id="mob-tick-claim-covers-mob-chunk"></a>
 - **A probe that gates on MOB ticks has to claim the mob's CHUNK, not just its cells: every probe runs on a 1×1×1 `empty` template, so the harness force-loads the pad corner's chunk only, and a mob armed one block off the corner stands in an unticketed chunk in every slot whose corner lands on a chunk boundary.** `StructureUtils#forceLoadChunks` (framework:165-170) forces `boundingBox.intersectingChunks()` — for `template = "empty"` that is the ONE chunk holding the pad corner — and `ServerLevel#tickEntities` (:390-395, 411) ticks an entity only where `inEntityTickingRange(chunkPosition)` holds, i.e. ticket level ≤ `ChunkLevel.byStatus(FullChunkStatus.ENTITY_TICKING)` = 31 (`ChunkLevel:47-49` `isEntityTicking`). `EldritchMobGameTest#spawn` arms every family mob at `pad(1, 3, 1)` = corner + (1, 3, 1), so the mob is in the corner's own chunk when `corner.x mod 16 ≤ 14 && corner.z mod 16 ≤ 14`, in a **4-neighbour** chunk when exactly one coordinate crosses (a 4-neighbour of a forced chunk inherits the ticking level — the level map stores `level+1`, so neighbours read 31 — and an unticketed mob there ticks fine), and in the **DIAGONAL** neighbour when both cross, which does not inherit. Measured on the trace legs of the tree the lane lands on (`trace1_*`, base `4a9ab8df`): green legs run `mobTick` 1:1 with `gameTime` and read `entTick=true forcedHere=true`; the red leg reads `mobTick=0` from the first sample for the probe's whole 400-tick life with the mob `removed=false inLevel=true`. Both disclosed reds of this lane sit on a corner with `x mod 16 = 15` — the CI one at `failed at 1657407, -60, 3623897` (job 133343432981, run 43880111452) and the local one at `failed at 10720063, -60, -3829490` (`gate1_leg_noCurios_2`). So the `-20` walkback read is **the mob running NO entity ticks** — the air never walks back — and it is not the deferred-terrain channel: that leg carried 8 `CHUNKGEN-GATE … skipped N chunk(s)` lines (the producer OFF), the landing census separated nothing (Fisher 2×2 [[1,5],[0,5]] p=1.0, base `f255dc5a` 5/5 green), and t_764d1e8e already disclosed that a cobblestone stamp in the mob's own cell at tick 21 does not redden this arm. The producer is a CHUNK TICKET — a harness channel, not terrain. Shape: the claim is **per-probe** (the fixture takes the mob's chunk in `spawn`, `MobChunkClaim`), not a harness gate: the state is chunk-local (the CI red is 1 test of 533 with 533 pads on the grid), a level-wide gate cannot put a ticking ticket on a chunk it does not know, and forcing every pad's chunks is exactly the grid-load packing the standing hazard t_44055375 punishes. The claim pulls the harness's OWN lever — `ServerLevel#setChunkForced` (the call `forceLoadChunks` itself makes: `ForcedChunkManager.addForcedChunk` → `TicketType.FORCED_TICKET` at 31 + the level's `ForcedChunksSavedData` entry, which `GameTestRunner#runBatch:100-103` clears for the whole level at every batch end, so a setup-time claim cannot outlive its batch) — and NOT `DistanceManager#addTicket(TicketType.FORCED, …)`: on a chunk that is not loaded that ticket is queued as pending and the level map keeps `MAX_TICKET_LEVEL` for the chunk, so a probe reading mob ticks 20 ticks after setup measures `entTick=false` on the chunk it just claimed (measured `fix1_leg_4`: `armed=true entTick=false`, 0 of 20 ticks). No probe releases a claim: the forced set is SHARED with the harness and with every sibling claim in the batch, so unforcing a chunk a sibling forced freezes that sibling's probes — t_44055375 again. The claim set is the arm set and is pinned, per `docs/testing.md#scan-claim-covers-box-cells`: the walkback probe records the mob's chunk at spawn and carries `entTick`/`forcedHere`/`mobTick`/`armed` in the failure text, so a future freeze reddens naming the channel; that state is a census line and NOT a hard assert, because 21 ticks (ignite + 4) is not enough for a chunk only this claim brings in (`fix1_leg_4`), and a gate that reddens on chunk-load latency manufactures flakes. Teeth (deterministic, no streak): `theGuardianArmedOneChunkOffThePadCornerStillTicks` arms the guardian 64 blocks out in BOTH +x and +z, which is chunk corner + (4, 4) in EVERY slot (`floorDiv(c + 65, 16) = floorDiv(c, 16) + 4`), four chunks diagonally from the one the harness forces — far enough to sit outside the batch's forced set AND outside its one-hop propagation, and asserts the mob runs ≥30 of the LAST 40 ticks of a 120-tick window (80 load ticks, then the tail): claim armed GREEN, `-Ptc.mobChunkClaimOff` reads a 0-tick tail with `entTick=false forcedHere=false`. Two measured facts set that geometry: the near plant is NOT clean — at (+16, +16) the mob chunk is the 4-neighbour, which ticks fine with the claim OFF (`mut1_leg_2`: `armed=false entTick=true`, 20 of 20), and sibling pads' geometry SHOVES a mob armed that close (`fixcur2_leg_2`, with-Curios arm, read mob chunk = corner + (2, 1) for a +16/+16 plant, so an exact-offset premise is not assertable — the probe asserts only "not the corner's chunk"); and even at (+16,+16) a sibling's corner force can land on the plant's chunk (`mut2_leg_1`: `armed=false entTick=true forcedHere=true`), which is why the mutation arm of a NEAR plant is a rate while the armed arm is the deterministic side. The tail-window gate is the same discipline pointed at the claim's own cost: a claimed chunk 4 chunks out is a COLD chunk, so the load lands in the head and the gate reads the tail; a gate that reddens on that latency manufactures flakes. **Census (t_f9fe6e81, base `4a9ab8df`, probe census 533 → 534 with the plant added): claim ARMED NO-Curios 6/6 GREEN 534/534 (`fix2_leg_1..6`), every leg printing 16 `forced mob chunk … entTick=true forcedHere=true` lines (16 mob-fixture spawns per leg) and the plant census reading 40 of 40 entity ticks on all six; the walkback census on the same legs reads `mobTick=24 air=-4` (= -20 + 16, the walkback ran). Mutation arm `-Ptc.mobChunkClaimOff` on the near (+16,+16) plant: **2 RED of 3** (`mut2_leg_2/3` name `theguardianarmedonechunkoffthepadcornerstillticks`, `0 of 40 … entTick=false forcedHere=false`), 1 green with the reason in its own census line (`mut2_leg_1`: `armed=false entTick=true forcedHere=true` — a sibling pad's corner force covers the plant's chunk). On the (+64,+64) plant the armed arm read 5 of 6 with **80 of 80** ticks (the 6th leg's cold chunk arrived at tick ~77: 3 of 80 with `entTick=true` — measured `fix3_leg_1`, and the reason the gate is the TAIL window: 80 load ticks then ≥30 of the last 40). Pre-fix baseline of this lane on the same tree: 1 red/6 + 1 red/3 local NO-Curios legs and 1 red of 2 CI runs on the same sha (the rerun on that sha green).
 
@@ -867,6 +915,99 @@ restores both and `diff -q` reports byte-identical.
   subject to control *when* a rule fires, verify the park cell is really unticked — print the rule's own
   precondition (`restrictDistSqr`) on the tick before the draw; a precondition already satisfied means
   the hand-driven tick is not the write tick and the draw is a budget.
+<a id="route-arm-node-trail-names-the-channel"></a>
+- **A route arm is a ONE-DRAW assert on a path graph: read the node trail's LAST cell and its
+  `reached` flag before attributing the red, and triage the red as the arm's rate, never as a
+  streak.** `GolemCombatAiGameTest.combat_returnHomeUsesTheRadiusAndTeleportsFromBeyond48`
+  (`:1537-1542`) calls `AIReturnHome#start` and asserts in one draw that the navigation path has
+  nodes, `canReach()`, and an end cell within 1.5 squared of the placer's centre; the trail is
+  printed by the probe's own `nodeTrail` (`:428-438`). A clean corridor draws
+  **`path[10,reached=true]`** ending at rel (12,0,13): 6/6 log-only trace legs on the shipped tree
+  print `nonAir=0 nodes=10 reached=true` at the draw tick, no assert added. The CI NO-Curios red drew
+  **`path[9,reached=false]`** (land-ref run 43837940910 attempt 1 @ `d06c9b46`) and its trail names
+  the channel: node 0 sits at rel (12,0,22) — the cell the probe `setPos`s the golem to at `:1526`, so
+  placement is NOT the failure and an assert on the mob's own cell would have passed — the route runs
+  `-z` to rel z=19, then LEAVES the probe's floor row (rel y=-1, z=12..70, laid at `:1516-1518`) at
+  (13,0,18), (14,0,17), (14,0,16), climbs (14,+1,15) and (14,+2,14) and stops. `PathFinder#findPath`
+  calls a target reached at `distanceManhattan(target) <= accuracy` and, when no target is reached,
+  reconstructs the **PARTIAL** path off the best open node with `reachesTarget=false` — vanilla
+  `world/level/pathfinder/PathFinder.java:81-83`, `:116-120`, `:144`; the repo's `reference/decompiled`
+  carries no pathfinder package, so read the vanilla source for it. A node count paired with
+  `reached=false` is a graph truncation and its LAST node is the cell where the walkable component
+  ended: read the trail, not the assert's first words.
+  **Rate, published — this is what closes a route-arm red, and the CI tally needs an ATTEMPT-level
+  read.** Arm = `game-test-no-curios`, window 2026-11-16T00:00Z → `4a9ab8df`, every branch, one line
+  per run (`ci_lane.out`): **40 successes / 5 failures over 45 completed runs**, and all 5 reds name
+  lanes OTHER than this one — the stage machine + CultistPortal summoner pair at `ea9976db` (run
+  43886425981, job 133365685741) and 4 reds whose `--log-failed` returned 0 lines (`names []`:
+  `86b3c57d`, `17634ba2`, `22f70ceb`, `2eda098b` — a red job log can be UNFETCHABLE and the probe
+  name dies with it). This probe's two reds are ABSENT from that list for a tooling reason the next
+  sampler has to know: **`gh run view` reports the LATEST attempt**, so run 43837940910 (`d06c9b46`)
+  and run 43862872626 (`e3e52643`) both print `nc=success` in the harvest; their red attempts, fixed
+  by `gh run rerun --failed` on the SAME sha, are invisible and their job ids cannot be selected
+  (`select(.conclusion=="failure")` over 43837940910's jobs prints NOTHING). On the ATTEMPT level the
+  arm carries 7 reds (5 final-red + 2 rerun-fixed) and this lane owns 2 of them: the route arm at
+  `d06c9b46` (run 43837940910 attempt 1, `path[9,reached=false]`, green on attempt 2, job
+  133215632537) and the drift arm at `e3e52643` (run 43862872626, job 133283875938, line `squared
+  distance 1.7649174903511837 against a radius of 3.0 squared`, the tail
+  `docs/testing.md#outcome-not-tick-budget` carries; green on rerun, job 133287911974): **2 lane reds
+  in ~47 arm attempts ≈ 1/24, and 0 of the 5 final-red runs is this probe.** Locally:
+  an interleaved 30-leg NO-Curios whole-grid census on this box (10 rounds, base `c4fe41ed` → landing `d06c9b46` → shipped main `4a9ab8df`, one gradle at a time, `ran=1`, `cachehits=0` and the built-in-fallback marker on all 30 legs, `loadavg(1m)` 1.97-6.26 with 0-3 JVMs, legs 59-110 s, `census2/`): this probe is **0/10 base, 0/10 landing, 0/10 shipped = 0/30** (Fisher base-vs-landing p=1.0, pooled with the card's first 6-leg pair p=1.0). The base arm reddened twice on lanes OTHER than this probe — `theguardianbreathesforfivehundredticksandburns` (the water-tank cells `docs/testing.md#deferred-chunkgen-stamps-pad-cells` names) and `interact_harvestgoalsareinertforthewrongcore` — 2/10 vs 0/10 on the landing arm, p=0.47; pooled with that first census (base 2/6 reds naming `therangedattackseamlaunchestheblastwiththeoriginalconstants` and the same guardian, landing 0/6, load 2.1-9.2 with 1-7 JVMs) the base arm sits at **4/16 vs 0/16, p=0.10** — a base-tree floor with no landing-tree delta, and the landing + shipped arms are 20 clean grid legs. The CI pair and the local box are not separable at this N (2 lane reds in 47 CI arm attempts vs 0 in 30 local legs, Fisher p=0.52)
+  So a route arm owns no denominator of its own: at the CI's ~1/24 a 10-leg local arm has
+  P(0 reds) = 0.65 and a 30-leg census P(0 reds) = 0.28 (Fisher base-vs-landing on THIS probe
+  p=1.0), and the "green streak" a land runner wants is P(3 greens | 1/24) = 0.88 — the streak closes
+  nothing. The node trail, the interleaved census and the plant pair are what close a route-arm red.
+  **Plant pair (deterministic — the causal leg per `docs/testing.md#scan-claim-covers-box-cells`),
+  all NO-Curios, every plant prints its own `[C3662]` line on the leg, verdicts by shape not streak.**
+  Planted at the CI's mid-window (`pPath-1`, tick 122) on the SHIPPED tree: a single 2-tall column rel
+  (12,0..1,13) **GREEN 2/2**, a 3-wide 2-tall wall rel (11..13,0..1,13) **GREEN 2/2**, the eaten floor
+  row rel (12,-1,13..18) **GREEN 2/2** at `path[11,reached=true]`, the full trench rel
+  (12,-1..-4,13..18) **GREEN 2/2** — a 2-tall step is walked OVER and a void is walked AROUND (the
+  drop generator answers OPEN nodes), so "one block in the corridor" and "the floor is gone" are both
+  negative controls. What reproduces the lane is the **stride-6 band**: 2-tall walls at rel
+  x11..13, dy 0..1, z ∈ {13, 19} (12 blocks — the neighbour stride, two walls so the detour past the
+  first one runs out of navigation cost) → shipped tree **RED 3/3** naming this probe, all three on
+  the WALK arm: `the goal walked the golem from 10.0 blocks toward home, now 7.372057122171135 /
+  7.372057121356423 / 7.372061974048622 away …, tick 160`. A 3-tall seal rel (11..13,0..2,13..18)
+  → **RED 2/2** (6.41 / 6.41 away, tick 160); leg 1 ALSO reddened a neighbour,
+  `falldistanceisclearedinthefirsttwentyticks` (`it takes no fall damage, got 19.0`) — my seal in its
+  pad, a fixture leak of my own making, not a finding about that probe.
+  **The lever the pair names is the DRIVE-TICK pass, not the setup claim:** the same band plant on the
+  claimed tree with the drive service live → **GREEN 2/2** with
+  `ROUTE-CLAIM drive cleared=12 relaid=0 [Block{minecraft:cobblestone} @ rel (11,0,13), …]`; the same
+  plant on the same tree with the drive call removed (setup claim only) → **RED 1/1**. Lava, the malus
+  shape, rel (11..13,0..1,13..18): drive live **GREEN 2/2**, setup-claim-only **RED 1/1**. A setup
+  claim cannot clear terrain that arrives at tick 122.
+  **The CI's signature shape reproduced at scale, not at one block:** the region seal rel
+  (4..20, 0..2, 13..18) (306 blocks) with the drive service disabled reddened the ROUTE arm with
+  **`path[4,reached=false]`** — a 4-node trail off the mob's own cell, the same truncation family as
+  the CI's `path[9,reached=false]`. The node count says how far the cut is from the mob, not how much
+  terrain moved: a `reached=false` trail is a walkable-component cut. No plant reproduced the CI's
+  exact 9-node text locally, so the lane's producer is read from the CI red's own trail, and the
+  plants name which shapes can produce that family. **Product tooth:** `AIReturnHome#start` never
+  paths (`final boolean path = false;`) → **RED 2/2**: leg 1 names this probe (`outside the home
+  radius it does: squared distance 100.25 against a radius of 3.0 squared (:33)`), its
+  `interact_` sibling (`the golem did not path back inside the goal's home threshold (feet=…)`) and
+  `combat_woundedguardretaliatesanddoesnotrecruititsneighbour`; leg 2 names this probe + the sibling.
+  The route arm has teeth, so a green leg is a real draw.
+  **Disclose the remedy that failed; do not rebuild it (t_c36620d6).** A corridor claim sized rel
+  x4..20 × dy0..2 × z4..30 plus the row under it, run at setup AND on every drive tick, is NOT a fix
+  for this probe: the seal ALONE truncates the route — the region plant (306 blocks, tick 119) with
+  the drive service disabled reddened the ROUTE arm at `path[4,reached=false]` after
+  `ROUTE-CLAIM setup cleared=117` (leg regionC) — and with the drive live the same plant reddened the
+  WALK arm (`now 5.254573640… away … tick 160`) behind `setup cleared=76` →
+  `drive cleared=309 [Block{minecraft:cobblestone} @ rel (4,0,13), …]` → `walk cleared=0 relaid=0`
+  (leg regionB; leg 1 of that batch was a COMPILE red, `rc=1 ran=0` in 11 s, so it is a control and
+  not a verdict). A sweep that wide moves the ground the probe's own walk phase stands on and floods
+  block writes; **a `cleared=309` on a red leg names the sweep, not the channel.** Any remedy for this
+  arm has to be sized to the cells the gate reads AND keep the walk row under the golem standing —
+  the `docs/testing.md#scan-claim-covers-box-cells` discipline applied to the row, asserted not swept —
+  and it has to be validated against the band plant (RED 3/3) and the 3-tall seal (RED 2/2), not
+  against a green streak.
+  Triage recipe for a route-arm red, in order: take the CI pair (`gh run rerun --failed` on the same
+  sha), run the interleaved base / landing / shipped census with `loadavg` + `pgrep -c java` on every
+  leg line, plant the shape the trail's last cell names plus its negative controls, publish both
+  denominators with the Fisher exact, and disclose. The triage card owns none of the fix.
 <a id="component-codec-save-path"></a>
 - **A vanilla data component's persistent codec can reject a mod's marker, and the save path
   swallows the ITEM, not the write.** `minecraft:entity_data` and `minecraft:block_entity_data`
@@ -975,4 +1116,4 @@ Anchors minted for the cited bullets (t_867b394f): `vouched-cell`, `entity-clock
 item-entity bullet keeps main's `attribute-not-filter`, which this card's probe cites). Minted by t_b98f2601 (the orb-cell claim rule):
 `orb-claim-covers-asserted-cells`. Minted by t_9687e91a (the deferred-chunkgen producer rule):
 `deferred-chunkgen-stamps-pad-cells`. Minted by t_764d1e8e (the harness gate on that
-producer): `deferred-chunkgen-gated-in-gametest`. Minted by t_f9fe6e81 (the mob-tick chunk-claim rule): `mob-tick-claim-covers-mob-chunk`.
+producer): `deferred-chunkgen-gated-in-gametest`. Minted by t_c36620d6 (the golem route-arm node-trail rule): `route-arm-node-trail-names-the-channel`. Minted by t_f9fe6e81 (the mob-tick chunk-claim rule): `mob-tick-claim-covers-mob-chunk`.

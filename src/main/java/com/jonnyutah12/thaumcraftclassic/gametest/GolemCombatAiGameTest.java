@@ -1492,6 +1492,10 @@ public final class GolemCombatAiGameTest {
      * golem's height, and a golem dropped into the void reports as a dead golem, not as a
      * teleport. The same is true of the flee probe, whose goal runs to a spot 16 blocks from
      * the creeper: it lays a clearing ({@link #layClearing}) before it asks the goal to arm.</p>
+     *
+     * <p>The route arm at {@code pPath} asserts a path graph in ONE draw, so its red is a graph
+     * truncation, not a placement failure: read the node trail's LAST cell and its {@code reached}
+     * flag before attributing the red — docs/testing.md#route-arm-node-trail-names-the-channel.</p>
      */
     @GameTest(template = "empty_24", timeoutTicks = 400)
     public static void combat_returnHomeUsesTheRadiusAndTeleportsFromBeyond48(final GameTestHelper helper) {
