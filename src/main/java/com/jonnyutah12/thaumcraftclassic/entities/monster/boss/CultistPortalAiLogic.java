@@ -9,7 +9,7 @@ import net.minecraft.resources.ResourceLocation;
  * {@code :1-313}).
  *
  * <p>The portal is the boss band's <b>summoner</b>, not a melee boss. Its whole
- * behaviour is the stage machine of {@code :99-201}: a countdown that, when it hits
+ * behaviour is the stage machine of {@code :99-209}: a countdown that, when it hits
  * zero, fires a pulse at the client, spawns a wave out of the cultists nearby and
  * raises the stage; and on the way down, at fixed countdown values, walls off the
  * room with four banners and seeds it with loot crates. It installs <b>no goal
@@ -146,7 +146,7 @@ public final class CultistPortalAiLogic {
     /** {@code :294} — the pulse event sets it to 10. */
     public static final int PULSE_TICKS = 10;
     /**
-     * {@code :104}, {@code :133}, {@code :188} — {@code setEntityState(this, (byte)16)}:
+     * {@code :104}, {@code :138}, {@code :189} — {@code setEntityState(this, (byte)16)}:
      * the portal's own entity status, the same byte the cleric lane uses for its
      * banner ({@code EntityCultistCleric:318}) and the taint spore pins
      * ({@code EntityTaintSpore:169-171}).
@@ -154,56 +154,56 @@ public final class CultistPortalAiLogic {
     public static final byte STATUS_PULSE = 16;
     /** {@code :103} — the stage machine fires only when {@code getClosestPlayer(this, 48.0)} is non-null. */
     public static final double PLAYER_SCAN = 48.0;
-    /** {@code :128} — with no player the countdown re-arms to {@code 30 + nextInt(30)}. */
+    /** {@code :133} — with no player the countdown re-arms to {@code 30 + nextInt(30)}. */
     public static final int NO_PLAYER_COUNTER_BASE = 30;
-    /** {@code :128} — the no-player re-arm roll. */
+    /** {@code :133} — the no-player re-arm roll. */
     public static final int NO_PLAYER_COUNTER_ROLL = 30;
 
-    /** {@code :110} — stages 0-4 re-arm on {@code 15 + nextInt(10 - stage) - stage}. */
+    /** {@code :111} — stages 0-4 re-arm on {@code 15 + nextInt(10 - stage) - stage}. */
     public static final int SHORT_COUNTER_BASE = 15;
-    /** {@code :110} — the short counter's spread before the stage is subtracted. */
+    /** {@code :111} — the short counter's spread before the stage is subtracted. */
     public static final int SHORT_COUNTER_SPREAD = 10;
-    /** {@code :106-112} — the short-counter arm covers stages 0 through 4. */
+    /** {@code :106-110} — the short-counter arm covers stages 0 through 4. */
     public static final int SHORT_COUNTER_STAGE_MAX = 4;
-    /** {@code :115-117} — stages 5-11 (and the {@code default} arm) re-arm on {@code t + nextInt(5 + t/3)}. */
+    /** {@code :123} — stages 5-11 (and the {@code default} arm) re-arm on {@code t + nextInt(5 + t/3)}. */
     public static final int TIMED_COUNTER_BONUS = 5;
-    /** {@code :116} — the timing divisor of the timed arm is 3. */
+    /** {@code :123} — the timing divisor of the timed arm is 3. */
     public static final int TIMED_COUNTER_DIVISOR = 3;
-    /** {@code :121} — stage 12 re-arm base. */
+    /** {@code :127} — stage 12 re-arm base. */
     public static final int BOSS_COUNTER_BASE = 50;
-    /** {@code :121} — stage 12 adds twice the timing. */
+    /** {@code :127} — stage 12 adds twice the timing. */
     public static final int BOSS_COUNTER_TIMING_FACTOR = 2;
-    /** {@code :121} — stage 12's roll spread. */
+    /** {@code :127} — stage 12's roll spread. */
     public static final int BOSS_COUNTER_ROLL = 50;
-    /** {@code :120} — stage 12 is the boss arm ({@code spawnBoss}, one Crimson Praetor). */
+    /** {@code :126} — stage 12 is the boss arm ({@code spawnBoss}, one Crimson Praetor). */
     public static final int STAGE_BOSS = 12;
     /**
-     * {@code :125} — after every firing arm the stage simply increments: there is NO
-     * wrap and NO cap. Stage 13 falls into the {@code default} arm of {@code :113}
-     * (the timed counter plus {@code spawnMinions}), and {@code :237} starts
+     * {@code :131} — after every firing arm the stage simply increments: there is NO
+     * wrap and NO cap. Stage 13 falls into the {@code default} arm of {@code :121}
+     * (the timed counter plus {@code spawnMinions}), and {@code :238} starts
      * damaging the portal itself once the stage is past 12.
      */
     public static final boolean STAGE_HAS_NO_WRAP = true;
 
-    /** {@code :132} — the banner wall fires on the exact countdown value 160 … */
+    /** {@code :137} — the banner wall fires on the exact countdown value 160 … */
     public static final int BANNER_COUNTER = 160;
-    /** {@code :132} — … and only in stage 0, i.e. on the first cycle only. */
+    /** {@code :137} — … and only in stage 0, i.e. on the first cycle only. */
     public static final int BANNER_STAGE = 0;
-    /** {@code :135} — the banner loop walks {@code ForgeDirection} 2,3,4,5 (north, south, west, east). */
+    /** {@code :140} — the banner loop walks {@code ForgeDirection} 2,3,4,5 (north, south, west, east). */
     public static final int BANNER_DIRECTION_FROM = 2;
-    /** {@code :135} — the loop's exclusive upper bound. */
+    /** {@code :140} — the loop's exclusive upper bound. */
     public static final int BANNER_DIRECTION_TO = 6;
     /** {@code :138, :141} — the banners sit 6 blocks out, {@code x - offsetX*6} / {@code z + offsetZ*6}. */
     public static final int BANNER_OFFSET = 6;
-    /** {@code :142-143} — every banner is {@code blockWoodenDevice} meta 8 (the hanging banner variant). */
+    /** {@code :144} — every banner is {@code blockWoodenDevice} meta 8 (the hanging banner variant). */
     public static final int BANNER_VARIANT = 8;
     /** {@code :157-165} — {@code TileBanner#setFacing} per direction index: 2→8, 3→0, 4→12, 5→4. */
     public static final int BANNER_FACING_NORTH = 8;
-    /** {@code :159} — south. */
+    /** {@code :160} — south. */
     public static final int BANNER_FACING_SOUTH = 0;
-    /** {@code :161} — west. */
+    /** {@code :163} — west. */
     public static final int BANNER_FACING_WEST = 12;
-    /** {@code :163} — east. */
+    /** {@code :166} — east. */
     public static final int BANNER_FACING_EAST = 4;
 
     /**
@@ -233,10 +233,10 @@ public final class CultistPortalAiLogic {
     public static int bannerFacing(final int directionIndex) {
         return switch (directionIndex) {
             case 2 -> BANNER_FACING_NORTH;                                                // :157
-            case 3 -> BANNER_FACING_SOUTH;                                                // :159
-            case 4 -> BANNER_FACING_WEST;                                                 // :161
-            case 5 -> BANNER_FACING_EAST;                                                 // :163
-            default -> BANNER_FACING_SOUTH;                                               // :155 (the switch's initial 0)
+            case 3 -> BANNER_FACING_SOUTH;                                                // :160
+            case 4 -> BANNER_FACING_WEST;                                                 // :163
+            case 5 -> BANNER_FACING_EAST;                                                 // :166
+            default -> BANNER_FACING_SOUTH;                                               // :154 (the switch's initial 0)
         };
     }
 
@@ -263,41 +263,41 @@ public final class CultistPortalAiLogic {
     /** {@code :171, :197, :236, :251} — every summon and every placement plays the wandfail track. */
     public static final String SOUND_WANDFAIL = "thaumcraft:wandfail";
 
-    /** {@code :184} — the crate window opens above countdown 20 … */
+    /** {@code :185} — the crate window opens above countdown 20 … */
     public static final int CRATE_COUNTER_MIN = 20;
-    /** {@code :184} — … and closes at 150 … */
+    /** {@code :185} — … and closes at 150 … */
     public static final int CRATE_COUNTER_MAX = 150;
-    /** {@code :184} — … in stage 0 … */
+    /** {@code :185} — … in stage 0 … */
     public static final int CRATE_STAGE = 0;
-    /** {@code :184} — … on every countdown value divisible by 13. */
+    /** {@code :185} — … on every countdown value divisible by 13. */
     public static final int CRATE_PERIOD = 13;
-    /** {@code :185-186} — the crate cell is {@code (int)x + nextInt(5) - nextInt(5)} on x and z. */
+    /** {@code :186-187} — the crate cell is {@code (int)x + nextInt(5) - nextInt(5)} on x and z. */
     public static final int CRATE_SPREAD = 5;
-    /** {@code :187} — the cell must differ from the portal's own column on BOTH axes … */
+    /** {@code :188} — the cell must differ from the portal's own column on BOTH axes … */
     public static final boolean CRATE_SKIPS_OWN_COLUMN = true;
-    /** {@code :187} — … and the target cell must not be air ({@code getBlockId(...) > 0}). */
+    /** {@code :188} — … and the target cell must not be air ({@code getBlockId(...) > 0}). */
     public static final boolean CRATE_NEEDS_FILLLED_CELL = true;
-    /** {@code :190} — the crate's meta: below 0.05 → 2 (rare) … */
+    /** {@code :191} — the crate's meta: below 0.05 → 2 (rare) … */
     public static final float CRATE_META_RARE_ROLL = 0.05F;
-    /** {@code :190} — … below 0.2 → 1 (uncommon) … */
+    /** {@code :191} — … below 0.2 → 1 (uncommon) … */
     public static final float CRATE_META_UNCOMMON_ROLL = 0.2F;
-    /** {@code :190} — … else 0 (common). */
+    /** {@code :191} — … else 0 (common). */
     public static final int CRATE_META_COMMON = 0;
-    /** {@code :190} — the uncommon meta. */
+    /** {@code :192} — the uncommon meta. */
     public static final int CRATE_META_UNCOMMON = 1;
     /** {@code :190} — the rare meta. */
     public static final int CRATE_META_RARE = 2;
     /** {@code :191} — the crate lands on the portal's own y level: {@code (int)y}. */
     public static final int CRATE_Y_OFFSET = 0;
 
-    /** {@code :199-201} — the self-heal runs on every countdown tick while {@code stage < 12}. */
+    /** {@code :203-205} — the self-heal runs on every countdown tick while {@code stage < 12}. */
     public static final int HEAL_STAGE_MAX = 12;
-    /** {@code :200} — the heal amount is 1.0F. */
+    /** {@code :204} — the heal amount is 1.0F. */
     public static final float HEAL_AMOUNT = 1.0F;
 
-    /** {@code :213-215} — the cultist scan is a 32.0 cube around the portal, excluding the portal itself. */
+    /** {@code :214-216} — the cultist scan is a 32.0 cube around the portal, excluding the portal itself. */
     public static final double SUMMON_SCAN_RADIUS = 32.0;
-    /** {@code :216} — the timing is {@code count * 20}; an empty scan gives 0, and the 0 is used, not skipped. */
+    /** {@code :217} — the timing is {@code count * 20}; an empty scan gives 0, and the 0 is used, not skipped. */
     public static final int TIMING_PER_CULTIST = 20;
     /** {@code :221} — {@code nextFloat() > 0.33} picks the knight, the {@code else} arm the cleric. */
     public static final float MINION_KNIGHT_ROLL = 0.33F;
@@ -379,26 +379,26 @@ public final class CultistPortalAiLogic {
     public enum Summon {
         /** Only reachable if the machine is entered with a negative stage, which {@code :125} never produces. */
         NONE,
-        /** {@code :111}, {@code :117} — {@code spawnMinions()}: one knight or one cleric. */
+        /** {@code :112}, {@code :124} — {@code spawnMinions()}: one knight or one cleric. */
         MINIONS,
-        /** {@code :122} — {@code spawnBoss()}: one Crimson Praetor. */
+        /** {@code :128} — {@code spawnBoss()}: one Crimson Praetor. */
         BOSS
     }
 
     /**
-     * {@code :105-124} — which arm a stage takes. Stages 0-4 and 5-11 both call
+     * {@code :105-129} — which arm a stage takes. Stages 0-4 and 5-11 both call
      * {@code spawnMinions()} (they differ only in the countdown they re-arm with),
-     * the {@code default} arm of {@code :113} catches every stage past 12 and also
+     * the {@code default} arm of {@code :121} catches every stage past 12 and also
      * summons minions, and stage 12 is the only {@code spawnBoss()} arm.
      */
     public static Summon actionFor(final int stage) {
         if (stage == STAGE_BOSS) {
-            return Summon.BOSS;                                                          // :120-122
+            return Summon.BOSS;                                                          // :126-128
         }
         if (stage < 0) {
             return Summon.NONE;                                                          // :105 (no case, no default fallthrough)
         }
-        return Summon.MINIONS;                                                           // :111, :117
+        return Summon.MINIONS;                                                           // :112, :124
     }
 
     /** {@code :106} — is the stage in the short-counter arm (cases 0..4)? */
@@ -407,7 +407,7 @@ public final class CultistPortalAiLogic {
     }
 
     /**
-     * {@code :110} — the short countdown: {@code 15 + nextInt(10 - stage) - stage}.
+     * {@code :111} — the short countdown: {@code 15 + nextInt(10 - stage) - stage}.
      * The drawn value is a parameter, so a probe pins every value of the interval.
      */
     public static int shortCounterFor(final int stage, final int drawn) {
@@ -415,11 +415,11 @@ public final class CultistPortalAiLogic {
     }
 
     /**
-     * {@code :116} — the timed countdown: {@code t + nextInt(5 + t / 3)}, where
+     * {@code :123} — the timed countdown: {@code t + nextInt(5 + t / 3)}, where
      * {@code t} is {@link #timingFor(int)}. Integer division, as in the reference.
      */
     public static int timedCounterFor(final int timing, final int drawn) {
-        return timing + drawn;                                                           // :116
+        return timing + drawn;                                                           // :123
     }
 
     /** {@code :116} — the timed arm's roll interval: {@code 5 + t / 3}. */
@@ -427,28 +427,28 @@ public final class CultistPortalAiLogic {
         return TIMED_COUNTER_BONUS + timing / TIMED_COUNTER_DIVISOR;                     // :116
     }
 
-    /** {@code :121} — the boss countdown: {@code 50 + t * 2 + nextInt(50)}. */
+    /** {@code :127} — the boss countdown: {@code 50 + t * 2 + nextInt(50)}. */
     public static int bossCounterFor(final int timing, final int drawn) {
         return BOSS_COUNTER_BASE + timing * BOSS_COUNTER_TIMING_FACTOR + drawn;          // :121
     }
 
-    /** {@code :128} — the no-player re-arm: {@code 30 + nextInt(30)}. */
+    /** {@code :133} — the no-player re-arm: {@code 30 + nextInt(30)}. */
     public static int noPlayerCounterFor(final int drawn) {
         return NO_PLAYER_COUNTER_BASE + drawn;                                           // :128
     }
 
     /**
-     * {@code :213-216} — the timing: the 32.0 cultist scan's size times 20. An empty
-     * scan yields 0, and {@code :116} then draws from a spread of 5, so a portal
+     * {@code :213}, {@code :217} — the timing: the 32.0 cultist scan's size times 20. An empty
+     * scan yields 0, and {@code :123} then draws from a spread of 5, so a portal
      * with no cultists nearby fires on roughly a 5-tick countdown.
      */
     public static int timingFor(final int cultistCount) {
         return cultistCount * TIMING_PER_CULTIST;                                        // :216
     }
 
-    /** {@code :125} — the stage increments after every firing; it never wraps. */
+    /** {@code :131} — the stage increments after every firing; it never wraps. */
     public static int stageAfterFiring(final int stage) {
-        return stage + 1;                                                                // :125
+        return stage + 1;                                                                // :131
     }
 
     /** {@code :102} — the machine fires on {@code stagecounter <= 0} and otherwise only counts down. */
@@ -456,23 +456,23 @@ public final class CultistPortalAiLogic {
         return stageCounter <= 0;                                                        // :102
     }
 
-    /** {@code :132} — the banner wall's gate: the exact value 160, in stage 0. */
+    /** {@code :137} — the banner wall's gate: the exact value 160, in stage 0. */
     public static boolean bannerGate(final int stageCounter, final int stage) {
-        return stageCounter == BANNER_COUNTER && stage == BANNER_STAGE;                  // :132
+        return stageCounter == BANNER_COUNTER && stage == BANNER_STAGE;                  // :137
     }
 
     /**
-     * {@code :184} — the crate gate: the countdown inside (20, 150) exclusive, stage
+     * {@code :185} — the crate gate: the countdown inside (20, 150) exclusive, stage
      * 0, and the countdown divisible by 13. On the way down from 200 the values are
      * 143, 130, 117, 104, 91, 78, 65, 52, 39, 26.
      */
     public static boolean crateGate(final int stageCounter, final int stage) {
         return stageCounter > CRATE_COUNTER_MIN && stageCounter < CRATE_COUNTER_MAX
-                && stage == CRATE_STAGE && stageCounter % CRATE_PERIOD == 0;             // :184
+                && stage == CRATE_STAGE && stageCounter % CRATE_PERIOD == 0;             // :185
     }
 
     /**
-     * {@code :189-190} — the crate's rarity. The reference draws from
+     * {@code :190-191} — the crate's rarity. The reference draws from
      * {@code world.rand} (the level's random), NOT the entity's, and maps the float
      * to the original's block metadata 0/1/2 (common/uncommon/rare).
      */
@@ -484,7 +484,7 @@ public final class CultistPortalAiLogic {
     }
 
     /**
-     * {@code :185-187} — the crate cell. Two {@code nextInt(5)} draws land the x and
+     * {@code :186-188} — the crate cell. Two {@code nextInt(5)} draws land the x and
      * z offsets (so the offset is -4..4), the cell must differ from the portal's own
      * column on both axes, and the cell must be filled.
      */
@@ -493,33 +493,33 @@ public final class CultistPortalAiLogic {
         return cellX != ownX && cellZ != ownZ && cellIsFilled;                           // :187
     }
 
-    /** {@code :199} — the self-heal gate: strictly below stage 12. */
+    /** {@code :203} — the self-heal gate: strictly below stage 12. */
     public static boolean healsForStage(final int stage) {
         return stage < HEAL_STAGE_MAX;                                                   // :199
     }
 
-    /** {@code :221} — the knight arm of {@code spawnMinions}: {@code nextFloat() > 0.33F}. */
+    /** {@code :222} — the knight arm of {@code spawnMinions}: {@code nextFloat() > 0.33F}. */
     public static boolean summonsKnight(final float roll) {
-        return roll > MINION_KNIGHT_ROLL;                                                // :221
+        return roll > MINION_KNIGHT_ROLL;                                                // :222
     }
 
-    /** {@code :237} — the self-damage gate: strictly past stage 12. */
+    /** {@code :238} — the self-damage gate: strictly past stage 12. */
     public static boolean damagesSelf(final int stage) {
         return stage > STAGE_BOSS;                                                       // :237
     }
 
-    /** {@code :238} — the self-damage amount: {@code 5 + nextInt(5)}, drown-sourced (D-137). */
+    /** {@code :239} — the self-damage amount: {@code 5 + nextInt(5)}, drown-sourced (D-137). */
     public static float selfDamageFor(final int drawn) {
         return SELF_DAMAGE_BASE + drawn;                                                 // :238
     }
 
-    /** {@code :255} — the contact verdict on squared distance. */
+    /** {@code :258} — the contact verdict on squared distance. */
     public static boolean contactHits(final double distanceSq) {
         return distanceSq < CONTACT_RANGE_SQ;                                            // :255
     }
 
     /**
-     * {@code :256} — the contact zap's pitch: {@code (rand - rand) * 0.1F + 1.0F}.
+     * {@code :259} — the contact zap's pitch: {@code (rand - rand) * 0.1F + 1.0F}.
      * The two draws are a parameter pair so the pitch interval is provable.
      */
     public static float contactPitchFor(final double drawn, final double drawn2) {
@@ -540,13 +540,13 @@ public final class CultistPortalAiLogic {
     }
 
     /**
-     * {@code :131-201} — one countdown tick: decrement, then the two fixed-value
+     * {@code :137-205} — one countdown tick: decrement, then the two fixed-value
      * legs (banner, crate), then the heal. The decrement happens FIRST, so the
      * banner leg sees the value it decremented to — which is why the gate is
      * {@code == 160} and not {@code >= 160}.
      */
     public static CountdownTick countdownTick(final int stageCounterBefore, final int stage) {
-        final int counter = stageCounterBefore - 1;                                      // :131
+        final int counter = stageCounterBefore - 1;                                      // :136
         return new CountdownTick(counter, bannerGate(counter, stage), crateGate(counter, stage),
                 healsForStage(stage));                                                   // :132-201
     }
