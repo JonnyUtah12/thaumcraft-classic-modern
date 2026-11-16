@@ -476,6 +476,7 @@ without the evidence for its stages.
   daylight gate is the source-level formula; the flush that actually bites inside the box is the queued
   one above, and the crash is closed structurally by the classification.
 <a id="harvest-pad-claims-and-services-its-cells"></a>
+<a id="harvest-pad-claims-its-light-layer"></a>
 - **A probe that measures through a gate has to claim every layer that gate reads, not only the layer it
   asserts, and it has to re-assert its precondition at its own QUIET tick.** Measured on the harvest lane,
   no-Curios arm: `interact_harvestcropscorereapsripewheatandreplantsit` reddened **2 of 2** samples on the
