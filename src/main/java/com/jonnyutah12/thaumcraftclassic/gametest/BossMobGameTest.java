@@ -30,6 +30,8 @@ import com.jonnyutah12.thaumcraftclassic.entities.projectile.EntityGolemOrb;
 
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.Pose;
@@ -1474,14 +1476,26 @@ public final class BossMobGameTest {
      * The cells the golem probes read, write or count, as offsets from the mob's cell:
      * the mob's own cell (the crush row of {@code :160}), the cell east of it under the
      * footstep motion (the crush cell is {@code floor(posX + motionX)}), and the block row
-     * {@code :137} reads at {@code floor(posY - 0.2F - height)} — the golem's 3.5 box puts
-     * that row one cell under the template floor. The stride-6 grid packs the pads so both
-     * of those cells ride shared airspace/ground, and {@code StructureUtils#clearSpaceForStructure}
-     * clears only the template box: the same claim discipline the portal lane's probes minted
+     * {@code :137} reads at {@code floor(posY - 0.2F - this.height)} — with the 3.5 box that is
+     * FOUR cells under the feet (feet y - 3.7 floors down), not the cell under the feet, so the
+     * loot leg's cell sits at {@code (0, -4, 0)} and the cell at {@code (0, -1, 0)} is the decoy
+     * that proves the height term. The stride-6 grid packs the pads so those cells ride shared
+     * airspace/ground, and {@code StructureUtils#clearSpaceForStructure} clears only the template
+     * box: the same claim discipline the portal lane's probes minted
      * (docs/testing.md#orb-claim-covers-asserted-cells), tagged to this card.
      */
     private static final List<BlockPos> GOLEM_BODY_CELLS = List.of(
-            new BlockPos(0, 0, 0), new BlockPos(1, 0, 0), new BlockPos(0, -1, 0));
+            new BlockPos(0, 0, 0), new BlockPos(1, 0, 0), new BlockPos(0, -4, 0),
+            new BlockPos(0, -1, 0));
+
+    /**
+     * The stride leg's pinned roll seed and budget. {@code :135} draws {@code nextInt(5) == 0} —
+     * one tick in five — so the leg is a per-tick draw; pinning the seed keeps the sequence fixed
+     * when the batch repacks (the suite's known RNG-cliff shape) and 200 ticks put the miss at
+     * 0.8^200 = 4.1E-20.
+     */
+    private static final long FOOTSTEP_ROLL_SEED = 0x5EEDC53L;
+    private static final int FOOTSTEP_STRIDE_TICKS = 200;
 
     private static BlockPos golemCell(final GameTestHelper helper) {
         return helper.absolutePos(BlockPos.ZERO).offset(GOLEM_REL);
@@ -1949,17 +1963,30 @@ public final class BossMobGameTest {
         player.setHealth(player.getMaxHealth());
         player.setDeltaMovement(Vec3.ZERO);
         mob.setYRot(0.0F);
+        // The platform writes its OWN knockback on a Player target's hurt path: magnitude 0.4 along
+        // the line from the damage source — 0.28284271668930383 per axis here, because
+        // GameTestHelper#makeMockPlayer places a mock player on a cell CORNER (setPos to the
+        // golem's cell centre lands it at (+0.5, +0.5) away) — and it fires on a BARE hurt with no
+        // golem code at all (measured: (-0.2977541781736447, 0.0, 0.2671000826441449) for a target
+        // standing on the mob). Measure it on the same geometry with a control and score the GOLEM's
+        // contribution as the delta, so the pair :199 / :201-205 writes stays pinned exactly.
+        final Vec3 platform = hurtKnockbackControl(helper, mob);
+        helper.assertTrue(Math.abs(platform.length() - 0.4) < 1.0E-3,
+                "control — the platform's hurt-side knockback on a Player target measures 0.4, got "
+                        + platform + "; the melee asserts score the golem's pair as a delta over it");
         helper.assertTrue(mob.doHurtTarget(player), ":195-197 — the first swing on a fresh target lands");
         helper.assertTrue(!mob.doHurtTarget(player),
                 ":190-192 — the swing writes the 10-tick timer ON the gate, so the next call is refused");
-        helper.assertTrue(Math.abs(player.getDeltaMovement().y() - EldritchGolemAiLogic.MELEE_LIFT) < 1.0E-9,
-                ":199 — the landed hit lifts the target 0.2, got " + player.getDeltaMovement().y());
+        final Vec3 headed = player.getDeltaMovement().subtract(platform);
+        helper.assertTrue(Math.abs(headed.y() - EldritchGolemAiLogic.MELEE_LIFT) < 1.0E-9,
+                ":199 — the landed hit lifts the target 0.2 (over the control push), got "
+                        + headed);
         helper.assertTrue(player.getHealth() == player.getMaxHealth()
                         - EldritchGolemAiLogic.meleeDamageFor((float) EldritchGolemAiLogic.ATTACK_DAMAGE),
                 ":196 — the swing hits for attackDamage * 0.75 = 7.5, got health " + player.getHealth());
-        helper.assertTrue(Math.abs(player.getDeltaMovement().x()) < 1.0E-9
-                        && Math.abs(player.getDeltaMovement().z()) < 1.0E-9,
-                ":200 — a HEADED golem adds no knockback, got " + player.getDeltaMovement());
+        helper.assertTrue(Math.abs(headed.x()) < 1.0E-9 && Math.abs(headed.z()) < 1.0E-9,
+                ":200 — a HEADED golem adds no knockback over the platform's own hurt push, got "
+                        + player.getDeltaMovement() + " with control " + platform);
         // :201-205 — headless: yaw 0 puts the knockback on +z (cos) with x = -sin(0) * 1.5 = 0.
         mob.hurt(mob.damageSources().magic(), (float) EldritchGolemAiLogic.MAX_HEALTH + 0.5F);
         helper.assertTrue(mob.isHeadless(), ":173 — the headless arm needs the beheading");
@@ -1968,24 +1995,42 @@ public final class BossMobGameTest {
         }
         player.setDeltaMovement(Vec3.ZERO);
         player.setHealth(player.getMaxHealth());
+        // The first swing leaves the vanilla 20-tick invulnerability on the target, and a mock
+        // player is never ticked by the level, so it never decays: arm the target for the second
+        // swing the way a real player's baseTick would.
+        player.invulnerableTime = 0;
         mob.setYRot(0.0F);
         helper.assertTrue(mob.doHurtTarget(player),
                 ":131-133 — the timer decays one per tick, so the swing is back after ten");
-        helper.assertTrue(Math.abs(player.getDeltaMovement().z()
-                        - EldritchGolemAiLogic.headlessKnockbackZ(0.0F)) < 1.0E-9,
-                ":204 — headless knockback z = cos(yaw) * 1.5 = 1.5 at yaw 0, got "
-                        + player.getDeltaMovement().z());
-        helper.assertTrue(Math.abs(player.getDeltaMovement().x()
-                        - EldritchGolemAiLogic.headlessKnockbackX(0.0F)) < 1.0E-9,
-                ":202 — headless knockback x = -sin(yaw) * 1.5 = 0.0 at yaw 0, got "
-                        + player.getDeltaMovement().x());
-        helper.assertTrue(Math.abs(player.getDeltaMovement().y()
+        final Vec3 headless = player.getDeltaMovement().subtract(platform);
+        helper.assertTrue(Math.abs(headless.z() - EldritchGolemAiLogic.headlessKnockbackZ(0.0F)) < 1.0E-9,
+                ":204 — headless knockback z = cos(yaw) * 1.5 = 1.5 at yaw 0, got " + headless);
+        helper.assertTrue(Math.abs(headless.x() - EldritchGolemAiLogic.headlessKnockbackX(0.0F)) < 1.0E-9,
+                ":202 — headless knockback x = -sin(yaw) * 1.5 = 0.0 at yaw 0, got " + headless);
+        helper.assertTrue(Math.abs(headless.y()
                         - (EldritchGolemAiLogic.MELEE_LIFT + EldritchGolemAiLogic.HEADLESS_KNOCKBACK_LIFT)) < 1.0E-9,
-                ":199 + :203 — the lift pair is 0.2 then 0.1, got " + player.getDeltaMovement().y());
+                ":199 + :203 — the lift pair is 0.2 then 0.1, got " + headless);
         mob.discard();
         clearGolemCells(helper, GOLEM_BODY_CELLS);
         census(helper, "golem melee leg");
         helper.succeed();
+    }
+
+    /**
+     * The platform's knockback on a Player target's hurt path, measured on the SAME geometry as the
+     * melee leg: a second mock player placed by the same {@link #mockAt} helper, hit with the same
+     * {@code DamageSources.mobAttack} source and the same damage, with no golem arm in the way.
+     * Deterministic by construction — the mock player's placement and the source position are
+     * identical, so the vector subtracts out exactly.
+     */
+    private static Vec3 hurtKnockbackControl(final GameTestHelper helper,
+            final EntityEldritchGolem mob) {
+        final Player control = mockAt(helper, mob);
+        control.setHealth(control.getMaxHealth());
+        control.setDeltaMovement(Vec3.ZERO);
+        control.hurt(mob.damageSources().mobAttack(mob),
+                (float) EldritchGolemAiLogic.meleeDamageFor((float) EldritchGolemAiLogic.ATTACK_DAMAGE));
+        return control.getDeltaMovement();
     }
 
     /**
@@ -2004,7 +2049,12 @@ public final class BossMobGameTest {
         final ServerLevel level = helper.getLevel();
         final EntityEldritchGolem mob = golem(helper);
         final BlockPos crushAbs = at;
-        final BlockPos lootAbs = at.offset(0, -1, 0);
+        // :137 reads the row floor(posY - 0.2F - this.height). With the 3.5 box that is feet y
+        // MINUS 3.7 — FOUR cells under the mob's cell, not the cell under the feet.
+        final int row = Mth.floor(mob.getY() - EldritchGolemAiLogic.FOOTSTEP_DEPTH_BELOW_FEET
+                - mob.getBbHeight());
+        final int dy = row - at.getY();
+        final BlockPos lootAbs = new BlockPos(at.getX(), row, at.getZ());
         final BlockPos crushEastAbs = at.offset(1, 0, 0);
         try {
             // :163-165 — snow (destroySpeed 0.1) inside [0.0, 0.15] goes away on the tick.
@@ -2021,19 +2071,54 @@ public final class BossMobGameTest {
                     ":164 — hardness 1.5 is above 0.15: the cell must survive, got "
                             + level.getBlockState(crushAbs));
             helper.setBlock(GOLEM_REL, Blocks.AIR);
-            // :153-155 — the footstep leg's BlockLoot arm, one roll in five over real motion.
+            // :153-155 — the footstep leg's BlockLoot arm, one roll in five over real motion, on
+            // the row :137 computes. Pin the arithmetic, put the loot where the reference looks,
+            // and leave a decoy urn one cell under the feet: a reading that drops the height term
+            // (the "obvious" one) breaks the decoy and goes red here.
+            helper.assertTrue(row == at.getY() - 4,
+                    ":137 — for feet y=" + mob.getY() + " and a " + mob.getBbHeight() + " box the"
+                            + " footstep row is " + row + ", four cells under the mob's cell at y="
+                            + at.getY() + " (floor(posY - 0.2F - this.height), the reference's own"
+                            + " arithmetic)");
             helper.setBlock(GOLEM_REL.offset(0, -1, 0), CatalogTrinketsLoot.BLOCK_LOOT_URN.get());
+            helper.setBlock(GOLEM_REL.offset(0, dy, 0), CatalogTrinketsLoot.BLOCK_LOOT_URN.get());
+            // Control on the platform seam: the port's own removal of a loot urn at that cell. A
+            // red here is the urn's removal, not the golem's arm.
+            helper.assertTrue(level.destroyBlock(lootAbs, true),
+                    "control — Level#destroyBlock removes the loot urn at " + lootAbs
+                            + " (the cell :137 reads); a red here is the block's own removal, not"
+                            + " the golem's footstep arm");
+            helper.setBlock(GOLEM_REL.offset(0, dy, 0), CatalogTrinketsLoot.BLOCK_LOOT_URN.get());
+            // Pin the roll: :135 draws one nextInt(5) per tick and fires on 0, so the stride leg is
+            // a 1-in-5 draw per tick. A seed makes the draw sequence deterministic across batch
+            // repacking, and 200 ticks put the miss at 0.8^200 = 4.1E-20 — no RNG cliff.
+            mob.setRandom(new RandomSource.Legacy(FOOTSTEP_ROLL_SEED));
             int ticks = 0;
-            while (ticks < 60 && !level.getBlockState(lootAbs).isAir()) {
+            int decoy = 0;
+            while (ticks < FOOTSTEP_STRIDE_TICKS && !level.getBlockState(lootAbs).isAir()) {
+                // Hold the mob in its cell while the stride drives the motion: the reference reads
+                // floor(posX)/floor(posZ) every tick and 0.5/tick walks it out of the claimed cell
+                // inside two ticks, scoring the geometry instead of the seam.
+                mob.setPos(at.getX() + 0.5, mob.getY(), at.getZ() + 0.5);
                 mob.setDeltaMovement(0.5, 0.0, 0.0);
                 mob.aiStep();
                 ticks++;
+                if (level.getBlockState(at.offset(0, -1, 0)).isAir()) {
+                    decoy++;
+                }
             }
             helper.assertTrue(level.getBlockState(lootAbs).isAir(),
-                    ":135-155 — a BlockLoot cell in the :137 row breaks under real motion within"
-                            + " 60 ticks (one roll in five), got " + level.getBlockState(lootAbs)
+                    ":135-155 — a BlockLoot cell in the :137 row (row " + row + ", x=" + at.getX()
+                            + ", z=" + at.getZ() + ") breaks under a striding golem within "
+                            + FOOTSTEP_STRIDE_TICKS + " ticks (the roll is one in five per tick,"
+                            + " seed " + FOOTSTEP_ROLL_SEED + "); got " + level.getBlockState(lootAbs)
                             + " after " + ticks + " ticks");
+            helper.assertTrue(decoy == 0,
+                    ":137 — the loot cell ONE below the feet survived all " + ticks
+                            + " striding ticks; breaking it means the height term fell out of the"
+                            + " row arithmetic");
             helper.setBlock(GOLEM_REL.offset(0, -1, 0), Blocks.AIR);
+            helper.setBlock(GOLEM_REL.offset(0, dy, 0), Blocks.STONE);
         } finally {
             clearGolemCells(helper, GOLEM_BODY_CELLS);
             for (final Entity drop : level.getEntities((Entity) null,
