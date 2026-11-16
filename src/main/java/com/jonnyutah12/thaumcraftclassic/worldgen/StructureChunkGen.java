@@ -86,8 +86,8 @@ public final class StructureChunkGen {
             final long skipped = GATED_SKIPS.incrementAndGet();
             if (skipped == 1L || skipped % 200L == 0L) {
                 LOGGER.info("CHUNKGEN-GATE -D{} armed: the deferred structure pass skipped {} chunk(s) "
-                                + "(last {} at {} in dimension {}); -Ptc.chunkGenOn re-arms it",
-                        MagicChunkHooks.NO_CHUNK_GEN_PROPERTY, skipped, pos.asLong(),
+                                + "(last chunk x={} z={} at gameTime {} in dimension {}); -Ptc.chunkGenOn re-arms it",
+                        MagicChunkHooks.NO_CHUNK_GEN_PROPERTY, skipped, pos.x, pos.z,
                         level.getGameTime(), level.dimension().location());
             }
             return;
