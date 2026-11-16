@@ -1,6 +1,6 @@
 package com.jonnyutah12.thaumcraftclassic.client.entity;
 
-import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityEldritchGolem;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EntityEldritchGolem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;

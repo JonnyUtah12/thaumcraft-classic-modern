@@ -10,6 +10,10 @@ import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.blocks.BlockLoot;
 import com.jonnyutah12.thaumcraftclassic.blocks.VariantDevice;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityCultistKnight;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EldritchGolemAiLogic;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EntityEldritchGolem;
+import com.jonnyutah12.thaumcraftclassic.api.entities.IEldritchMob;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogTrinketsLoot;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.CultistPortalAiLogic;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EntityCultistPortal;
 import com.jonnyutah12.thaumcraftclassic.tiles.TileBanner;
@@ -26,6 +30,7 @@ import com.jonnyutah12.thaumcraftclassic.entities.projectile.EntityGolemOrb;
 
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.Pose;
@@ -54,7 +59,9 @@ import net.minecraft.world.entity.ai.goal.MoveTowardsRestrictionGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
+import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.effect.MobEffects;
@@ -1545,5 +1552,696 @@ public final class BossMobGameTest {
         animal.setNoGravity(true);
         level.addFreshEntity(animal);
         return animal;
+    }
+
+    // ================================================= eldritch golem (TC-M6-06-s-c5-3 / t_d6a23f78)
+
+    /** The golem's pad cell — the same {@code 1,3,1} column the family's boss probes stand on. */
+    private static final BlockPos GOLEM_REL = new BlockPos(1, 3, 1);
+
+    /**
+     * The cells the golem probes read, write or count, as offsets from the mob's cell:
+     * the mob's own cell (the crush row of {@code :160}), the cell east of it under the
+     * footstep motion (the crush cell is {@code floor(posX + motionX)}), and the block row
+     * {@code :137} reads at {@code floor(posY - 0.2F - this.height)} — with the 3.5 box that is
+     * FOUR cells under the feet (feet y - 3.7 floors down), not the cell under the feet. The loot
+     * leg's cell is the stride cell {@code (1, -4, 0)} — measured: the tick applies the stride
+     * motion to the position before :136 reads, so a mob at its cell centre scores the cell ONE
+     * EAST — and the two decoys a wrong read breaks are {@code (0, -4, 0)} (the mob's own column
+     * at that row) and {@code (0, -1, 0)} (one under the feet, the reading that drops the height
+     * term). The stride-6 grid packs the pads so those cells ride shared
+     * airspace/ground, and {@code StructureUtils#clearSpaceForStructure} clears only the template
+     * box: the same claim discipline the portal lane's probes minted
+     * (docs/testing.md#orb-claim-covers-asserted-cells), tagged to this card.
+     */
+    private static final List<BlockPos> GOLEM_BODY_CELLS = List.of(
+            new BlockPos(0, 0, 0), new BlockPos(1, 0, 0), new BlockPos(0, -4, 0),
+            new BlockPos(1, -4, 0), new BlockPos(0, -1, 0));
+
+    /**
+     * The stride leg's tick budget. {@code :135} draws {@code nextInt(5) == 0} — one tick in five —
+     * so the leg is a per-tick draw; 200 trials put the miss at 0.8^200 = 4.1E-20, which keeps it
+     * off the suite's known RNG cliff when the batch repacks.
+     */
+    private static final int FOOTSTEP_STRIDE_TICKS = 200;
+
+    private static BlockPos golemCell(final GameTestHelper helper) {
+        return helper.absolutePos(BlockPos.ZERO).offset(GOLEM_REL);
+    }
+
+    /** The golem fixture — the family's shape: pad fixtures ride noGravity and clearFire. */
+    private static EntityEldritchGolem golem(final GameTestHelper helper) {
+        final ServerLevel level = helper.getLevel();
+        final Entity spawned = registered(helper, "eldritchgolem").create(level);
+        helper.assertTrue(spawned instanceof EntityEldritchGolem,
+                "thaumcraft:eldritchgolem did not create an EntityEldritchGolem — the registration "
+                        + "must ride the boss class after the TC-M6-06-s-c5-3 repoint, got "
+                        + spawned.getClass().getName());
+        final EntityEldritchGolem mob = (EntityEldritchGolem) spawned;
+        final BlockPos at = golemCell(helper);
+        mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0.0F, 0.0F);
+        mob.setNoGravity(true);
+        mob.clearFire();
+        level.addFreshEntity(mob);
+        return mob;
+    }
+
+    /**
+     * Take the golem probe's cells — blocks AND entities — from ONE list, and log the census
+     * on every leg (the portal lane's idiom, this card's tag).
+     */
+    private static List<String> claimGolemCells(final GameTestHelper helper, final BlockPos at,
+            final List<BlockPos> cells) {
+        final ServerLevel level = helper.getLevel();
+        final List<String> cleared = new ArrayList<>();
+        final List<String> swept = new ArrayList<>();
+        for (final BlockPos cell : cells) {
+            final BlockPos absolute = at.offset(cell);
+            final net.minecraft.world.level.block.state.BlockState state =
+                    level.getBlockState(absolute);
+            if (!state.isAir()) {
+                cleared.add(state + " @ (" + absolute.getX() + ", " + absolute.getY() + ", "
+                        + absolute.getZ() + ")");
+                helper.setBlock(GOLEM_REL.offset(cell), net.minecraft.world.level.block.Blocks.AIR);
+            }
+            for (final Entity stray : level.getEntities((Entity) null, new AABB(absolute.getX(),
+                    absolute.getY(), absolute.getZ(), absolute.getX() + 1, absolute.getY() + 1,
+                    absolute.getZ() + 1), found -> !(found instanceof Player))) {
+                swept.add(BuiltInRegistries.ENTITY_TYPE.getKey(stray.getType()).getPath()
+                        + " @ (" + absolute.getX() + ", " + absolute.getY() + ", "
+                        + absolute.getZ() + ")");
+                stray.discard();
+            }
+        }
+        helper.assertTrue(!cells.isEmpty(),
+                "[t_d6a23f78] an empty claim list cannot cover the gate's cell set — "
+                        + "docs/testing.md#orb-claim-covers-asserted-cells");
+        LOGGER.info("[TC-M6-06-boss] [t_d6a23f78] claimed the {} cells this golem probe reads"
+                        + " about {}: cleared {} foreign block(s){} swept {} foreign entity(ies){}",
+                cells.size(), at, cleared.size(), cleared.isEmpty() ? "" : " " + cleared,
+                swept.size(), swept.isEmpty() ? "" : " " + swept);
+        return cleared;
+    }
+
+    /** Put every cell the golem probes may write back to air before the leg returns. */
+    private static void clearGolemCells(final GameTestHelper helper, final List<BlockPos> cells) {
+        for (final BlockPos cell : cells) {
+            helper.setBlock(GOLEM_REL.offset(cell), net.minecraft.world.level.block.Blocks.AIR);
+        }
+    }
+
+    /** The golem's live orbs in the pad and its airspace — the seam the ranged leg writes. */
+    private static List<EntityGolemOrb> golemOrbs(final GameTestHelper helper) {
+        final BlockPos at = golemCell(helper);
+        return helper.getLevel().getEntitiesOfClass(EntityGolemOrb.class,
+                new AABB(at.getX() - 8, at.getY() - 4, at.getZ() - 8,
+                        at.getX() + 8, at.getY() + 8, at.getZ() + 8));
+    }
+
+    /**
+     * {@code :119}, {@code :54} and the repoint itself. The card's contract is a REPOINT, not a
+     * re-register: the id {@code thaumcraft:eldritchgolem} keeps its single registration in
+     * {@code CatalogGolems} and its class becomes the boss, so this probe asserts the id resolves
+     * to the boss class, that the id carries EXACTLY ONE carrier in the mod's own namespace (no
+     * second type beside the stub), that the 1.75 x 3.5 box the renderer lane and
+     * {@code GolemMenuGameTest:254} bind to survives, and that the eye-height pair of
+     * {@code :95-97} ships as the port's accessor because 21.1.259's
+     * {@code Entity#getEyeHeight(Pose)} is final and derives the eye line from the box.
+     */
+    @GameTest(template = "empty")
+    public static void theGolemIsRepointedToTheBossClassOnTheOneRegisteredId(
+            final GameTestHelper helper) {
+        final BlockPos at = golemCell(helper);
+        claimGolemCells(helper, at, GOLEM_BODY_CELLS);
+        final EntityType<?> type = registered(helper, "eldritchgolem");
+        final EntityEldritchGolem mob = golem(helper);
+        helper.assertTrue(mob.getClass() == EntityEldritchGolem.class,
+                "the id's class must be the boss body, got " + mob.getClass().getName());
+        helper.assertTrue(mob.getClass().getSuperclass() == EntityThaumcraftBoss.class,
+                "the reference extends EntityThaumcraftBoss (:31), got "
+                        + mob.getClass().getSuperclass());
+        helper.assertTrue(mob instanceof IEldritchMob && mob instanceof RangedAttackMob,
+                "the reference's interface pair is IEldritchMob + IRangedAttackMob (:31); the port's "
+                        + "ranged twin is 21.1.259's RangedAttackMob, got " + mob.getClass());
+        // NO second type: sweep the mod's own registered types for carriers of the class.
+        int carriers = 0;
+        final List<String> carrierIds = new ArrayList<>();
+        for (final EntityType<?> candidate : BuiltInRegistries.ENTITY_TYPE) {
+            final ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(candidate);
+            if (!ThaumcraftClassic.MOD_ID.equals(key.getNamespace())) {
+                continue;
+            }
+            final Entity probe = candidate.create(helper.getLevel());
+            if (probe instanceof EntityEldritchGolem) {
+                carriers++;
+                carrierIds.add(key.getPath());
+            }
+        }
+        helper.assertTrue(carriers == 1,
+                "TC-M6-06-s-c5-3 is a repoint of the ONE registration: the mod's registry must carry "
+                        + "exactly one EntityEldritchGolem type, got " + carriers + " " + carrierIds);
+        // :54 func_70105_a(1.75F, 3.5F) — the box GolemMenuGameTest and the renderer bind to.
+        helper.assertTrue(Math.abs(type.getDimensions().width() - EldritchGolemAiLogic.WIDTH) < 1.0E-4
+                        && Math.abs(type.getDimensions().height() - EldritchGolemAiLogic.HEIGHT) < 1.0E-4,
+                ":54 — the 1.75 x 3.5 box must survive the repoint (the GolemMenuGameTest link), got "
+                        + type.getDimensions().width() + " x " + type.getDimensions().height());
+        // ConfigEntities.java:119 — 64 blocks = 4 chunks, interval 3.
+        helper.assertTrue(type.clientTrackingRange() == EldritchGolemAiLogic.TRACK_RANGE_CHUNKS,
+                ":119 — tracking 64 blocks = 4 chunks, got " + type.clientTrackingRange());
+        helper.assertTrue(type.updateInterval() == EldritchGolemAiLogic.UPDATE_INTERVAL,
+                ":119 — update interval 3, got " + type.updateInterval());
+        // :95-97 — the eye-height pair, and the final seam that forces it to be an accessor.
+        helper.assertTrue(mob.eldritchEyeHeight() == EldritchGolemAiLogic.EYE_HEIGHT,
+                ":95-97 — the headed golem's eye line is 3.0, got " + mob.eldritchEyeHeight());
+        helper.assertTrue(Math.abs(mob.getEyeHeight(Pose.STANDING)
+                        - EldritchGolemAiLogic.EYE_HEIGHT) > 1.0E-4,
+                "21.1.259 derives the eye line from the box (getEyeHeight(Pose) is final), so the"
+                        + " original's override has no seam: the platform reads "
+                        + mob.getEyeHeight(Pose.STANDING) + " on the 3.5-tall box and the 3.0/3.33"
+                        + " pair ships as eldritchEyeHeight()");
+        mob.discard();
+        clearGolemCells(helper, GOLEM_BODY_CELLS);
+        census(helper, "golem repoint");
+        helper.succeed();
+    }
+
+    /**
+     * {@code :104-109} over the boss base's pair, plus the armour bonus of {@code :100}. The
+     * follow-range arm is the card's parity fix: the stub rode 1.21.1's {@code Monster} default
+     * of 16.0, the reference inherits the boss base's 40.0 ({@code EntityThaumcraftBoss:54}).
+     */
+    @GameTest(template = "empty")
+    public static void theGolemCarriesTheOriginalAttributesOverTheBossBasePair(
+            final GameTestHelper helper) {
+        final BlockPos at = golemCell(helper);
+        claimGolemCells(helper, at, GOLEM_BODY_CELLS);
+        final EntityEldritchGolem mob = golem(helper);
+        helper.assertTrue(mob.getAttribute(Attributes.MAX_HEALTH).getValue() == EldritchGolemAiLogic.MAX_HEALTH,
+                ":108 — max health 250.0, got " + mob.getAttribute(Attributes.MAX_HEALTH).getValue());
+        helper.assertTrue(mob.getAttribute(Attributes.ATTACK_DAMAGE).getValue() == EldritchGolemAiLogic.ATTACK_DAMAGE,
+                ":107 — attack damage 10.0, got " + mob.getAttribute(Attributes.ATTACK_DAMAGE).getValue());
+        helper.assertTrue(Math.abs(mob.getAttribute(Attributes.MOVEMENT_SPEED).getValue()
+                - EldritchGolemAiLogic.MOVEMENT_SPEED) < 1.0E-9,
+                ":106 — movement speed 0.3, got " + mob.getAttribute(Attributes.MOVEMENT_SPEED).getValue());
+        // :100 — getArmor() = super + 6 rides the armour attribute (the pech's idiom).
+        helper.assertTrue(mob.getAttribute(Attributes.ARMOR).getValue() == EldritchGolemAiLogic.ARMOR_BONUS,
+                ":100 — the armour bonus is 6.0 over the base's 0.0, got "
+                        + mob.getAttribute(Attributes.ARMOR).getValue());
+        // the super pass (:105) carries the base's pair — the parity fix this card ships.
+        helper.assertTrue(mob.getAttribute(Attributes.KNOCKBACK_RESISTANCE).getValue()
+                        == ThaumcraftBossAiLogic.KNOCKBACK_RESISTANCE,
+                "EntityThaumcraftBoss:53 — knockback resistance 0.95, got "
+                        + mob.getAttribute(Attributes.KNOCKBACK_RESISTANCE).getValue());
+        helper.assertTrue(mob.getAttribute(Attributes.FOLLOW_RANGE).getValue()
+                        == ThaumcraftBossAiLogic.FOLLOW_RANGE,
+                "EntityThaumcraftBoss:54 — follow range 40.0 (the stub rode the Monster default 16.0),"
+                        + " got " + mob.getAttribute(Attributes.FOLLOW_RANGE).getValue());
+        helper.assertTrue(mob.getMaxHealth() == 250 && mob.getHealth() == 250.0F,
+                ":108 — a fresh golem is at full 250, got health " + mob.getHealth());
+        mob.discard();
+        clearGolemCells(helper, GOLEM_BODY_CELLS);
+        census(helper, "golem attributes");
+        helper.succeed();
+    }
+
+    /**
+     * {@code :46-53} — the constructor's goal table, slot for slot, BEFORE the phase: six
+     * movement goals (the slot-8 pair kept per BD-112) and two target goals, and NO ranged goal
+     * anywhere. The class-twin gate (c5-1's {@code :181} shape) proves the strip is the golem's
+     * own declaration, not an inherited {@code Monster} table.
+     */
+    @GameTest(template = "empty")
+    public static void theGolemGoalSetIsTheOriginalTableBeforeThePhase(
+            final GameTestHelper helper) {
+        final BlockPos at = golemCell(helper);
+        claimGolemCells(helper, at, GOLEM_BODY_CELLS);
+        final EntityEldritchGolem mob = golem(helper);
+        final List<WrappedGoal> movement = portalGoals(mob, false);
+        final List<WrappedGoal> targeting = portalGoals(mob, true);
+        helper.assertTrue(declaresOwnGolemGoalRegistration(),
+                "the goal strip must be declared by EntityEldritchGolem itself — a super.registerGoals()"
+                        + " (or a parent that starts registering) would ride the Monster table, which"
+                        + " the reference's constructor does not carry (:46-53)");
+        helper.assertTrue(movement.size() == EldritchGolemAiLogic.SHIPPED_MOVEMENT_GOALS,
+                ":46-51 — six movement goals (the slot-8 pair survives 1.21.1's GoalSelector, BD-112),"
+                        + " got " + movement.size() + ": " + describe(movement));
+        helper.assertTrue(targeting.size() == EldritchGolemAiLogic.SHIPPED_TARGET_GOALS,
+                ":52-53 — two target goals, got " + targeting.size() + ": " + describe(targeting));
+        helper.assertTrue(has(movement, FloatGoal.class, EldritchGolemAiLogic.GOAL_SLOT_SWIM),
+                ":46 EntityAISwimming → FloatGoal at 0, " + describe(movement));
+        helper.assertTrue(has(movement, AIAttackOnCollide.class, EldritchGolemAiLogic.GOAL_SLOT_MELEE),
+                ":47 AIAttackOnCollide(EntityLivingBase, 1.1, false) at 3 — the port's TC class, not"
+                        + " vanilla's MeleeAttackGoal, " + describe(movement));
+        helper.assertTrue(has(movement, MoveTowardsRestrictionGoal.class,
+                        EldritchGolemAiLogic.GOAL_SLOT_RESTRICTION),
+                ":48 EntityAIMoveTowardsRestriction(0.8) at 6, " + describe(movement));
+        helper.assertTrue(has(movement, RandomStrollGoal.class, EldritchGolemAiLogic.GOAL_SLOT_WANDER),
+                ":49 EntityAIWander(0.8) at 7, " + describe(movement));
+        helper.assertTrue(has(movement, LookAtPlayerGoal.class, EldritchGolemAiLogic.GOAL_SLOT_WATCH),
+                ":50 EntityAIWatchClosest(Player, 8.0F) at 8, " + describe(movement));
+        helper.assertTrue(has(movement, RandomLookAroundGoal.class,
+                        EldritchGolemAiLogic.GOAL_SLOT_LOOK_IDLE),
+                ":51 EntityAILookIdle at 8, " + describe(movement));
+        helper.assertTrue(has(targeting, HurtByTargetGoal.class, EldritchGolemAiLogic.TARGET_SLOT_HURT),
+                ":52 EntityAIHurtByTarget(this, true) at 1 (vanilla's class, so the port ships vanilla's"
+                        + " twin and never calls setAlertOthers), " + describe(targeting));
+        helper.assertTrue(has(targeting, NearestAttackableTargetGoal.class,
+                        EldritchGolemAiLogic.TARGET_SLOT_PLAYER),
+                ":53 EntityAINearestAttackableTarget(Player, 0, true) at 2, " + describe(targeting));
+        helper.assertTrue(!has(movement, AILongRangeAttack.class, EldritchGolemAiLogic.GOAL_SLOT_RANGED),
+                ":46-53 carries NO ranged goal — makeHeadless() (:185-187) is the only writer,"
+                        + " " + describe(movement));
+        mob.discard();
+        clearGolemCells(helper, GOLEM_BODY_CELLS);
+        census(helper, "golem pre-phase goals");
+        helper.succeed();
+    }
+
+    /** The class-twin gate in c5-1's shape (BD-133's family rule), for the golem. */
+    private static boolean declaresOwnGolemGoalRegistration() {
+        try {
+            return EntityEldritchGolem.class.getDeclaredMethod("registerGoals")
+                    .getDeclaringClass() == EntityEldritchGolem.class;
+        } catch (final NoSuchMethodException e) {
+            return false;
+        }
+    }
+
+    /**
+     * {@code :170-187} — the phase machine and its thresholds. The gate is the golem's OWN max
+     * health (the 1.7.10 threshold rides {@code func_110143_aJ()}, the current max), it fires
+     * once, and the hit is CONSUMED (the leg returns false before the base's aggro/rage/clamp).
+     * The beheading sets the watched byte, restarts the 100-tick spawn timer, detonates the
+     * 2.0F blast and installs the slot-2 ranged goal — and because goals are not saved, the
+     * NBT read of {@code :90-92} is the only thing that puts the mid-fight goal back.
+     */
+    @GameTest(template = "empty")
+    public static void theGolemPhaseRuleBeheadsAboveMaxHealthAndInstallsTheMidFightGoal(
+            final GameTestHelper helper) {
+        final BlockPos at = golemCell(helper);
+        claimGolemCells(helper, at, GOLEM_BODY_CELLS);
+        final EntityEldritchGolem mob = golem(helper);
+        final List<WrappedGoal> before = portalGoals(mob, false);
+        // :172 — the threshold is strict: a hit AT the max health does not behead.
+        mob.hurt(mob.damageSources().magic(), (float) EldritchGolemAiLogic.MAX_HEALTH);
+        helper.assertTrue(!mob.isHeadless(),
+                ":172 — damage > getMaxHealth() is strict; a 250.0 hit on a 250.0 golem is not the"
+                        + " beheading, and the byte says " + mob.isHeadless());
+        helper.assertTrue(!has(portalGoals(mob, false), AILongRangeAttack.class,
+                        EldritchGolemAiLogic.GOAL_SLOT_RANGED),
+                ":186 — the mid-fight goal is the beheading's, not the threshold hit's, "
+                        + describe(portalGoals(mob, false)));
+        // :172-179 — the beheading, and the hit is consumed.
+        final boolean consumed = mob.hurt(mob.damageSources().magic(),
+                (float) EldritchGolemAiLogic.MAX_HEALTH + 0.5F);
+        helper.assertTrue(!consumed, ":179 — the phase leg returns false: the hit never reaches super");
+        helper.assertTrue(mob.isHeadless(), ":173 — the beheading sets the watched byte");
+        helper.assertTrue(mob.getSpawnTimer() == EldritchGolemAiLogic.SPAWN_TIMER_PHASE_TICKS,
+                ":174 — the spawn phase restarts at 100, got " + mob.getSpawnTimer());
+        final List<WrappedGoal> after = portalGoals(mob, false);
+        helper.assertTrue(has(after, AILongRangeAttack.class, EldritchGolemAiLogic.GOAL_SLOT_RANGED),
+                ":186 — AILongRangeAttack(3.0, 1.0, 5, 5, 24.0F) lands at slot 2, " + describe(after));
+        helper.assertTrue(after.size() == before.size() + 1,
+                ":185-187 — the beheading adds exactly the one goal, got " + after.size()
+                        + " from " + before.size() + ": " + describe(after));
+        // :172 — once only: a second big hit re-installs nothing and re-times nothing.
+        mob.setSpawnTimer(0);
+        mob.hurt(mob.damageSources().magic(), (float) EldritchGolemAiLogic.MAX_HEALTH + 0.5F);
+        helper.assertTrue(portalGoals(mob, false).size() == after.size(),
+                ":172 — the rule is gated on !isHeadless(): the second hit adds no second goal, "
+                        + describe(portalGoals(mob, false)));
+        // :287-289 — the spawn phase heals 2.0 per tick, before the super pass.
+        mob.setSpawnTimer(EldritchGolemAiLogic.SPAWN_TIMER_PHASE_TICKS);
+        final float health = mob.getHealth();
+        mob.aiStep();
+        helper.assertTrue(mob.getHealth() == Math.min(mob.getMaxHealth(),
+                        health + EldritchGolemAiLogic.SPAWN_HEAL_AMOUNT),
+                ":288 — the phase heal is 2.0 per server tick, " + health + " -> " + mob.getHealth());
+        // :80-93 — the byte rides NBT, and the read is what re-installs the mid-fight goal.
+        final CompoundTag tag = mob.saveWithoutId(new CompoundTag());
+        helper.assertTrue(tag.getBoolean("headless"),
+                ":83 — the headless boolean is written to the mob's own tag");
+        final EntityEldritchGolem reloaded = (EntityEldritchGolem) registered(helper,
+                "eldritchgolem").create(helper.getLevel());
+        reloaded.load(tag);
+        helper.assertTrue(reloaded.isHeadless(), ":89 — the byte comes back off the tag");
+        helper.assertTrue(has(portalGoals(reloaded, false), AILongRangeAttack.class,
+                        EldritchGolemAiLogic.GOAL_SLOT_RANGED),
+                ":90-92 — the goal table is not saved, so the NBT read alone re-installs the"
+                        + " mid-fight goal, " + describe(portalGoals(reloaded, false)));
+        helper.assertTrue(portalGoals(reloaded, false).size() == after.size(),
+                ":90-92 — the reload lands the same set, got " + portalGoals(reloaded, false).size()
+                        + ", " + describe(portalGoals(reloaded, false)));
+        helper.assertTrue(reloaded.eldritchEyeHeight() == EldritchGolemAiLogic.EYE_HEIGHT_HEADLESS,
+                ":95-97 — a headless golem's eye line is 3.33, got " + reloaded.eldritchEyeHeight());
+        reloaded.discard();
+        mob.discard();
+        clearGolemCells(helper, GOLEM_BODY_CELLS);
+        census(helper, "golem phase machine");
+        helper.succeed();
+    }
+
+    /**
+     * {@code :346-358} — the charge machine. A headless golem with an empty beam starts
+     * charging, every charge tick adds 1 and broadcasts status 19, and the beam stops at
+     * EXACTLY 150; the field is not capped, the stop is the comparison. While the beam charges
+     * the ranged gate ({@code :214}) refuses to fire.
+     */
+    @GameTest(template = "empty")
+    public static void theGolemChargeMachineFillsTheBeamToExactlyOneHundredFifty(
+            final GameTestHelper helper) {
+        final BlockPos at = golemCell(helper);
+        claimGolemCells(helper, at, GOLEM_BODY_CELLS);
+        final EntityEldritchGolem mob = golem(helper);
+        final Player player = mockAt(helper, mob);
+        helper.assertTrue(mob.getBeamCharge() == 0 && !mob.isChargingBeam(),
+                ":36-37 — a headed golem's beam is empty and idle, got charge "
+                        + mob.getBeamCharge() + " charging " + mob.isChargingBeam());
+        // :347-348 — a headed golem never charges.
+        mob.aiStep();
+        helper.assertTrue(!mob.isChargingBeam() && mob.getBeamCharge() == 0,
+                ":347 — the charge needs isHeadless(), got charge " + mob.getBeamCharge()
+                        + " charging " + mob.isChargingBeam());
+        mob.hurt(mob.damageSources().magic(), (float) EldritchGolemAiLogic.MAX_HEALTH + 0.5F);
+        helper.assertTrue(mob.isHeadless(), ":173 — the beheading is the charge's precondition");
+        int ticks = 0;
+        while (ticks < 200 && mob.getBeamCharge() < EldritchGolemAiLogic.BEAM_CHARGE_TARGET) {
+            mob.aiStep();
+            ticks++;
+            if (mob.getBeamCharge() > 0 && mob.getBeamCharge() < 150) {
+                helper.assertTrue(mob.isChargingBeam(),
+                        ":351 — the beam charges while it fills, stopped at charge "
+                                + mob.getBeamCharge() + " after " + ticks + " ticks");
+            }
+        }
+        helper.assertTrue(mob.getBeamCharge() == EldritchGolemAiLogic.BEAM_CHARGE_TARGET,
+                ":352-356 — one point per tick reaches 150, got " + mob.getBeamCharge()
+                        + " after " + ticks + " ticks");
+        helper.assertTrue(!mob.isChargingBeam(), ":355 — the stop at 150 clears the charge flag");
+        for (int i = 0; i < 20; i++) {
+            mob.aiStep();
+        }
+        helper.assertTrue(mob.getBeamCharge() == EldritchGolemAiLogic.BEAM_CHARGE_TARGET
+                        && !mob.isChargingBeam(),
+                ":347-356 — a full beam neither overfills nor restarts, got charge "
+                        + mob.getBeamCharge() + " charging " + mob.isChargingBeam());
+        // :214 — the gate refuses mid-charge: drain to 150, refill, and fire while charging.
+        mob.setBeamChargeForProbe(0);
+        mob.setChargingBeamForProbe(true);
+        final int orbsBefore = golemOrbs(helper).size();
+        mob.performRangedAttack(player, 1.0F);
+        helper.assertTrue(golemOrbs(helper).size() == orbsBefore,
+                ":214 — !chargingBeam is an arm of the firing gate: a charging beam fires nothing");
+        helper.assertTrue(mob.getBeamCharge() == 0, ":214 — the refused firing spends nothing");
+        for (final EntityGolemOrb orb : golemOrbs(helper)) {
+            orb.discard();
+        }
+        mob.discard();
+        clearGolemCells(helper, GOLEM_BODY_CELLS);
+        census(helper, "golem charge machine");
+        helper.succeed();
+    }
+
+    /**
+     * {@code :213-236} — the beam leg. The spend is {@code 15 + nextInt(5)}; every accepted
+     * firing puts exactly ONE orb in the level, and it is the <b>blue</b> variant — the
+     * {@code false} flag of {@code :225}, the pair the orb lane pins (blue: 160 ticks / 0.6,
+     * red: 240 / 1.0, {@code EntityGolemOrb.java:84-99}) and the opposite of the praetor's red
+     * {@code true} ({@code EntityCultistLeader.java:190}, BD-133). A dry beam fires nothing, and
+     * 150 charge at 15..19 per shot is eight to ten shots.
+     */
+    @GameTest(template = "empty")
+    public static void theGolemBeamSpendsBlueOrbsAndRefusesWhenDry(
+            final GameTestHelper helper) {
+        final BlockPos at = golemCell(helper);
+        claimGolemCells(helper, at, GOLEM_BODY_CELLS);
+        final EntityEldritchGolem mob = golem(helper);
+        final Player player = mockAt(helper, mob);
+        mob.hurt(mob.damageSources().magic(), (float) EldritchGolemAiLogic.MAX_HEALTH + 0.5F);
+        int ticks = 0;
+        while (ticks < 200 && mob.getBeamCharge() < EldritchGolemAiLogic.BEAM_CHARGE_TARGET) {
+            mob.aiStep();
+            ticks++;
+        }
+        helper.assertTrue(mob.getBeamCharge() == EldritchGolemAiLogic.BEAM_CHARGE_TARGET,
+                ":352-356 — the beam must be full to spend, got " + mob.getBeamCharge()
+                        + " after " + ticks + " ticks");
+        int fired = 0;
+        for (int i = 0; i < 12; i++) {
+            final int chargeBefore = mob.getBeamCharge();
+            mob.performRangedAttack(player, 1.0F);
+            final int spent = chargeBefore - mob.getBeamCharge();
+            if (spent > 0) {
+                fired++;
+                helper.assertTrue(spent >= EldritchGolemAiLogic.BEAM_SPEND_BASE
+                                && spent <= EldritchGolemAiLogic.BEAM_SPEND_BASE
+                                        + EldritchGolemAiLogic.BEAM_SPEND_JITTER - 1,
+                        ":215 — the spend is 15 + nextInt(5) = 15..19, got " + spent);
+            } else {
+                helper.assertTrue(chargeBefore < EldritchGolemAiLogic.BEAM_MIN_CHARGE,
+                        ":214 — only a dry beam (charge < 1) may refuse, got charge " + chargeBefore);
+            }
+        }
+        final List<EntityGolemOrb> orbs = golemOrbs(helper);
+        helper.assertTrue(orbs.size() == fired,
+                ":234 — every accepted firing adds exactly one orb, got " + orbs.size()
+                        + " orbs for " + fired + " firings");
+        helper.assertTrue(fired >= 8 && fired <= 10,
+                ":215 — 150 charge at 15..19 per shot is 8..10 shots, got " + fired);
+        int blue = 0;
+        int owners = 0;
+        for (final EntityGolemOrb orb : orbs) {
+            if (!orb.isRed()) {
+                blue++;
+            }
+            if (orb.getOwner() == mob) {
+                owners++;
+            }
+        }
+        helper.assertTrue(blue == orbs.size() && !orbs.isEmpty(),
+                ":225 — every orb is the BLUE variant (the flag is false); reds are the praetor's"
+                        + " (BD-133), got " + blue + " blue of " + orbs.size());
+        helper.assertTrue(owners == orbs.size(),
+                ":225 — the golem is the shooter of every orb it fires, got " + owners
+                        + " of " + orbs.size());
+        helper.assertTrue(mob.getBeamCharge() < EldritchGolemAiLogic.BEAM_MIN_CHARGE,
+                ":215 — the run drains the beam, got " + mob.getBeamCharge());
+        for (final EntityGolemOrb orb : orbs) {
+            orb.discard();
+        }
+        mob.discard();
+        clearGolemCells(helper, GOLEM_BODY_CELLS);
+        census(helper, "golem beam seam");
+        helper.succeed();
+    }
+
+    /**
+     * {@code :189-211} — the melee leg on the {@code func_70652_k} twin. The 10-tick gate runs
+     * first and is written ON the gate, the damage is {@code attackDamage * 0.75F}, a landed hit
+     * lifts the target by 0.2, and while the golem is headless the yaw knockback of
+     * {@code :201-205} rides on top of the lift.
+     */
+    @GameTest(template = "empty")
+    public static void theGolemMeleeSwingIsGatedOnTheTenTickTimerAndLiftsItsTarget(
+            final GameTestHelper helper) {
+        final BlockPos at = golemCell(helper);
+        claimGolemCells(helper, at, GOLEM_BODY_CELLS);
+        final EntityEldritchGolem mob = golem(helper);
+        final Player player = mockAt(helper, mob);
+        player.setHealth(player.getMaxHealth());
+        player.setDeltaMovement(Vec3.ZERO);
+        mob.setYRot(0.0F);
+        // The platform writes its OWN knockback on a Player target's hurt path: magnitude 0.4 along
+        // the line from the damage source — 0.28284271668930383 per axis here, because
+        // GameTestHelper#makeMockPlayer places a mock player on a cell CORNER (setPos to the
+        // golem's cell centre lands it at (+0.5, +0.5) away) — and it fires on a BARE hurt with no
+        // golem code at all (measured: (-0.2977541781736447, 0.0, 0.2671000826441449) for a target
+        // standing on the mob). Measure it on the same geometry with a control and score the GOLEM's
+        // contribution as the delta, so the pair :199 / :201-205 writes stays pinned exactly.
+        final Vec3 platform = hurtKnockbackControl(helper, mob);
+        helper.assertTrue(Math.abs(platform.length() - 0.4) < 1.0E-3,
+                "control — the platform's hurt-side knockback on a Player target measures 0.4, got "
+                        + platform + "; the melee asserts score the golem's pair as a delta over it");
+        helper.assertTrue(mob.doHurtTarget(player), ":195-197 — the first swing on a fresh target lands");
+        helper.assertTrue(!mob.doHurtTarget(player),
+                ":190-192 — the swing writes the 10-tick timer ON the gate, so the next call is refused");
+        final Vec3 headed = player.getDeltaMovement().subtract(platform);
+        helper.assertTrue(Math.abs(headed.y() - EldritchGolemAiLogic.MELEE_LIFT) < 1.0E-9,
+                ":199 — the landed hit lifts the target 0.2 (over the control push), got "
+                        + headed);
+        helper.assertTrue(player.getHealth() == player.getMaxHealth()
+                        - EldritchGolemAiLogic.meleeDamageFor((float) EldritchGolemAiLogic.ATTACK_DAMAGE),
+                ":196 — the swing hits for attackDamage * 0.75 = 7.5, got health " + player.getHealth());
+        helper.assertTrue(Math.abs(headed.x()) < 1.0E-9 && Math.abs(headed.z()) < 1.0E-9,
+                ":200 — a HEADED golem adds no knockback over the platform's own hurt push, got "
+                        + player.getDeltaMovement() + " with control " + platform);
+        // :201-205 — headless: yaw 0 puts the knockback on +z (cos) with x = -sin(0) * 1.5 = 0.
+        mob.hurt(mob.damageSources().magic(), (float) EldritchGolemAiLogic.MAX_HEALTH + 0.5F);
+        helper.assertTrue(mob.isHeadless(), ":173 — the headless arm needs the beheading");
+        for (int i = 0; i < EldritchGolemAiLogic.ATTACK_TIMER_TICKS; i++) {
+            mob.aiStep();
+        }
+        player.setDeltaMovement(Vec3.ZERO);
+        player.setHealth(player.getMaxHealth());
+        // The first swing leaves the vanilla 20-tick invulnerability on the target, and a mock
+        // player is never ticked by the level, so it never decays: arm the target for the second
+        // swing the way a real player's baseTick would.
+        player.invulnerableTime = 0;
+        mob.setYRot(0.0F);
+        helper.assertTrue(mob.doHurtTarget(player),
+                ":131-133 — the timer decays one per tick, so the swing is back after ten");
+        final Vec3 headless = player.getDeltaMovement().subtract(platform);
+        helper.assertTrue(Math.abs(headless.z() - EldritchGolemAiLogic.headlessKnockbackZ(0.0F)) < 1.0E-9,
+                ":204 — headless knockback z = cos(yaw) * 1.5 = 1.5 at yaw 0, got " + headless);
+        helper.assertTrue(Math.abs(headless.x() - EldritchGolemAiLogic.headlessKnockbackX(0.0F)) < 1.0E-9,
+                ":202 — headless knockback x = -sin(yaw) * 1.5 = 0.0 at yaw 0, got " + headless);
+        helper.assertTrue(Math.abs(headless.y()
+                        - (EldritchGolemAiLogic.MELEE_LIFT + EldritchGolemAiLogic.HEADLESS_KNOCKBACK_LIFT)) < 1.0E-9,
+                ":199 + :203 — the lift pair is 0.2 then 0.1, got " + headless);
+        mob.discard();
+        clearGolemCells(helper, GOLEM_BODY_CELLS);
+        census(helper, "golem melee leg");
+        helper.succeed();
+    }
+
+    /**
+     * The platform's knockback on a Player target's hurt path, measured on the SAME geometry as the
+     * melee leg: a second mock player placed by the same {@link #mockAt} helper, hit with the same
+     * {@code DamageSources.mobAttack} source and the same damage, with no golem arm in the way.
+     * Deterministic by construction — the mock player's placement and the source position are
+     * identical, so the vector subtracts out exactly.
+     */
+    private static Vec3 hurtKnockbackControl(final GameTestHelper helper,
+            final EntityEldritchGolem mob) {
+        final Player control = mockAt(helper, mob);
+        control.setHealth(control.getMaxHealth());
+        control.setDeltaMovement(Vec3.ZERO);
+        control.hurt(mob.damageSources().mobAttack(mob),
+                (float) EldritchGolemAiLogic.meleeDamageFor((float) EldritchGolemAiLogic.ATTACK_DAMAGE));
+        return control.getDeltaMovement();
+    }
+
+    /**
+     * {@code :135-167} — the two block legs. The crush leg runs every server tick at
+     * {@code (floor(posX + motionX), floor(boundingBox.minY), floor(posZ + motionZ))} and removes
+     * a block whose hardness sits in {@code [0.0, 0.15]}; the footstep leg needs real horizontal
+     * motion, a one-in-five roll, and reads the row at {@code floor(posY - 0.2F - height)},
+     * breaking a {@code BlockLoot} cell it finds there. Measured on this pad, the stride's motion
+     * is already applied to the position when :136 reads, so the cell a mob at its cell centre
+     * scores is the one EAST of its column ({@code (1, -4, 0)}) — the loot sits there and the two
+     * cells a wrong read breaks ({@code (0, -4, 0)} and {@code (0, -1, 0)}) stay standing. Stone
+     * (1.5) and air (-1) sit outside the crush window, a snow layer (0.1) sits inside it.
+     */
+    @GameTest(template = "empty")
+    public static void theGolemCrushesASnowCellAndBreaksLootAheadOfItsStride(
+            final GameTestHelper helper) {
+        final BlockPos at = golemCell(helper);
+        claimGolemCells(helper, at, GOLEM_BODY_CELLS);
+        final ServerLevel level = helper.getLevel();
+        final EntityEldritchGolem mob = golem(helper);
+        final BlockPos crushAbs = at;
+        // :137 reads the row floor(posY - 0.2F - this.height). With the 3.5 box that is feet y
+        // MINUS 3.7 — FOUR cells under the mob's cell, not the cell under the feet.
+        final int row = Mth.floor(mob.getY() - EldritchGolemAiLogic.FOOTSTEP_DEPTH_BELOW_FEET
+                - mob.getBbHeight());
+        final int dy = row - at.getY();
+        final BlockPos lootAbs = new BlockPos(at.getX(), row, at.getZ());
+        final BlockPos crushEastAbs = at.offset(1, 0, 0);
+        try {
+            // :163-165 — snow (destroySpeed 0.1) inside [0.0, 0.15] goes away on the tick.
+            helper.setBlock(GOLEM_REL, Blocks.SNOW);
+            mob.setDeltaMovement(Vec3.ZERO);
+            mob.aiStep();
+            helper.assertTrue(level.getBlockState(crushAbs).isAir(),
+                    ":164-165 — a snow layer at the crush cell is removed, got "
+                            + level.getBlockState(crushAbs));
+            // :164 — stone (1.5) is outside the window and stays.
+            helper.setBlock(GOLEM_REL, Blocks.STONE);
+            mob.aiStep();
+            helper.assertTrue(level.getBlockState(crushAbs).is(Blocks.STONE),
+                    ":164 — hardness 1.5 is above 0.15: the cell must survive, got "
+                            + level.getBlockState(crushAbs));
+            helper.setBlock(GOLEM_REL, Blocks.AIR);
+            // :153-155 — the footstep leg's BlockLoot arm, one roll in five, on the row :137
+            // computes and the cell :136 computes UNDER THE STRIDE. Measured on this pad: the tick
+            // applies the stride motion to the position before :136 reads, so a mob pinned at its
+            // cell centre reads the cell ONE EAST of its own column (the probe's first pass put the
+            // loot under the feet column and the arm scored stone). Decoys: the cell in the mob's
+            // own column four down, and the cell one below the feet — a reading that drops the
+            // height term, or that reads under the feet, breaks a decoy and goes red.
+            helper.assertTrue(row == at.getY() - 4,
+                    ":137 — for feet y=" + mob.getY() + " and a " + mob.getBbHeight() + " box the"
+                            + " footstep row is " + row + ", four cells under the mob's cell at y="
+                            + at.getY() + " (floor(posY - 0.2F - this.height), the reference's own"
+                            + " arithmetic)");
+            final BlockPos strideCell = lootAbs.east();
+            helper.setBlock(GOLEM_REL.offset(0, -1, 0), CatalogTrinketsLoot.BLOCK_LOOT_URN.get());
+            helper.setBlock(GOLEM_REL.offset(0, dy, 0), CatalogTrinketsLoot.BLOCK_LOOT_URN.get());
+            helper.setBlock(GOLEM_REL.offset(1, dy, 0), CatalogTrinketsLoot.BLOCK_LOOT_URN.get());
+            // Control on the platform seam: the port's own removal of a loot urn at that cell. A
+            // red here is the urn's removal, not the golem's arm.
+            helper.assertTrue(level.destroyBlock(strideCell, true),
+                    "control — Level#destroyBlock removes the loot urn at " + strideCell
+                            + " (the stride cell :136-138 reads); a red here is the block's own"
+                            + " removal, not the golem's footstep arm");
+            helper.setBlock(GOLEM_REL.offset(1, dy, 0), CatalogTrinketsLoot.BLOCK_LOOT_URN.get());
+            // :135 draws nextInt(5) == 0 every tick (one tick in five), so this leg is a per-tick
+            // draw: 200 trials put the miss at 0.8^200 = 4.1E-20, which is what keeps the leg off
+            // the suite's known RNG cliff when the batch repacks. The entity's random is a final
+            // field with no setter in 21.1.259, so the trial count is the lever, not a seed.
+            int ticks = 0;
+            int decoy = 0;
+            int strideDecoy = 0;
+            while (ticks < FOOTSTEP_STRIDE_TICKS && !level.getBlockState(strideCell).isAir()) {
+                // Hold the mob at its cell centre while the stride drives the motion, so the cell
+                // :136 reads stays the one this probe claimed.
+                mob.setPos(at.getX() + 0.5, mob.getY(), at.getZ() + 0.5);
+                mob.setDeltaMovement(0.5, 0.0, 0.0);
+                mob.aiStep();
+                ticks++;
+                if (ticks == 1) {
+                    LOGGER.info("[TC-M6-06-boss] [t_d6a23f78] the stride leg's measured read: mob"
+                            + " pos=({}, {}, {}), bbHeight=" + mob.getBbHeight() + ", motion="
+                            + mob.getDeltaMovement() + " -> the :136-138 cell ({}, {}, {}) holds "
+                            + "the stride cell {}; the mob's own column at row {} holds {}",
+                            mob.getX(), mob.getY(), mob.getZ(), Mth.floor(mob.getX()), row,
+                            Mth.floor(mob.getZ()), level.getBlockState(strideCell), row,
+                            level.getBlockState(lootAbs));
+                }
+                if (level.getBlockState(at.offset(0, -1, 0)).isAir()) {
+                    decoy++;
+                }
+                if (level.getBlockState(lootAbs).isAir()) {
+                    strideDecoy++;
+                }
+            }
+            helper.assertTrue(level.getBlockState(strideCell).isAir(),
+                    ":135-155 — a BlockLoot cell in the row :137 reads (row " + row + ", the stride"
+                            + " cell " + strideCell + ") breaks under a striding golem within "
+                            + FOOTSTEP_STRIDE_TICKS + " ticks (the roll is one in five per tick, so"
+                            + " the miss sits at 0.8^" + FOOTSTEP_STRIDE_TICKS + "); got "
+                            + level.getBlockState(strideCell) + " after " + ticks + " ticks");
+            helper.assertTrue(decoy == 0,
+                    ":137 — the loot cell ONE below the feet survived all " + ticks
+                            + " striding ticks; breaking it means the height term fell out of the"
+                            + " row arithmetic");
+            helper.assertTrue(strideDecoy == 0,
+                    ":136 — the loot cell in the mob's OWN column at the :137 row survived all "
+                            + ticks + " striding ticks: the stride's motion puts the next cell east"
+                            + " under the read, so a read under the feet column goes red here");
+            helper.setBlock(GOLEM_REL.offset(0, -1, 0), Blocks.AIR);
+            helper.setBlock(GOLEM_REL.offset(0, dy, 0), Blocks.STONE);
+        } finally {
+            clearGolemCells(helper, GOLEM_BODY_CELLS);
+            for (final Entity drop : level.getEntities((Entity) null,
+                    new AABB(lootAbs.getX() - 2, lootAbs.getY() - 2, lootAbs.getZ() - 2,
+                            lootAbs.getX() + 3, lootAbs.getY() + 3, lootAbs.getZ() + 3),
+                    found -> found instanceof ItemEntity)) {
+                drop.discard();
+            }
+            mob.discard();
+        }
+        census(helper, "golem block legs");
+        helper.succeed();
     }
 }
