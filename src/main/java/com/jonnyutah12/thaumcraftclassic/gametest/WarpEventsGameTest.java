@@ -46,7 +46,9 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 
@@ -149,6 +151,18 @@ public final class WarpEventsGameTest {
     // The probe-4 slots whose scripted k = 0 cell the probe itself blocks:
     // witnesses at (8,1,8)/(10,1,8) for slots 0/1, stone under (12,1,8) for slot 2.
     private static final int[] SCAN_MARKS = {0, 1, 2};
+    /**
+     * The block-arm cells ONE scripted window reads: the {@code :298} cell under
+     * the landing spot, and the four cells the spider's box spans at the landing
+     * spot. The ORIGINAL's arithmetic, not a port constant: {@code :299}
+     * {@code moveTo}'s the spider to the INTEGER cell corner and
+     * {@code Spider#defineDimensions} makes an adult spider 1.4 wide, so the box
+     * straddles x-1..x and z-1..z at y (2 cells per axis); the scripted windows
+     * are 2 apart on both axes, so no two windows share a cell. t_6119f491's claim
+     * named 2 of these 5 (landing + {@code :298}) — see
+     * {@link #scriptedCells} and docs/testing.md#scan-claim-covers-box-cells.
+     */
+    private static final int CELLS_PER_WINDOW = 5;
     /** The scripted swarm: 50 spiders, slots x = 8 + 2·(a%8), z = 8 + 2·(a/8). */
     private static final int SPIDERS = 50;
     /** The player cell {@code warpPlayer} fixes inside the pad — the cell the scan measures from. */
@@ -717,9 +731,74 @@ public final class WarpEventsGameTest {
         return new BlockPos(8 + 2 * (a % 8), 1 + 7 * k, 8 + 2 * (a / 8));
     }
 
-    /** Every cell the scan reads for the scripted windows: each landing cell and the {@code :298} cell under it. */
-    private static List<BlockPos> scriptedCells(final int... secondAttemptFor) {
+    /**
+     * Every cell the scan's BLOCK arms read for the scripted windows: per window,
+     * the {@code :298} cell under the landing spot and every cell the spider's box
+     * touches at the landing spot ({@link #blockCellsOfWindow}).
+     *
+     * <p><b>t_d8944aae — this set is the GATE's block-arm set, not the landing
+     * cell.</b> t_6119f491 shipped it as landing + {@code :298} cell: 2 of the 5
+     * cells a window's block arms read, because {@code :300} measures
+     * {@code noCollision(spider.getBoundingBox())} and that box spans x-1..x and
+     * z-1..z at the landing spot. Both main-CI reds on the {@code a069e53e}
+     * lineage landed in the three cells the old set never named — run
+     * 43748694926 (job 132934321588) named {@code grass_block} at rel (7, 1, 9)
+     * for the window landing at (8, 1, 10), run 43756378800 (job 132941271802)
+     * named {@code cobblestone_stairs} at rel (9, 1, 8) for the window landing at
+     * (10, 1, 8) — and in BOTH legs the claim line cleared foreign blocks from the
+     * cells it DID name (30 on the second), so the terrain wave is in the pad at
+     * claim tick: the intruder did not "arrive after the claim", it stood in a
+     * cell no claim covered. Rule: docs/testing.md#scan-claim-covers-box-cells.</p>
+     */
+    private static List<BlockPos> scriptedCells(final EntityMindSpider probe, final BlockPos origin,
+                                                final int... secondAttemptFor) {
         final List<BlockPos> cells = new ArrayList<>();
+        for (int a = 0; a < SPIDERS; a++) {
+            cells.addAll(blockCellsOfWindow(probe, origin, scriptedCell(a, 0)));
+            if (isMarked(secondAttemptFor, a)) {
+                cells.addAll(blockCellsOfWindow(probe, origin, scriptedCell(a, 1)));
+            }
+        }
+        return cells;
+    }
+
+    /**
+     * The {@value #CELLS_PER_WINDOW} cells one scripted window's block arms read,
+     * pad-relative: the {@code :298} cell under the landing spot, then every cell
+     * the spider's own bounding box touches at the landing spot. The box comes off
+     * the SAME detached {@link EntityMindSpider} {@link #scanRejection} measures
+     * with ({@code moveTo} to the integer cell corner, then
+     * {@code getBoundingBox()}), so the claim names exactly what the gate reads and
+     * moves with the entity instead of drifting from it.
+     */
+    private static List<BlockPos> blockCellsOfWindow(final EntityMindSpider probe, final BlockPos origin,
+                                                     final BlockPos landingRel) {
+        final BlockPos landingAbs = origin.offset(landingRel);
+        probe.moveTo(landingAbs.getX(), landingAbs.getY(), landingAbs.getZ(), 0.0F, 0.0F);
+        final AABB box = probe.getBoundingBox();
+        final List<BlockPos> cells = new ArrayList<>();
+        cells.add(landingRel.below());                                        // :298 cellFits
+        for (int x = Mth.floor(box.minX); x <= Mth.floor(box.maxX); x++) {    // :300 noCollision(box)
+            for (int y = Mth.floor(box.minY); y <= Mth.floor(box.maxY); y++) {
+                for (int z = Mth.floor(box.minZ); z <= Mth.floor(box.maxZ); z++) {
+                    final BlockPos rel = new BlockPos(x - origin.getX(), y - origin.getY(), z - origin.getZ());
+                    if (!cells.contains(rel)) {
+                        cells.add(rel);
+                    }
+                }
+            }
+        }
+        return cells;
+    }
+
+    /**
+     * The cells the 2-cell shape t_6119f491 shipped named — each scripted landing
+     * cell and its {@code :298} cell. Kept only so the claim's log can NAME how
+     * many of the blocks it cleared sat in a {@code :300} box cell, the cells that
+     * shape never covered (the t_d8944aae channel), on every leg.
+     */
+    private static Set<BlockPos> landingCells(final int... secondAttemptFor) {
+        final Set<BlockPos> cells = new LinkedHashSet<>();
         for (int a = 0; a < SPIDERS; a++) {
             final BlockPos landing = scriptedCell(a, 0);
             cells.add(landing.below());
@@ -755,18 +834,40 @@ public final class WarpEventsGameTest {
     private static void claimScanCells(final GameTestHelper helper, final ServerLevel level,
                                        final int... secondAttemptFor) {
         final BlockPos origin = helper.absolutePos(BlockPos.ZERO);
-        final List<BlockPos> cells = scriptedCells(secondAttemptFor);
+        final EntityMindSpider probe = new EntityMindSpider(CatalogMindSpider.MIND_SPIDER.get(), level);
+        final List<BlockPos> cells = scriptedCells(probe, origin, secondAttemptFor);
+        final int windows = SPIDERS + secondAttemptFor.length;
+        final Set<BlockPos> twoCellShape = landingCells(secondAttemptFor);
         final List<String> cleared = new ArrayList<>();
+        final List<String> clearedBoxCells = new ArrayList<>();
         for (final BlockPos cell : cells) {
             final BlockState state = level.getBlockState(origin.offset(cell));
             if (!state.isAir()) {
-                cleared.add(state + " @ rel (" + cell.getX() + ", " + cell.getY() + ", " + cell.getZ() + ")");
+                final String found = state + " @ rel (" + cell.getX() + ", " + cell.getY() + ", "
+                        + cell.getZ() + ")";
+                cleared.add(found);
+                if (!twoCellShape.contains(cell)) {
+                    clearedBoxCells.add(found);
+                }
                 helper.setBlock(cell, Blocks.AIR);
             }
         }
+        helper.assertTrue(cells.size() == CELLS_PER_WINDOW * windows,
+                "the pad claim covered " + cells.size() + " block cells for " + windows + " scripted windows,"
+                        + " expected " + CELLS_PER_WINDOW + " per window (the :298 floor cell + the "
+                        + (CELLS_PER_WINDOW - 1) + " cells the :300 spider box spans — the entity the gate"
+                        + " measures with is " + probe.getBbWidth() + "x" + probe.getBbHeight()
+                        + " and :299 moveTo's it to the integer cell corner, so the box straddles x-1..x and"
+                        + " z-1..z): the mob's box moved, so the claim no longer names every cell the block"
+                        + " arms read (docs/testing.md#scan-claim-covers-box-cells)");
         ThaumcraftClassic.LOGGER.info("[t_6119f491] claimed the {} block cells this warp-spider scan reads"
-                        + " ({} scripted windows + their :298 cells); cleared {} foreign block(s){}",
-                cells.size(), cells.size() / 2, cleared.size(), cleared.isEmpty() ? "" : " " + cleared);
+                        + " ({} scripted windows x the :298 floor cell + the :300 box cells); cleared {}"
+                        + " foreign block(s){}{}",
+                cells.size(), windows, cleared.size(),
+                clearedBoxCells.isEmpty() ? ""
+                        : " — " + clearedBoxCells.size() + " of them sat in a :300 box cell, which the 2-cell"
+                        + " shape (landing + :298) never named: that is the t_d8944aae channel",
+                cleared.isEmpty() ? "" : " " + cleared);
     }
 
     /**
@@ -1007,8 +1108,10 @@ public final class WarpEventsGameTest {
                                 throw new GameTestAssertException("the warp scan rejected the scripted window (a="
                                         + key[0] + ", k=" + key[1] + ") at pad-relative " + r.cell() + " — " + offender
                                         + ". This pad's entities are swept (sweepPad) and its blocks are claimed"
-                                        + " (claimScanCells) over exactly the cells this scan reads, so this intruder"
-                                        + " arrived after the claim: layout, not the port, is what broke the"
+                                        + " (claimScanCells) over every cell the block arms read — the :298 floor"
+                                        + " cell and the :300 box cells, " + CELLS_PER_WINDOW
+                                        + " per scripted window — so a block rejection here names a cell the claim"
+                                        + " does not cover: layout, not the port, is what broke the"
                                         + " positional stream — one unmarked rejection hands the next spider's window"
                                         + " to this spider, shifts every later landing, and overruns the draw queue,"
                                         + " which is the shape CI runs 43656053623 and 43662060834 reported.");
