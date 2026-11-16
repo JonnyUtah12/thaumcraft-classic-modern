@@ -22,6 +22,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageEffects;
 import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
@@ -32,6 +33,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -171,6 +173,12 @@ public final class EldritchRealmGameTest {
     public static void altarLockAndSpawnerRunTheirCounters(final GameTestHelper helper) {
         final var level = helper.getLevel();
 
+        // Claim the three cells this probe's tile casts read (altar (0,0,0), lock (1,0,0),
+        // spawner (2,0,0)) BEFORE any fixture of ours lands — the claimScanCells shape of
+        // docs/testing.md#scan-claim-covers-box-cells and docs/testing.md#sweep-hazard-set-is-scan-set,
+        // applied to the producer docs/testing.md#deferred-chunkgen-stamps-pad-cells names.
+        claimCastCells(helper);
+
         // Altar: armed as a guardian spawner, it waves every 40 ticks from
         // tick 80 (the summons run through EldritchMobHost and no-op until
         // TC-M6-06 registers the Crimson Cult; the cadence and counters must
@@ -178,7 +186,7 @@ public final class EldritchRealmGameTest {
         final BlockState altar = CatalogEldritchRealm.BLOCK_ELDRITCH.get().defaultBlockState()
                 .setValue(BlockEldritch.VARIANT, EldritchRealmValues.ELDRITCH_ALTAR);
         helper.setBlock(BlockPos.ZERO, altar);
-        final TileEldritchAltar altarTile = (TileEldritchAltar) helper.getBlockEntity(BlockPos.ZERO);
+        final TileEldritchAltar altarTile = ownTile(helper, BlockPos.ZERO, TileEldritchAltar.class);
         altarTile.setSpawner(true);
         for (int tick = 0; tick < EldritchRealmValues.ALTAR_FIRST_WAVE_TICKS
                 + EldritchRealmValues.ALTAR_WAVE_PERIOD_TICKS; tick++) {
@@ -192,7 +200,7 @@ public final class EldritchRealmGameTest {
         final BlockState lock = CatalogEldritchRealm.BLOCK_ELDRITCH.get().defaultBlockState()
                 .setValue(BlockEldritch.VARIANT, EldritchRealmValues.ELDRITCH_LOCK);
         helper.setBlock(BlockPos.ZERO.east(), lock);
-        final TileEldritchLock lockTile = (TileEldritchLock) helper.getBlockEntity(BlockPos.ZERO.east());
+        final TileEldritchLock lockTile = ownTile(helper, BlockPos.ZERO.east(), TileEldritchLock.class);
         lockTile.count = EldritchRealmValues.LOCK_ARMED_COUNT;
         for (int tick = 0; tick < EldritchRealmValues.LOCK_BOSS_DELAY_TICKS + 1; tick++) {
             lockTile.serverTick();
@@ -214,7 +222,7 @@ public final class EldritchRealmGameTest {
         final BlockState spawner = CatalogEldritchRealm.BLOCK_ELDRITCH.get().defaultBlockState()
                 .setValue(BlockEldritch.VARIANT, EldritchRealmValues.ELDRITCH_CRAB_SPAWNER);
         helper.setBlock(BlockPos.ZERO.east().east(), spawner);
-        final TileEldritchCrabSpawner spawnerTile = (TileEldritchCrabSpawner) helper.getBlockEntity(BlockPos.ZERO.east().east());
+        final TileEldritchCrabSpawner spawnerTile = ownTile(helper, BlockPos.ZERO.east().east(), TileEldritchCrabSpawner.class);
         helper.assertTrue(spawnerTile.count == EldritchRealmValues.CRAB_START_COUNT,
                 "the spawner starts at the original's 150");
         spawnerTile.serverTick();
@@ -309,5 +317,68 @@ public final class EldritchRealmGameTest {
         // is the opposite of this check.
         helper.assertTrue(helper.getLevel().getBlockEntity(helper.absolutePos(cell)) == null,
                 state + " must not host a tile entity (the original created none for it)");
+    }
+
+    /**
+     * Pad claim for the altar/lock/spawner probe: the three cells its tile
+     * casts read — altar (0,0,0), lock (1,0,0), spawner (2,0,0) — cleared and
+     * DE-ENTITIED before any fixture of ours lands, on the {@code claimScanCells}
+     * shape (docs/testing.md#scan-claim-covers-box-cells,
+     * docs/testing.md#sweep-hazard-set-is-scan-set). The producer this claim
+     * defends against (docs/testing.md#deferred-chunkgen-stamps-pad-cells) is
+     * not a neighbour pad: the mod's OWN deferred chunk generation —
+     * {@code AuraNodeChunkGen.onServerTickPost} → {@code MagicChunkHooks.runPendingChunkGen}
+     * → {@code StructureChunkGen.rollStructures} → {@code WorldGenEldritchRingGen.generate}
+     * — stamps eldritch-ring structures into the pad's own chunks on a random
+     * server tick (measured: 854 of 867 cap-tile constructions sit at pad
+     * coordinates in 6 legs), and {@code setBlock} over a standing block
+     * entity KEEPS that entity (skill fact, TC-M4-06-p), so the probe's plant
+     * lands on a stamped {@code TileEldritchCap} and its cast dies naming the
+     * cap (the with-Curios red at 18:41:14 on af948d75). Air alone is not the
+     * claim here: the probe casts the cell's BLOCK ENTITY, so the claim
+     * removes it. The log line is the channel census — {@code cleared 0} is a
+     * clean handoff, a named clear is the deferred pass caught live.
+     */
+    private static void claimCastCells(final GameTestHelper helper) {
+        final var level = helper.getLevel();
+        final BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+        final List<String> cleared = new ArrayList<>();
+        for (final BlockPos cell : new BlockPos[]{BlockPos.ZERO, BlockPos.ZERO.east(),
+                BlockPos.ZERO.east().east()}) {
+            final BlockPos abs = origin.offset(cell);
+            final BlockState state = level.getBlockState(abs);
+            final BlockEntity tile = level.getBlockEntity(abs);
+            // The pad's own structure block (and its block entity) is the grid
+            // marker, not a foreign block; anything else standing in a cast
+            // cell is named.
+            if (!state.is(Blocks.STRUCTURE_BLOCK) && (!state.isAir() || tile != null)) {
+                cleared.add(state + (tile == null ? "" : " + " + tile.getClass().getName())
+                        + " @ rel (" + cell.getX() + ", " + cell.getY() + ", " + cell.getZ() + ")");
+            }
+            helper.setBlock(cell, Blocks.AIR);
+            level.removeBlockEntity(abs);
+        }
+        ThaumcraftClassic.LOGGER.info("[t_9687e91a] claimed the 3 cells this probe's tile casts read"
+                        + " (altar, lock, spawner) before planting; cleared {} foreign block(s){}",
+                cleared.size(), cleared.isEmpty() ? "" : " " + cleared);
+    }
+
+    /**
+     * Checked plant read: this probe's plant must own the cell's block entity.
+     * A foreign entity NAMES itself (state + entity, rel + abs) instead of
+     * dying as a raw ClassCastException at the cast — the shipped red
+     * ({@code TileEldritchCap cannot be cast to TileEldritchLock}) is the same
+     * channel seen blind (docs/testing.md#deferred-chunkgen-stamps-pad-cells).
+     */
+    private static <T extends BlockEntity> T ownTile(final GameTestHelper helper, final BlockPos cell,
+                                                     final Class<T> expected) {
+        final BlockEntity tile = helper.getBlockEntity(cell);
+        helper.assertTrue(expected.isInstance(tile),
+                expected.getSimpleName() + " required at rel " + cell + " (abs " + helper.absolutePos(cell)
+                        + ") after this probe's plant, got " + tile + " under state "
+                        + helper.getLevel().getBlockState(helper.absolutePos(cell))
+                        + " — setBlock kept a standing block entity, so this probe's pad claim"
+                        + " no longer covers the cell (docs/testing.md#deferred-chunkgen-stamps-pad-cells)");
+        return expected.cast(tile);
     }
 }
