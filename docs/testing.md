@@ -1063,17 +1063,23 @@ restores both and `diff -q` reports byte-identical.
   `relaid=6` (eaten row), `relaid=6` (trench): the row arm repairs cells the corridor arm never reaches,
   and a control the claim clears is green *because* it was cleared, not because it was harmless. The
   clean lane is **GREEN 2/2** with `passes=162 cleared=0 relaid=0`.
-  **Census (t_4c531ae6, on the pre-merge tree):** 10 interleaved pairs (base-first), base `c49132e6`
-  vs fix `d3cf1a0f`, all NO-Curios whole-grid legs, one gradle at a time — **20/20 `PASS533`, 0 reds
-  on this probe on either arm**, `ran=1` + `cachehits=0` + the built-in-fallback marker on every leg,
-  `loadavg(1m)` 2.32-5.70 with 1-4 JVMs, legs 60-134 s (`census_summary.txt`). Every fix leg carries
-  `ROUTE-CLAIM summary tick=160 passes=161 cleared=0 relaid=0` — the clean-handoff read, the claim
-  writing nothing on a pad it was handed clean — and every base leg carries no claim line at all, so
-  the two arms are distinguishable per leg. At the lane's published CI rate (1/24) P(0 reds in 10) =
-  0.65 and P(0 in 20) ≈ 0.43, so this census is the no-regression leg for the shared grid, NOT the
-  closure; the plant pair above is the causal leg, exactly as the triage rule says. The landing tree
-  is the merge of main `7413157e` (the c5-2 portal slice adds 6 probes: census 533 → 539, 83 probe
-  files unchanged, 0 probes added by this card), so the gate legs run on the 539 grid.
+  **Census (t_4c531ae6, on the LANDING tree `8b071546`):** 12 interleaved pairs (base-first), base
+  `c49132e6` (533 probes) vs the landing tree (539: main's c5-2 portal slice adds 6 probes; this card
+  adds 0, the probe FILE set is identical to main), all NO-Curios whole-grid legs, one gradle at a time —
+  **base 12/12 `PASS533`, landing 11/12 `PASS539`, 0 reds on this probe on either arm**, `ran≥1` +
+  `cachehits=0` + the built-in-fallback marker on every one of the 24 legs, `loadavg(1m)` 2.25-5.90 with
+  1-4 JVMs, legs 60-159 s (`keep/t_4c531ae6/census2.out`). Every landing leg carries
+  `ROUTE-CLAIM summary tick=160 passes=162-163 cleared=0 relaid=0` — the clean-handoff read, the claim
+  writing nothing on a pad it was handed clean — and no base leg carries a claim line at all, so the two
+  arms are distinguishable per leg. **One landing leg (pair 9) is RED**, naming
+  `therangedattackseamlaunchestheblastwiththeoriginalconstants` and
+  `wispdropsitsessencewithtwounitsofitsownaspect` — both OUTSIDE this delta (no plant on that leg,
+  `cleared=0 relaid=0`, and the probe census + file set equal main's, so the packing grid is
+  byte-identical to main), on a leg whose task line printed twice (`ran=2`); base 0/12 red, landing 1/12
+  red, Fisher p = 1.0 for that pair. At the lane's published CI rate (1/24) P(0 reds in 12) = 0.60, so
+  this census is the no-regression leg for the shared grid, NOT the closure; the plant pair above is the
+  causal leg, exactly as the triage rule says. An earlier 20-leg run of the same design on the
+  pre-merge fix tree (`d3cf1a0f`, `census_summary.txt`) was 20/20 `PASS533`, 0 reds.
   **Fixture artifacts disclosed, not fixed.** The probe's own floor loop writes
   `new BlockPos(home.getX(), home.getY() - 1, z)` for ABSOLUTE `z` in 12..70 while this pad sits at
   `z ≈ -13,905,236`, so the "floor out to 52 blocks along +z" lands thousands of blocks away; the row
