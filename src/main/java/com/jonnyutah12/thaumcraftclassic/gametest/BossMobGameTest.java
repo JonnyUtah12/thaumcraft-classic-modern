@@ -70,6 +70,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityEldritchGuardian;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EntityEldritchWarden;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.WardenAiLogic;
+import com.jonnyutah12.thaumcraftclassic.entities.projectile.EntityEldritchOrb;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchGuardian;
 
 /**
  * TC-M6-06-s-c5-1: the shared boss body and the Crimson Praetor, measured in world.
@@ -2242,6 +2247,419 @@ public final class BossMobGameTest {
             mob.discard();
         }
         census(helper, "golem block legs");
+        helper.succeed();
+    }
+
+    // ================================================================= TC-M6-06-s-c5-4
+    //
+    // EntityEldritchWarden — thaumcraft:eldritchwarden (content-mapping row 324), the
+    // boss family's last member. Every figure is cited to the 418-line reference
+    // reference/decompiled/thaumcraft/thaumcraft/common/entities/monster/boss/EntityEldritchWarden.java
+    // by line (:NNN); the registration row is ConfigEntities.java:109 (64, 3, true).
+    // The card's custody note suggested the taintacle-giant family; the measured
+    // hierarchy (:43) is EntityThaumcraftBoss — the port follows the reference, and
+    // the taintacle-giant row is separately done,tested (its custody files needed
+    // nothing at this landing).
+
+    private static List<WrappedGoal> goals(final EntityEldritchWarden mob, final boolean target) {
+        final List<WrappedGoal> out = new ArrayList<>();
+        for (final WrappedGoal g : (target ? mob.targetSelector : mob.goalSelector).getAvailableGoals()) {
+            out.add(g);
+        }
+        return out;
+    }
+
+    /** A warden at the template origin — the family's leader() shape. */
+    private static EntityEldritchWarden warden(final GameTestHelper helper) {
+        final ServerLevel level = helper.getLevel();
+        final Entity spawned = registered(helper, "eldritchwarden").create(level);
+        helper.assertTrue(spawned instanceof EntityEldritchWarden,
+                "thaumcraft:eldritchwarden did not create an EntityEldritchWarden");
+        final EntityEldritchWarden mob = (EntityEldritchWarden) spawned;
+        final BlockPos at = helper.absolutePos(BlockPos.ZERO).offset(1, 3, 1);
+        mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0.0F, 0.0F);
+        mob.setNoGravity(true);
+        mob.clearFire();
+        // t_f9fe6e81 (docs/testing.md#mob-tick-claim-covers-mob-chunk): a fixture mob
+        // at pad(1, 3, 1) stands in the pad corner's DIAGONAL neighbour in every grid
+        // slot whose corner lands at x mod 16 = 15 / z mod 16 = 15, and that chunk
+        // carries no ticket — the mob then runs ZERO entity ticks for its whole life
+        // and every per-tick read below (the 150-tick spawn timer, the frenzy
+        // countdown, the goal tree's orb seam) reads a frozen value. The claim is the
+        // harness's own lever (ServerLevel#setChunkForced, the same call
+        // StructureUtils#forceLoadChunks makes for the template box), idempotent on
+        // the chunk and cleared with the batch, so the tick lane is real in both arms.
+        MobChunkClaim.claimMobChunk(level, mob);
+        level.addFreshEntity(mob);
+        return mob;
+    }
+
+    /**
+     * {@code :80} + {@code ConfigEntities.java:109} + {@code :336-338} +
+     * {@code :415-417} — the id resolves, the class is the boss body, the box is
+     * 1.5 x 3.5, tracking 64 blocks = 4 chunks with update interval 3, the eye
+     * height 3.1 and the 500-point experience over the base's 50. The warden rides
+     * the :181 class twin, so its renderer lane is the family's declared gap
+     * (EntityRendererCoverageTest).
+     */
+    @GameTest(template = "empty")
+    public static void theWardenIsRegisteredWithTheOriginalBoxAndTracking(final GameTestHelper
+            helper) {
+        final EntityType<?> type = registered(helper, "eldritchwarden");
+        helper.assertTrue(Math.abs(type.getDimensions().width() - WardenAiLogic.WIDTH) < 1.0E-4,
+                ":80 — the box width must be 1.5, got " + type.getDimensions().width());
+        helper.assertTrue(Math.abs(type.getDimensions().height() - WardenAiLogic.HEIGHT) < 1.0E-4,
+                ":80 — the box height must be 3.5, got " + type.getDimensions().height());
+        helper.assertTrue(type.clientTrackingRange() == WardenAiLogic.TRACK_RANGE_CHUNKS,
+                ":109 — tracking 64 blocks = 4 chunks, got " + type.clientTrackingRange());
+        helper.assertTrue(type.updateInterval() == WardenAiLogic.UPDATE_INTERVAL,
+                ":109 — update interval 3, got " + type.updateInterval());
+        final EntityEldritchWarden mob = (EntityEldritchWarden) type.create(helper.getLevel());
+        helper.assertTrue(Math.abs(mob.getEyeHeight() - WardenAiLogic.EYE_HEIGHT) < 1.0E-4,
+                ":336-338 — the eye height is 3.1, got " + mob.getEyeHeight());
+        helper.assertTrue(mob.getExperienceReward(helper.getLevel(), null) == WardenAiLogic.EXPERIENCE,
+                ":415-417 — 500 experience overwrites the base's 50, got "
+                        + mob.getExperienceReward(helper.getLevel(), null));
+        mob.discard();
+        helper.succeed();
+    }
+
+    /**
+     * {@code :104-106} + {@code :127-129} over the base's pair — health 200.0,
+     * speed 0.33, attack 10.0, armour 4, knockback resistance 0.95
+     * ({@code EntityThaumcraftBoss:53}) and follow 40.0 ({@code :54}).
+     */
+    @GameTest(template = "empty")
+    public static void theWardenCarriesTheOriginalAttributesOverTheBossBasePair(
+            final GameTestHelper helper) {
+        final EntityEldritchWarden mob = warden(helper);
+        helper.assertTrue(mob.getAttribute(Attributes.MAX_HEALTH).getValue()
+                        == WardenAiLogic.MAX_HEALTH,
+                ":104 — max health 200.0, got " + mob.getAttribute(Attributes.MAX_HEALTH).getValue());
+        helper.assertTrue(mob.getAttribute(Attributes.ATTACK_DAMAGE).getValue()
+                        == WardenAiLogic.ATTACK_DAMAGE,
+                ":106 — attack damage 10.0, got " + mob.getAttribute(Attributes.ATTACK_DAMAGE).getValue());
+        helper.assertTrue(Math.abs(mob.getAttribute(Attributes.MOVEMENT_SPEED).getValue()
+                        - WardenAiLogic.MOVEMENT_SPEED) < 1.0E-9,
+                ":105 — movement speed 0.33, got " + mob.getAttribute(Attributes.MOVEMENT_SPEED).getValue());
+        helper.assertTrue(mob.getAttribute(Attributes.ARMOR).getValue() == WardenAiLogic.ARMOR_BONUS,
+                ":127-129 — the armour bonus is 4.0 over the base's 0.0, got "
+                        + mob.getAttribute(Attributes.ARMOR).getValue());
+        helper.assertTrue(mob.getAttribute(Attributes.KNOCKBACK_RESISTANCE).getValue()
+                        == ThaumcraftBossAiLogic.KNOCKBACK_RESISTANCE,
+                "EntityThaumcraftBoss:53 — knockback resistance 0.95, got "
+                        + mob.getAttribute(Attributes.KNOCKBACK_RESISTANCE).getValue());
+        helper.assertTrue(mob.getAttribute(Attributes.FOLLOW_RANGE).getValue()
+                        == ThaumcraftBossAiLogic.FOLLOW_RANGE,
+                "EntityThaumcraftBoss:54 — follow range 40.0, got "
+                        + mob.getAttribute(Attributes.FOLLOW_RANGE).getValue());
+        mob.discard();
+        helper.succeed();
+    }
+
+    /**
+     * {@code :70-79} — the goal table at the original slots: swim 0, the TC ranged
+     * goal 2 (its five constructor figures read back), the TC melee goal 3 with the
+     * EntityLivingBase filter, restriction 5, wander 7, the slot-8 pair (the
+     * :75/:76 collision, BD-112's measured shape), the plain hurt-by 1
+     * ({@code :77}'s trailing false is the platform's standing state — BD row), the
+     * player scan 2 and the cultist scan 3. No Monster-inherited goal: the quartet
+     * stays stripped.
+     */
+    @GameTest(template = "empty")
+    public static void theWardenGoalSetIsTheOriginalTableAtTheOriginalSlots(final GameTestHelper
+            helper) {
+        final EntityEldritchWarden mob = warden(helper);
+        final List<WrappedGoal> movement = goals(mob, false);
+        final List<WrappedGoal> targets = goals(mob, true);
+        helper.assertTrue(has(movement, FloatGoal.class, WardenAiLogic.GOAL_SLOT_SWIM),
+                ":70 — the swim goal at slot 0; " + describe(movement));
+        helper.assertTrue(has(movement, AILongRangeAttack.class, WardenAiLogic.GOAL_SLOT_RANGED),
+                ":71 — AILongRangeAttack (TC's goal) at slot 2; " + describe(movement));
+        helper.assertTrue(has(movement, AIAttackOnCollide.class, WardenAiLogic.GOAL_SLOT_MELEE),
+                ":72 — AIAttackOnCollide (TC's goal) at slot 3; " + describe(movement));
+        helper.assertTrue(has(movement, MoveTowardsRestrictionGoal.class,
+                        WardenAiLogic.GOAL_SLOT_RESTRICTION)
+                        && has(movement, RandomStrollGoal.class, WardenAiLogic.GOAL_SLOT_WANDER)
+                        && has(movement, LookAtPlayerGoal.class, WardenAiLogic.GOAL_SLOT_WATCH)
+                        && has(movement, RandomLookAroundGoal.class, WardenAiLogic.GOAL_SLOT_LOOK_IDLE),
+                ":73-76 — restriction 5, wander 7, the slot-8 pair; " + describe(movement));
+        helper.assertTrue(movement.size() == 7,
+                ":70-76 — the port ships 7 movement goals (the :75/:76 pair rides slot 8 and "
+                        + "1.21.1's GoalSelector keeps both — BD-112's measured pair — where 1.7.10's "
+                        + "TreeMap netted six); " + describe(movement));
+        helper.assertTrue(has(targets, HurtByTargetGoal.class, WardenAiLogic.TARGET_SLOT_HURT)
+                        && has(targets, NearestAttackableTargetGoal.class, WardenAiLogic.TARGET_SLOT_PLAYER)
+                        && has(targets, NearestAttackableTargetGoal.class, WardenAiLogic.TARGET_SLOT_CULTIST),
+                ":77-79 — hurt-by 1, player 2, cultist 3; " + describe(targets));
+        helper.assertTrue(targets.size() == 3, ":77-79 — exactly three target goals; "
+                + describe(targets));
+        // :71 — the ranged goal's five constructor figures, read back.
+        final AILongRangeAttack ranged = (AILongRangeAttack) movement.stream()
+                .filter(g -> g.getGoal() instanceof AILongRangeAttack)
+                .findFirst().orElseThrow().getGoal();
+        helper.assertTrue(ranged.getMinDistance() == WardenAiLogic.RANGED_MIN_DISTANCE,
+                ":71 — the installed minDistance must be 3.0, got " + ranged.getMinDistance());
+        helper.assertTrue(WardenAiLogic.RANGED_SPEED == 1.0
+                        && WardenAiLogic.RANGED_INTERVAL_MIN == 20
+                        && WardenAiLogic.RANGED_INTERVAL_MAX == 40
+                        && WardenAiLogic.RANGED_RANGE == 24.0F,
+                ":71 — the ctor's four companions must be 1.0 / 20 / 40 / 24.0F");
+        // :72 — the melee goal is TC's class with the EntityLivingBase filter.
+        final AIAttackOnCollide melee = (AIAttackOnCollide) movement.stream()
+                .filter(g -> g.getGoal() instanceof AIAttackOnCollide)
+                .findFirst().orElseThrow().getGoal();
+        helper.assertTrue(melee.targetClass() == LivingEntity.class,
+                ":72 — the classTarget is EntityLivingBase → LivingEntity.class, got "
+                        + melee.targetClass());
+        mob.discard();
+        helper.succeed();
+    }
+
+    /**
+     * The phase machine: the 150-tick materialisation invulnerates the boss and
+     * freezes the family goal (the base's pair over {@code :308-311}); the death
+     * swap ({@code :317-320}) flips a landed killing hit into the frenzy latch with
+     * the 150-tick counter and the 1.0F health pin (the deviation row — 1.7.10
+     * loitered at 0.0F behind the base's empty death tick), cancelling the death;
+     * the frenzy invulnerates ({@code :309-310}), freezes the goals
+     * ({@code :132-135}) and refuses every hurt; drown ({@code field_76369_e}) and
+     * wither ({@code field_82727_n}) never damage ({@code :315}, the pair resolved
+     * as {@code RunicShielding.isBlockedSource} resolves them — the BOSS_PREP's
+     * anvil/cactus guess superseded). The post-frenzy kill takes the vanilla death.
+     */
+    @GameTest(template = "empty", timeoutTicks = 300)
+    public static void theWardenPhaseMachineSwapsDeathIntoFrenzyAndRefusesThePair(
+            final GameTestHelper helper) {
+        final EntityEldritchWarden mob = warden(helper);
+        final net.minecraft.world.entity.LivingEntity striker =
+                (net.minecraft.world.entity.LivingEntity) helper.spawn(
+                        net.minecraft.world.entity.EntityType.COW,
+                        helper.absolutePos(BlockPos.ZERO).offset(2, 3, 2));
+        try {
+            // the materialisation gate (the :330 leg is finalizeSpawn's; the placed
+            // harness mob starts idle, so set the timer to drive the base's seam).
+            mob.setSpawnTimer(2);
+            helper.assertTrue(mob.isInvulnerableTo(helper.getLevel().damageSources().inFire()),
+                    "EntityThaumcraftBoss — the spawn phase invulnerates, got vulnerable");
+            helper.assertTrue(!mob.goalsMayTick(), ":133 over the base — the goals freeze");
+            mob.setSpawnTimer(0);
+            helper.assertTrue(mob.goalsMayTick(), "both phases idle — the goals open");
+            // :315 — the pair never damages while the boss is open.
+            helper.assertTrue(!mob.hurt(helper.getLevel().damageSources().drown(), 10.0F),
+                    ":315 — drown (field_76369_e) is refused, got damage");
+            helper.assertTrue(!mob.hurt(helper.getLevel().damageSources().wither(), 10.0F),
+                    ":315 — wither (field_82727_n) is refused, got damage");
+            helper.assertTrue(mob.getHealth() == WardenAiLogic.MAX_HEALTH,
+                    ":315 — the pair left the health at full, got " + mob.getHealth());
+            // :317-320 — the death swap: the first killing hit cancels the death.
+            mob.setHealth(1.0F);
+            mob.invulnerableTime = 0;
+            final boolean landed = mob.hurt(helper.getLevel().damageSources()
+                    .mobAttack(striker), 40.0F);
+            helper.assertTrue(landed, ":316 — the killing hit landed through the damage leg");
+            helper.assertTrue(mob.isFieldFrenzy(), ":318 — the latch flipped");
+            helper.assertTrue(mob.getFieldFrenzyCounter() == WardenAiLogic.FRENZY_START_TICKS,
+                    ":319 — the counter starts at 150, got " + mob.getFieldFrenzyCounter());
+            helper.assertTrue(mob.getHealth() == WardenAiLogic.FRENZY_SWAP_HEALTH,
+                    "deviation pin — the swap health is 1.0F (1.7.10 loitered at 0.0F), got "
+                            + mob.getHealth());
+            helper.assertTrue(!mob.isRemoved(), ":317-320 — the death was cancelled");
+            // :309-310 + :132-135 — the frenzy invulnerates and freezes.
+            helper.assertTrue(mob.isInvulnerableTo(helper.getLevel().damageSources().inFire()),
+                    ":310 — the frenzy invulnerates, got vulnerable");
+            helper.assertTrue(!mob.goalsMayTick(), ":133 — the frenzy freezes the goals");
+            helper.assertTrue(!mob.hurt(helper.getLevel().damageSources().inFire(), 5.0F),
+                    ":309-310 — no hurt through the frenzy");
+            // :317 — the post-frenzy kill: the latch is already set, so the swap
+            // refuses a SECOND time and the vanilla death pass takes the mob.
+            // 21.1.259 removes a 0-health living entity at deathTime 20
+            // (LivingEntity.java:565-571, tickDeath), so the removal itself rides a
+            // later tick of the SERVER's clock — the observable point here is that the
+            // swap refused and the mob is dying, and the death pass' removal is the
+            // platform fact the deviation row cites (BD-142).
+            mob.setFieldFrenzyCounterForTest(0);
+            mob.setHealth(1.0F);
+            mob.invulnerableTime = 0;
+            final boolean post = mob.hurt(helper.getLevel().damageSources()
+                    .mobAttack(striker), 40.0F);
+            helper.assertTrue(post, ":316 — the post-frenzy hit lands through the damage leg");
+            helper.assertTrue(mob.isDeadOrDying(),
+                    ":317 — the swap refuses twice (the latch is set), so the mob dies: health "
+                            + mob.getHealth());
+            helper.assertTrue(mob.getFieldFrenzyCounter() == 0,
+                    ":319 — no second 150-tick counter, got " + mob.getFieldFrenzyCounter());
+        } finally {
+            mob.discard();
+            striker.discard();
+        }
+        census(helper, "warden phase machine");
+        helper.succeed();
+    }
+
+    /**
+     * The ranged seam ({@code :340-380}). The 80% orb branch ({@code :341}) carries
+     * no gate but its roll, so it fires at kin too. The 20% sonic branch is behind
+     * {@code func_70685_l} = {@code EntityLivingBase#canEntityBeSeen} — the
+     * line-of-sight test at {@code :356}, NOT a faction test — so the blast lands on
+     * kin while the warden sees it, and a solid row between the two stops the blast
+     * while the orbs keep flying (measured: the row cuts the count to 0 of 24 and
+     * the orbs keep spawning). The faction refusal is the SEPARATE {@code :403-405}
+     * class twin ({@code canAttackType}), which keeps the Guardian out of the
+     * warden's goal targeting, and it is asserted here as the read it is. The blast
+     * is detected by the knockback it writes (the yaw pair, {@code :362-366}) so a
+     * repeat application inside one tick cannot hide behind a refreshed duration;
+     * WITHER/WEAKNESS land 400 ticks at amplifier 0 ({@code :369-370}). The muzzle
+     * pair, the warp figure and the title draw ride {@code WardenAiLogicTest}; the
+     * {@code FXSonic} send is the FX lane's (BD-143).
+     */
+    @GameTest(template = "empty", timeoutTicks = 300)
+    public static void theWardenRangedSeamFiresOrbsAndTheTwinRefusesKin(final GameTestHelper
+            helper) {
+        final EntityEldritchWarden mob = warden(helper);
+        final ServerLevel level = helper.getLevel();
+        final EntityEldritchGuardian kin = (EntityEldritchGuardian) CatalogEldritchGuardian
+                .ELDRITCH_GUARDIAN.get().create(level);
+        final BlockPos kinAt = helper.absolutePos(BlockPos.ZERO).offset(5, 3, 1);
+        kin.moveTo(kinAt.getX() + 0.5, kinAt.getY(), kinAt.getZ() + 0.5, 0.0F, 0.0F);
+        kin.setNoGravity(true);
+        level.addFreshEntity(kin);
+        try {
+            helper.assertTrue(!mob.canAttackType(CatalogEldritchGuardian.ELDRITCH_GUARDIAN.get()),
+                    ":403-405 — the Guardian class is refused as a target");
+            helper.assertTrue(mob.canAttackType(net.minecraft.world.entity.EntityType.PLAYER)
+                            || mob.canAttackType(net.minecraft.world.entity.EntityType.COW),
+                    ":404 — everything else takes the base's answer");
+            helper.assertTrue(mob.hasLineOfSight(kin),
+                    "the pad is empty, so the :356 visibility leg has to read true before the wall");
+            final int[] open = sweep(helper, mob, kin, 60);
+            helper.assertTrue(open[0] > 0,
+                    ":341 — the 80% orb branch fires at kin across 60 shots (got " + open[0]
+                            + "): the branch carries no faction gate");
+            helper.assertTrue(open[1] > 0,
+                    ":356 — the sonic branch fires through the visibility leg at kin (got "
+                            + open[1] + " of 60, the 0.2 roll): the original gates the blast on"
+                            + " canEntityBeSeen, not on faction");
+            // The :356 leg is visibility, so a solid row between the two is the tooth:
+            // the blast stops, the orbs (no visibility gate) do not.
+            wall(helper, true);
+            helper.assertTrue(!mob.hasLineOfSight(kin),
+                    "the wall has to cut the :356 visibility leg between the warden and the kin");
+            final int[] blocked = sweep(helper, mob, kin, 60);
+            helper.assertTrue(blocked[1] == 0,
+                    ":356 — behind the wall the sonic blast never fires (got " + blocked[1] + " of 60)");
+            helper.assertTrue(blocked[0] > 0,
+                    ":341 — the orb branch keeps firing through the wall (got " + blocked[0]
+                            + "): the roll is its only gate");
+        } finally {
+            wall(helper, false);
+            kin.discard();
+            mob.discard();
+        }
+        census(helper, "warden ranged seam");
+        helper.succeed();
+    }
+
+    /**
+     * {@code :340-380} shot loop: zero the kin's delta movement, fire, and read the
+     * blast off the knockback the sonic branch writes (the only per-call marker: a
+     * repeat {@code addEffect} inside one tick refreshes to the same 400 and is
+     * invisible to a duration read). Returns {orbs seen, sonics seen}; every sonic
+     * is checked for the original's shape (the yaw pair, WITHER + WEAKNESS 400/0).
+     */
+    private static int[] sweep(final GameTestHelper helper, final EntityEldritchWarden mob,
+            final EntityEldritchGuardian kin, final int shots) {
+        final ServerLevel level = helper.getLevel();
+        int sonics = 0;
+        for (int shot = 0; shot < shots; shot++) {
+            kin.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
+            mob.performRangedAttack(kin, 1.0F);
+            final net.minecraft.world.phys.Vec3 knock = kin.getDeltaMovement();
+            if (knock.y() != 0.0D) {
+                sonics++;
+                // The warden stands at yaw 0, so the original's pair
+                // (-sin(yaw)*1.5, 0.1, cos(yaw)*1.5) is literally (0, 0.1, 1.5).
+                helper.assertTrue(mob.getYRot() == 0.0F, "the probe pins the blast at yaw 0, got "
+                        + mob.getYRot());
+                helper.assertTrue(knock.x() == 0.0D && knock.y() == 0.1D && knock.z() == 1.5D,
+                        ":362-366 — the blast writes (-sin(yaw)*1.5, 0.1, cos(yaw)*1.5) = (0, 0.1,"
+                                + " 1.5) at yaw 0, got " + knock);
+                final net.minecraft.world.effect.MobEffectInstance wither = kin.getEffect(MobEffects.WITHER);
+                final net.minecraft.world.effect.MobEffectInstance weakness =
+                        kin.getEffect(MobEffects.WEAKNESS);
+                helper.assertTrue(wither != null
+                                && wither.getDuration() == WardenAiLogic.SONIC_WITHER_TICKS
+                                && wither.getAmplifier() == WardenAiLogic.SONIC_WITHER_AMPLIFIER,
+                        ":369 — WITHER lands 400 ticks at amplifier 0, got " + wither);
+                helper.assertTrue(weakness != null
+                                && weakness.getDuration() == WardenAiLogic.SONIC_WEAKNESS_TICKS
+                                && weakness.getAmplifier() == WardenAiLogic.SONIC_WEAKNESS_AMPLIFIER,
+                        ":370 — WEAKNESS 400/0 rides the same branch, got " + weakness);
+            }
+        }
+        int orbs = 0;
+        for (final Entity found : level.getEntities((Entity) null,
+                kin.getBoundingBox().inflate(24, 24, 24),
+                candidate -> candidate instanceof EntityEldritchOrb
+                        && ((EntityEldritchOrb) candidate).getOwner() == mob)) {
+            orbs++;
+            found.discard();
+        }
+        return new int[] {orbs, sonics};
+    }
+
+    /** The {@code :356} tooth: a solid stone row at pad x=3 between the mob and the kin. */
+    private static void wall(final GameTestHelper helper, final boolean on) {
+        for (int y = 2; y <= 8; y++) {
+            for (int z = -2; z <= 3; z++) {
+                helper.setBlock(new BlockPos(3, y, z), on
+                        ? net.minecraft.world.level.block.Blocks.STONE.defaultBlockState()
+                        : net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+            }
+        }
+    }
+
+    /**
+     * {@code :112/:115-125} — the title byte round-trips through the NBT key
+     * {@code title}; {@code :84-91} — the champion name fires only with the
+     * (unregistered) tc.mobmod attribute reading {@code >= 0}, so a fresh warden
+     * carries no custom name and the plain label is the lang row
+     * {@code "%s the %d"} answered through 21.1.259's format-arg sanitizer, so the
+     * shipped string is {@code "%s the %s"} — the leader's measured shape (the
+     * deviation row). The fifteen-title
+     * array and {@code championTitleFor} ride {@code WardenAiLogicTest}.
+     */
+    @GameTest(template = "empty")
+    public static void theWardenTitleRoundTripsThroughNbtAndThePlainNameShows(
+            final GameTestHelper helper) {
+        final EntityEldritchWarden mob = warden(helper);
+        mob.setTitle(7);
+        final CompoundTag tag = new CompoundTag();
+        mob.addAdditionalSaveData(tag);
+        helper.assertTrue(tag.getByte(WardenAiLogic.NBT_TITLE) == 7,
+                ":118 — the whole watched byte rides the NBT key 'title'");
+        final EntityEldritchWarden reloaded =
+                (EntityEldritchWarden) registered(helper, "eldritchwarden").create(helper.getLevel());
+        reloaded.readAdditionalSaveData(tag);
+        helper.assertTrue(reloaded.getTitle() == 7, ":124 — the byte reads back");
+        helper.assertTrue(!mob.hasCustomName(),
+                ":84-91 — no name is set while the champion attribute is absent (deviation)");
+        // 21.1.259 formats a mob's description lang row with the two STRING args of
+        // the vanilla mob-name shape and TranslationUtil.checkStringFormatArgs
+        // rewrites every specifier to %s, so the shipped plain label is the
+        // SANITIZED lang row — the same measured answer the Praetor's row carries
+        // above ("Praetor %s the %s", the c5-1 landing). The original's literal
+        // "%s the %d" rides en_us.json verbatim (en_US.lang:80); the fill is the
+        // champion rule's, which the unregistered tc.mobmod attribute keeps
+        // unrunnable (deviation row).
+        helper.assertTrue(mob.getDisplayName().getString().equals("%s the %s"),
+                "the plain label is the sanitized lang row (the leader's shape), got " + mob.getDisplayName().getString());
+        helper.assertTrue(mob.championTitleFor(-1) == null,
+                ":86 — the champion rule refuses the unregistered index");
+        helper.assertTrue("Rhan-Tegoth".equals(WardenAiLogic.titleAt(7)),
+                ":44-60 — the watched byte selects the title");
+        reloaded.discard();
+        mob.discard();
         helper.succeed();
     }
 }
