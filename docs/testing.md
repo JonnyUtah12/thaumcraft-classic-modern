@@ -864,6 +864,64 @@ restores both and `diff -q` reports byte-identical.
   subject to control *when* a rule fires, verify the park cell is really unticked — print the rule's own
   precondition (`restrictDistSqr`) on the tick before the draw; a precondition already satisfied means
   the hand-driven tick is not the write tick and the draw is a budget.
+<a id="route-arm-node-trail-names-the-channel"></a>
+- **A route arm is a ONE-DRAW assert on a path graph: read the node trail's LAST cell and its
+  `reached` flag before attributing the red, and triage the red as the arm's rate, never as a
+  streak.** `GolemCombatAiGameTest.combat_returnHomeUsesTheRadiusAndTeleportsFromBeyond48`
+  (`:1530-1538`) calls `AIReturnHome#start` and asserts in one draw that the navigation path has
+  nodes, `canReach()`, and an end cell within 1.5 squared of the placer's centre; the trail is
+  printed by the probe's own `nodeTrail` (`:428-438`). A clean corridor draws
+  **`path[10,reached=true]`** ending at rel (12,0,13): 6/6 log-only trace legs on the shipped tree
+  print `nonAir=0 nodes=10 reached=true` at the draw tick, no assert added. The CI NO-Curios red drew
+  **`path[9,reached=false]`** (land-ref run 43837940910 attempt 1 @ `d06c9b46`) and its trail names
+  the channel: node 0 sits at rel (12,0,22) — exactly the cell the probe teleports the golem to, so
+  placement is NOT the failure and an assert on the mob's own cell would have passed — the route runs
+  `-z` to rel z=19, then LEAVES the probe's floor row (rel y=-1, z=12..70, laid at `:1512-1515`) at
+  (13,0,18), (14,0,17), (14,0,16), climbs (14,+1,15) and (14,+2,14) and stops. `PathFinder` calls a
+  target reached at `distanceManhattan(target) <= accuracy` (`PathFinder.java:80-83`) and otherwise
+  reconstructs the **PARTIAL** path with `canReach()=false` (`:116-122`), so a node count paired with
+  `reached=false` is a graph truncation and its LAST node is the cell where the walkable component
+  ended: read the trail, not the assert's first words.
+  **Rate, published — this is what closes a route-arm red.** CI NO-Curios arm across the lineage
+  `c4fe41ed` → `4a9ab8df`: 40 successes / 5 failures over 45 runs (`ci_lane.out`), and the
+  return-home family's two reds both sit BEHIND a green `gh run rerun --failed` of the SAME sha —
+  the route arm at `d06c9b46` (green on attempt 2, job 133215632537) and the drift arm at
+  `e3e52643` (run 43862872626, job 133283875938, line `squared distance 1.7649174903511837 against a
+  radius of 3.0 squared`, the tail `docs/testing.md#outcome-not-tick-budget` carries; green on rerun,
+  job 133287911974): **2 reds in ~42 NO-Curios samples ≈ 1/21**. Locally:
+  an interleaved 30-leg NO-Curios whole-grid census on this box (10 rounds, base `c4fe41ed` → landing `d06c9b46` → shipped main `4a9ab8df`, one gradle at a time, `ran=1`, `cachehits=0` and the built-in-fallback marker on all 30 legs, `loadavg(1m)` 1.97-6.26 with 0-3 JVMs, legs 59-110 s, `census2/`): this probe is **0/10 base, 0/10 landing, 0/10 shipped = 0/30** (Fisher base-vs-landing p=1.0, pooled with the card's first 6-leg pair p=1.0). The base arm reddened twice on lanes OTHER than this probe — `theguardianbreathesforfivehundredticksandburns` (the water-tank cells `docs/testing.md#deferred-chunkgen-stamps-pad-cells` names) and `interact_harvestgoalsareinertforthewrongcore` — 2/10 vs 0/10 on the landing arm, p=0.47; pooled with that first census (base 2/6 reds naming `therangedattackseamlaunchestheblastwiththeoriginalconstants` and the same guardian, landing 0/6, load 2.1-9.2 with 1-7 JVMs) the base arm sits at **4/16 vs 0/16, p=0.10** — a base-tree floor with no landing-tree delta, and the landing + shipped arms are 20 clean grid legs. The CI pair and the local box are not separable at this N (CI 2/42 vs local 0/30, Fisher p=0.51)
+  So a route arm owns no denominator of its own; at the CI's 1/21 a local census of 10 legs per arm
+  has P(0 reds) = 0.61 per arm (Fisher base-vs-landing p=1.0), and the "green streak" a land runner
+  wants is P(3 greens | 1/21) = 0.87 — the streak closes nothing, and the CI arm samples the same
+  shared grid faster than a local box does.
+  **Plant pair (deterministic, the causal leg per `docs/testing.md#scan-claim-covers-box-cells`), all
+  NO-Curios, plant line printed on the leg.** 2-tall cobblestone walls planted at the CI's
+  mid-window (`pPath-1`, tick 122) in the corridor cells rel (11..13,0..1,{13,19}) → shipped tree
+  **RED 3/3** naming this probe (`the goal walked the golem from 10.0 blocks toward home, now
+  7.372057122171135 away at rel (14,0,17), tick 160`): the paper route climbs a 2-tall wall
+  (`WalkNodeEvaluator.getBlockPosAbove` steps up), the golem does not. Negative controls, all GREEN:
+  a 1-deep hole in the floor row at rel (12,-1,13..18) 2/2 at `path[11,reached=true]` — the drop
+  generator answers OPEN nodes for a 1-block drop, so "a block missing from the row" is NOT the
+  producer; a full trench rel (12,-1..-4,13..18) 2/2; a lava plant 2/2. NO plant reproduced the CI's
+  `path[9,reached=false]` text locally (0 reproductions across the plant census) — the CI red's shape
+  is read from its own trail, and the lane's producer stays named by the trail's end cell, not by a
+  local fixture. Product tooth: `AIReturnHome#start` never paths (`final boolean path = false;`) →
+  **RED 2/2** naming this probe AND `interact_returnhomeusesthehomeradiusandtheentityteleportsfrombeyond48`
+  (the same route arm) — the arm has teeth, so a green leg is a real draw.
+  **Disclose the remedy that failed; do not rebuild it (t_c36620d6).** A corridor claim sized rel
+  x4..20 × dy0..2 × z4..30 plus the row under it, run at setup AND on every drive tick, is NOT a fix
+  for this probe: the seal alone (306 cells placed) truncates the route —
+  `path[4,reached=false]` with `corridor SERVICE-DISABLED` (leg regionC) — and with the claim live the
+  drive pass printed `ROUTE-CLAIM drive cleared=309 [Block{minecraft:cobblestone} @ rel …]` and the
+  leg reddened the probe's WALK arm (`now 5.254573640109276 away … tick 160`, `corridor cleared=0
+  relaid=0`, leg regionB). A sweep that wide moves the ground the probe's own walk phase stands on and
+  floods block writes; **`cleared=309` on a red leg names the sweep, not the channel.** Any remedy for
+  this arm has to be sized to the cells the gate reads AND keep the walk row under the golem standing
+  — the `docs/testing.md#scan-claim-covers-box-cells` discipline applied to the row, asserted not swept.
+  Triage recipe for a route-arm red, in order: take the CI pair (`gh run rerun --failed` on the same
+  sha), run the interleaved base / landing / shipped census with `loadavg` + `pgrep -c java` on every
+  leg line, plant the shape the trail's last cell names plus its negative controls, publish both
+  denominators with the Fisher exact, and disclose. The triage card owns none of the fix.
 <a id="component-codec-save-path"></a>
 - **A vanilla data component's persistent codec can reject a mod's marker, and the save path
   swallows the ITEM, not the write.** `minecraft:entity_data` and `minecraft:block_entity_data`
@@ -972,4 +1030,4 @@ Anchors minted for the cited bullets (t_867b394f): `vouched-cell`, `entity-clock
 item-entity bullet keeps main's `attribute-not-filter`, which this card's probe cites). Minted by t_b98f2601 (the orb-cell claim rule):
 `orb-claim-covers-asserted-cells`. Minted by t_9687e91a (the deferred-chunkgen producer rule):
 `deferred-chunkgen-stamps-pad-cells`. Minted by t_764d1e8e (the harness gate on that
-producer): `deferred-chunkgen-gated-in-gametest`.
+producer): `deferred-chunkgen-gated-in-gametest`. Minted by t_c36620d6 (the golem route-arm node-trail rule): `route-arm-node-trail-names-the-channel`.
