@@ -1193,12 +1193,29 @@ public final class BossMobGameTest {
         helper.assertTrue(cow.getHealth() == cowFull - 5.0F,
                 "the control — drown damages this platform (a plain cow takes the raw 5.0,"
                         + " armour-bypassing), got " + (cowFull - cow.getHealth()));
+        // The mob-attack control rides vanilla's damage cooldown: the REFUSED drown
+        // upkeep above arms LivingEntity#invulnerableTime and records the source of the
+        // hurt the statue's fire immunity refuses (measured 3/3 arms on t_2f9c86c8), so a
+        // 5.0 melee fired on the same tick is refused by the 10-tick window and lands 0.0
+        // — the gate legs' "got 0.0" was the window, not the statue. That refusal is the
+        // platform's, not the port's, so the leg pins BOTH sides: inside the window the
+        // melee lands nothing, cleared (this file's established reset, :373 / :561) the
+        // armour-5 statue is damageable.
+        // docs/testing.md#follow-up-hurts-clear-the-ten-tick-invuln-window
+        final float inWindow = mob.getHealth();
+        mob.hurt(level.damageSources().mobAttack(cow), 5.0F);
+        helper.assertTrue(inWindow - mob.getHealth() == 0.0F,
+                "the control — vanilla's 10-tick window, armed by the refused drown"
+                        + " upkeep, refuses the follow-up melee: got "
+                        + (inWindow - mob.getHealth()));
+        mob.invulnerableTime = 0;                                                 // vanilla's 10-tick invuln window
         final float before = mob.getHealth();
         mob.hurt(level.damageSources().mobAttack(cow), 5.0F);
         helper.assertTrue(mob.getHealth() < before && mob.getLastDamageSource() != null
                         && mob.getLastDamageSource().is(DamageTypes.MOB_ATTACK),
                 "the control — the statue is damageable: a non-fire mob-attack 5.0 lands"
-                        + " 4.375 through its armour 5, got " + (before - mob.getHealth()));
+                        + " on the armour-5 statue once the window is clear, got "
+                        + (before - mob.getHealth()));
         cow.discard();
         mob.setHealth(500.0F);
         mob.setStage(CultistPortalAiLogic.STAGE_BOSS);

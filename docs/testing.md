@@ -744,6 +744,22 @@ restores both and `diff -q` reports byte-identical.
   Portal's banner wall — 6 blocks out from the cast origin, on the stride-6 pad packing — the loaded
   cell set is a function of the pad's offset inside its own chunk, 1..4 of 4 cells across the three
   arms (c5-2 gate record, card t_2f9c86c8).
+<a id="follow-up-hurts-clear-the-ten-tick-invuln-window"></a>
+- **A scripted follow-up hurt has to clear `LivingEntity#invulnerableTime`, because 21.1.259 arms the
+  10-tick window on a hurt the target's immunity REFUSES, and a damageability control behind a
+  throwing assert is unmeasured.** Two measured facts from the Crimson Portal's upkeep leg (card
+  t_2f9c86c8, 3/3 arms). (1) A refused hurt is NOT inert: the fire-immune statue's refused
+  `DamageTypes.DROWN` hurt records its source (`lastSource = DamageSource (drown)`, `damage 0.0`), so a
+  refusal reads as `landed == 0.0` PLUS the source's type — `getLastDamageSource() == null` is
+  over-specified against the port's design and is not a way to detect one. (2) The same refused hurt
+  arms vanilla's 10-tick damage cooldown, so the melee fired on the following line is refused by the
+  PLATFORM and lands 0.0: the leg's control (`the statue is damageable: a mob-attack 5.0 …`) reported
+  `got 0.0` on 3/3 arms with the statue intact. Clear the window (`mob.invulnerableTime = 0`, this
+  file's established reset at `BossMobGameTest:373` and `:561`) and pin BOTH sides — in-window lands
+  nothing, cleared lands the armour-scaled hit — so the mechanism is measured, not assumed. (3) Control
+  asserts placed AFTER the primary assert never ran on any leg whose primary threw: the pre-fix tree's
+  primary threw, so the "controls PASSED" that shipped on the card was not evidence from the gate legs.
+  Order a control BEFORE the assert that can throw, or state in the card which arm measured it.
 
 <a id="orb-claim-covers-asserted-cells"></a>
 - **A probe that asserts AIR on cells outside its own template box has to TAKE those cells at setup: a
