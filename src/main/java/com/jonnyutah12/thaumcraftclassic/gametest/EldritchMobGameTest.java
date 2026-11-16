@@ -135,6 +135,16 @@ public final class EldritchMobGameTest {
         // the fixture-side immunity: the same lever EldritchCrabGameTest:809 ships.
         mob.setPersistenceRequired();
         mob.clearFire();
+        // t_f9fe6e81 — the chunk twin of that fixture immunity. The suite runs on
+        // 1×1×1 "empty" templates, so the harness force-loads ONLY the pad corner's
+        // chunk (StructureUtils#forceLoadChunks, framework:167-169) and the level's
+        // tick loop ticks entities only inside inEntityTickingRange (ServerLevel:411,
+        // ChunkLevel:47-49). This fixture arms the mob at pad(1, 3, 1) — one block off
+        // the corner — so in every slot whose corner lands at x mod 16 = 15 or z mod 16
+        // = 15 the mob stands in an unticketed chunk and runs ZERO ticks for its whole
+        // life; the measured red legs read mobTick=0 from the first sample (the walkback
+        // arm's got -20). The claim is the harness's own lever on the mob's chunk.
+        MobChunkClaim.claimMobChunk(level, mob);
         level.addFreshEntity(mob);
         return mob;
     }
@@ -445,6 +455,10 @@ public final class EldritchMobGameTest {
     public static void theGuardianBreathesForFiveHundredTicksAndBurns(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
         final EntityEldritchGuardian mob = guardian(helper, 0, 0);
+        // The claim set is this mob's chunk (the fixture takes it in spawn); the gate below
+        // reads mob ticks, so the mob has to STAY in that chunk for the claim to be the arm
+        // set — asserted, not assumed (docs/testing.md#mob-tick-claim-covers-mob-chunk).
+        final net.minecraft.world.level.ChunkPos mobChunk = new net.minecraft.world.level.ChunkPos(mob.blockPosition());
         helper.assertTrue(mob.getMaxAirSupply() == 500,
                 ":155-157 — func_70627_aG() = 500 is the whole breath, got " + mob.getMaxAirSupply());
         helper.assertTrue(mob.getType().fireImmune() == false,
@@ -473,10 +487,25 @@ public final class EldritchMobGameTest {
         mob.setAirSupply(-20);
         mob.igniteForSeconds(10.0F);
         helper.runAfterDelay(4, () -> {
+            // The channel state is a census line, not a gate: the walkback read is a MOB-tick read,
+            // so the mob's chunk has to be in the level's entity-ticking range for the value below
+            // to mean anything, and the state goes into the failure text (a hard assert here would
+            // red a leg on the chunk-load latency of the claim — 21 ticks is not enough for a chunk
+            // that only this claim brings in, measured on fix1_leg_4).
+            LOGGER.info("[t_f9fe6e81] walkback read at ignite+4: mob chunk {} entTick={} forcedHere={}"
+                            + " mobTick={} air={} (docs/testing.md#mob-tick-claim-covers-mob-chunk)",
+                    mobChunk, MobChunkClaim.entTicking(level, mobChunk),
+                    MobChunkClaim.forcedHere(level, mobChunk), mob.tickCount, mob.getAirSupply());
             helper.assertTrue(mob.getAirSupply() == -20 + 16,
                     "LivingEntity:455-457/596-597 — out of water the air walks back at +4/tick with no "
                             + "clamp above zero (the -20 → -4 the first run measured), got "
-                            + mob.getAirSupply());
+                            + mob.getAirSupply()
+                            + " [t_f9fe6e81 channel: mob chunk " + mobChunk + " entTick="
+                            + MobChunkClaim.entTicking(level, mobChunk) + " forcedHere="
+                            + MobChunkClaim.forcedHere(level, mobChunk) + " mobTick=" + mob.tickCount
+                            + " armed=" + MobChunkClaim.armed()
+                            + " — a frozen read is the mob running no entity ticks, not a product"
+                            + " defect (docs/testing.md#mob-tick-claim-covers-mob-chunk)]");
             helper.assertTrue(mob.getRemainingFireTicks() > 0,
                     ":92-94 — the guardian burns (no immunity on the type, and the fire survives on "
                             + "the dry pad), fire ticks " + mob.getRemainingFireTicks());
@@ -601,6 +630,79 @@ public final class EldritchMobGameTest {
                 });
             });
         });
+        });
+    }
+
+    /**
+     * t_f9fe6e81 — the deterministic plant pair for the mob-tick claim
+     * (docs/testing.md#mob-tick-claim-covers-mob-chunk). The lane's own red is a rate (a slot
+     * lottery over the stride grid), so this probe PLANTS the producer: the guardian is armed
+     * SIXTY-FOUR blocks out in BOTH +x and +z from the pad, which puts it in chunk
+     * (cornerChunk.x + 4, cornerChunk.z + 4) in EVERY slot — {@code floorDiv(c + 65, 16) =
+     * floorDiv(c, 16) + 4} for any c — four chunks diagonally from the one chunk the harness
+     * force-loads for a 1×1×1 {@code empty} template. That distance is chosen, not picked: the
+     * 4-neighbours of a forced chunk inherit the ticking level and tick an unticketed mob
+     * (measured {@code mut1_leg_2}: claim OFF, mob chunk = corner + (1, 0), {@code entTick=true},
+     * 20 of 20 ticks), the diagonal does not (measured {@code mut1_leg_1}: claim OFF, corner +
+     * (1, 1), {@code entTick=false}, 0 of 20), and the stride grid puts neighbouring pads' corners
+     * about three chunks out, so at +4 the plant sits outside the batch's forced set and outside
+     * its one-hop propagation. The premise asserted is only "the mob's chunk is not the corner's
+     * chunk" — an exact-offset premise is NOT assertable, because sibling pads' geometry shoves a
+     * mob armed near them: measured {@code fixcur2_leg_2} (with-Curios arm) read mob chunk =
+     * corner + (2, 1) for a +16/+16 plant, and {@code fix3_leg_5} read corner + (5, 4) for this
+     * one. The gate is the TAIL of a 120-tick window — 80 ticks of load window (the claimed chunk
+     * is cold, measured 3 of 80 with {@code entTick=true} on {@code fix3_leg_1}, the chunk arrived
+     * at tick ~77) and then the last 40 ticks, where a claimed chunk must run ≥30: with the
+     * fixture's {@link MobChunkClaim#claimMobChunk} the leg is green, with
+     * {@code -Dtc.noMobChunkClaim} (gradle {@code -Ptc.mobChunkClaimOff}) the tail reads 0 with
+     * {@code entTick=false forcedHere=false} — the claim is the lever, no streak needed.
+     */
+    @GameTest(template = "empty", setupTicks = 2L, timeoutTicks = 300)
+    public static void theGuardianArmedOneChunkOffThePadCornerStillTicks(final GameTestHelper helper) {
+        final ServerLevel level = helper.getLevel();
+        final EntityEldritchGuardian mob = guardian(helper, 64, 64);
+        final net.minecraft.world.level.ChunkPos mobChunk = new net.minecraft.world.level.ChunkPos(mob.blockPosition());
+        final net.minecraft.world.level.ChunkPos cornerChunk =
+                new net.minecraft.world.level.ChunkPos(helper.absolutePos(BlockPos.ZERO));
+        helper.assertTrue(mobChunk.x != cornerChunk.x || mobChunk.z != cornerChunk.z,
+                "[t_f9fe6e81] the plant has to arm the mob OUTSIDE the chunk the harness force-loads, or"
+                        + " the harness's own force is the ticket and the probe measures nothing: mob chunk "
+                        + mobChunk + " == pad corner chunk " + cornerChunk
+                        + " (docs/testing.md#mob-tick-claim-covers-mob-chunk)");
+        final int start = mob.tickCount;
+        helper.runAfterDelay(80, () -> {
+            final int head = mob.tickCount - start;
+            // The head is not the gate. A forced chunk 4 chunks diagonally out is a COLD chunk:
+            // the force requests the load and the load pipeline of a 50-pad batch takes most of a
+            // window (measured fix3_leg_1: the mob ran 3 of 80 ticks with entTick=true — the chunk
+            // arrived at tick ~77). The gate is the TAIL: once the claim's chunk is ticking, the
+            // mob must tick every tick, and with the claim dropped the tail is 0 in any window.
+            helper.runAfterDelay(40, () -> {
+                final int tail = mob.tickCount - start - head;
+                LOGGER.info("[t_f9fe6e81] diagonal mob chunk ({}, {}) [corner + ({}, {})] ran {} ticks in the"
+                                + " first 80 (load window) then {} of the last 40 entity ticks of 120 level"
+                                + " ticks (gameTime {}, pad corner chunk ({}, {})), armed={} entTick={}"
+                                + " forcedHere={}",
+                        mobChunk.x, mobChunk.z, mobChunk.x - cornerChunk.x, mobChunk.z - cornerChunk.z,
+                        head, tail, level.getGameTime(), cornerChunk.x, cornerChunk.z,
+                        MobChunkClaim.armed(), MobChunkClaim.entTicking(level, mobChunk),
+                        MobChunkClaim.forcedHere(level, mobChunk));
+                helper.assertTrue(tail >= 30,
+                        "[t_f9fe6e81] the claimed mob chunk (" + mobChunk.x + ", " + mobChunk.z + ") must tick"
+                                + " its mob: after a " + head + "-tick load window the guardian ran " + tail
+                                + " of the last 40 entity ticks (gameTime " + level.getGameTime() + ") with"
+                                + " entTick=" + MobChunkClaim.entTicking(level, mobChunk) + ", forcedHere="
+                                + MobChunkClaim.forcedHere(level, mobChunk) + ", armed="
+                                + MobChunkClaim.armed() + ", players=" + level.players().size()
+                                + ", pad corner chunk (" + cornerChunk.x + ", " + cornerChunk.z
+                                + ") — with no ticket on this chunk the"
+                                + " level's tick loop skips the mob entirely (ServerLevel:411"
+                                + " inEntityTickingRange) and every per-tick lane reads a frozen value, which is"
+                                + " the guardian walkback lane's got -20"
+                                + " (docs/testing.md#mob-tick-claim-covers-mob-chunk)");
+                mob.discard();
+                helper.succeed();
+            });
         });
     }
 

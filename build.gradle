@@ -70,6 +70,16 @@ neoForge {
             // for millions-coordinate structures, so the harness gates the pass; -Ptc.chunkGenOn
             // re-arms it for a measurement leg.
             systemProperty 'tc.noChunkGen', project.hasProperty('tc.chunkGenOn') ? 'false' : 'true'
+            // t_f9fe6e81: every probe runs on a 1x1x1 "empty" template, so the harness force-loads ONLY
+            // the pad corner's chunk (StructureUtils#forceLoadChunks, framework:167-169) and the level's
+            // tick loop ticks entities only inside inEntityTickingRange (ServerLevel:411). The mob
+            // fixtures arm at pad(1, 3, 1) — one block off the corner — so in every grid slot whose corner
+            // lands at x mod 16 = 15 or z mod 16 = 15 the fixture mob stands in an unticketed chunk and
+            // runs ZERO entity ticks for its whole life; that is the guardian walkback lane's measured
+            // "got -20" (docs/testing.md#mob-tick-claim-covers-mob-chunk). The fixture claims the mob's
+            // chunk with MobChunkClaim; -Ptc.mobChunkClaimOff drops the claim for a measurement leg —
+            // the teeth arm of the probe's deterministic plant pair.
+            systemProperty 'tc.noMobChunkClaim', project.hasProperty('tc.mobChunkClaimOff') ? 'true' : 'false'
         }
 
         data {
