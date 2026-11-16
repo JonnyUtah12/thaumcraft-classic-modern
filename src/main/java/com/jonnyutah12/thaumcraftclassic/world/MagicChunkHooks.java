@@ -1,7 +1,6 @@
 package com.jonnyutah12.thaumcraftclassic.world;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
-import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -18,7 +17,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import org.slf4j.Logger;
 
 /**
  * Chunk-level magic hooks: the TC-M2-02 substrate piece that replaces Thaumcraft 4's
@@ -44,7 +42,6 @@ public final class MagicChunkHooks {
 
     private static final List<MagicChunkGenHook> HOOKS = new CopyOnWriteArrayList<>();
     private static final Map<ResourceKey<Level>, Deque<ChunkPos>> PENDING = new ConcurrentHashMap<>();
-    private static final Logger LOGGER = LogUtils.getLogger();
 
     private MagicChunkHooks() {
     }
@@ -63,21 +60,24 @@ public final class MagicChunkHooks {
     }
 
     /**
-     * Harness gate for the deferred pass (t_764d1e8e, docs/testing.md#deferred-chunkgen-gated-in-gametest):
-     * {@code tc.noChunkGen} set as a system property drops every pending chunk WITHOUT running the
-     * magic-generation hooks. The game-test server places its pads in chunks whose coordinates sit in
-     * the millions, and this pass is what stamps those pad cells — eldritch rings write
+     * Harness gate for the deferred block-writing pass (t_764d1e8e, docs/testing.md#deferred-chunkgen-gated-in-gametest):
+     * {@code tc.noChunkGen} set as a system property makes {@link StructureChunkGen#generateChunk}
+     * skip the chunk. The game-test server places its pads in chunks whose coordinates sit in the
+     * millions, and that pass is what stamps those pad cells — eldritch rings write
      * {@code thaumcraft:blockeldritch} and carve air, the mound/hilltop/totem pass writes
-     * {@code dirt}/{@code grass_block}/{@code cobblestone}, the node pass writes aura nodes — and a
-     * {@code setBlock} over a standing cell leaves the cell's block entity in place, so the stamp
-     * lands under the probe's fixture (docs/testing.md#scan-claim-covers-box-cells,
-     * docs/testing.md#orb-claim-covers-asserted-cells). A probe that asserts its own geometry
-     * therefore draws this pass on
-     * every leg. The game-test server has no use for millions-coordinate structures, so the harness
-     * gates the pass; the property follows the {@code tc.*} precedent ({@code tc.noCurios},
-     * {@code tc.contentMappingFile}) and {@code -Ptc.chunkGenOn} re-arms it for measurement legs.
-     * Direct callers of {@link AuraNodeChunkGen#generateChunk} (the aura-node probe drives the pass
-     * itself) are untouched: the gate sits on the queue, not on the generators.
+     * {@code dirt}/{@code grass_block}/{@code cobblestone} — and a {@code setBlock} over a standing
+     * cell leaves the cell's block entity in place, so the stamp lands under the probe's fixture
+     * (docs/testing.md#scan-claim-covers-box-cells, docs/testing.md#orb-claim-covers-asserted-cells).
+     * A probe that asserts its own geometry therefore draws this pass on every leg. The game-test
+     * server has no use for millions-coordinate structures, so the harness gates the pass; the
+     * property follows the {@code tc.*} precedent ({@code tc.noCurios}, {@code tc.contentMappingFile})
+     * and {@code -Ptc.chunkGenOn} re-arms it for a measurement leg.
+     *
+     * <p>The gate sits on the STRUCTURE hook, not on the queue: measured on the first shape, a queue
+     * clear in {@link #runPendingChunkGen} dropped every pending chunk and reddened
+     * {@code loadedchunksflowthroughthetickdriver}, the lane that measures the driver draining the
+     * queue ({@code data.isMagicGenDone(chunk)}). The aura pass writes no blocks — it records vis
+     * density — so it stays live and the driver keeps its marking.</p>
      */
     public static final String NO_CHUNK_GEN_PROPERTY = "tc.noChunkGen";
 
@@ -94,13 +94,6 @@ public final class MagicChunkHooks {
     public static void runPendingChunkGen(final ServerLevel level) {
         final Deque<ChunkPos> queue = PENDING.get(level.dimension());
         if (queue == null || queue.isEmpty()) {
-            return;
-        }
-        if (deferredChunkGenGated()) {
-            LOGGER.info("CHUNKGEN-GATE dimension {} armed by -D{}: dropped {} pending chunk(s), "
-                            + "no magic-generation hook ran",
-                    level.dimension().location(), NO_CHUNK_GEN_PROPERTY, queue.size());
-            queue.clear();
             return;
         }
         final WorldMagicData data = WorldMagicData.get(level);
