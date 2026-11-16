@@ -306,7 +306,7 @@ public final class GolemInteractAiGameTest {
      * same sha (land-ref run 43786472558, job 133035144147) printed {@code raw=15} in all
      * eight cells and never named this probe: that leg was handed a clean pad. So the
      * lane's rate is the handoff, and the cells the handoff dirties are the cells this
-     * pad now claims (docs/testing.md#harvest-pad-claims-and-services-its-cells).</p>
+     * pad now claims (docs/testing.md#harvest-pad-claims-its-light-layer).</p>
      */
     private static final class HarvestPad {
 
@@ -474,7 +474,7 @@ public final class GolemInteractAiGameTest {
                             + ", source " + helper.getLevel().getBlockState(abs.below(2))
                             + ", raw=" + raw + ", tick " + helper.getTick() + ", pad " + pad.census()
                             + "); BushBlock#updateShape pops such a crop to Block{air} on the next"
-                            + " neighbour update (docs/testing.md#harvest-pad-claims-and-services-its-cells)");
+                            + " neighbour update (docs/testing.md#harvest-pad-claims-its-light-layer)");
         }
     }
 
