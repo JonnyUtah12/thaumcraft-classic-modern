@@ -91,6 +91,13 @@ public final class EldritchMobGameTest {
     /** t_f9fe6e81 — the plant probe's census deadline; past it the probe fails with the census. */
     private static final int CLAIM_DEADLINE_TICKS = 280;
 
+    /** The batch's forced set spans eight chunks of x (measured 462695..462702 on
+     * fixcur3_leg_2); the plant arms the mob this many chunks in -x so that no sibling
+     * pad's corner force covers the plant's chunk in any slot. */
+    private static final int CLAIM_BAND_CHUNKS = 16;
+    /** The claim follows the mob's live chunk, so the plant probe samples this often (ticks). */
+    private static final int CLAIM_SAMPLE_STEP_TICKS = 5;
+
     private EldritchMobGameTest() {
     }
 
@@ -656,117 +663,128 @@ public final class EldritchMobGameTest {
      * OUTSIDE the batch's forced set.</b> The suite's pads pack along {@code +z}: measured on
      * {@code fixcur3_leg_2} the batch's pad-corner chunks ran x {@code 462695..462702} — EIGHT
      * chunks of x — and z {@code 769533..769646}, so every pad corner's force, plus the
-     * one-hop {@code level+1} propagation, lives inside an eight-chunk x band. A mob armed 32
-     * chunks in {@code -x} from its own corner is therefore in a chunk NO sibling pad forces in
-     * any slot, which is what makes the mutation arm ({@code -Dtc.noMobChunkClaim}, gradle
-     * {@code -Ptc.mobChunkClaimOff}) deterministic: that chunk carries no ticket,
-     * {@code entTick=false}, the mob runs nothing, the probe reddens naming the census. The
-     * first geometry this card shipped — (+64, +64) = corner + (4, 4) chunks — sat INSIDE that
-     * band, and the disclosure is the measurement: with the claim OFF that plant read
-     * 3 GREEN of 4 legs ({@code mut3_leg_1..4}) because a sibling pad's corner force covers
-     * corner + (4, 4); an in-band plant is a rate, not a tooth.</p>
+     * one-hop {@code level+1} propagation, lives inside an eight-chunk x band. A mob armed
+     * {@value #CLAIM_BAND_CHUNKS}+ chunks in {@code -x} from its own corner is therefore in a
+     * chunk NO sibling pad forces in any slot, which is what makes the mutation arm
+     * ({@code -Dtc.noMobChunkClaim}, gradle {@code -Ptc.mobChunkClaimOff}) deterministic: that
+     * chunk carries no ticket, {@code entTick=false}, the mob runs nothing, the probe reddens
+     * naming the census. The first geometry this card shipped — (+64, +64) = corner + (4, 4)
+     * chunks — sat INSIDE that band, and the disclosure is the measurement: with the claim OFF
+     * that plant read 3 GREEN of 4 legs ({@code mut3_leg_1..4}) because a sibling pad's corner
+     * force covers corner + (4, 4); an in-band plant is a rate, not a tooth.</p>
      *
-     * <p><b>The claim follows the mob's LIVE chunk, sampled every 5 ticks.</b> A fixture mob
-     * armed inside a neighbour pad's geometry is shoved out of it: measured
-     * {@code fix3_leg_5} read mob chunk = corner + (5, 4) for a (+64, +64) plant and
-     * {@code fixcur2_leg_2} read corner + (2, 1) for a (+16, +16) plant, and the with-Curios
-     * leg {@code fixcur3_leg_2} ran 16 ticks in the head then ZERO in the 40-tick tail with
-     * {@code entTick=true forcedHere=true} on the chunk captured at spawn — the mob had left it.
-     * A claim keyed on the spawn chunk is therefore not the arm set for a probe that gates on a
-     * long window; the sampler re-takes the harness's own force on the chunk the mob stands in
-     * NOW, so a shove is covered, not paid for.</p>
+     * <p><b>The claim follows the mob's LIVE chunk, sampled every
+     * {@value #CLAIM_SAMPLE_STEP_TICKS} ticks.</b> A fixture mob armed inside a neighbour pad's
+     * geometry is shoved out of it: measured {@code fix3_leg_5} read mob chunk = corner + (5, 4)
+     * for a (+64, +64) plant and {@code fixcur2_leg_2} read corner + (2, 1) for a (+16, +16)
+     * plant, and the with-Curios leg {@code fixcur3_leg_2} ran 16 ticks in the head then ZERO in
+     * the 40-tick tail with {@code entTick=true forcedHere=true} on the chunk captured at spawn —
+     * the mob had left it. A claim keyed on the spawn chunk is therefore not the arm set for a
+     * probe that gates on a long window; the sampler re-takes the harness's own force on the
+     * chunk the mob stands in NOW.</p>
      *
-     * <p><b>The gate is a TICKING WINDOW, not a fixed window, because the claim's chunk is
-     * COLD.</b> A force 32 chunks out requests a load, and in a 533-probe batch the load
-     * pipeline is measured at ~77 ticks for a chunk 4 chunks out ({@code fix3_leg_1}: 3 of 80
-     * head ticks with {@code entTick=true} — the chunk arrived at tick ~77). The probe therefore
-     * samples every 5 ticks and succeeds the moment it sees a run of
-     * {@value #CLAIM_WINDOW_TICKS} ticks in which the mob's chunk read {@code entTick=true}
-     * {@code forcedHere=true} at every sample AND the mob ticked every tick of the run; the
-     * claim's cost never reddens the armed arm. At {@value #CLAIM_DEADLINE_TICKS} ticks the
-     * probe fails EXPLICITLY with the census (never a quiet harness timeout): with the claim
-     * dropped the run is 0, so that is the tooth's red, named.</p>
+     * <p><b>The gate is a TICKING RUN, not a fixed window, because the claim's chunk is COLD</b>
+     * — a force 32 chunks out requests a load, and a load in a 533-probe batch is measured at
+     * ~77 ticks for a chunk 4 chunks out ({@code fix3_leg_1}: 3 of 80 head ticks with
+     * {@code entTick=true}, the chunk arriving at tick ~77). The probe passes the moment
+     * {@link #takeMobTickSample} measures {@value #CLAIM_WINDOW_TICKS} ticks in a row where the
+     * mob's chunk read {@code entTick=true} {@code forcedHere=true} at every sample AND the mob
+     * ticked every tick of the run, so the claim's cost never reddens the armed arm; at
+     * {@value #CLAIM_DEADLINE_TICKS} ticks it fails EXPLICITLY with the census, never a quiet
+     * harness timeout — with the claim dropped the run is 0, so that is the tooth's red, named.</p>
      */
     @GameTest(template = "empty", setupTicks = 2L, timeoutTicks = 400)
     public static void theGuardianArmedOneChunkOffThePadCornerStillTicks(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
-        final int plantDx = -512;
-        final int plantDz = 0;
-        final int bandChunks = 16;
-        final int stepTicks = 5;
-        final int windowTicks = CLAIM_WINDOW_TICKS;
-        final int deadlineTicks = CLAIM_DEADLINE_TICKS;
-        final EntityEldritchGuardian mob = guardian(helper, plantDx, plantDz);
+        final EntityEldritchGuardian mob = guardian(helper, -512, 0);
         final ChunkPos spawnChunk = new ChunkPos(mob.blockPosition());
         final ChunkPos cornerChunk = new ChunkPos(helper.absolutePos(BlockPos.ZERO));
-        helper.assertTrue(spawnChunk.x <= cornerChunk.x - bandChunks,
+        helper.assertTrue(spawnChunk.x <= cornerChunk.x - CLAIM_BAND_CHUNKS,
                 "[t_f9fe6e81] the plant has to arm the mob OUTSIDE the batch's forced set, or a sibling pad's"
                         + " corner force covers the plant's chunk and the probe measures nothing (measured:"
                         + " the in-band (+64,+64) plant read claim-OFF GREEN 3 of 4 legs): mob chunk ("
                         + spawnChunk.x + ", " + spawnChunk.z + "), pad corner chunk (" + cornerChunk.x + ", "
-                        + cornerChunk.z + "), premise mob chunk x <= corner x - " + bandChunks
+                        + cornerChunk.z + "), premise mob chunk x <= corner x - " + CLAIM_BAND_CHUNKS
                         + ", measured band = 8 chunks of x (pad-corner chunks 462695..462702 on"
                         + " fixcur3_leg_2) (docs/testing.md#mob-tick-claim-covers-mob-chunk)");
-        final long startGame = level.getGameTime();
-        final int startMobTick = mob.tickCount;
         // [elapsed at last sample, mob.tickCount at last sample, current ticking run, samples taken]
-        final int[] state = new int[] {0, startMobTick, 0, 0};
-        final Runnable[] sample = new Runnable[1];
-        sample[0] = () -> {
-            final int elapsed = (int) (level.getGameTime() - startGame);
-            final ChunkPos live = new ChunkPos(mob.blockPosition());
-            // The claim follows the mob: idempotent on the chunk (the forced set is keyed on it),
-            // and it is the harness's own lever, so a shove into a new chunk is covered on the
-            // sample after it. No release — the forced set is shared with the harness and every
-            // sibling claim in the batch (docs/testing.md#mob-tick-claim-covers-mob-chunk).
-            MobChunkClaim.claim(level, live);
-            final boolean entTick = MobChunkClaim.entTicking(level, live);
-            final boolean forcedHere = MobChunkClaim.forcedHere(level, live);
-            final int ticked = mob.tickCount - state[1];
-            final int span = elapsed - state[0];
-            state[0] = elapsed;
-            state[1] = mob.tickCount;
-            state[2] = (entTick && forcedHere && ticked >= span) ? state[2] + span : 0;
-            state[3]++;
-            LOGGER.info("[t_f9fe6e81] plant sample {}: mob chunk ({}, {}) entTick={} forcedHere={}"
-                            + " mobTick=+{} of +{} level ticks, ticking run {}, armed={} (pad corner chunk"
-                            + " ({}, {})) (docs/testing.md#mob-tick-claim-covers-mob-chunk)",
-                    elapsed, live.x, live.z, entTick, forcedHere, ticked, span, state[2],
-                    MobChunkClaim.armed(), cornerChunk.x, cornerChunk.z);
-            if (state[2] >= windowTicks) {
-                LOGGER.info("[t_f9fe6e81] plant verdict GREEN: the mob's chunk ran {} entity ticks in a"
-                                + " {}-tick ticking run (samples={}, mob total +{} entity ticks in {} level"
-                                + " ticks, spawn chunk ({}, {}), pad corner chunk ({}, {}), armed={})"
-                                + " (docs/testing.md#mob-tick-claim-covers-mob-chunk)",
-                        state[2], windowTicks, state[3], mob.tickCount - startMobTick, elapsed,
-                        spawnChunk.x, spawnChunk.z, cornerChunk.x, cornerChunk.z,
-                        MobChunkClaim.armed());
-                mob.discard();
-                helper.succeed();
-                return;
-            }
-            if (elapsed >= deadlineTicks) {
-                helper.assertTrue(false,
-                        "[t_f9fe6e81] the mob's chunk has to TICK its mob: over " + elapsed + " level ticks"
-                                + " the guardian ran " + (mob.tickCount - startMobTick) + " entity ticks and"
-                                + " its longest run of consecutive ticks on a ticketed mob chunk is "
-                                + state[2] + " of the required " + windowTicks + " (last sample: mob chunk ("
-                                + live.x + ", " + live.z + ") entTick=" + entTick + " forcedHere=" + forcedHere
-                                + " armed=" + MobChunkClaim.armed() + ", spawn chunk (" + spawnChunk.x + ", "
-                                + spawnChunk.z + "), pad corner chunk (" + cornerChunk.x + ", " + cornerChunk.z
-                                + "), samples=" + state[3] + ", mob alive=" + mob.isAlive() + " removed="
-                                + mob.isRemoved() + " inLevelList=" + (level.getEntity(mob.getId()) != null)
-                                + ") — with no ticking ticket on the mob's chunk the level's tick loop skips the"
-                                + " mob entirely (ServerLevel:411 inEntityTickingRange) and every per-tick lane"
-                                + " reads a frozen value, which is the guardian walkback lane's got -20"
-                                + " (docs/testing.md#mob-tick-claim-covers-mob-chunk)");
-                mob.discard();
-                helper.succeed();
-                return;
-            }
-            helper.runAfterDelay(stepTicks, sample[0]);
-        };
-        helper.runAfterDelay(stepTicks, sample[0]);
+        takeMobTickSample(helper, level, mob, spawnChunk, cornerChunk,
+                level.getGameTime(), mob.tickCount, new int[] {0, mob.tickCount, 0, 0});
+    }
+
+    /**
+     * One sample of the plant probe's arm: re-take the claim on the mob's live chunk, read the
+     * chunk's ticket state, extend or reset the ticking run, and re-arm the next sample.
+     *
+     * <p><b>The re-arm allocates a NEW lambda on purpose.</b> {@code GameTestInfo} stores delayed
+     * tasks in an {@code Object2LongMap<Runnable>} keyed on the task object
+     * ({@code setRunAtTickTime}, framework {@code :169-171}) and fires them with
+     * {@code entry.getKey().run()} followed by {@code objectiterator.remove()}
+     * ({@code tickInternal}, {@code :127-139}). A chain that re-arms with the SAME Runnable
+     * instance therefore has its re-arm removed by the very iterator that just ran it: the chain
+     * dies after its first sample and the probe ends as
+     * {@code "Didn't succeed or fail within 400 ticks"} — measured on {@code fix4_leg_1..6} of
+     * this card, where a {@code Runnable[]}-self-reference printed ONE census line and then
+     * timed out on 6 of 6 legs, both arms. A capturing lambda allocates, so every re-arm below is
+     * a distinct key.</p>
+     */
+    private static void takeMobTickSample(final GameTestHelper helper, final ServerLevel level,
+            final EntityEldritchGuardian mob, final ChunkPos spawnChunk, final ChunkPos cornerChunk,
+            final long startGame, final int startMobTick, final int[] state) {
+        final int elapsed = (int) (level.getGameTime() - startGame);
+        final ChunkPos live = new ChunkPos(mob.blockPosition());
+        // The claim follows the mob: idempotent on the chunk (the forced set is keyed on it), and
+        // it is the harness's own lever, so a shove into a new chunk is covered on the sample
+        // after it. No release — the forced set is shared with the harness and with every sibling
+        // claim in the batch (docs/testing.md#mob-tick-claim-covers-mob-chunk).
+        MobChunkClaim.claim(level, live);
+        final boolean entTick = MobChunkClaim.entTicking(level, live);
+        final boolean forcedHere = MobChunkClaim.forcedHere(level, live);
+        final int ticked = mob.tickCount - state[1];
+        final int span = elapsed - state[0];
+        state[0] = elapsed;
+        state[1] = mob.tickCount;
+        state[2] = (entTick && forcedHere && ticked >= span) ? state[2] + span : 0;
+        state[3]++;
+        LOGGER.info("[t_f9fe6e81] plant sample {}: mob chunk ({}, {}) entTick={} forcedHere={}"
+                        + " mobTick=+{} of +{} level ticks, ticking run {}, armed={} (pad corner chunk"
+                        + " ({}, {})) (docs/testing.md#mob-tick-claim-covers-mob-chunk)",
+                elapsed, live.x, live.z, entTick, forcedHere, ticked, span, state[2],
+                MobChunkClaim.armed(), cornerChunk.x, cornerChunk.z);
+        if (state[2] >= CLAIM_WINDOW_TICKS) {
+            LOGGER.info("[t_f9fe6e81] plant verdict GREEN: the mob's chunk ran {} entity ticks in a"
+                            + " {}-tick ticking run (samples={}, mob total +{} entity ticks in {} level"
+                            + " ticks, spawn chunk ({}, {}), pad corner chunk ({}, {}), armed={})"
+                            + " (docs/testing.md#mob-tick-claim-covers-mob-chunk)",
+                    state[2], CLAIM_WINDOW_TICKS, state[3], mob.tickCount - startMobTick, elapsed,
+                    spawnChunk.x, spawnChunk.z, cornerChunk.x, cornerChunk.z, MobChunkClaim.armed());
+            mob.discard();
+            helper.succeed();
+            return;
+        }
+        if (elapsed >= CLAIM_DEADLINE_TICKS) {
+            helper.assertTrue(false,
+                    "[t_f9fe6e81] the mob's chunk has to TICK its mob: over " + elapsed + " level ticks"
+                            + " the guardian ran " + (mob.tickCount - startMobTick) + " entity ticks and"
+                            + " its longest run of consecutive ticks on a ticketed mob chunk is "
+                            + state[2] + " of the required " + CLAIM_WINDOW_TICKS + " (last sample: mob"
+                            + " chunk (" + live.x + ", " + live.z + ") entTick=" + entTick
+                            + " forcedHere=" + forcedHere + " armed=" + MobChunkClaim.armed()
+                            + ", spawn chunk (" + spawnChunk.x + ", " + spawnChunk.z + "), pad corner"
+                            + " chunk (" + cornerChunk.x + ", " + cornerChunk.z + "), samples=" + state[3]
+                            + ", mob alive=" + mob.isAlive() + " removed=" + mob.isRemoved()
+                            + " inLevelList=" + (level.getEntity(mob.getId()) != null)
+                            + ") — with no ticking ticket on the mob's chunk the level's tick loop skips"
+                            + " the mob entirely (ServerLevel:411 inEntityTickingRange) and every"
+                            + " per-tick lane reads a frozen value, which is the guardian walkback"
+                            + " lane's got -20 (docs/testing.md#mob-tick-claim-covers-mob-chunk)");
+            mob.discard();
+            helper.succeed();
+            return;
+        }
+        helper.runAfterDelay(CLAIM_SAMPLE_STEP_TICKS,
+                () -> takeMobTickSample(helper, level, mob, spawnChunk, cornerChunk,
+                        startGame, startMobTick, state));
     }
 
     // ------------------------------------------------------------------ home
