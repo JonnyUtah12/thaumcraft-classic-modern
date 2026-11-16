@@ -475,6 +475,52 @@ without the evidence for its stages.
   daylight pop is not armable from the probe side (`setDayTime(18000)` = 4/4 green on the fix tree). The
   daylight gate is the source-level formula; the flush that actually bites inside the box is the queued
   one above, and the crash is closed structurally by the classification.
+<a id="harvest-pad-claims-and-services-its-cells"></a>
+- **A probe that measures through a gate has to claim every layer that gate reads, not only the layer it
+  asserts, and it has to re-assert its precondition at its own QUIET tick.** Measured on the harvest lane,
+  no-Curios arm: `interact_harvestcropscorereapsripewheatandreplantsit` reddened **2 of 2** samples on the
+  `2eda098b` lineage (runs `43788415254` job `133035144147`, `43786472558` job `133041135`) with
+  `the crop patch sits under CropBlock#hasSufficientLight … at BlockPos{x=5, y=1, z=6} … wheat[age=7],
+  below farmland[moisture=7], tick 190`, and the rerun of the first run went green (all 529 required tests
+  ×3, 0 sig lines, marker present) — same sha, same lane, red then green: a channel, not a regression. The
+  reds landed on the 529-probe census; the greens were the 515 and 517 censuses (`f2d0cbbe`, `b1cead03`), so
+  the c5-1 packing shift moved this lane's grid, which is the mechanism the `packing-grid-collision` rule
+  names. The lane's own evidence lines say what moved: at `PLANT_TICK = 40` **six of the eight cells read
+  `raw=0`** and only the two whose source survived read `raw=13`, and at the gate tick `repaired=5` named
+  exactly the cells that then read 7-13 — the glowstone the fixture paid for at y=-1 was gone under six
+  cells before the crops went in, and `BushBlock#updateShape` fired on the first neighbour update after
+  the drive opened, in the cells the drive-open repair had just restored. The grid writers that rule names
+  (`LevelWriter#clearSpaceForStructure`, a sibling's `setBlock`) reach y=-1 (the source layer), y=0 (the
+  soil) and y=2 (the crop's headroom); the crop probe claimed none of them.
+  The shape, in this tree's words: the fixture names the cells it owns in a struct — source y=-1 under every
+  crop cell, soil y=0, crop y=1, headroom y=2, the golem's walk columns — and the pad **CLAIMS** them before
+  the fixture writes, **PLANTs** at `PLANT_TICK`, and **SERVICES** on every drive tick, printing every write
+  so the census carries `cleared=N` (the clean-handoff number: `cleared=0` on a clean leg) and `relit>0` (a
+  source that got eaten mid-drive). SERVICE repairs only PROVEN contamination: a foreign block standing in
+  the crop cell, a roof in the headroom, a source that is no longer a source. It never fills an air crop
+  cell during the drive, because that is what the probe's own chop looks like, and planting every tick would
+  fake the reap the reap arm measures (that arm needs a 7 → 0 transition, which only the goal's replant
+  makes). The fixture's precondition assert then runs on the drive's first **quiet** tick — after the pad's
+  last write, the lane's own light-settle rule — and at the depth the fixture pays for (`raw >= 13`), not at
+  the bare gate threshold: at the gate threshold 8, a cell whose channels have not propagated reads 7, which
+  is the value this rule measured mid-flush, so asserting 8 arms the flake the card is about.
+  Teeth, no-Curios arm, all measured: SHIPPED probe + a planted wave at tick 200 (the grid's own blocks —
+  `dirt` / `cobblestone` in the crop cells, the source replaced at y=-1, `grass_block` over the headroom)
+  → RED `the crop patch lost a cell to a non-crop state at tick 201 … vanished=2 of 8 cells, repaired=0;
+  … state=Block{minecraft:dirt} … raw=0`; the FIXED probe + the SAME wave → PASS, 529 required tests, with
+  the pad's writes printed; the FIXED probe with the `PadMode.SERVICE` call commented out + the SAME wave →
+  RED at tick 200, so the per-tick service is the lever, not the plant tick. The same wave at tick 20 —
+  before `PLANT_TICK` — is green on both trees: the fixture's own writes overwrite it, which is why the CI
+  shape is a mid-window arrival and not a setup miss. That planted wave also reddened a sibling
+  (`combat_golemopensarealdoorandclosesitbehindit`) on the fixed tree's leg, which is the packing-grid leak
+  in the other direction, caught in the act. Local legs cannot reach the light arm: inside the box the
+  section's light is never computed (the census reads `raw=15`, the uncomputed value, on every leg), so
+  locally the channel's rate is ~0 (15 legs, 0 reds on three trees) and the CI arm's rate is 2/N — which is
+  exactly why the pop's arm cannot be caught after the fact (the crop dies permanently on the first
+  neighbour update inside the window) and the precondition assert has to be airtight. The tell for the next
+  red on this lane is the pad census: `relit=0` on a light-assert red is the light engine, `relit>0` is the
+  wave eating a source and the printed writes name it; a vanish arm naming a cell with a foreign block names
+  the contaminant state. Test-side only — the product (a player farm under a slope) is untouched.
 
 ## Standing acceptance gates
 **`PlayableAcceptanceGameTest` is the PLAYABLE gate** (TC-M9-01-s, `t_8ea70fda`). The 2026-10-30 intake asked
