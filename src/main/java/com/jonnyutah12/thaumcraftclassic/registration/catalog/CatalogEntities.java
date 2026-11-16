@@ -6,6 +6,7 @@ import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityFireBat;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityGiantBrainyZombie;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityWisp;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EntityCultistLeader;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EntityCultistPortal;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -95,6 +96,23 @@ public final class CatalogEntities {
             ENTITY_TYPES.register("cultistleader",
                     () -> EntityCultistLeader.buildType(MobCategory.MONSTER));
 
+    /** {@code thaumcraft:cultistportal} — original
+     *  {@code monster/boss/EntityCultistPortal} (content-mapping
+     *  {@code Thaumcraft:CultistPortal}, mod_index 30): the Crimson Portal, the
+     *  boss band's summoner. It is NOT on the {@code EntityThaumcraftBoss} base —
+     *  the reference extends {@code EntityMob} directly and only implements the
+     *  {@code IBossDisplayData} marker ({@code :31}), so the port's class extends
+     *  {@code Monster} and carries the bar as a {@code ServerBossEvent} (D-137).
+     *  Registration {@code (64, 20, false)} — {@code ConfigEntities.java:117}; the
+     *  box 1.5 x 3.0 ({@code :40}), the zero eye height ({@code :68-70}), the fire
+     *  immunity ({@code :38}) and the 500.0 / 0.0 / knockback 1.0 / armour 5
+     *  figures ({@code :63-65}, {@code :43-45}) are the original's own
+     *  ({@code CultistPortalAiLogic}). The goal set is empty by construction:
+     *  {@code :83-84} empties the method 1.7.10 ticks the selector from. */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityCultistPortal>> CULTIST_PORTAL =
+            ENTITY_TYPES.register("cultistportal",
+                    () -> EntityCultistPortal.buildType(MobCategory.MONSTER));
+
     private CatalogEntities() {
     }
 
@@ -109,5 +127,6 @@ public final class CatalogEntities {
         event.put(BRAINY_ZOMBIE.get(), EntityBrainyZombie.createAttributes().build());
         event.put(GIANT_BRAINY_ZOMBIE.get(), EntityGiantBrainyZombie.createAttributes().build());
         event.put(CULTIST_LEADER.get(), EntityCultistLeader.createAttributes().build());
+        event.put(CULTIST_PORTAL.get(), EntityCultistPortal.createAttributes().build());
     }
 }
