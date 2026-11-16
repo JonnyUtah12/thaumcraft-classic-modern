@@ -114,6 +114,10 @@ class EntityRendererCoverageTest {
                 + "its renderer on the TC-M7-03 lane (the reference draws the leader with the family's "
                 + "RenderCultist), which closed at t_215d6fd4 without it; TC-M6-06-s-c5-1 registered "
                 + "the mob and names the renderer's owner here");
+        EXPECTED_GAPS.put("cultistportal", "the Crimson Portal row of docs/FEATURE_MATRIX.md keeps its "
+                + "renderer on the TC-M7-03 lane: the reference binds RenderCultistPortal at "
+                + "client/ClientProxy.java:431 (RenderTNTCrate), which that lane closed at t_215d6fd4 "
+                + "without; TC-M6-06-s-c5-2 registered the mob and names the renderer's owner here");
     }
 
     /** The six catalog files that create a {@code Registries.ENTITY_TYPE} register. */
@@ -132,16 +136,19 @@ class EntityRendererCoverageTest {
     @Test
     void theRosterIsEveryEntityTypeTheCatalogsRegister() throws IOException {
         final Map<String, String> roster = roster();
-        // 29 registered entity types as of this landing: the 28 of main at
-        // f1c3f38f, plus thaumcraft:cultistleader (TC-M6-06-s-c5-1, the Praetor
-        // registration of ConfigEntities.java:115). A new mob visible to this
-        // parse must appear here, and the map then forces it rendered or
-        // declared. (The cleric/knight/guardian/zombie/crab registrations ride
-        // shapes this parse does not match, and CatalogElites is not a catalog
-        // this parse reads — that gap is the lane's own, not the leader's.)
-        assertEquals(29, roster.size(), "the registered EntityType roster: " + roster.keySet());
+        // 30 registered entity types as of this landing: the 29 of main at
+        // f1c3f38f + c5-1, plus thaumcraft:cultistportal (TC-M6-06-s-c5-2, the
+        // Crimson Portal registration of ConfigEntities.java:117 — the 64/20/false
+        // triple). A new mob visible to this parse must appear here, and the map
+        // then forces it rendered or declared. (The cleric/knight/guardian/zombie/
+        // crab registrations ride shapes this parse does not match, and
+        // CatalogElites is not a catalog this parse reads — that gap is the lane's
+        // own, not the leader's or the portal's.)
+        assertEquals(30, roster.size(), "the registered EntityType roster: " + roster.keySet());
         assertEquals("CatalogEntities.java", roster.get("cultistleader"),
                 "the Praetor's registration must land in the roster");
+        assertEquals("CatalogEntities.java", roster.get("cultistportal"),
+                "the Crimson Portal's registration must land in the roster");
         assertTrue(roster.containsKey("mindspider"), "the mind spider is a registered entity type: "
                 + roster.get("mindspider"));
         // The ids that live behind helper-indirected registrations are in the
