@@ -957,6 +957,51 @@ restores both and `diff -q` reports byte-identical.
   sha), run the interleaved base / landing / shipped census with `loadavg` + `pgrep -c java` on every
   leg line, plant the shape the trail's last cell names plus its negative controls, publish both
   denominators with the Fisher exact, and disclose. The triage card owns none of the fix.
+<a id="route-claim-covers-the-cells-the-route-gate-reads"></a>
+- **A route arm's fix is a claim sized to the cells the gate reads, run as a DRIVE-TICK pass, asserted
+  and relayed rather than swept — and the plant pair is its acceptance, never a green streak.** The
+  triage rule (`docs/testing.md#route-arm-node-trail-names-the-channel`) demands a remedy sized to the
+  gate's cells that keeps the walk row standing. This is the shape that satisfies it, measured on
+  t_4c531ae6 (fix `d3cf1a0f` over base `c49132e6`; the probe blob on base is the shipped `4a9ab8df`
+  blob plus 4 javadoc lines, so a base leg reproduces the shipped tree).
+  **The cell set** — `GolemCombatAiGameTest`'s `CLAIM_DX_*` / `CLAIM_DY_*` / `CLAIM_DZ_*` / `ROW_DZ_*`
+  constants and `claimRouteCells`: the route walks the corridor rel x11..13 × dy 0..1 × z 11..23 (the
+  probe `setPos`s the golem to rel (12,0,22), `AIReturnHome#start` paths `-z` to rel z=13, and the CI
+  red's trail left the corridor at rel (13,0,18)), so the claim CLEARS every non-air block in that box
+  and RELAYS the walk row rel (12,-1,12..70) cell by cell, writing only cells that read AIR. The row
+  arm is assert-then-relay, never a sweep: on a clean pad it writes nothing (`relaid=0` — that row is
+  solid from the template floor plus the neighbour pads), so a clean leg prints only its summary line,
+  and the eaten-row / trench plants are the shapes that make it write. It runs at setup AND on every
+  tick of the drive window (`GameTestHelper#runAfterDelay(long, Runnable)` is
+  `runAtTickTime(getTick() + delay, task)` in vanilla `GameTestHelper`; the summary at tick 160 reports
+  `passes=161`). Every phase is registered from the probe BODY, never from inside a callback —
+  `GameTestInfo` keeps a per-probe `Object2LongMap<Runnable>` of tick actions that the harness iterates
+  while running, and a nested registration is the known iterator hazard.
+  **Measured, all NO-Curios whole-grid legs (`ran=1`, `cachehits=0`, the built-in-fallback marker,
+  `loadavg(1m)` and `pgrep -c java` on every line — `keep/t_4c531ae6/`):** the stride-6 band plant
+  (rel x11..13, dy 0..1, z ∈ {13,19}, laid at tick 122 = `pPath-1`) is **RED 2/2 on BASE** naming this
+  probe on the WALK arm — `now 7.372057122818207 … away … tick 160`, the shipped tree's value family
+  reproduced — and **GREEN 2/2 on the FIX** printing
+  `ROUTE-CLAIM drive tick=122 cleared=12 relaid=0 [Block{minecraft:cobblestone} @ rel (11,0,13), …]`
+  and `ROUTE-CLAIM summary tick=160 passes=161 cleared=12 relaid=0`. The same plant with the drive
+  passes switched off (setup claim only) is **RED 1/1**; the same plant with the claim narrowed to rel
+  z11..17 (so the z19 wall survives) is **RED 1/1** — the extent is load-bearing, not the block count.
+  The 3-tall seal rel (11..13, 0..2, 13..18) is **RED 2/2 on BASE** (its leg 1 also reddened
+  `theguardianbreathesforfivehundredticksandburns`: my plant landing in that probe's pad, the fixture
+  leak the triage card measured, disclosed again) and **GREEN 2/2 on the FIX**. The four negative
+  controls — single column, 3-wide 2-tall wall, eaten floor row, full trench — are **GREEN 2/2 each on
+  the FIX**, and on the two row shapes the drive line names the relay (`relaid=6`), which is the row
+  arm doing its job on a shape the corridor arm never touches.
+  **Census:** ⟪CENSUS⟫
+  **Fixture artifacts disclosed, not fixed.** The probe's own floor loop writes
+  `new BlockPos(home.getX(), home.getY() - 1, z)` for ABSOLUTE `z` in 12..70 while this pad sits at
+  `z ≈ -13,905,236`, so the "floor out to 52 blocks along +z" lands thousands of blocks away; the row
+  under the pad is the template floor plus the neighbour pads (the claim's relative row arm reads it as
+  solid, `relaid=0`, at setup). The loop is left untouched on purpose: rewriting it moves ground under
+  the 48-block park phase, which is a fixture change this card does not own. The triage card's ban
+  stands — a sweep of that row moved the walk ground and flooded writes (`drive cleared=309` →
+  WALK-arm red), so the row is relayed cell by cell and the claim's size is published in the probe's
+  own constants, where the next reader can see what the gate reads.
 <a id="component-codec-save-path"></a>
 - **A vanilla data component's persistent codec can reject a mod's marker, and the save path
   swallows the ITEM, not the write.** `minecraft:entity_data` and `minecraft:block_entity_data`
@@ -1065,4 +1110,4 @@ Anchors minted for the cited bullets (t_867b394f): `vouched-cell`, `entity-clock
 item-entity bullet keeps main's `attribute-not-filter`, which this card's probe cites). Minted by t_b98f2601 (the orb-cell claim rule):
 `orb-claim-covers-asserted-cells`. Minted by t_9687e91a (the deferred-chunkgen producer rule):
 `deferred-chunkgen-stamps-pad-cells`. Minted by t_764d1e8e (the harness gate on that
-producer): `deferred-chunkgen-gated-in-gametest`. Minted by t_c36620d6 (the golem route-arm node-trail rule): `route-arm-node-trail-names-the-channel`.
+producer): `deferred-chunkgen-gated-in-gametest`. Minted by t_c36620d6 (the golem route-arm node-trail rule): `route-arm-node-trail-names-the-channel`. Minted by t_4c531ae6 (the golem route-arm claim, the fix that card handed over): `route-claim-covers-the-cells-the-route-gate-reads`.
