@@ -208,6 +208,18 @@ public final class GolemCombatAiGameTest {
     private static final int ROW_DZ_FROM = 0;
     private static final int ROW_DZ_TO = 58;
 
+    /**
+     * Whether the claim runs on the drive ticks AND on the two draw ticks, not only at setup. This is
+     * the lever the plant pair names: the stride-6 band at tick 122 — one tick before the route draw
+     * at 123 — reddens a setup-claim-only tree and goes GREEN with this live
+     * (docs/testing.md#route-claim-covers-the-cells-the-route-gate-reads). The draw-tick passes are
+     * not a nicety: the harness walks the per-probe tick-action map in identity-hash order, so a plant
+     * that lands on the draw tick is cleared before that draw only because the pass runs INSIDE the
+     * draw callback, in sequence (measured: the 3-tall seal plant at 122 was cleared by the drive pass
+     * at 123, the draw's own tick — a same-tick coin flip that this call removes).
+     */
+    private static final boolean CLAIM_DRIVE = true;
+
     /** How many cells a claim line names before it stops listing (the count is the census). */
     private static final int CLAIM_NAME_CAP = 8;
 
@@ -1624,8 +1636,10 @@ public final class GolemCombatAiGameTest {
         // the per-tick pass live (docs/testing.md#route-claim-covers-the-cells-the-route-gate-reads).
         final int[] claim = new int[3];
         claimRouteCells(helper, home, "setup", claim);
-        for (int t = 1; t <= pTeleport + TELEPORT_TRIALS; t++) {
-            helper.runAfterDelay(t, () -> claimRouteCells(helper, home, "drive", claim));
+        if (CLAIM_DRIVE) {
+            for (int t = 1; t <= pTeleport + TELEPORT_TRIALS; t++) {
+                helper.runAfterDelay(t, () -> claimRouteCells(helper, home, "drive", claim));
+            }
         }
 
         helper.runAfterDelay(pSet, () -> {
@@ -1638,6 +1652,9 @@ public final class GolemCombatAiGameTest {
         });
 
         helper.runAfterDelay(pPath, () -> {
+            if (CLAIM_DRIVE) {
+                claimRouteCells(helper, home, "route", claim);
+            }
             alive(helper, golem, "the golem");
             helper.assertTrue(golem.onGround(),
                     "the golem is back on the floor after the move, tick " + helper.getTick() + " at "
@@ -1660,6 +1677,9 @@ public final class GolemCombatAiGameTest {
         });
 
         helper.runAfterDelay(pWalk, () -> {
+            if (CLAIM_DRIVE) {
+                claimRouteCells(helper, home, "walk", claim);
+            }
             alive(helper, golem, "the golem");
             System.out.println("ROUTE-CLAIM summary tick=" + helper.getTick() + " passes=" + claim[0]
                     + " cleared=" + claim[1] + " relaid=" + claim[2]);
