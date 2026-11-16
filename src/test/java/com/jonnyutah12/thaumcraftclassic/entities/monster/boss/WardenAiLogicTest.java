@@ -95,7 +95,11 @@ class WardenAiLogicTest {
         assertEquals(0.66, WardenAiLogic.SPAWN_HEAL_FRACTION, 1.0E-9);  // :332
         // :332 — the spawn heal sum (maxHealth 200: 0 + 132)
         assertEquals(132.0F, WardenAiLogic.spawnHealthFor(0.0F, 200.0), F);
-        assertEquals(18, WardenAiLogic.spawnTimerForStatus(WardenAiLogic.STATUS_SPAWN));
+        // :145-149 + :391-392 — status 18 is the materialisation BROADCAST, and the
+        // timer it re-arms is the 150-tick spawn timer of :330, not the status id
+        // (the first assert above pins the id; this one pins the payload).
+        assertEquals(WardenAiLogic.SPAWN_TIMER_START_TICKS,
+                WardenAiLogic.spawnTimerForStatus(WardenAiLogic.STATUS_SPAWN));
         assertEquals(0, WardenAiLogic.spawnTimerForStatus(WardenAiLogic.STATUS_ARM_BOTH));
     }
 
@@ -284,7 +288,10 @@ class WardenAiLogicTest {
         assertEquals(20, WardenAiLogic.TELEPORT_TRIES);                 // :264
         assertEquals(8, WardenAiLogic.TELEPORT_JITTER_ROLL);            // :272-273
         assertEquals(7, WardenAiLogic.jitteredCell(5, 3, 1));           // :272
-        assertEquals(5 + 0.5, WardenAiLogic.TELEPORT_CENTER_OFFSET, 1.0E-9);  // :279
+        // :279 — func_70107_b(i + 0.5, j + 0.1, k + 0.5): the accepted cell is
+        // re-entered at its CENTRE (0.5 / 0.1 / 0.5). The 8-rolls of the search are
+        // TELEPORT_JITTER_ROLL above; there is no 5-cell term in the original.
+        assertEquals(0.5, WardenAiLogic.TELEPORT_CENTER_OFFSET, 1.0E-9);      // :279
         assertEquals(0.1, WardenAiLogic.TELEPORT_Y_OFFSET, 1.0E-9);     // :279
         // :269 — solid below, air in the cell
         assertTrue(WardenAiLogic.landingCellAccepts(true, false));

@@ -135,6 +135,7 @@ public class EntityEldritchWarden extends EntityThaumcraftBoss
     public static EntityType<EntityEldritchWarden> buildType(final MobCategory category) {
         return EntityType.Builder.<EntityEldritchWarden>of(EntityEldritchWarden::new, category)
                 .sized(WardenAiLogic.WIDTH, WardenAiLogic.HEIGHT)                      // :80
+                .eyeHeight(WardenAiLogic.EYE_HEIGHT)                                    // :336-338 — 1.21.1's getEyeHeight() is final and reads the TYPE's dimensions (Entity.java:271/3042); the family's idiom (EntityCultistPortal.java:119)
                 .clientTrackingRange(WardenAiLogic.TRACK_RANGE_CHUNKS)                  // :109, 64
                 .updateInterval(WardenAiLogic.UPDATE_INTERVAL)                          // :109, 3
                 .setShouldReceiveVelocityUpdates(WardenAiLogic.VELOCITY_UPDATES)        // :109, true
@@ -146,12 +147,12 @@ public class EntityEldritchWarden extends EntityThaumcraftBoss
         return WardenAiLogic.createAttributes();
     }
 
-    /** {@code :336-338} — {@code func_70047_e() = 3.1F}: 1.21.1 derives it from the box. */
-    @Override
-    protected EntityDimensions getDefaultDimensions(final Pose pose) {
-        return EntityDimensions.fixed(WardenAiLogic.WIDTH, WardenAiLogic.HEIGHT)        // :80
-                .withEyeHeight(WardenAiLogic.EYE_HEIGHT);                               // :336-338
-    }
+    // :336-338 — func_70047_e() = 3.1F. 21.1.259's Entity#getEyeHeight() is FINAL
+    // (Entity.java:3042) and reads the eyeHeight field the TYPE's EntityDimensions
+    // feeds (Entity.java:271, refreshDimensions :2960), so the figure rides the
+    // builder's eyeHeight call above; a getDefaultDimensions override is measured
+    // dead on 21.1.259 (the mob's Live is built from the type's dimensions) and was
+    // removed here — the probe asserts the 3.1 through the registered type.
 
     @Override
     protected void defineSynchedData(final SynchedEntityData.Builder builder) {
@@ -612,9 +613,9 @@ public class EntityEldritchWarden extends EntityThaumcraftBoss
      * right / 180° left, the flat 0.13 drop, the raw-difference aim at 1.0 / 2.0 —
      * the guardian lane's {@code shoot} lesson: the platform normalises, no
      * hand-rolled division), {@code thaumcraft:egattack} at 2.0 / 1.0+rand*0.1.
-     * The 20% branch is the sonic blast behind {@code func_70685_l} (the CLASS
-     * twin that rides {@code func_70686_a} — c5-1's :181 measurement, so the
-     * Guardian-faction refusal at {@code :403-405} gates the blast): the
+     * The 20% branch is the sonic blast behind {@code func_70685_l}
+     * ({@code EntityLivingBase#canEntityBeSeen} — the line-of-sight test, shipped
+     * as the guardian lane's twin at {@code EntityEldritchGuardian:538}): the
      * {@code FXSonic} packet (FX lane's send, pinned), the yaw knockback (1.5 /
      * 0.1 / 1.5), WITHER + WEAKNESS 400 ticks amplifier 0 (the fields csv pair;
      * the 1.7.10 {@code try/catch} ships dropped), sticky warp
@@ -651,7 +652,7 @@ public class EntityEldritchWarden extends EntityThaumcraftBoss
             level.addFreshEntity(blast);                                                // :355
             return;
         }
-        if (target != this && this.canAttackType(target.getType())) {                   // :356 func_70685_l — the CLASS twin that rides func_70686_a (c5-1's :181 measurement)
+        if (this.hasLineOfSight(target)) {                                             // :356 func_70685_l (canEntityBeSeen) — the LOS twin, the guardian lane's :287 idiom
             // :357-361 — PacketFXSonic to tracking players within 32 blocks: the
             // FX lane's send (docs/fx-events.md). The shape ships on WardenAiLogic.
             target.setDeltaMovement(target.getDeltaMovement().add(                          // :362-366
