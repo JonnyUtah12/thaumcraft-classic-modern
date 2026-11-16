@@ -8,6 +8,7 @@ import net.minecraft.server.level.FullChunkStatus;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.ChunkAccess;
 
 import org.slf4j.Logger;
 
@@ -123,5 +124,25 @@ public final class MobChunkClaim {
     /** Is this chunk in the level's forced set (the harness's own set, cleared at batch end)? */
     public static boolean forcedHere(final ServerLevel level, final ChunkPos pos) {
         return level.getForcedChunks().contains(pos.toLong());
+    }
+
+    /**
+     * Is the chunk LOADED? This is the half a force does NOT give you for free: the ticket census
+     * ({@link #entTicking}, {@link #forcedHere}) reads true the moment the force lands, and the
+     * FULL load that the force requests has to go through the batch's shared load queue. The
+     * level's entity tick loop visits the entities of LOADED chunks only, so a mob on a
+     * ticketed-but-unloaded chunk runs ZERO ticks while every ticket census reads healthy —
+     * measured {@code fix5_leg_3}: 285 ticks, {@code entTick=true forcedHere=true}, mob alive,
+     * unremoved, in the level's entity list, 0 entity ticks in 57 samples. Any probe that gates on
+     * mob ticks on a cold chunk has to carry this read next to the ticket reads.
+     */
+    public static boolean loaded(final ServerLevel level, final ChunkPos pos) {
+        return level.hasChunk(pos.x, pos.z);
+    }
+
+    /** The chunk's status for the census — {@code "absent"} until the load arrives. */
+    public static String status(final ServerLevel level, final ChunkPos pos) {
+        final ChunkAccess chunk = level.getChunkSource().getChunkNow(pos.x, pos.z);
+        return chunk == null ? "absent" : String.valueOf(chunk.getPersistedStatus());
     }
 }

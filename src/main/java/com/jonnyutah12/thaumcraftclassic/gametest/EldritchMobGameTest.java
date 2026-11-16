@@ -88,8 +88,20 @@ public final class EldritchMobGameTest {
     /** t_f9fe6e81 — the run of consecutive ticking ticks the mob-chunk-claim plant requires. */
     private static final int CLAIM_WINDOW_TICKS = 40;
 
-    /** t_f9fe6e81 — the plant probe's census deadline; past it the probe fails with the census. */
-    private static final int CLAIM_DEADLINE_TICKS = 280;
+    /**
+     * t_f9fe6e81 — the plant probe's census deadline; past it the probe fails with the census.
+     * <b>It is a LOAD deadline, not a ticket deadline.</b> {@code setChunkForced} writes the level
+     * map immediately (the ticket census read goes true at once) and then requests a FULL load,
+     * and that load has to pass through the batch's shared queue. Measured on {@code fix5_leg_3}:
+     * at 285 ticks the mob's chunk read {@code entTick=true forcedHere=true}, the mob was alive,
+     * unremoved and in the level's entity list, and it had run 0 entity ticks in 57 samples — the
+     * chunk never reached FULL inside the 280-tick window, and the level's entity tick loop
+     * iterates the entities of LOADED chunks only, so a mob in a ticketed-but-unloaded chunk is
+     * never visited at all. Two consequences, both applied here: the claim is taken at SETUP,
+     * before the mob exists, so the load queues for the probe's whole life, and the deadline is
+     * this many ticks with the harness timeout behind it (900), not in front of it.
+     */
+    private static final int CLAIM_DEADLINE_TICKS = 600;
 
     /** The batch's forced set spans eight chunks of x (measured 462695..462702 on
      * fixcur3_leg_2); the plant arms the mob this many chunks in -x so that no sibling
@@ -686,16 +698,26 @@ public final class EldritchMobGameTest {
      * <p><b>The gate is a TICKING RUN, not a fixed window, because the claim's chunk is COLD</b>
      * — a force 32 chunks out requests a load, and a load in a 533-probe batch is measured at
      * ~77 ticks for a chunk 4 chunks out ({@code fix3_leg_1}: 3 of 80 head ticks with
-     * {@code entTick=true}, the chunk arriving at tick ~77). The probe passes the moment
+     * {@code entTick=true}, the chunk arriving at tick ~77) and over 285 ticks on a 540-probe
+     * batch at load 6.5 ({@code fix5_leg_3}: ticket reads true, {@code loaded=false}, 0 ticks in
+     * 57 samples) — so the claim is taken at SETUP, before the mob is even spawned, and the
+     * census carries {@code loaded=} {@code chunkStatus=} next to the ticket reads. The probe passes the moment
      * {@link #takeMobTickSample} measures {@value #CLAIM_WINDOW_TICKS} ticks in a row where the
      * mob's chunk read {@code entTick=true} {@code forcedHere=true} at every sample AND the mob
      * ticked every tick of the run, so the claim's cost never reddens the armed arm; at
-     * {@value #CLAIM_DEADLINE_TICKS} ticks it fails EXPLICITLY with the census, never a quiet
+     * {@value #CLAIM_DEADLINE_TICKS} ticks (the harness timeout sits behind it at 900) it fails
+     * EXPLICITLY with the census, never a quiet
      * harness timeout — with the claim dropped the run is 0, so that is the tooth's red, named.</p>
      */
-    @GameTest(template = "empty", setupTicks = 2L, timeoutTicks = 400)
+    @GameTest(template = "empty", setupTicks = 2L, timeoutTicks = 900)
     public static void theGuardianArmedOneChunkOffThePadCornerStillTicks(final GameTestHelper helper) {
         final ServerLevel level = helper.getLevel();
+        // The claim goes in BEFORE the mob exists: a force is a LOAD request, and the load has to
+        // queue for the probe's whole life (measured fix5_leg_3: 285 ticks, ticket reads true, the
+        // chunk never reached FULL, and the mob — alive, unremoved, in the level's entity list —
+        // ran 0 ticks because the tick loop visits entities of LOADED chunks only). A claim taken
+        // after the spawn starts that clock late. Idempotent with the fixture's own claim.
+        MobChunkClaim.claim(level, new ChunkPos(pad(helper).offset(-512, 0, 0)));
         final EntityEldritchGuardian mob = guardian(helper, -512, 0);
         final ChunkPos spawnChunk = new ChunkPos(mob.blockPosition());
         final ChunkPos cornerChunk = new ChunkPos(helper.absolutePos(BlockPos.ZERO));
@@ -746,10 +768,13 @@ public final class EldritchMobGameTest {
         state[1] = mob.tickCount;
         state[2] = (entTick && forcedHere && ticked >= span) ? state[2] + span : 0;
         state[3]++;
+        final boolean loaded = MobChunkClaim.loaded(level, live);
+        final String status = MobChunkClaim.status(level, live);
         LOGGER.info("[t_f9fe6e81] plant sample {}: mob chunk ({}, {}) entTick={} forcedHere={}"
-                        + " mobTick=+{} of +{} level ticks, ticking run {}, armed={} (pad corner chunk"
-                        + " ({}, {})) (docs/testing.md#mob-tick-claim-covers-mob-chunk)",
-                elapsed, live.x, live.z, entTick, forcedHere, ticked, span, state[2],
+                        + " loaded={} chunkStatus={} mobTick=+{} of +{} level ticks, ticking run {},"
+                        + " armed={} (pad corner chunk ({}, {}))"
+                        + " (docs/testing.md#mob-tick-claim-covers-mob-chunk)",
+                elapsed, live.x, live.z, entTick, forcedHere, loaded, status, ticked, span, state[2],
                 MobChunkClaim.armed(), cornerChunk.x, cornerChunk.z);
         if (state[2] >= CLAIM_WINDOW_TICKS) {
             LOGGER.info("[t_f9fe6e81] plant verdict GREEN: the mob's chunk ran {} entity ticks in a"
@@ -769,7 +794,8 @@ public final class EldritchMobGameTest {
                             + " its longest run of consecutive ticks on a ticketed mob chunk is "
                             + state[2] + " of the required " + CLAIM_WINDOW_TICKS + " (last sample: mob"
                             + " chunk (" + live.x + ", " + live.z + ") entTick=" + entTick
-                            + " forcedHere=" + forcedHere + " armed=" + MobChunkClaim.armed()
+                            + " forcedHere=" + forcedHere + " loaded=" + loaded
+                            + " chunkStatus=" + status + " armed=" + MobChunkClaim.armed()
                             + ", spawn chunk (" + spawnChunk.x + ", " + spawnChunk.z + "), pad corner"
                             + " chunk (" + cornerChunk.x + ", " + cornerChunk.z + "), samples=" + state[3]
                             + ", mob alive=" + mob.isAlive() + " removed=" + mob.isRemoved()
