@@ -212,9 +212,11 @@ public final class CultistKnightGameTest {
             }
         }
         java.util.Collections.sort(shipped);
-        helper.assertTrue(shipped.equals(List.of("cultistcleric", "cultistknight")),
-                "the shipped cultist ids must be exactly [cultistcleric, cultistknight] since "
-                        + "t_6160444c landed the Cleric — found " + shipped + " (Leader = card c5)");
+        helper.assertTrue(shipped.equals(
+                        List.of("cultistcleric", "cultistknight", "cultistleader")),
+                "the shipped cultist ids are [cultistcleric, cultistknight] since t_6160444c landed "
+                        + "the Cleric, joined by cultistleader as TC-M6-06-s-c5-1 (t_1c7d7967) landed "
+                        + "the Leader — found " + shipped);
         helper.succeed();
     }
 

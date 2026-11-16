@@ -110,6 +110,10 @@ class EntityRendererCoverageTest {
         EXPECTED_GAPS.put("taintswarmer", taint);
         EXPECTED_GAPS.put("taintswarm", taint);
         EXPECTED_GAPS.put("thaumslime", taint);
+        EXPECTED_GAPS.put("cultistleader", "the Crimson Praetor row of docs/FEATURE_MATRIX.md keeps "
+                + "its renderer on the TC-M7-03 lane (the reference draws the leader with the family's "
+                + "RenderCultist), which closed at t_215d6fd4 without it; TC-M6-06-s-c5-1 registered "
+                + "the mob and names the renderer's owner here");
     }
 
     /** The six catalog files that create a {@code Registries.ENTITY_TYPE} register. */
@@ -128,10 +132,16 @@ class EntityRendererCoverageTest {
     @Test
     void theRosterIsEveryEntityTypeTheCatalogsRegister() throws IOException {
         final Map<String, String> roster = roster();
-        // 28 registered entity types as of main at f1c3f38f, from the six
-        // catalogs named above. A new mob must appear here, and the test that
-        // reads this map then forces it to be rendered or declared.
-        assertEquals(28, roster.size(), "the registered EntityType roster: " + roster.keySet());
+        // 29 registered entity types as of this landing: the 28 of main at
+        // f1c3f38f, plus thaumcraft:cultistleader (TC-M6-06-s-c5-1, the Praetor
+        // registration of ConfigEntities.java:115). A new mob visible to this
+        // parse must appear here, and the map then forces it rendered or
+        // declared. (The cleric/knight/guardian/zombie/crab registrations ride
+        // shapes this parse does not match, and CatalogElites is not a catalog
+        // this parse reads — that gap is the lane's own, not the leader's.)
+        assertEquals(29, roster.size(), "the registered EntityType roster: " + roster.keySet());
+        assertEquals("CatalogEntities.java", roster.get("cultistleader"),
+                "the Praetor's registration must land in the roster");
         assertTrue(roster.containsKey("mindspider"), "the mind spider is a registered entity type: "
                 + roster.get("mindspider"));
         // The ids that live behind helper-indirected registrations are in the

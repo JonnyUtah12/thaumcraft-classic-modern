@@ -219,6 +219,36 @@ public final class ModDataComponents {
                             .networkSynchronized(ResearchNoteData.STREAM_CODEC)
                             .build());
 
+    /**
+     * The owner stamped on the items a pech drops when its trade window closes
+     * (TC-M7-04-m3-b, BD-73): the original's {@code EntityItem.setOwner} —
+     * {@code ContainerPech.java:211} {@code ei.func_145799_b("PechDrop")} — a
+     * free-form <b>String</b> on the item entity, read by
+     * {@code AIPechItemEntityGoto.java:76-77}
+     * ({@code ((EntityItem)e).func_145800_j()}) so the pech never chases its own
+     * drop back ({@code :78}).
+     *
+     * <p>It is a component of the port's own, not vanilla's
+     * {@code minecraft:entity_data}: that component's persistent codec is
+     * {@code CustomData.CODEC_WITH_ID} ({@code DataComponents.java:172}), which
+     * {@code CustomData.java:33-35} validates with
+     * {@code tag.contains("id", 8) ? success : error("Missing id for entity in: " + tag)}
+     * — a marker compound with no entity {@code id} therefore throws
+     * {@code IllegalStateException} out of {@code ItemStack#save} on EVERY world
+     * save, {@code ServerLevel#save} logs {@code Error saving [N minecraft:diamond]}
+     * and the stack is dropped from the chunk data (item loss on save/reload;
+     * 186 occurrences in 53/53 legs at t_8b63e037's census). Renaming the key
+     * cannot dodge that gate — it fires on the absence of {@code id}, not on the
+     * {@code Owner} key. A {@code Codec.STRING} component of our own encodes
+     * unconditionally, and the value is exactly the original's owner string.</p>
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> PECH_DROP_OWNER =
+            DATA_COMPONENT_TYPES.register("pech_drop_owner",
+                    () -> DataComponentType.<String>builder()
+                            .persistent(Codec.STRING)
+                            .networkSynchronized(ByteBufCodecs.STRING_UTF8)
+                            .build());
+
     private ModDataComponents() {
     }
 }

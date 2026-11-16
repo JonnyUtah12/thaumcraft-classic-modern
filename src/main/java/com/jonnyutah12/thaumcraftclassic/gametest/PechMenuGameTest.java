@@ -2,17 +2,29 @@ package com.jonnyutah12.thaumcraftclassic.gametest;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.client.ContainerLayout;
+import com.jonnyutah12.thaumcraftclassic.entities.ai.pech.AIPechItemEntityGoto;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityPech;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.PechAiLogic;
 import com.jonnyutah12.thaumcraftclassic.menus.PechMenu;
+import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogPech;
+import com.mojang.serialization.DataResult;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -20,7 +32,9 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.phys.AABB;
 
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -166,18 +180,182 @@ public final class PechMenuGameTest {
                 player.getBoundingBox().inflate(8.0));
         int stamped = 0;
         for (final ItemEntity drop : drops) {
-            final var data = drop.getItem().get(DataComponents.ENTITY_DATA);
-            if (data == null) {
-                continue;
-            }
-            final CompoundTag tag = data.copyTag();
-            if (tag.contains("PechDropOwner", net.minecraft.nbt.Tag.TAG_STRING)
-                    && "PechDrop".equals(tag.getString("PechDropOwner"))) {
+            // Read the marker through the goal's own reader, not a hand-rolled key: this
+            // probe is the write side's contract and the AI is its only consumer
+            // (AIPechItemEntityGoto.java:76-78).
+            if (PechAiLogic.PECH_DROP_OWNER.equals(AIPechItemEntityGoto.pechDropOwnerOf(drop))) {
                 stamped++;
             }
         }
         helper.assertTrue(stamped == 5, "all five slots drop with the PechDrop owner (:201), got " + stamped);
         helper.succeed();
+    }
+
+    /**
+     * The pech drop on the <b>world-save path</b> (t_04233450). The stamp's first home
+     * was the vanilla {@code minecraft:entity_data} component, whose persistent codec is
+     * {@code CustomData.CODEC_WITH_ID} ({@code DataComponents.java:172};
+     * {@code CustomData.java:33-35} = {@code contains("id", 8) ? success :
+     * error("Missing id for entity in: " + tag)}), so every pech trade drop threw out of
+     * {@code ItemStack#save} on the save path: {@code ServerLevel#save} logged
+     * {@code Error saving [15 minecraft:diamond]} and the stack never reached the chunk
+     * data — the pech's drop was silently lost on save/reload (186 occurrences in 53/53
+     * legs at t_8b63e037's census, both accessory arms, three trees).
+     *
+     * <p>The arms below run the SAME frames that log line names, in order: save
+     * ({@code Entity#saveWithoutId} → {@code ItemEntity#addAdditionalSaveData:333} →
+     * {@code ItemStack#save}, {@code ItemStack.java:419-425} — the frame in the census
+     * stack) and reload ({@code Entity#load} →
+     * {@code ItemEntity#readAdditionalSaveData:341-359} → {@code ItemStack#parse}). The
+     * marker is read back through {@link AIPechItemEntityGoto#pechDropOwnerOf}, the
+     * goal's own reader, so a marker that survives the bytes on a key the AI never reads
+     * cannot pass green (docs/testing.md#component-codec-save-path). The drops are
+     * attributed by the UUID delta of the producing call
+     * (docs/testing.md#attribute-not-filter): the box is the mock player's, shared
+     * with the neighbours, and a foreign stack is named in the message, never counted.</p>
+     */
+    @GameTest(template = "empty")
+    public static void pechDropSurvivesAWorldSave(final GameTestHelper helper) {
+        final EntityPech pech = tamedPech(helper);
+        final Player player = fakePlayer(helper);
+        pech.trading = true;
+        final PechMenu menu = new PechMenu(0, player.getInventory(), pech);
+        for (int a = 0; a < 5; a++) {
+            menu.slots.get(a).set(new ItemStack(Items.DIAMOND, a + 1));
+        }
+        final AABB box = player.getBoundingBox().inflate(8.0);
+        final Set<UUID> before = itemIdsIn(helper, box);
+        menu.removed(player);                                                          // :205-212
+        final List<ItemEntity> owned = dropsAddedSince(helper, box, before);
+        helper.assertTrue(owned.size() == 5,
+                "the close must produce 5 owned drops, got " + owned.size() + " [" + describe(owned)
+                        + "]; stacks already in the box before the close: [" + stacksIn(helper, box, before) + "]");
+        final StringBuilder broken = new StringBuilder();
+        for (final ItemEntity drop : owned) {
+            final ItemStack stack = drop.getItem();
+            final int count = stack.getCount();
+            if (!stack.is(Items.DIAMOND)) {
+                broken.append("not a diamond stack: ").append(stack).append("; ");
+            }
+            if (!PechAiLogic.PECH_DROP_OWNER.equals(AIPechItemEntityGoto.pechDropOwnerOf(drop))) {
+                broken.append("no PechDrop owner marker on ").append(stack).append("; ");
+            }
+            if (stack.has(DataComponents.ENTITY_DATA)) {
+                broken.append(stack).append(" rides vanilla entity_data, whose codec demands an entity id; ");
+            }
+            final CompoundTag saved = new CompoundTag();
+            try {
+                drop.saveWithoutId(saved);                                             // the census's crashing frame
+            } catch (final RuntimeException e) {
+                helper.fail("the world-save path cannot encode the pech drop " + stack + ": " + e);
+            }
+            final ItemEntity back = EntityType.ITEM.create(helper.getLevel());
+            back.load(saved);                                                          // the reload frame
+            final ItemStack restored = back.getItem();
+            if (!restored.is(Items.DIAMOND) || restored.getCount() != count) {
+                broken.append("the reload lost the stack: saved ").append(stack)
+                        .append(", reloaded ").append(restored).append("; ");
+            }
+            if (!PechAiLogic.PECH_DROP_OWNER.equals(AIPechItemEntityGoto.pechDropOwnerOf(back))) {
+                broken.append("the reload lost the owner marker: ").append(restored).append("; ");
+            }
+            back.discard();
+        }
+        helper.assertTrue(broken.length() == 0, "the pech drops fail the save/reload round-trip: " + broken);
+        for (final ItemEntity drop : owned) {
+            drop.discard();                                                            // the level is shared
+        }
+        helper.succeed();
+    }
+
+    /**
+     * The target-platform fact the fix rests on, pinned so a platform change that
+     * removes it reports by name. {@code minecraft:entity_data}'s persistent codec
+     * rejects a marker compound with no entity {@code id} (the census's signature);
+     * the SAME compound plus an {@code id} encodes; and the port's own
+     * {@code thaumcraft:pech_drop_owner} encodes with no id at all and round-trips the
+     * literal. That is why the marker is a component of our own, and why BD-73's first
+     * attempt — renaming the key away from the reserved {@code Owner} — never cured the
+     * loss: the gate is on the absence of {@code id}, not on the key name.
+     */
+    @GameTest(template = "empty")
+    public static void vanillaEntityDataNeedsAnEntityIdAndOursDoesNot(final GameTestHelper helper) {
+        final var registries = helper.getLevel().registryAccess();
+        final CompoundTag marker = new CompoundTag();
+        marker.putString("PechDropOwner", PechAiLogic.PECH_DROP_OWNER);
+        // The codec, NOT a stack save: NeoForge wraps every stack-level encode in
+        // DataComponentUtil.wrapEncodingExceptions, which LOGS the failure through
+        // Util#logDataComponentSaveError before rethrowing. A deliberate stack-level
+        // negative arm therefore prints the exact signature this lane is scored on
+        // (grep -c "Missing id for entity in" is the census gate), so the negative arm reads
+        // the codec that registers the gate (CustomData.CODEC_WITH_ID,
+        // DataComponents.java:172) directly. docs/testing.md#component-codec-save-path.
+        final DataResult<Tag> idless =
+                CustomData.CODEC_WITH_ID.encodeStart(NbtOps.INSTANCE, CustomData.of(marker));
+        helper.assertTrue(idless.result().isEmpty(),
+                "the census's signature must still fire: minecraft:entity_data's own codec "
+                        + "ENCODED {PechDropOwner:\"PechDrop\"} with no entity id, so the gate this fix "
+                        + "rests on is gone and the marker's component shape is open to review (BD-73)");
+        final String cause = idless.error().map(error -> error.message()).orElse("");
+        helper.assertTrue(cause.contains("Missing id for entity in"),
+                "the codec must reject the marker for the missing entity id - the census's "
+                        + "signature - got: " + cause);
+        final CompoundTag withId = marker.copy();
+        withId.putString("id", "minecraft:cow");
+        final DataResult<Tag> idful =
+                CustomData.CODEC_WITH_ID.encodeStart(NbtOps.INSTANCE, CustomData.of(withId));
+        helper.assertTrue(idful.result().isPresent(),
+                "the same codec must take the marker compound once it carries an entity id - "
+                        + "the gate is the id, not the marker - got: " + idful);
+        final ItemStack ours = new ItemStack(Items.DIAMOND, 15);
+        ours.set(ModDataComponents.PECH_DROP_OWNER.get(), PechAiLogic.PECH_DROP_OWNER);
+        ours.set(DataComponents.ENTITY_DATA, CustomData.of(withId));
+        final CompoundTag oursSaved = (CompoundTag) ours.save(registries);   // a legal save: no log line
+        final ItemStack oursBack = ItemStack.parseOptional(registries, oursSaved);
+        helper.assertTrue(PechAiLogic.PECH_DROP_OWNER.equals(oursBack.get(ModDataComponents.PECH_DROP_OWNER.get())),
+                "our own component must encode and round-trip the owner literal beside a legal "
+                        + "minecraft:entity_data, got " + oursSaved);
+        helper.succeed();
+    }
+
+    /** The UUIDs of every item entity in the box, captured immediately around the action. */
+    private static Set<UUID> itemIdsIn(final GameTestHelper helper, final AABB box) {
+        final Set<UUID> ids = new HashSet<>();
+        for (final ItemEntity drop : helper.getLevel().getEntitiesOfClass(ItemEntity.class, box)) {
+            ids.add(drop.getUUID());
+        }
+        return ids;
+    }
+
+    /** The item entities in the box that the captured set does not contain: this action's output. */
+    private static List<ItemEntity> dropsAddedSince(final GameTestHelper helper, final AABB box,
+            final Set<UUID> before) {
+        final List<ItemEntity> owned = new ArrayList<>();
+        for (final ItemEntity drop : helper.getLevel().getEntitiesOfClass(ItemEntity.class, box)) {
+            if (!before.contains(drop.getUUID())) {
+                owned.add(drop);
+            }
+        }
+        return owned;
+    }
+
+    private static String describe(final List<ItemEntity> drops) {
+        final StringBuilder out = new StringBuilder();
+        for (final ItemEntity drop : drops) {
+            out.append(drop.getItem()).append(" ");
+        }
+        return out.toString().trim();
+    }
+
+    /** The stacks that were already in the box — the diagnostic, never a counted stack. */
+    private static String stacksIn(final GameTestHelper helper, final AABB box, final Set<UUID> tracked) {
+        final StringBuilder out = new StringBuilder();
+        for (final ItemEntity drop : helper.getLevel().getEntitiesOfClass(ItemEntity.class, box)) {
+            if (!tracked.contains(drop.getUUID())) {
+                out.append(drop.getItem()).append(" ");
+            }
+        }
+        return out.toString().trim();
     }
 
     /** {@code EntityPech.java:695-698} — the open gate: server-side, tamed, not sneaking, no name tag. */

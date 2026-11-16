@@ -5,6 +5,7 @@ import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityBrainyZombie;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityFireBat;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityGiantBrainyZombie;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityWisp;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EntityCultistLeader;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -82,6 +83,18 @@ public final class CatalogEntities {
             ENTITY_TYPES.register("giantbrainyzombie",
                     () -> EntityGiantBrainyZombie.buildFuriousType(MobCategory.MONSTER));
 
+    /** {@code thaumcraft:cultistleader} — original
+     *  {@code monster/boss/EntityCultistLeader} (content-mapping
+     *  {@code Thaumcraft:CultistLeader}, mod_index 29): the boss family's first
+     *  registered member, riding the shared unregistered
+     *  {@code EntityThaumcraftBoss} base. Registration {@code (64, 3, true)} —
+     *  {@code ConfigEntities.java:115}; the box 0.75 x 2.25 ({@code :56}) and the
+     *  125.0 / 5.0 / 0.32 attributes over the base's knockback 0.95 and follow 40.0
+     *  are the original's own figures ({@code CultistLeaderAiLogic}). */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityCultistLeader>> CULTIST_LEADER =
+            ENTITY_TYPES.register("cultistleader",
+                    () -> EntityCultistLeader.buildType(MobCategory.MONSTER));
+
     private CatalogEntities() {
     }
 
@@ -95,5 +108,6 @@ public final class CatalogEntities {
         event.put(FIREBAT.get(), EntityFireBat.createAttributes().build());
         event.put(BRAINY_ZOMBIE.get(), EntityBrainyZombie.createAttributes().build());
         event.put(GIANT_BRAINY_ZOMBIE.get(), EntityGiantBrainyZombie.createAttributes().build());
+        event.put(CULTIST_LEADER.get(), EntityCultistLeader.createAttributes().build());
     }
 }
