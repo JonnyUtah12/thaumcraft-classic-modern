@@ -510,8 +510,16 @@ without the evidence for its stages.
   `grep -c "has thrown an exception trying to write state"` per retained leg log, split per entity
   type (`entity.thaumcraft.golem` vs `entity.minecraft.item`) — the harness prints
   `All N required tests passed` while the signature rides the shutdown save, so leg exit codes say
-  nothing. Do NOT paste that verbatim phrase into a probe message: the census counts it, and the
-  probe inflates its own measurement (measured: 1 self-match). The fix shape is to gate the encode
+  nothing. Three census hygiene rules, all measured on this card's legs. (1) Score the **entity**
+  variant: the same phrase is logged by the BlockEntity arm (`A BlockEntity type … has thrown an
+  exception trying to write state. It will not persist`), and on a leg where a probe FAILED the
+  harness writes that probe's over-length report into a lectern's book, which the 1024-char string
+  cap rejects — a red leg's raw phrase count is then inflated by the harness, not by a save loss
+  (measured: 1 such hit on a leg red with `interact_returnhomeusesthehomeradius…`, `LecternBlockEntity`,
+  `String "interact_returnhome… " is too long: 1105, expected range [0-1024]`). (2) Do NOT paste
+  the verbatim phrase into a probe message: the census counts it and the probe inflates its own
+  measurement (measured: 1 self-match, this card's first leg). (3) The `Cannot encode empty …`
+  strings appear in probe failure text too, so read them as diagnostics, not as the census. The fix shape is to gate the encode
   (`saveOptional`) while keeping the original's bytes (the empty compound, or no key at all) and to
   normalise the read back onto the sentinel; the mutation tooth is restoring the product hunk,
   which reddens the second-cycle probes by name.
