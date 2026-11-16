@@ -861,6 +861,80 @@ public final class CultistClericGameTest {
         helper.succeed();
     }
 
+    // ------------------------------------------------------------- the orb cells (t_b98f2601)
+
+    /**
+     * The pad-relative cells this probe arms its orb pair in — <b>one</b> list for the
+     * air assert, for the pad claim and for the {@code setPos} arms, so the claim's cell
+     * set IS the gate's block-arm set (docs/testing.md#orb-claim-covers-asserted-cells).
+     * Index 0 is the plain orb's cell, index 1 the red orb's.
+     */
+    private static final List<BlockPos> ORB_CELL_OFFSETS =
+            List.of(new BlockPos(1, 4, 1), new BlockPos(2, 4, 1));
+
+    /**
+     * Take the cells the orb pair rides, at setup tick, BEFORE the probe's fixtures:
+     * clear every non-air block in each cell, discard every non-player entity in it,
+     * assert the set's size, and log {@code cleared N} as the channel census on every
+     * leg. Same shape as {@code WarpEventsGameTest#claimScanCells}.
+     *
+     * <p><b>Why a claim and not the air assert alone.</b> The {@code empty} template is
+     * 1×1×1, so {@code StructureUtils#clearSpaceForStructure} clears the CORNER CELL
+     * ONLY, the stride-6 grid packs sixteen of these pads inside a 24-wide footprint
+     * (docs/testing.md#sweep-hazard-set-is-scan-set), and the cells this probe arms its
+     * orbs in sit FOUR ABOVE the pad box — outside every structure pass's reach.
+     * Measured on the landed tree {@code bccc2312}+{@code t_d8944aae}, NO-Curios leg
+     * {@code merged5#1} at 17:52:32: {@code Block{minecraft:dirt}} standing at rel
+     * (1, 4, 1) AND (2, 4, 1) (pad corner {@code (-8356952, -60, -7582239)}) reddened
+     * this probe on its own air assert. The terrain wave is in the pad at setup tick —
+     * the neighbour pads' structure passes claim BLOCK space in their own 1×1×1 boxes,
+     * sweep no entities, and their probes claim nothing — so asserting air on cells the
+     * probe never took reports the harness's terrain as a product defect and costs the
+     * suite the clamp's edge. The blocks are not decoration either: {@code
+     * EntityGolemOrb:63} discards on a block hit (measured at age 162), and a foreign
+     * mob in an arming cell is a removal at age 161 — the plain clamp's own age — so
+     * the claim takes blocks AND entities. The cell set is the geometry the gate reads
+     * (docs/testing.md#scan-claim-covers-box-cells: 2 of 5 is not enough, and here the
+     * gate's block-arm set is exactly these 2 cells), its size is asserted so a change
+     * to the arming geometry moves the claim and says so by name, and {@code cleared 0}
+     * on a green leg is the evidence the pad was handed over clean.</p>
+     */
+    private static List<String> claimOrbCells(final GameTestHelper helper, final ServerLevel level,
+            final BlockPos at) {
+        final List<String> cleared = new ArrayList<>();
+        final List<String> swept = new ArrayList<>();
+        for (final BlockPos cell : ORB_CELL_OFFSETS) {
+            final BlockPos absolute = at.offset(cell);
+            final net.minecraft.world.level.block.state.BlockState state =
+                    level.getBlockState(absolute);
+            if (!state.isAir()) {
+                cleared.add(state + " @ rel (" + cell.getX() + ", " + cell.getY() + ", " + cell.getZ()
+                        + ") = " + absolute);
+                helper.setBlock(cell, Blocks.AIR);
+            }
+            for (final Entity stray : level.getEntities((Entity) null,
+                    new net.minecraft.world.phys.AABB(absolute.getX(), absolute.getY(), absolute.getZ(),
+                            absolute.getX() + 1, absolute.getY() + 1, absolute.getZ() + 1),
+                    found -> !(found instanceof Player))) {
+                swept.add(BuiltInRegistries.ENTITY_TYPE.getKey(stray.getType()).getPath()
+                        + " @ rel (" + cell.getX() + ", " + cell.getY() + ", " + cell.getZ() + ")");
+                stray.discard();
+            }
+        }
+        helper.assertTrue(ORB_CELL_OFFSETS.size() == 2,
+                "[t_b98f2601] the orb-cell claim names " + ORB_CELL_OFFSETS.size() + " cells "
+                        + ORB_CELL_OFFSETS + ", and this probe arms its plain+red pair at exactly ONE"
+                        + " cell per orb and asserts air on those same cells — the claim set is the"
+                        + " gate's block-arm set, so arming the pair somewhere else has to move this"
+                        + " list with it (docs/testing.md#orb-claim-covers-asserted-cells)");
+        ThaumcraftClassic.LOGGER.info("[t_b98f2601] claimed the {} cells the orb pair rides (rel {}):"
+                        + " cleared {} foreign block(s){} swept {} foreign entity(ies){} — pad corner {}",
+                ORB_CELL_OFFSETS.size(), ORB_CELL_OFFSETS, cleared.size(),
+                cleared.isEmpty() ? "" : " " + cleared, swept.size(),
+                swept.isEmpty() ? "" : " " + swept, at);
+        return cleared;
+    }
+
     /**
      * {@code EntityGolemOrb:85} — the lifetime clamp: {@code tickCount > (red ? 240 :
      * 160)} → {@code discard()}, <b>BOTH edges, observed on the orb's own clock</b>. The
@@ -936,6 +1010,15 @@ public final class CultistClericGameTest {
         // the batch's origin draw, and this probe reads the ORB'S CLOCK, so a block off
         // the corner is a probe that can starve (docs/testing.md#entity-clock-poll, card t_43022b00).
         final BlockPos at = helper.absolutePos(BlockPos.ZERO);
+        // The cells the pair rides are CLAIMED before the fixtures
+        // (docs/testing.md#orb-claim-covers-asserted-cells, minted by t_b98f2601): the
+        // 1x1x1 pad's clear pass reaches the corner cell ONLY and the stride-6 grid
+        // hands this pad terrain in the arming cells four above it — measured
+        // Block{minecraft:dirt} at rel (1,4,1) and (2,4,1) at 17:52:32 — where a solid
+        // cell is a block-hit removal path (EntityGolemOrb:63) and a foreign mob is a
+        // removal at the plain clamp's own age. A claim after the fixtures would eat
+        // the fixtures, so this runs first and the air assert below is the precondition.
+        claimOrbCells(helper, level, at);
         final EntityCultistCleric cleric = cleric(helper);
         final Player target = attackerAt(helper, cleric);
         final EntityGolemOrb plain = orb(helper, cleric, target, false);
@@ -953,8 +1036,10 @@ public final class CultistClericGameTest {
         // passes a mutation on the other edge, so the cells are asserted air HERE (a
         // block landing in one reports itself as PROBE BROKEN) and the removal age is
         // pinned to edge+1 below, which names the clamp as the mechanism.
-        final BlockPos plainCell = at.offset(1, 4, 1);
-        final BlockPos redCell = at.offset(2, 4, 1);
+        // The same list the claim took — the assert, the claim and the arms cannot
+        // drift apart (docs/testing.md#orb-claim-covers-asserted-cells).
+        final BlockPos plainCell = at.offset(ORB_CELL_OFFSETS.get(0));
+        final BlockPos redCell = at.offset(ORB_CELL_OFFSETS.get(1));
         helper.assertTrue(level.getBlockState(plainCell).isAir() && level.getBlockState(redCell).isAir(),
                 "PROBE BROKEN: the orb cells must be AIR — got " + level.getBlockState(plainCell)
                         + " at " + plainCell + " and " + level.getBlockState(redCell) + " at " + redCell
