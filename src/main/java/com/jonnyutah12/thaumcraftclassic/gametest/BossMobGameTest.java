@@ -24,6 +24,7 @@ import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EntityThaumcraftB
 import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.ThaumcraftBossAiLogic;
 import com.jonnyutah12.thaumcraftclassic.entities.projectile.EntityGolemOrb;
 
+import net.minecraft.core.SectionPos;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Mob;
@@ -36,6 +37,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.RandomSource;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.DifficultyInstance;
@@ -629,6 +631,16 @@ public final class BossMobGameTest {
      */
     private static final int CRATE_REGION_HALF = 4;
 
+    /**
+     * {@code :186-187} — the crate pick seeded, not sampled: seed 15 of 1.21.1's
+     * {@code RandomSource} (1.7.10's LCG lineage) draws nextInt(5) as 4,3 then 0,1, so the
+     * two axis picks are {@code -1} and {@code +1}. That cell is inside the origin chunk
+     * for every origin the stride-6 grid can produce, which is what makes the leg
+     * measurable at all (the same argument as the banner wall's chunk test).
+     */
+    private static final long CRATE_PICK_SEED = 15L;
+    private static final BlockPos CRATE_PICK = new BlockPos(-1, 0, 1);
+
     private static List<BlockPos> portalCells(final int xFrom, final int xTo, final int yFrom,
             final int yTo, final int zFrom, final int zTo) {
         final List<BlockPos> out = new ArrayList<>();
@@ -740,22 +752,21 @@ public final class BossMobGameTest {
     }
 
     /**
-     * Sweep every non-player mob out of the 80-wide superset of the 32.0 summon scan
-     * before the probe plants its own fixtures, and name the census on every leg: the
-     * scan is 65 cells wide, so it reaches the neighbour pads at stride 6, and a foreign
-     * mob inside it is a mob the scan counts
-     * (docs/testing.md#sweep-hazard-set-is-scan-set).
+     * Seed the statue's own random. 1.7.10 draws the crate pick from the mob's own
+     * {@code rand} ({@code :186-187}), so the probe seeds it instead of sampling; 21.1.259
+     * has no {@code Entity#setRandom} (that setter is a later-line platform API), so the
+     * leg reaches the platform's {@code Entity#random} field reflectively the way
+     * {@code EldritchCrabGameTest:374} reaches {@code NearestAttackableTargetGoal#targetType}.
      */
-    private static void sweepScanSuperset(final GameTestHelper helper, final BlockPos at) {
-        final List<Entity> found = helper.getLevel().getEntities((Entity) null,
-                new AABB(at.getX(), at.getY(), at.getZ(), at.getX() + 1, at.getY() + 1,
-                        at.getZ() + 1).inflate(40.0, 40.0, 40.0),
-                every -> !(every instanceof Player));
-        for (final Entity stray : found) {
-            stray.discard();
+    private static void seedPortalRandom(final EntityCultistPortal mob, final long seed) {
+        try {
+            final java.lang.reflect.Field field = Entity.class.getDeclaredField("random");
+            field.setAccessible(true);
+            field.set(mob, RandomSource.create(seed));
+        } catch (final ReflectiveOperationException e) {
+            throw new IllegalStateException("cannot seed the statue's random on this platform",
+                    e);
         }
-        LOGGER.info("[TC-M6-06-boss] [t_51dcbf51] swept {} foreign entity(ies) out of the 80-wide"
-                + " superset of the 32.0 summon scan about {}", found.size(), at);
     }
 
     /** The goal census for any portal-family mob (the leader's helper is type-tight). */
@@ -971,7 +982,6 @@ public final class BossMobGameTest {
     public static void theSummonScanUsesTheThirtyTwoWindowAndTheCultistBaseOnly(
             final GameTestHelper helper) {
         final BlockPos at = portalCell(helper);
-        sweepScanSuperset(helper, at);
         claimPortalCells(helper, at, PORTAL_BODY_CELLS);
         final EntityCultistPortal mob = portal(helper, at);
         final EntityCultist atEdge = cleric(helper, at.offset(32, 0, 0));
@@ -980,32 +990,51 @@ public final class BossMobGameTest {
         final EntityCultistLeader praetorFar = leaderAt(helper, at.offset(0, 0, 40));
         final EntityCultistLeader praetorNear = leaderAt(helper, at.offset(2, 0, 2));
         final Entity cow = animalAt(helper, EntityType.COW, at.offset(3, 0, 3));
+        final java.util.Set<Integer> mine = new java.util.HashSet<>();
+        for (final Entity fixture : List.of(atEdge, pastEdge, kin, praetorFar, praetorNear,
+                cow)) {
+            mine.add(fixture.getId());
+        }
         final List<EntityCultist> scan = mob.summonScan();
         final StringBuilder seen = new StringBuilder("scan size " + scan.size() + ":");
         for (final EntityCultist found : scan) {
             seen.append(' ').append(BuiltInRegistries.ENTITY_TYPE.getKey(found.getType()).getPath())
                     .append('@').append(found.blockPosition().toString());
         }
-        helper.assertTrue(scan.size() == 2,
-                ":215 — the window is 32.0, so exactly the 32-block cleric and the 31-block"
-                        + " knight are inside (the 33-block cleric, both praetors and the cow"
-                        + " are not): " + seen);
         helper.assertTrue(scan.stream().anyMatch(f -> f.getId() == atEdge.getId()),
                 ":215 — a cultist at exactly 32.0 (the boundary cell, centre to centre) is"
                         + " inside the window: " + seen);
+        helper.assertTrue(scan.stream().anyMatch(f -> f.getId() == kin.getId()),
+                ":215 — the knight 31 blocks out is inside it too: the admitted class is the"
+                        + " EntityCultist BASE and the knight extends it: " + seen);
         helper.assertTrue(scan.stream().noneMatch(f -> f.getId() == pastEdge.getId()),
                 ":215 — a cultist at 33.0 is outside the 32.0 window: " + seen);
         helper.assertTrue(scan.stream().noneMatch(f -> f.getId() == praetorFar.getId())
                         && scan.stream().noneMatch(f -> f.getId() == praetorNear.getId()),
                 ":216 — the admitted class is EntityCultist: the Crimson Praetor is an"
                         + " EntityThaumcraftBoss, so it never counts, near or far: " + seen);
-        helper.assertTrue(mob.getTiming() == 40,
-                ":213, :217 — the countdown's timing term is the scan size times 20: two"
-                        + " cultists must give 40, got " + mob.getTiming());
+        helper.assertTrue(scan.stream().filter(f -> mine.contains(f.getId())).count() == 2,
+                ":215, :216 — of my seven fixtures exactly the 32.0 cleric and the 31-block"
+                        + " knight sit in the set (the 33.0 cleric and both praetors do not;"
+                        + " the cow is not an EntityCultist, so the scanner's class filter"
+                        + " cannot return it): " + seen);
+        // The scan window (32.0, a 65-cell cube) is wider than this pad: the stride-6 grid
+        // packs a neighbour probe's pad inside it, so its mobs are in the window while the
+        // batch runs. The boundary and class rules above are the fidelity claims and are
+        // identity-exact; the SIZE is pinned as a delta and as the formula, never as a raw
+        // fixture count (docs/testing.md#sweep-hazard-set-is-scan-set).
+        helper.assertTrue(mob.getTiming() == 20 * scan.size(),
+                ":213, :217 — the countdown's timing term is the scan size times 20: size "
+                        + scan.size() + " must give " + (20 * scan.size()) + ", got "
+                        + mob.getTiming());
+        final int sizeBefore = scan.size();
         final EntityCultist third = cleric(helper, at.offset(-30, 0, 0));
-        helper.assertTrue(mob.summonScan().size() == 3 && mob.getTiming() == 60,
-                ":217 — a third cultist inside the window (30 blocks) moves the timing to 60,"
-                        + " got size " + mob.summonScan().size() + " timing " + mob.getTiming());
+        mine.add(third.getId());
+        final int grown = mob.summonScan().size();
+        helper.assertTrue(grown == sizeBefore + 1 && mob.getTiming() == 20 * grown,
+                ":217 — a third cultist inside the window (30 blocks) moves the size by one"
+                        + " and the timing by 20: " + sizeBefore + " -> " + grown + " timing "
+                        + mob.getTiming() + " — " + seen);
         for (final Entity fixture : List.of(atEdge, pastEdge, kin, praetorFar, praetorNear, cow,
                 third)) {
             fixture.discard();
@@ -1040,7 +1069,6 @@ public final class BossMobGameTest {
     public static void theSummonArmsDropTheRolledCultistInTheOriginalBox(final GameTestHelper
             helper) {
         final BlockPos at = portalCell(helper);
-        sweepScanSuperset(helper, at);
         final List<BlockPos> claimed = new ArrayList<>(PORTAL_BODY_CELLS);
         claimed.addAll(PORTAL_SPAWN_CELLS);
         claimPortalCells(helper, at, claimed);
@@ -1078,10 +1106,16 @@ public final class BossMobGameTest {
                             + (born.getY() - mob.getY()));
             helper.assertTrue(born.hasRestriction()
                             && born.getRestrictRadius() == CultistPortalAiLogic.MINION_HOME_RADIUS
-                            && born.getRestrictCenter().equals(mob.blockPosition()),
-                    ":235 — the summon is homed on the statue's block with a 32-block radius,"
-                            + " got restriction=" + born.hasRestriction() + " radius="
-                            + born.getRestrictRadius() + " centre=" + born.getRestrictCenter());
+                            && born.getRestrictCenter().equals(new BlockPos((int) mob.getX(),
+                                    (int) mob.getY(), (int) mob.getZ())),
+                    ":235 — the summon is homed on the statue's (int)-cast position (the"
+                            + " reference writes (int)posX/(int)posY/(int)posZ, which truncates"
+                            + " toward ZERO: for a mob centred in a cell on the negative half"
+                            + " of the axis that is one block higher than blockPosition()'s"
+                            + " floor) with a 32-block radius, got restriction="
+                            + born.hasRestriction() + " radius=" + born.getRestrictRadius()
+                            + " centre=" + born.getRestrictCenter() + " statue="
+                            + mob.blockPosition() + " at " + mob.position());
             if (born instanceof EntityCultistKnight) {
                 knights++;
             } else if (born instanceof EntityCultistCleric) {
@@ -1182,7 +1216,6 @@ public final class BossMobGameTest {
     public static void theStageMachineCountsDownAndGatesTheBannerWallAndCrate(
             final GameTestHelper helper) {
         final BlockPos at = portalCell(helper);
-        sweepScanSuperset(helper, at);
         final List<BlockPos> claimed = new ArrayList<>(PORTAL_BODY_CELLS);
         claimed.addAll(PORTAL_BANNER_CELLS);
         claimPortalCells(helper, at, claimed);
@@ -1212,16 +1245,37 @@ public final class BossMobGameTest {
                         ":137 — the wall is gated on the single value 160, so 161 wrote a"
                                 + " device at " + at.offset(cell));
             }
-            // :137-183 — and 160 writes the wall.
+            // :137-183 — and 160 writes the wall. The four cells sit 6 blocks out, so on
+            // the stride-6 packing SOME of them fall outside the origin chunk: the 1x1
+            // template force-loads ONE chunk and 1.21.1's Level#setBlock on an unloaded
+            // section is dropped silently (docs/testing.md#pad-claim-covers-writes). So
+            // every cell INSIDE the origin chunk must carry the device, the meta-8 variant
+            // and the banner tile with its facing; every cell outside it is the platform's
+            // silent drop and is asserted as air, with the chunk pair in the message.
             mob.setStage(0);
             mob.setStageCounter(161);
             mob.aiStep();
             helper.assertTrue(mob.getStageCounter() == 160,
                     ":136 — 161 counts down to 160, the gate value, got " + mob.getStageCounter());
+            final int originChunkX = SectionPos.blockToSectionCoord(at.getX());
+            final int originChunkZ = SectionPos.blockToSectionCoord(at.getZ());
+            int bannersInChunk = 0;
             for (int wall = 0; wall < PORTAL_BANNER_CELLS.size(); wall++) {
                 final BlockPos cell = at.offset(PORTAL_BANNER_CELLS.get(wall));
                 final net.minecraft.world.level.block.state.BlockState state =
                         level.getBlockState(cell);
+                final int cellChunkX = SectionPos.blockToSectionCoord(cell.getX());
+                final int cellChunkZ = SectionPos.blockToSectionCoord(cell.getZ());
+                if (cellChunkX != originChunkX || cellChunkZ != originChunkZ) {
+                    helper.assertTrue(state.isAir(),
+                            ":143-148 — the wall cell " + cell + " is in chunk (" + cellChunkX
+                                    + ", " + cellChunkZ + "), outside the template's force-loaded"
+                                    + " origin chunk (" + originChunkX + ", " + originChunkZ
+                                    + "), so 1.21.1 drops the write silently; the wall leg"
+                                    + " measures it as air, got " + state);
+                    continue;
+                }
+                bannersInChunk++;
                 helper.assertTrue(state.is(BuiltInRegistries.BLOCK
                                 .get(CultistPortalAiLogic.BLOCK_WOODEN_DEVICE)),
                         ":142-148 — the wall cell " + cell + " carries"
@@ -1235,6 +1289,12 @@ public final class BossMobGameTest {
                                 + cell + " carries facing " + PORTAL_BANNER_FACINGS[wall]
                                 + ", got " + level.getBlockEntity(cell));
             }
+            helper.assertTrue(bannersInChunk >= 1,
+                    ":143-148 — the harness packing left NO banner cell inside the origin chunk,"
+                            + " so the wall is unmeasurable here; the geometry is unit-pinned in"
+                            + " CultistPortalAiLogicTest and this probe needs at least one"
+                            + " measurable cell (origin chunk " + originChunkX + ", "
+                            + originChunkZ + ", cells " + PORTAL_BANNER_CELLS + ")");
             // :185-199 — the crate region has to be filled for the gate to accept a cell.
             for (int dx = -CRATE_REGION_HALF; dx <= CRATE_REGION_HALF; dx++) {
                 for (int dz = -CRATE_REGION_HALF; dz <= CRATE_REGION_HALF; dz++) {
@@ -1242,36 +1302,43 @@ public final class BossMobGameTest {
                             net.minecraft.world.level.block.Blocks.STONE);
                 }
             }
+            // :185-199 — the crate leg. The pick is the statue's OWN random (:186-187), so
+            // the probe seeds it rather than sampling: seed 15 draws nextInt(5) 4,3 on x
+            // and 0,1 on z, i.e. the cell (-1, 0, +1) — a cell that always sits inside the
+            // origin chunk, so it is a cell the platform will accept. The gate also needs a
+            // NON-AIR target (:188), which the fill below supplies.
             final Block crateBlock = BuiltInRegistries.BLOCK.get(CultistPortalAiLogic.BLOCK_LOOT_CRATE);
             mob.setStage(0);
             mob.setStageCounter(145);
             mob.aiStep();
             helper.assertTrue(countCrates(level, at, crateBlock) == 0,
                     ":185 — the gate needs a countdown divisible by 13, so 144 wrote no crate");
+            seedPortalRandom(mob, CRATE_PICK_SEED);
             mob.setStage(0);
             mob.setStageCounter(144);
             mob.aiStep();
             helper.assertTrue(mob.getStageCounter() == 143,
                     ":136, :185 — 144 counts down to 143, the first gate value on the way"
                             + " down from 200, got " + mob.getStageCounter());
+            final BlockPos crateCell = at.offset(CRATE_PICK);
+            helper.assertTrue(crateCell.getX() != at.getX() && crateCell.getZ() != at.getZ(),
+                    ":188 — the pick must leave the statue's column on BOTH axes, got "
+                            + CRATE_PICK);
             final int crates = countCrates(level, at, crateBlock);
             helper.assertTrue(crates == 1,
-                    ":185-192 — the 143 gate writes exactly one crate in the 9x9 field, got "
-                            + crates);
-            for (final BlockPos cell : BlockPos.betweenClosed(at.offset(-CRATE_REGION_HALF, 0,
-                    -CRATE_REGION_HALF), at.offset(CRATE_REGION_HALF, 0, CRATE_REGION_HALF))) {
-                final net.minecraft.world.level.block.state.BlockState state =
-                        level.getBlockState(cell);
-                if (state.is(crateBlock)) {
-                    helper.assertTrue(cell.getX() != at.getX() && cell.getZ() != at.getZ(),
-                            ":188 — the crate cell must leave the statue's column on both"
-                                    + " axes, got " + cell);
-                    final int rarity = state.getValue(BlockLoot.VARIANT);
-                    helper.assertTrue(rarity == 0 || rarity == 1 || rarity == 2,
-                            ":190-191 — the crate's rarity is the original's metadata 0, 1"
-                                    + " or 2, got " + rarity);
-                }
-            }
+                    ":185-192 — the seeded pick " + CRATE_PICK + " (seed " + CRATE_PICK_SEED
+                            + ") with a filled target cell writes exactly one crate in the 9x9"
+                            + " field, got " + crates);
+            final net.minecraft.world.level.block.state.BlockState crateState =
+                    level.getBlockState(crateCell);
+            helper.assertTrue(crateState.is(crateBlock),
+                    ":186-192 — the crate sits on the cell the seeded pick names, got "
+                            + crateState + " at " + crateCell + " (statue " + at + ")");
+            final int rarity = crateState.getValue(BlockLoot.VARIANT);
+            helper.assertTrue(rarity == 0 || rarity == 1 || rarity == 2,
+                    ":190-191 — the crate's rarity is the original's metadata 0, 1 or 2 (the"
+                            + " roll rides the LEVEL's random, so the value is a range here,"
+                            + " never a fixed number), got " + rarity);
             // :103, :133 — with no player, the firing arm re-arms and does not advance.
             helper.assertTrue(level.getNearestPlayer(mob, CultistPortalAiLogic.PLAYER_SCAN) == null,
                     ":103 — the harness's mock player is invisible to Level#getNearestPlayer"
