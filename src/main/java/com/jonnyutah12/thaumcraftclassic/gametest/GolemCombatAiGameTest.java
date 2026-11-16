@@ -184,6 +184,33 @@ public final class GolemCombatAiGameTest {
 
     private static final int HOME_FACING = Direction.NORTH.get3DDataValue();
 
+    /**
+     * The cells the return-home route gate reads, as offsets from this probe's {@code home} cell.
+     * The route walks the corridor rel x11..13 × dy 0..1 × z 11..23: the probe {@code setPos}s the
+     * golem to rel (12,0,22) and {@link AIReturnHome#start} paths it {@code -z} to rel z=13, so
+     * those are the cells a foreign block can cut the walkable component in (the CI red's trail
+     * left the row at rel (13,0,18) and climbed out of the corridor —
+     * docs/testing.md#route-arm-node-trail-names-the-channel). The row arm is rel x12 × dy -1 ×
+     * z 12..70, the floor the walk phase and the 48-block phase stand on.
+     *
+     * <p>The corridor arm is a CLEAR and the row arm is a RELAY of AIR cells only. A sweep of the
+     * row is the measured failure: the region seal rel x4..20 × dy0..2 × z4..30 plus the row, run
+     * at setup and every drive tick, cut the route to {@code path[4,reached=false]} behind
+     * {@code setup cleared=117} and reddened the WALK arm at 5.2545 away behind
+     * {@code drive cleared=309} — a {@code cleared} that wide names the sweep, not the channel.</p>
+     */
+    private static final int CLAIM_DX_FROM = -1;
+    private static final int CLAIM_DX_TO = 1;
+    private static final int CLAIM_DY_FROM = 0;
+    private static final int CLAIM_DY_TO = 1;
+    private static final int CLAIM_DZ_FROM = -1;
+    private static final int CLAIM_DZ_TO = 11;
+    private static final int ROW_DZ_FROM = 0;
+    private static final int ROW_DZ_TO = 58;
+
+    /** How many cells a claim line names before it stops listing (the count is the census). */
+    private static final int CLAIM_NAME_CAP = 8;
+
     private GolemCombatAiGameTest() {
     }
 
@@ -435,6 +462,72 @@ public final class GolemCombatAiGameTest {
             sb.append(' ').append(path.getNode(i).asBlockPos().toShortString());
         }
         return sb.toString();
+    }
+
+    /**
+     * The route claim, sized to the cells the gate reads (the constants' javadoc): clear every
+     * non-air block the packing grid hands over inside the corridor the route walks, and re-lay
+     * every floor cell of the walk row that went to AIR. The corridor arm clears because a foreign
+     * block there is not this probe's ground; the row arm never sweeps, so the ground the walk
+     * phase stands on is only ever added to.
+     *
+     * <p>It runs at setup AND on every tick of the drive window. A setup claim alone is not the
+     * lever: the stride-6 band plant (2-tall cobblestone rel x11..13, dy 0..1, z ∈ {13,19}) laid at
+     * tick 122, one tick before the route draw, reddens a setup-claim-only tree and goes GREEN with
+     * the per-tick pass live, which prints the 12 blocks it cleared —
+     * docs/testing.md#route-claim-covers-the-cells-the-route-gate-reads.</p>
+     *
+     * <p>Every pass that writes prints its own census, naming the blocks: {@code cleared=N} on a
+     * drive tick is the channel arriving in this pad, and {@code cleared=0 relaid=0} across the
+     * window is the clean-handoff read. {@code census} carries {passes, cleared, relaid}.</p>
+     */
+    private static void claimRouteCells(final GameTestHelper helper, final BlockPos home,
+                                        final String tag, final int[] census) {
+        final ServerLevel level = helper.getLevel();
+        int cleared = 0;
+        int relaid = 0;
+        final StringBuilder names = new StringBuilder();
+        for (int dz = CLAIM_DZ_FROM; dz <= CLAIM_DZ_TO; dz++) {
+            for (int dx = CLAIM_DX_FROM; dx <= CLAIM_DX_TO; dx++) {
+                for (int dy = CLAIM_DY_FROM; dy <= CLAIM_DY_TO; dy++) {
+                    final BlockPos cell = home.offset(dx, dy, dz);
+                    final var state = level.getBlockState(cell);
+                    if (state.isAir()) {
+                        continue;
+                    }
+                    if (cleared < CLAIM_NAME_CAP) {
+                        if (names.length() > 0) {
+                            names.append(", ");
+                        }
+                        names.append(state.getBlock()).append(" @ rel (").append(12 + dx).append(',')
+                                .append(dy).append(',').append(12 + dz).append(')');
+                    }
+                    level.setBlock(cell, Blocks.AIR.defaultBlockState(), 3);
+                    cleared++;
+                }
+            }
+        }
+        for (int dz = ROW_DZ_FROM; dz <= ROW_DZ_TO; dz++) {
+            final BlockPos cell = new BlockPos(home.getX(), home.getY() - 1, home.getZ() + dz);
+            if (level.getBlockState(cell).isAir()) {
+                if (relaid < CLAIM_NAME_CAP) {
+                    if (names.length() > 0) {
+                        names.append(", ");
+                    }
+                    names.append("air floor @ rel (12,-1,").append(12 + dz).append(')');
+                }
+                level.setBlock(cell, Blocks.STONE.defaultBlockState(), 3);
+                relaid++;
+            }
+        }
+        census[0]++;
+        census[1] += cleared;
+        census[2] += relaid;
+        if (cleared + relaid > 0) {
+            System.out.println("ROUTE-CLAIM " + tag + " tick=" + helper.getTick()
+                    + " cleared=" + cleared + " relaid=" + relaid + " [" + names
+                    + (cleared + relaid > CLAIM_NAME_CAP ? ", …" : "") + "]");
+        }
     }
 
     /**
@@ -1496,6 +1589,13 @@ public final class GolemCombatAiGameTest {
      * <p>The route arm at {@code pPath} asserts a path graph in ONE draw, so its red is a graph
      * truncation, not a placement failure: read the node trail's LAST cell and its {@code reached}
      * flag before attributing the red — docs/testing.md#route-arm-node-trail-names-the-channel.</p>
+     *
+     * <p>The probe claims the cells that draw reads: {@link #claimRouteCells} clears the corridor
+     * rel x11..13 × dy 0..1 × z 11..23 and re-lays the walk row rel (12,-1,12..70) at setup AND on
+     * every tick of the drive window, printing what it cleared. The per-tick pass is the lever, not
+     * the setup claim, and the claim's size is the gate's cell set — the wide region seal that
+     * swept the walk row is the measured failure —
+     * docs/testing.md#route-claim-covers-the-cells-the-route-gate-reads.</p>
      */
     @GameTest(template = "empty_24", timeoutTicks = 400)
     public static void combat_returnHomeUsesTheRadiusAndTeleportsFromBeyond48(final GameTestHelper helper) {
@@ -1515,6 +1615,17 @@ public final class GolemCombatAiGameTest {
         // A floor out to 52 blocks along +z, so the 48-block rule is tested on ground.
         for (int z = 12; z <= 70; z++) {
             level.setBlock(new BlockPos(home.getX(), home.getY() - 1, z), Blocks.STONE.defaultBlockState(), 3);
+        }
+        // The route claim, sized to the cells the pPath gate reads (CLAIM_* / ROW_DZ javadoc): the
+        // corridor rel x11..13 × dy 0..1 × z 11..23 cleared, and the row rel (12,-1,12..70) re-laid
+        // where it went to AIR. It lands AFTER the probe's own writes so the claim cannot eat them,
+        // and it runs on EVERY tick of the drive window, not only at setup: the band plant at tick
+        // 122 — one tick before the route draw — reddens a setup-claim-only tree and goes GREEN with
+        // the per-tick pass live (docs/testing.md#route-claim-covers-the-cells-the-route-gate-reads).
+        final int[] claim = new int[3];
+        claimRouteCells(helper, home, "setup", claim);
+        for (int t = 1; t <= pTeleport + TELEPORT_TRIALS; t++) {
+            helper.runAfterDelay(t, () -> claimRouteCells(helper, home, "drive", claim));
         }
 
         helper.runAfterDelay(pSet, () -> {
@@ -1539,7 +1650,10 @@ public final class GolemCombatAiGameTest {
             final Node end = path == null ? null : path.getEndNode();
             helper.assertTrue(path != null && path.getNodeCount() > 0 && path.canReach() && end != null
                             && end.asBlockPos().getCenter().distanceToSqr(centre) <= 1.5,
-                    "start() paths to the placer's centre and the route reaches that cell: " + nodeTrail(path));
+                    "start() paths to the placer's centre and the route reaches that cell: " + nodeTrail(path)
+                    + ", route claim passes=" + claim[0] + " cleared=" + claim[1] + " relaid=" + claim[2]
+                    + " (a cleared>0 on this leg names the blocks the grid handed over; see the"
+                    + " ROUTE-CLAIM lines)");
             helper.assertTrue(returnHome.canContinueToUse(),
                     "the goal lives: delay spent, the 20-tick stall budget armed, the route live, and the golem "
                     + "is still outside the radius (:43-49)");
@@ -1547,11 +1661,14 @@ public final class GolemCombatAiGameTest {
 
         helper.runAfterDelay(pWalk, () -> {
             alive(helper, golem, "the golem");
+            System.out.println("ROUTE-CLAIM summary tick=" + helper.getTick() + " passes=" + claim[0]
+                    + " cleared=" + claim[1] + " relaid=" + claim[2]);
             final double walked = centre.distanceTo(golem.position());
             helper.assertTrue(walked < 5.0,
                     "the goal walked the golem from 10.0 blocks toward home, now " + walked
                     + " away at " + golem.blockPosition().toShortString() + ", tick " + helper.getTick()
-                    + " (the goal re-paths on its 20-tick stall budget, :43-49)");
+                    + " (the goal re-paths on its 20-tick stall budget, :43-49; route claim passes="
+                    + claim[0] + " cleared=" + claim[1] + " relaid=" + claim[2] + ")");
 
             // Beyond 48 blocks the entity tick's teleport rule takes over (2304.0 squared).
             parkBeyond48(helper, golem, home);
