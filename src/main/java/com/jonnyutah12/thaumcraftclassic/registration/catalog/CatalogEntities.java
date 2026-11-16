@@ -7,6 +7,7 @@ import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityGiantBrainyZombi
 import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityWisp;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EntityCultistLeader;
 import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EntityCultistPortal;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EntityEldritchWarden;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -113,6 +114,21 @@ public final class CatalogEntities {
             ENTITY_TYPES.register("cultistportal",
                     () -> EntityCultistPortal.buildType(MobCategory.MONSTER));
 
+    /** {@code thaumcraft:eldritchwarden} — original
+     *  {@code monster/boss/EntityEldritchWarden} (content-mapping
+     *  {@code Thaumcraft:EldritchWarden}, mod_index 26): the boss family's last
+     *  registered member, riding the shared {@code EntityThaumcraftBoss} base and
+     *  implementing the family's {@code IRangedAttackMob} twin and the
+     *  {@code IEldritchMob} marker ({@code :43}). Registration {@code (64, 3,
+     *  true)} — {@code ConfigEntities.java:109}; the box 1.5 x 3.5 ({@code :80}),
+     *  the eye height 3.1 ({@code :336-338}), the 200.0 / 0.33 / 10.0 attributes
+     *  ({@code :104-106}), the armour 4 over the base's pair ({@code :127-129})
+     *  and the 500 experience over the base's 50 ({@code :415-417}) are the
+     *  original's own ({@code WardenAiLogic}). */
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityEldritchWarden>> ELDRITCH_WARDEN =
+            ENTITY_TYPES.register("eldritchwarden",
+                    () -> EntityEldritchWarden.buildType(MobCategory.MONSTER));
+
     private CatalogEntities() {
     }
 
@@ -128,5 +144,6 @@ public final class CatalogEntities {
         event.put(GIANT_BRAINY_ZOMBIE.get(), EntityGiantBrainyZombie.createAttributes().build());
         event.put(CULTIST_LEADER.get(), EntityCultistLeader.createAttributes().build());
         event.put(CULTIST_PORTAL.get(), EntityCultistPortal.createAttributes().build());
+        event.put(ELDRITCH_WARDEN.get(), EntityEldritchWarden.createAttributes().build());
     }
 }
