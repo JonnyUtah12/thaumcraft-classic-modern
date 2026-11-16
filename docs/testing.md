@@ -694,6 +694,29 @@ restores both and `diff -q` reports byte-identical.
   subject to control *when* a rule fires, verify the park cell is really unticked — print the rule's own
   precondition (`restrictDistSqr`) on the tick before the draw; a precondition already satisfied means
   the hand-driven tick is not the write tick and the draw is a budget.
+<a id="component-codec-save-path"></a>
+- **A vanilla data component's persistent codec can reject a mod's marker, and the save path
+  swallows the ITEM, not the write.** `minecraft:entity_data` and `minecraft:block_entity_data`
+  are registered with `CustomData.CODEC_WITH_ID` (`DataComponents.java:172`; `CustomData.java:33-35`
+  is `tag.contains("id", 8) ? success : error("Missing id for entity in: " + tag)`), so a compound
+  put there with no entity `id` string makes `ItemStack#save` throw
+  (`DataComponentUtil.wrapEncodingExceptions` logs `Error saving [15 minecraft:diamond]` and
+  **rethrows**) out of `ServerLevel#save:824` — the server logs it, the save keeps going, and that
+  stack silently never reaches the region file: a user-visible item loss. Measured here: 186
+  occurrences in 53/53 legs (both accessory arms, three trees) from the pech trade-window drop
+  stamping `{PechDropOwner:"PechDrop"}` into that component (t_04233450, BD-73's first shape);
+  renaming the key does not help, the gate reads the absence of `id`, not the key name.
+  Two consequences for probe authors. (1) A probe that asserts the component's VALUE on the live
+  stack — the pre-fix `stamped == 5` arm — is GREEN over a total item loss; a write that lands on
+  a component the platform cannot serialize needs a SAVE/RELOAD arm on the crashing frames
+  (`Entity#saveWithoutId` → `ItemEntity#addAdditionalSaveData:333` → `ItemStack#save:419`) and the
+  reload frames (`Entity#load` → `ItemEntity#readAdditionalSaveData:341` → `ItemStack#parse`), and
+  the marker must be read back through the CONSUMER's own reader
+  (`AIPechItemEntityGoto#pechDropOwnerOf`), never a hand-rolled key, or a marker that survives on a
+  key nobody reads passes. (2) This defect is invisible to exit codes: the harness prints
+  `All N required tests passed` while the signature rides the shutdown log, so a leg's green says
+  nothing — grep the retained per-leg log for `Missing id for entity in` (0 on a clean tree;
+  2-12 per leg before the fix).
 
 - **A 1.0-health mob probe has to CLAIM its own mob box, and the channel a pad-sharing claim can NOT
   close is fire.** `theHarmlessFuseDiscardsPast1200TicksAndANormalSpiderNeverExpires`
@@ -775,4 +798,5 @@ the last one is converted; no NEW line-number cite is accepted anywhere.
 Anchors minted for the cited bullets (t_867b394f): `vouched-cell`, `entity-clock-poll`,
 `removal-age-names-mechanism`, `outcome-not-tick-budget`, `sweep-hazard-set-is-scan-set` (t_b33916a2, the mind-spider mob-box claim). Minted by t_8b63e037:
 `mob-seed-stream-rate-arm`. Minted by t_d8944aae (the pad-claim box-cell rule):
-`scan-claim-covers-box-cells`.
+`scan-claim-covers-box-cells`. Minted later (t_04233450): `component-codec-save-path` (the
+item-entity bullet keeps main's `attribute-not-filter`, which this card's probe cites).
