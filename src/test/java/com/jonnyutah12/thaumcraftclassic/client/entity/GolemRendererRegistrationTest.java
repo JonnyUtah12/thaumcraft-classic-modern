@@ -4,7 +4,7 @@ import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.entities.golems.EntityGolemBase;
 import com.jonnyutah12.thaumcraftclassic.entities.golems.EntityGolemBobber;
 import com.jonnyutah12.thaumcraftclassic.entities.golems.EnumGolemType;
-import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityEldritchGolem;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EntityEldritchGolem;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogGolems;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.ModelPart;
@@ -234,11 +234,12 @@ class GolemRendererRegistrationTest {
         // 1.21.1 binds a renderer to the entity type in its type parameter, so the
         // three pairings are only legal if the port\'s entity classes have the bases
         // the renderers need. Read from the source, not assumed:
-        final String eldritch = readSource("entities/monster/EntityEldritchGolem.java");
+        final String eldritch = readSource("entities/monster/boss/EntityEldritchGolem.java");
         final String bobber = readSource("entities/golems/EntityGolemBobber.java");
         final String golem = readSource("entities/golems/EntityGolemBase.java");
-        assertTrue(eldritch.contains("class EntityEldritchGolem extends Monster"),
-                "the eldritch golem is a Monster — a LivingEntity, so the LivingEntityRenderer binds");
+        assertTrue(eldritch.contains("class EntityEldritchGolem extends EntityThaumcraftBoss"),
+                "the eldritch golem is a Thaumcraft boss (EntityThaumcraftBoss extends Monster) after the "
+                        + "TC-M6-06-s-c5-3 repoint — a LivingEntity, so the LivingEntityRenderer binds");
         assertTrue(golem.contains("class EntityGolemBase extends"),
                 "the golem keeps its own base class; its renderer is parameterized on that class");
         assertTrue(bobber.contains("class EntityGolemBobber extends Entity"),

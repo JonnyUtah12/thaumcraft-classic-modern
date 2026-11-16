@@ -1189,6 +1189,31 @@ below its anchor line) and `TARGET[...]` is the text sitting there — a stale c
 whose TARGET is not the rule the citing comment describes. A missing or duplicated anchor prints
 `STALE[...]` and exits 1. A deprecated line-number cite prints `LEGACY[...]` and exits 0 until
 the last one is converted; no NEW line-number cite is accepted anywhere.
+<a id="stride-motion-moves-the-read-cell"></a>
+- **A leg that reads a cell derived from the mob's position has to plant its payload where the
+  CODE's read lands, not where the geometry says it should - and the read cell is MEASURED on the
+  pad, not derived on paper.** The Eldritch Golem's footstep arm (ported verbatim: the motion gate
+  `motionX*motionX + motionZ*motionZ > 2.5E-7`, the `nextInt(5) == 0` roll, the row
+  `floor(posY - 0.2F - this.height)`) reddened with every term satisfied on paper: motion 0.455
+  clears the gate, the row is four cells under a 3.5 box, and the urn in the mob's own column at
+  that row stood for all 200 trials - the per-tick draw puts the miss at 0.8^200 = 4.1E-20, so the
+  roll is not the explanation (`docs/testing.md#outcome-not-tick-budget` in reverse: the budget was
+  sound, the CELL was not). The probe's own per-tick census answers it: 21.1.259's
+  `LivingEntity#aiStep` applies the stride motion to the POSITION before the code below
+  `super.aiStep()` reads `floor(posX)`, so a mob pinned at its cell centre scores the cell ONE EAST
+  of its own column - the logged read cell held `Block{minecraft:stone}` while the placed column
+  held `Block{thaumcraft:blocklooturn}[variant=0]`. Shape: plant in the measured cell, keep the two
+  cells a WRONG read breaks as decoys (the mob's own column at the same row, and one under the feet
+  - the reading that drops the height term), take the cell into the probe's claim set
+  (`docs/testing.md#orb-claim-covers-asserted-cells`), and log the read cell on the leg's first tick
+  so the geometry stays on the record. This is the
+  `docs/testing.md#pad-write-lands-only-in-a-loaded-chunk` discipline with the axis moved: not which
+  CHUNK the write lands in, WHICH CELL the code's own arithmetic names. Teeth - the shipped leg put
+  the urn in the feet column on an otherwise green tree and reddened 200/200 trials (the red above);
+  the fixed leg is green in both arms and its decoy asserts pin the two readings the fix must not
+  become (`BossMobGameTest#theGolemCrushesASnowCellAndBreaksLootAheadOfItsStride`).
+
+
 
 Anchors minted for the cited bullets (t_867b394f): `vouched-cell`, `entity-clock-poll`,
 `removal-age-names-mechanism`, `outcome-not-tick-budget`, `sweep-hazard-set-is-scan-set` (t_b33916a2, the mind-spider mob-box claim). Minted by t_8b63e037:
@@ -1197,4 +1222,4 @@ Anchors minted for the cited bullets (t_867b394f): `vouched-cell`, `entity-clock
 item-entity bullet keeps main's `attribute-not-filter`, which this card's probe cites). Minted by t_b98f2601 (the orb-cell claim rule):
 `orb-claim-covers-asserted-cells`. Minted by t_9687e91a (the deferred-chunkgen producer rule):
 `deferred-chunkgen-stamps-pad-cells`. Minted by t_764d1e8e (the harness gate on that
-producer): `deferred-chunkgen-gated-in-gametest`. Minted by t_c36620d6 (the golem route-arm node-trail rule): `route-arm-node-trail-names-the-channel`. Minted by t_4c531ae6 (the golem route-arm claim, the fix that card handed over): `route-claim-covers-the-cells-the-route-gate-reads`.
+producer): `deferred-chunkgen-gated-in-gametest`. Minted by t_c36620d6 (the golem route-arm node-trail rule): `route-arm-node-trail-names-the-channel`. Minted by t_4c531ae6 (the golem route-arm claim, the fix that card handed over): `route-claim-covers-the-cells-the-route-gate-reads`. Minted by t_d6a23f78 (the stride-cell rule): `stride-motion-moves-the-read-cell` (the footstep arm's read cell is the stride's cell, measured).
