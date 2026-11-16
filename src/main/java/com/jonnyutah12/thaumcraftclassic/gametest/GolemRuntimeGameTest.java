@@ -537,10 +537,13 @@ public final class GolemRuntimeGameTest {
                             + " Entity#saveAsPassenger) keeps the idle golem; false is the entity"
                             + " being dropped out of the chunk's Entities list");
         } catch (final RuntimeException e) {
-            helper.fail("the idle golem throws on its SECOND save, which is the line NeoForge's"
-                    + " EntityStorage catches with 'has thrown an exception trying to write state."
-                    + " It will not persist' - the entity never reaches the region file, so the"
-                    + " golem is gone on reload. Chain: " + describe(e));
+            // NOTE for the census grep: do NOT paste EntityStorage's verbatim log phrase in a
+            // probe message — the gate counts that string in the leg logs, and a probe that
+            // quotes it inflates the count it is measuring (measured: 1 self-match in a leg).
+            helper.fail("the idle golem throws on its SECOND save, which is the per-entity catch"
+                    + " that makes NeoForge's EntityStorage drop the entity out of the chunk data"
+                    + " (the golem never reaches the region file, so it is gone on reload)."
+                    + " Chain: " + describe(e));
         }
 
         // ... and the state that must survive it.
