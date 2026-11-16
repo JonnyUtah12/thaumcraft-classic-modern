@@ -62,6 +62,14 @@ neoForge {
             // TC-M2-01 registration harness: probe content + the id-contract CSV.
             systemProperty 'thaumcraft.testprobe', 'true'
             systemProperty 'tc.contentMappingFile', file('docs/content-mapping.csv').getAbsolutePath()
+            // t_764d1e8e: the pads sit in chunks whose coordinates run into the millions, and the
+            // deferred magic-chunkgen pass stamps those pads' cells — rings write
+            // thaumcraft:blockeldritch and carve air, the mound/hilltop pass writes dirt/grass/
+            // cobblestone — so a probe that asserts its own geometry draws worldgen every leg
+            // (docs/testing.md#deferred-chunkgen-gated-in-gametest). The game-test server has no use
+            // for millions-coordinate structures, so the harness gates the pass; -Ptc.chunkGenOn
+            // re-arms it for a measurement leg.
+            systemProperty 'tc.noChunkGen', project.hasProperty('tc.chunkGenOn') ? 'false' : 'true'
         }
 
         data {
