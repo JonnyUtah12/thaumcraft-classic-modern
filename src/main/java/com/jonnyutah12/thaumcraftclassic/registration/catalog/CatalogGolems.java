@@ -3,7 +3,8 @@ package com.jonnyutah12.thaumcraftclassic.registration.catalog;
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
 import com.jonnyutah12.thaumcraftclassic.entities.golems.EntityGolemBase;
 import com.jonnyutah12.thaumcraftclassic.entities.golems.EntityGolemBobber;
-import com.jonnyutah12.thaumcraftclassic.entities.monster.EntityEldritchGolem;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EldritchGolemAiLogic;
+import com.jonnyutah12.thaumcraftclassic.entities.monster.boss.EntityEldritchGolem;
 import com.jonnyutah12.thaumcraftclassic.entities.projectile.EntityDart;
 import com.jonnyutah12.thaumcraftclassic.entities.projectile.EntityGolemOrb;
 import com.jonnyutah12.thaumcraftclassic.items.golems.ItemGolemBell;
@@ -136,16 +137,19 @@ public final class CatalogGolems {
      * (content-mapping {@code Thaumcraft:EldritchGolem}, mod_index 31). Hitbox
      * 1.75 x 3.5 and tracking 64 / interval 3 are the original's own figures
      * ({@code EntityEldritchGolem.java:54};
-     * {@code ConfigEntities.java:119}); category MONSTER is the 1.21.1 home of
+     * {@code ConfigEntities.java:119}) — the 64 blocks of that row are 4 chunks in
+     * 21.1's builder unit, and the sound trio of {@code :111-121} rides the class's
+     * own {@code getHurtSound}/{@code getDeathSound}/{@code playStepSound} overrides,
+     * not a {@code SoundType} on this builder; category MONSTER is the 1.21.1 home of
      * the 1.7.10 hostile-mob base. No spawn placement: the original registers
      * none for it (it is summoned/boss-spawned).
      */
     public static final DeferredHolder<EntityType<?>, EntityType<EntityEldritchGolem>> ELDRITCH_GOLEM =
             ENTITY_TYPES.register("eldritchgolem", () -> EntityType.Builder
                     .of(EntityEldritchGolem::new, MobCategory.MONSTER)
-                    .sized(EntityEldritchGolem.WIDTH, EntityEldritchGolem.HEIGHT)
-                    .clientTrackingRange(EntityEldritchGolem.TRACKING_RANGE)
-                    .updateInterval(EntityEldritchGolem.UPDATE_INTERVAL)
+                    .sized(EldritchGolemAiLogic.WIDTH, EldritchGolemAiLogic.HEIGHT)
+                    .clientTrackingRange(EldritchGolemAiLogic.TRACK_RANGE_CHUNKS)
+                    .updateInterval(EldritchGolemAiLogic.UPDATE_INTERVAL)
                     .build("eldritchgolem"));
 
     /**
@@ -186,8 +190,8 @@ public final class CatalogGolems {
     public static final DeferredItem<DeferredSpawnEggItem> SPAWN_EGG_ELDRITCH_GOLEM =
             ITEMS.register("spawnegg.eldritchgolem", () -> new DeferredSpawnEggItem(
                     ELDRITCH_GOLEM::get,
-                    EntityEldritchGolem.EGG_PRIMARY,
-                    EntityEldritchGolem.EGG_SECONDARY,
+                    EldritchGolemAiLogic.EGG_PRIMARY,
+                    EldritchGolemAiLogic.EGG_SECONDARY,
                     new Item.Properties()));
 
     /**
