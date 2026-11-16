@@ -31,7 +31,6 @@ import com.jonnyutah12.thaumcraftclassic.entities.projectile.EntityGolemOrb;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.Pose;
@@ -1577,12 +1576,10 @@ public final class BossMobGameTest {
             new BlockPos(0, -1, 0));
 
     /**
-     * The stride leg's pinned roll seed and budget. {@code :135} draws {@code nextInt(5) == 0} —
-     * one tick in five — so the leg is a per-tick draw; pinning the seed keeps the sequence fixed
-     * when the batch repacks (the suite's known RNG-cliff shape) and 200 ticks put the miss at
-     * 0.8^200 = 4.1E-20.
+     * The stride leg's tick budget. {@code :135} draws {@code nextInt(5) == 0} — one tick in five —
+     * so the leg is a per-tick draw; 200 trials put the miss at 0.8^200 = 4.1E-20, which keeps it
+     * off the suite's known RNG cliff when the batch repacks.
      */
-    private static final long FOOTSTEP_ROLL_SEED = 0x5EEDC53L;
     private static final int FOOTSTEP_STRIDE_TICKS = 200;
 
     private static BlockPos golemCell(final GameTestHelper helper) {
@@ -2159,52 +2156,73 @@ public final class BossMobGameTest {
                     ":164 — hardness 1.5 is above 0.15: the cell must survive, got "
                             + level.getBlockState(crushAbs));
             helper.setBlock(GOLEM_REL, Blocks.AIR);
-            // :153-155 — the footstep leg's BlockLoot arm, one roll in five over real motion, on
-            // the row :137 computes. Pin the arithmetic, put the loot where the reference looks,
-            // and leave a decoy urn one cell under the feet: a reading that drops the height term
-            // (the "obvious" one) breaks the decoy and goes red here.
+            // :153-155 — the footstep leg's BlockLoot arm, one roll in five, on the row :137
+            // computes and the cell :136 computes UNDER THE STRIDE. Measured on this pad: the tick
+            // applies the stride motion to the position before :136 reads, so a mob pinned at its
+            // cell centre reads the cell ONE EAST of its own column (the probe's first pass put the
+            // loot under the feet column and the arm scored stone). Decoys: the cell in the mob's
+            // own column four down, and the cell one below the feet — a reading that drops the
+            // height term, or that reads under the feet, breaks a decoy and goes red.
             helper.assertTrue(row == at.getY() - 4,
                     ":137 — for feet y=" + mob.getY() + " and a " + mob.getBbHeight() + " box the"
                             + " footstep row is " + row + ", four cells under the mob's cell at y="
                             + at.getY() + " (floor(posY - 0.2F - this.height), the reference's own"
                             + " arithmetic)");
+            final BlockPos strideCell = lootAbs.east();
             helper.setBlock(GOLEM_REL.offset(0, -1, 0), CatalogTrinketsLoot.BLOCK_LOOT_URN.get());
             helper.setBlock(GOLEM_REL.offset(0, dy, 0), CatalogTrinketsLoot.BLOCK_LOOT_URN.get());
+            helper.setBlock(GOLEM_REL.offset(1, dy, 0), CatalogTrinketsLoot.BLOCK_LOOT_URN.get());
             // Control on the platform seam: the port's own removal of a loot urn at that cell. A
             // red here is the urn's removal, not the golem's arm.
-            helper.assertTrue(level.destroyBlock(lootAbs, true),
-                    "control — Level#destroyBlock removes the loot urn at " + lootAbs
-                            + " (the cell :137 reads); a red here is the block's own removal, not"
-                            + " the golem's footstep arm");
-            helper.setBlock(GOLEM_REL.offset(0, dy, 0), CatalogTrinketsLoot.BLOCK_LOOT_URN.get());
-            // Pin the roll: :135 draws one nextInt(5) per tick and fires on 0, so the stride leg is
-            // a 1-in-5 draw per tick. A seed makes the draw sequence deterministic across batch
-            // repacking, and 200 ticks put the miss at 0.8^200 = 4.1E-20 — no RNG cliff.
-            mob.setRandom(new RandomSource.Legacy(FOOTSTEP_ROLL_SEED));
+            helper.assertTrue(level.destroyBlock(strideCell, true),
+                    "control — Level#destroyBlock removes the loot urn at " + strideCell
+                            + " (the stride cell :136-138 reads); a red here is the block's own"
+                            + " removal, not the golem's footstep arm");
+            helper.setBlock(GOLEM_REL.offset(1, dy, 0), CatalogTrinketsLoot.BLOCK_LOOT_URN.get());
+            // :135 draws nextInt(5) == 0 every tick (one tick in five), so this leg is a per-tick
+            // draw: 200 trials put the miss at 0.8^200 = 4.1E-20, which is what keeps the leg off
+            // the suite's known RNG cliff when the batch repacks. The entity's random is a final
+            // field with no setter in 21.1.259, so the trial count is the lever, not a seed.
             int ticks = 0;
             int decoy = 0;
-            while (ticks < FOOTSTEP_STRIDE_TICKS && !level.getBlockState(lootAbs).isAir()) {
-                // Hold the mob in its cell while the stride drives the motion: the reference reads
-                // floor(posX)/floor(posZ) every tick and 0.5/tick walks it out of the claimed cell
-                // inside two ticks, scoring the geometry instead of the seam.
+            int strideDecoy = 0;
+            while (ticks < FOOTSTEP_STRIDE_TICKS && !level.getBlockState(strideCell).isAir()) {
+                // Hold the mob at its cell centre while the stride drives the motion, so the cell
+                // :136 reads stays the one this probe claimed.
                 mob.setPos(at.getX() + 0.5, mob.getY(), at.getZ() + 0.5);
                 mob.setDeltaMovement(0.5, 0.0, 0.0);
                 mob.aiStep();
                 ticks++;
+                if (ticks == 1) {
+                    LOGGER.info("[TC-M6-06-boss] [t_d6a23f78] the stride leg's measured read: mob"
+                            + " pos=({}, {}, {}), bbHeight=" + mob.getBbHeight() + ", motion="
+                            + mob.getDeltaMovement() + " -> the :136-138 cell ({}, {}, {}) holds "
+                            + "the stride cell {}; the mob's own column at row {} holds {}",
+                            mob.getX(), mob.getY(), mob.getZ(), Mth.floor(mob.getX()), row,
+                            Mth.floor(mob.getZ()), level.getBlockState(strideCell), row,
+                            level.getBlockState(lootAbs));
+                }
                 if (level.getBlockState(at.offset(0, -1, 0)).isAir()) {
                     decoy++;
                 }
+                if (level.getBlockState(lootAbs).isAir()) {
+                    strideDecoy++;
+                }
             }
-            helper.assertTrue(level.getBlockState(lootAbs).isAir(),
-                    ":135-155 — a BlockLoot cell in the :137 row (row " + row + ", x=" + at.getX()
-                            + ", z=" + at.getZ() + ") breaks under a striding golem within "
-                            + FOOTSTEP_STRIDE_TICKS + " ticks (the roll is one in five per tick,"
-                            + " seed " + FOOTSTEP_ROLL_SEED + "); got " + level.getBlockState(lootAbs)
-                            + " after " + ticks + " ticks");
+            helper.assertTrue(level.getBlockState(strideCell).isAir(),
+                    ":135-155 — a BlockLoot cell in the row :137 reads (row " + row + ", the stride"
+                            + " cell " + strideCell + ") breaks under a striding golem within "
+                            + FOOTSTEP_STRIDE_TICKS + " ticks (the roll is one in five per tick, so"
+                            + " the miss sits at 0.8^" + FOOTSTEP_STRIDE_TICKS + "); got "
+                            + level.getBlockState(strideCell) + " after " + ticks + " ticks");
             helper.assertTrue(decoy == 0,
                     ":137 — the loot cell ONE below the feet survived all " + ticks
                             + " striding ticks; breaking it means the height term fell out of the"
                             + " row arithmetic");
+            helper.assertTrue(strideDecoy == 0,
+                    ":136 — the loot cell in the mob's OWN column at the :137 row survived all "
+                            + ticks + " striding ticks: the stride's motion puts the next cell east"
+                            + " under the read, so a read under the feet column goes red here");
             helper.setBlock(GOLEM_REL.offset(0, -1, 0), Blocks.AIR);
             helper.setBlock(GOLEM_REL.offset(0, dy, 0), Blocks.STONE);
         } finally {
