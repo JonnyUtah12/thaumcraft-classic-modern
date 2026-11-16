@@ -1603,9 +1603,10 @@ public final class GolemCombatAiGameTest {
      * flag before attributing the red — docs/testing.md#route-arm-node-trail-names-the-channel.</p>
      *
      * <p>The probe claims the cells that draw reads: {@link #claimRouteCells} clears the corridor
-     * rel x11..13 × dy 0..1 × z 11..23 and re-lays the walk row rel (12,-1,12..70) at setup AND on
-     * every tick of the drive window, printing what it cleared. The per-tick pass is the lever, not
-     * the setup claim, and the claim's size is the gate's cell set — the wide region seal that
+     * rel x11..13 × dy 0..1 × z 11..23 and re-lays the walk row rel (12,-1,12..70) at setup, on
+     * every tick of the drive window, and as the first statement of the {@code pPath} and {@code pWalk}
+     * draw callbacks, printing what it cleared. The live passes — not the setup claim — are the lever,
+     * and the claim's size is the gate's cell set — the wide region seal that
      * swept the walk row is the measured failure —
      * docs/testing.md#route-claim-covers-the-cells-the-route-gate-reads.</p>
      */
