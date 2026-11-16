@@ -28,7 +28,10 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -131,6 +134,13 @@ public final class GolemInteractAiGameTest {
      * inside that window (measured: 7 of 8 cells were Block{air} on the drive's first draw).
      */
     private static final int PLANT_TICK = 40;
+
+    /**
+     * Ticks the pad must be quiet before the drive's light gate runs: a glowstone the pad
+     * had to re-place lands in the light engine's queue, and the raw read is the propagated
+     * value only some ticks later (the same queueing that pops a crop planted at setup).
+     */
+    private static final int LIGHT_SETTLE = 10;
 
     /**
      * Sentinel for a crop cell the probe can no longer read as a crop. The age census
@@ -250,6 +260,225 @@ public final class GolemInteractAiGameTest {
     }
 
     // ------------------------------------------------------------------
+    //  The harvest pads: what the crop fixtures own, and who services it
+    // ------------------------------------------------------------------
+
+    /**
+     * What a pad service call is asked to do. {@link #CLAIM} clears foreign blocks out
+     * of the fixture's cells and pays the light, and plants NOTHING (it runs at setup,
+     * before the fixture, so it can never eat a fixture — the rule at
+     * docs/testing.md#sweep-hazard-set-is-scan-set: "Claim first, fixtures after").
+     * {@link #PLANT} is the fixture itself (wet soil + crop at the pad's age).
+     * {@link #SERVICE} keeps the light, the soil and the headroom paid during the drive
+     * window and never touches a crop: a ripe crop the goal has just chopped must stay
+     * chopped for the probe's own draws, so the crop arm belongs to the probe, not to
+     * the pad.
+     */
+    private enum PadMode { CLAIM, PLANT, SERVICE }
+
+    /**
+     * The block cells a harvest crop patch owns: per crop column the source at
+     * {@code y=-1}, the soil at {@code y=0}, the crop at {@code y=1} and its headroom at
+     * {@code y=2}, plus the golem's walk cells at {@code y=0..2}. The counters keep every
+     * write the pad made on the record, and {@link #lastWriteTick} says when the pad last
+     * wrote, because a freshly placed light source needs ticks to propagate.
+     *
+     * <p><b>Why a claim is needed at all: a pad's BLOCK space is handed over DIRTY.</b>
+     * The harness's 1x1x1 pads stride 6 cells ({@code StructureGridSpawner}: stride =
+     * {@code template width + 5} / {@code depth + 6}), sixteen of them pack inside this
+     * 24-wide footprint, their bodies run in the SAME tick as this probe's, and
+     * {@code StructureUtils#clearSpaceForStructure} clears BLOCK space only — a
+     * neighbour's {@code setBlock} lands on a scripted cell of a big pad. This lane's
+     * scripted cells include the crop's LIGHT SOURCE, so the wave does not merely block a
+     * walk cell: it deletes the light the fixture paid for. {@code CropBlock#canSurvive}
+     * (CropBlock.java:164-171) is the {@code getRawBrightness(pos, 0) >= 8} gate, and
+     * {@code BushBlock#updateShape} (BushBlock.java:30-35) pops the crop to
+     * {@code Block{air}} on the FIRST neighbour update that fails it — and the wave's own
+     * {@code setBlock} IS that neighbour update.</p>
+     *
+     * <p>Measured on the 529-probe grid at sha {@code 2eda098b}, CI run 43788415254
+     * (job 133041135996, {@code -Ptc.noCurios}, attempt 1): the plant tick printed
+     * {@code raw=0} in six of the eight crop cells — the glowstone under them gone and
+     * the sky channel roofed — while the two cells whose source survived printed
+     * {@code raw=13}, exactly the fixture's own depth-2 block channel (15 − 1 farmland
+     * − 1). The drive's gate tick printed {@code repaired=5 ... raw=10 raw=9 raw=8 raw=7
+     * raw=9} and reddened on cell {@code (5, 1, 6)} at raw 7. The sibling sample at the
+     * same sha (land-ref run 43786472558, job 133035144147) printed {@code raw=15} in all
+     * eight cells and never named this probe: that leg was handed a clean pad. So the
+     * lane's rate is the handoff, and the cells the handoff dirties are the cells this
+     * pad now claims (docs/testing.md#harvest-pad-claims-its-light-layer).</p>
+     */
+    private static final class HarvestPad {
+
+        /** Crop columns as {@code {x, z}}; the pad owns them at y=-1..2. */
+        private final int[][] crops;
+
+        /** The golem's walk columns as {@code {x, z}}; owned at y=0..2 only. */
+        private final int[][] walk;
+
+        /** The age the fixture plants: 7 = ripe (the reap probe), 2 = unripe. */
+        private final int age;
+
+        private final AtomicInteger cleared = new AtomicInteger();
+        private final AtomicInteger relit = new AtomicInteger();
+        private final AtomicInteger soils = new AtomicInteger();
+        private final AtomicInteger planted = new AtomicInteger();
+
+        /** The last test tick on which the pad wrote a block (light needs ticks to spread). */
+        private final AtomicLong lastWriteTick = new AtomicLong(Long.MIN_VALUE / 4);
+
+        HarvestPad(final int[][] crops, final int[][] walk, final int age) {
+            this.crops = crops;
+            this.walk = walk;
+            this.age = age;
+        }
+
+        /** One-line census for an assert message. */
+        String census() {
+            return "cleared=" + cleared.get() + " relit=" + relit.get() + " soil=" + soils.get()
+                    + " planted=" + planted.get() + " lastWriteTick=" + lastWriteTick.get();
+        }
+    }
+
+    /**
+     * Claim / plant / service a harvest pad, and PRINT every write. The light layer is
+     * the arm that matters: one glowstone directly under every crop cell keeps the
+     * block channel at 13 in the crop cell permanently, so
+     * {@code max(block, sky - skyDarken)} can never fall under the {@code >= 8} gate a
+     * crop's {@code canSurvive} consults (docs/testing.md#crop-light-propagation-depth).
+     * A foreign block in the source cell, the soil cell, the crop cell or the headroom
+     * cell is named in the leg's log line, so a green leg says the pad was handed over
+     * clean and a red leg says what arrived.
+     */
+    private static void serviceHarvestPad(final GameTestHelper helper, final HarvestPad pad,
+                                          final PadMode mode) {
+        final long tick = helper.getTick();
+        final List<String> writes = new ArrayList<>();
+        int cleared = 0;
+        int relit = 0;
+        int soils = 0;
+        int planted = 0;
+        for (final int[] cell : pad.crops) {
+            final int x = cell[0];
+            final int z = cell[1];
+            // 1. Headroom: the crop cell must not be roofed. A block at y=2 kills the sky
+            //    channel, and a cell whose source is gone has nothing left above 8.
+            final BlockState head = helper.getBlockState(new BlockPos(x, 2, z));
+            if (!head.isAir()) {
+                helper.setBlock(x, 2, z, Blocks.AIR.defaultBlockState());
+                writes.add(head + " @ rel (" + x + ", 2, " + z + ")");
+                cleared++;
+            }
+            // 2. CLAIM also strips foreign blocks off the soil and crop cells; the fixture
+            //    owns those cells and its writes come after the claim.
+            if (mode == PadMode.CLAIM) {
+                for (final int y : new int[] { 1, 0 }) {
+                    final BlockState foreign = helper.getBlockState(new BlockPos(x, y, z));
+                    if (!foreign.isAir()) {
+                        helper.setBlock(x, y, z, Blocks.AIR.defaultBlockState());
+                        writes.add(foreign + " @ rel (" + x + ", " + y + ", " + z + ")");
+                        cleared++;
+                    }
+                }
+            }
+            // 3. The light the fixture paid for: y=-1, two steps under the crop, through
+            //    the farmland (lightBlock 1) into the crop cell (lightBlock 0) = 13.
+            final BlockState source = helper.getBlockState(new BlockPos(x, -1, z));
+            if (!source.is(Blocks.GLOWSTONE)) {
+                helper.setBlock(x, -1, z, Blocks.GLOWSTONE.defaultBlockState());
+                writes.add("source " + source + " -> glowstone @ rel (" + x + ", -1, " + z + ")");
+                relit++;
+            }
+            // 4. The soil: a crop above holds farmland via MAINTAINS_FARMLAND
+            //    (FarmBlock.java:124-126) and FarmBlock.java:95-104 dries DRY farmland to
+            //    dirt, so the pad pays it wet.
+            final BlockState ground = helper.getBlockState(new BlockPos(x, 0, z));
+            if (!ground.is(Blocks.FARMLAND)) {
+                helper.setBlock(x, 0, z, Blocks.FARMLAND.defaultBlockState()
+                        .setValue(BlockStateProperties.MOISTURE, 7));
+                writes.add("soil " + ground + " -> farmland[moisture=7] @ rel (" + x + ", 0, " + z + ")");
+                soils++;
+            }
+            // 5. The crop. PLANT plants the fixture; SERVICE touches the cell only where
+            //    contamination is PROVEN — a foreign block sitting in the crop cell (the
+            //    wave's own write, named in the census) or a source the pad had to re-place
+            //    this tick — and restores the crop that write destroyed. Planting every tick
+            //    would fake a reap the goal never did: the probe's reap arm needs a
+            //    7 -> 0 transition, which only the goal's own replant produces, so a ripe
+            //    crop planted here can never inflate it.
+            final BlockState here = helper.getBlockState(new BlockPos(x, 1, z));
+            if (mode == PadMode.PLANT && !here.hasProperty(CropBlock.AGE)) {
+                helper.setBlock(x, 1, z, Blocks.WHEAT.defaultBlockState().setValue(CropBlock.AGE, pad.age));
+                writes.add("planted wheat[age=" + pad.age + "] @ rel (" + x + ", 1, " + z + ")");
+                planted++;
+            } else if (mode == PadMode.SERVICE && !here.isAir() && !here.hasProperty(CropBlock.AGE)) {
+                helper.setBlock(x, 1, z, Blocks.WHEAT.defaultBlockState().setValue(CropBlock.AGE, pad.age));
+                writes.add("crop-repair cleared " + here + " -> wheat[age=" + pad.age + "] @ rel ("
+                        + x + ", 1, " + z + ")");
+                cleared++;
+                planted++;
+            } else if (mode == PadMode.SERVICE && relit > 0 && !here.hasProperty(CropBlock.AGE)) {
+                helper.setBlock(x, 1, z, Blocks.WHEAT.defaultBlockState().setValue(CropBlock.AGE, pad.age));
+                writes.add("crop-repair " + here + " -> wheat[age=" + pad.age + "] @ rel ("
+                        + x + ", 1, " + z + ")");
+                planted++;
+            } else if (mode == PadMode.CLAIM && !here.isAir() && !here.hasProperty(CropBlock.AGE)) {
+                helper.setBlock(x, 1, z, Blocks.AIR.defaultBlockState());
+                writes.add(here + " @ rel (" + x + ", 1, " + z + ")");
+                cleared++;
+            }
+        }
+        for (final int[] cell : pad.walk) {
+            for (int y = 0; y <= 2; y++) {
+                final BlockState foreign = helper.getBlockState(new BlockPos(cell[0], y, cell[1]));
+                if (!foreign.isAir()) {
+                    helper.setBlock(cell[0], y, cell[1], Blocks.AIR.defaultBlockState());
+                    writes.add(foreign + " @ walk rel (" + cell[0] + ", " + y + ", " + cell[1] + ")");
+                    cleared++;
+                }
+            }
+        }
+        if (!writes.isEmpty()) {
+            pad.lastWriteTick.set(tick);
+            pad.cleared.addAndGet(cleared);
+            pad.relit.addAndGet(relit);
+            pad.soils.addAndGet(soils);
+            pad.planted.addAndGet(planted);
+            System.out.println("HARVEST-PAD " + mode + " tick=" + tick + " cleared=" + cleared
+                    + " relit=" + relit + " soil=" + soils + " planted=" + planted + " ["
+                    + String.join(", ", writes) + "]");
+        }
+    }
+
+    /**
+     * The survival gate {@code CropBlock} itself consults, asserted on the drive's first
+     * QUIET tick — a tick at least {@code LIGHT_SETTLE} ticks after the pad last wrote, so
+     * a glowstone the pad had to re-place has had ticks to propagate — and in any case by
+     * {@code SETTLE + 60}, where a pad under active attack reddens with its census naming
+     * the source cell. The threshold is the fixture's own block channel (13), not the
+     * vanilla floor (8): a cell reading between 8 and 13 has lost the source the fixture
+     * paid for and is running on a neighbour's light.
+     */
+    private static void assertHarvestPadLight(final GameTestHelper helper, final HarvestPad pad,
+                                              final int lightSettle) {
+        for (final int[] cell : pad.crops) {
+            final BlockPos crop = new BlockPos(cell[0], 1, cell[1]);
+            final BlockPos abs = helper.absolutePos(crop);
+            final int raw = helper.getLevel().getRawBrightness(abs, 0);
+            helper.assertTrue(raw >= 13,
+                    "the crop patch sits under CropBlock#hasSufficientLight"
+                            + " (getRawBrightness < 13, the fixture's own depth-2 block channel: a"
+                            + " glowstone at y=-1 under the soil, 15 - 1 farmland - 1 = 13) at " + crop
+                            + " (abs " + abs + ", state " + helper.getLevel().getBlockState(abs)
+                            + ", below " + helper.getLevel().getBlockState(abs.below())
+                            + ", source " + helper.getLevel().getBlockState(abs.below(2))
+                            + ", raw=" + raw + ", tick " + helper.getTick() + ", pad " + pad.census()
+                            + "); BushBlock#updateShape pops such a crop to Block{air} on the next"
+                            + " neighbour update (docs/testing.md#harvest-pad-claims-its-light-layer)");
+        }
+    }
+
+    // ------------------------------------------------------------------
     // 1. Harvest: a core-3 golem reaps ripe wheat and replants it
     // (blockTestedGolem.java:178-186)
     // ------------------------------------------------------------------
@@ -297,25 +526,27 @@ public final class GolemInteractAiGameTest {
         // max(block, sky - skyDarken) can never fall under the >= 8 gate — the sky transient
         // has nothing left to take away. Sources sit BELOW the soil, so the golem's walk
         // cells and the crops' headroom are untouched.
-        for (final int[] cell : cells) {
-            helper.setBlock(cell[0], -1, cell[1], Blocks.GLOWSTONE.defaultBlockState());
-        }
+        // The pad claims its own cells BEFORE the fixture goes in, and keeps them paid for
+        // the whole drive window: the grid hands BLOCK space over dirty (a neighbour pad's
+        // write lands in these cells) and the cells this fixture owns include the crop's
+        // light source, so an unclaimed handoff deletes the light the crop needs and
+        // BushBlock#updateShape pops it. HarvestPad's javadoc carries the measured CI pair.
+        final HarvestPad pad = new HarvestPad(cells, new int[][] { { 4, 4 } }, 7);
+        serviceHarvestPad(helper, pad, PadMode.CLAIM);
         helper.setBlock(4, 3, 4, Blocks.GLOWSTONE.defaultBlockState());
         // The crop lands only after that light has settled: planting at setup plants into
         // the unlit window, which is where the pop comes from.
         helper.runAtTickTime(PLANT_TICK, () -> {
+            serviceHarvestPad(helper, pad, PadMode.PLANT);
             final StringBuilder lit = new StringBuilder();
             for (int i = 0; i < crops.length; i++) {
-                final int x = cells[i][0];
-                final int z = cells[i][1];
-                helper.setBlock(x, 0, z, Blocks.FARMLAND.defaultBlockState()
-                        .setValue(BlockStateProperties.MOISTURE, 7));
-                helper.setBlock(x, 1, z, Blocks.WHEAT.defaultBlockState().setValue(CropBlock.AGE, 7));
-                lit.append(" [").append(x).append(',').append(z).append("] raw=")
+                lit.append(" [").append(cells[i][0]).append(',').append(cells[i][1])
+                        .append("] raw=")
                         .append(helper.getLevel().getRawBrightness(
                                 helper.absolutePos(crops[i]), 0));
             }
-            System.out.println("HARVEST-FIXTURE plant tick=" + helper.getTick() + ":" + lit);
+            System.out.println("HARVEST-FIXTURE plant tick=" + helper.getTick() + ":" + lit
+                    + " pad " + pad.census());
         });
 
         final AIHarvestCrops[] goal = new AIHarvestCrops[1];
@@ -339,7 +570,15 @@ public final class GolemInteractAiGameTest {
             if (golem.tickCount < MOB_SETTLE) {
                 return;
             }
-            if (gateChecked.compareAndSet(false, true)) {
+            serviceHarvestPad(helper, pad, PadMode.SERVICE);
+            // The light gate runs on the drive's first QUIET tick: LIGHT_SETTLE ticks after
+            // the pad last wrote, so a glowstone the pad had to re-place has had ticks to
+            // propagate. In any case it runs by SETTLE + 60, where a pad under active attack
+            // reddens with its census naming the source cell the grid ate.
+            if (!gateChecked.get()
+                    && (helper.getTick() - pad.lastWriteTick.get() >= LIGHT_SETTLE
+                            || helper.getTick() >= SETTLE + 60)) {
+                gateChecked.set(true);
                 // The fixture owns these cells. If the settle window's light transient (or a
                 // neighbour pad's block write) popped a cell before the drive opened, restore
                 // the fixture and PRINT it — the drive's draws then measure the harvest goal's
@@ -367,20 +606,13 @@ public final class GolemInteractAiGameTest {
                 }
                 if (repaired.get() > 0) {
                     System.out.println("HARVEST-FIXTURE repaired=" + repaired.get()
-                            + " at tick " + helper.getTick() + ":" + healed);
+                            + " at tick " + helper.getTick() + ":" + healed + " pad "
+                            + pad.census());
                 }
-                // The survival gate CropBlock itself consults, asserted on the drive's
-                // first tick — before any draw depends on it — in the probe's own message.
-                for (final BlockPos crop : crops) {
-                    final BlockPos abs = helper.absolutePos(crop);
-                    helper.assertTrue(helper.getLevel().getRawBrightness(abs, 0) >= 8,
-                            "the crop patch sits under CropBlock#hasSufficientLight"
-                                    + " (getRawBrightness < 8) at " + crop + " (abs " + abs + ", state "
-                                    + helper.getLevel().getBlockState(abs) + ", below "
-                                    + helper.getLevel().getBlockState(abs.below()) + ", tick "
-                                    + helper.getTick() + "); BushBlock#updateShape pops such a crop to"
-                                    + " Block{air} on the next neighbour update");
-                }
+                // The survival gate CropBlock itself consults, asserted on the drive's first
+                // quiet tick — before any draw depends on it — in the probe's own message,
+                // at the fixture's own depth-2 block channel (13), not the vanilla floor (8).
+                assertHarvestPadLight(helper, pad, LIGHT_SETTLE);
             }
             for (int i = 0; i < crops.length; i++) {
                 // Classify the state, then read the property: IntegerProperty{name=age}
@@ -489,8 +721,17 @@ public final class GolemInteractAiGameTest {
         clearGolemCaches();
         final BlockPos home = at(helper, 4, 0, 4);
         final BlockPos crop = new BlockPos(4, 1, 5);
-        helper.setBlock(4, 0, 5, Blocks.FARMLAND.defaultBlockState());
-        helper.setBlock(4, 1, 5, Blocks.WHEAT.defaultBlockState().setValue(CropBlock.AGE, 2));
+        // Same pad contract as the reap probe, and a harsher version of it: this crop is
+        // light-gated for the whole 330-tick run, is asserted UNCHANGED at the end, and has
+        // no light of its own at all — its raw 15 is the section's uncomputed sky value, so a
+        // neighbour pad roofed over the cell pops it and the final assert reads Block{air}.
+        // The pad claims the column, pays a source under the soil, and plants at PLANT_TICK
+        // (the light engine needs ticks on a freshly placed source; docs/testing.md#
+        // crop-light-propagation-depth).
+        final HarvestPad pad = new HarvestPad(new int[][] { { 4, 5 } },
+                new int[][] { { 4, 4 } }, 2);
+        serviceHarvestPad(helper, pad, PadMode.CLAIM);
+        helper.runAtTickTime(PLANT_TICK, () -> serviceHarvestPad(helper, pad, PadMode.PLANT));
 
         final AIHarvestCrops[] goal = new AIHarvestCrops[1];
         final EntityGolemBase[] golems = new EntityGolemBase[1];
@@ -509,6 +750,7 @@ public final class GolemInteractAiGameTest {
             if (golem.tickCount < MOB_SETTLE) {
                 return;
             }
+            serviceHarvestPad(helper, pad, PadMode.SERVICE);
             if (goal[0].canUse()) {
                 activations.incrementAndGet();
                 goal[0].start();
@@ -1060,8 +1302,13 @@ public final class GolemInteractAiGameTest {
         // range, and a marked log target in the core-less golem's range: every
         // goal must refuse the golem that is not its own core, and the world
         // must be unchanged after a full run of the core task.
-        helper.setBlock(4, 0, 4, Blocks.FARMLAND.defaultBlockState());
-        helper.setBlock(4, 1, 4, Blocks.WHEAT.defaultBlockState().setValue(CropBlock.AGE, 7));
+        // The wheat at (4, 1, 4) is asserted UNCHANGED at the end of a 310-tick run, so it is
+        // a light-gated fixture too, with the same bare-sky exposure as probe 2's: claim the
+        // column, pay the source under the soil, plant once the light has ticks to spread.
+        final HarvestPad pad = new HarvestPad(new int[][] { { 4, 4 } },
+                new int[][] { { 3, 4 }, { 10, 4 }, { 19, 4 } }, 7);
+        serviceHarvestPad(helper, pad, PadMode.CLAIM);
+        helper.runAtTickTime(PLANT_TICK, () -> serviceHarvestPad(helper, pad, PadMode.PLANT));
         helper.setBlock(12, 0, 4, Blocks.OAK_LOG.defaultBlockState());
         helper.setBlock(12, 1, 4, Blocks.OAK_LOG.defaultBlockState());
         helper.setBlock(20, 0, 4, Blocks.OAK_LOG.defaultBlockState());
@@ -1088,6 +1335,7 @@ public final class GolemInteractAiGameTest {
         });
 
         drive(helper, SETTLE + 120, () -> {
+            serviceHarvestPad(helper, pad, PadMode.SERVICE);
             for (final EntityGolemBase golem : golems) {
                 assertAlive(golem);
                 if (golem.tickCount >= MOB_SETTLE) {
