@@ -1175,6 +1175,54 @@ restores both and `diff -q` reports byte-identical.
   stands — a sweep of that row moved the walk ground and flooded writes (`drive cleared=309` →
   WALK-arm red), so the row is relayed cell by cell and the claim's size is published in the probe's
   own constants, where the next reader can see what the gate reads.
+  **Landed on the MERGED tree `eb0902d0` (parents: main `9315e039` + the claim tip `14fe6574`), so
+  the plant pair and the census were re-measured on the 548-probe grid that the Eldritch Golem boss
+  repoint and the mob-tick chunk claim shipped on; the census paragraph above is the pre-merge tree
+  `8b071546` (533/539 grid) and keeps its own denominators.** Delta vs main is 2 files
+  (`docs/testing.md` + this probe file): the `@GameTest(` census is **548 on main and 548 on the
+  landing tree** and the probe FILE set is identical (83 files, 0 added/removed), so this card adds
+  no probe and moves the shared packing grid by nothing.
+  **Plant pair on the LANDING grid** (all NO-Curios whole-grid legs, `ran=1` + `cachehits=0` + the
+  built-in-fallback marker on every line, `loadavg(1m)` and `pgrep -c java` published —
+  `keep/t_4c531ae6/final_summary.txt`, tags `L_*` = the fix tree, `B_*` = the shipped probe blob
+  dropped into the same grid): clean lane GREEN 2/2 `passes=163 cleared=0 relaid=0`; stride-6 band
+  plant **GREEN 2/2** with the pass naming the blocks it took (`drive tick=122 cleared=12 relaid=0
+  [cobblestone @ rel (11,0,13), …]` on one leg, `route tick=123 cleared=12` on the other — the drive
+  pass and the in-callback pass, each ahead of its draw); band + `CLAIM_DRIVE=false` **RED 2/2**
+  naming exactly this probe with `passes=1 cleared=0 relaid=0` and the published number (`now
+  7.372061973925389 …` / `7.372057122818207 … away … tick 160`); narrowz (`CLAIM_DZ_TO=5`) **RED
+  2/2** printing `drive tick=122 cleared=6` (the z13 wall cleared, the z19 wall survived, walk arm
+  reddened at `7.372057121429315`) — extent load-bearing on the new grid too; 3-tall seal **GREEN
+  2/2** via `route tick=123 cleared=36`; the four negative controls GREEN (column `cleared=2`, wall
+  `cleared=6`, eaten row `relaid=6`, trench `relaid=6`). On the SHIPPED probe blob in the same grid
+  the band plant is **RED 2/2** (`7.372061974048622` / `7.372057121922323` away — the triage card's
+  value family reproduced byte-for-byte on the new grid) and the seal **RED 1/1**
+  (`6.413718751500897` away), while the shipped clean lane is GREEN 1/1: the lever is this card's
+  claim, on the landing grid, not the pre-merge grid alone.
+  **Census on the landing tree:** 10 interleaved pairs (base leg first), base `9315e039` (548 probes)
+  vs landing `eb0902d0` (548 probes), all NO-Curios whole-grid, one gradle at a time — **base 8/10,
+  landing 10/10, 0 reds naming this probe on either arm**; `ran=1` + `cachehits=0` + the
+  built-in-fallback marker on all 20 legs, 65-121 s per leg, `loadavg(1m)` 1.90-3.20 with 1 JVM per
+  leg (`keep/t_4c531ae6/final_summary.txt`, per-leg logs `c3_*`). Every landing leg carries
+  `ROUTE-CLAIM summary tick=160 passes=162 cleared=0 relaid=0` (the clean-handoff read) and no base
+  leg carries a claim line at all, so the two arms are distinguishable per leg. **Both base reds
+  (legs 8 and 9) name main's own `theGuardianArmedOneChunkOffThePadCornerStillTicks`** — no plant, no
+  claim, `ran=1` — the guardian lane's rate on the BASE control: Fisher two-sided p = 0.47 for base
+  2/10 red vs landing 0/10 red, and P(0 reds in 10 | the lane's published CI rate 1/24) = 0.65. This
+  census is the no-regression leg for the shared grid, not the closure; the plant pair above is the
+  causal leg, exactly as the triage rule says.
+  **Fixture artifact disclosed, on the NEW grid (not fixed).** The band-family plants sit at rel
+  x11..13 × dy0..1 × z13/19 — inside this probe's own corridor — and on the 548 grid that region is
+  also read by main's new `EldritchMobGameTest#theGuardianArmedOneChunkOffThePadCornerStillTicks`
+  (the mob-tick chunk claim, `MobChunkClaim`): the `narrowz` leg and one `wall3` control leg reddened
+  THAT probe — "over 600 level ticks the guardian ran 0 entity ticks and its longest run of
+  consecutive ticks on a ticketed mob chunk is 0 of the required 40" — while this probe stayed green
+  on those legs (2 reds among the 22 plant/control legs). The same probe is flaky with NO plant at
+  all: 2 of the 10 clean BASE census legs (no plant, no claim) reddened it, so on this grid the
+  guardian's own rate is ~2/10 and a plant leg naming it is the neighbour-pad leak the triage card
+  measured on the old grid (into `falldistanceisclearedinthefirsttwentyticks`) — plant side effect
+  plus that lane's rate, not a channel this delta opens. It belongs to t_f9fe6e81 (landed `9315e039`):
+  posted to that lane, not fixed here.
 <a id="component-codec-save-path"></a>
 - **A vanilla data component's persistent codec can reject a mod's marker, and the save path
   swallows the ITEM, not the write.** `minecraft:entity_data` and `minecraft:block_entity_data`
