@@ -83,5 +83,5 @@ origin/wt/t_fc16890d,be184c5c36977f7868d3ddf6158c73175125a514,BD-113,BD-113,t_23
 origin/wt/t_fc16890d,be184c5c36977f7868d3ddf6158c73175125a514,BD-114,BD-114,t_23520cdc,yes,"Eldritch Crab: the vanilla spider group-data carrier is opaque in 21.1.259, so the port ships its own marker carrier"
 origin/wt/t_fc16890d,be184c5c36977f7868d3ddf6158c73175125a514,BD-115,BD-115,t_23520cdc,yes,"Eldritch Crab: the claw-disarm client id 160 stays unregistered, so the strip's item leg hands out nothing"
 origin/wt/t_fc16890d,be184c5c36977f7868d3ddf6158c73175125a514,BD-116,BD-116,t_23520cdc,yes,"Eldritch Crab: the shell-break hurt rides the family's hurt seam, not vanilla's `hurt`"
-wt/t_b6fd6bcc,85de502238003098753cfb5eaaef870b745132be,BD-71,BD-145,t_b6fd6bcc,yes,"Focus stored on the wand as a tag id, not an ItemStack (TC-M6-02-i / t_b6fd6bcc)"
-wt/t_b6fd6bcc,85de502238003098753cfb5eaaef870b745132be,BD-74,BD-146,t_b6fd6bcc,yes,Focus upgrade state and the upgrade-dependent price variants are not modelled (TC-M6-02-i / t_b6fd6bcc)
+origin/wt/t_b6fd6bcc-foci,25abecb206dc4276a37d1267bd5d96fd742744ae,BD-71,BD-145,t_b6fd6bcc,yes,"Focus stored on the wand as a tag id, not an ItemStack (TC-M6-02-i / t_b6fd6bcc)"
+origin/wt/t_b6fd6bcc-foci,25abecb206dc4276a37d1267bd5d96fd742744ae,BD-74,BD-146,t_b6fd6bcc,yes,Focus upgrade state and the upgrade-dependent price variants are not modelled (TC-M6-02-i / t_b6fd6bcc)
