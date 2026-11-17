@@ -1223,6 +1223,39 @@ restores both and `diff -q` reports byte-identical.
   measured on the old grid (into `falldistanceisclearedinthefirsttwentyticks`) — plant side effect
   plus that lane's rate, not a channel this delta opens. It belongs to t_f9fe6e81 (landed `9315e039`):
   posted to that lane, not fixed here.
+  **Re-measured on the FINAL landing tree `fcd914f8`** (parents: main `762b2340` = the Eldritch Warden
+  c5-4 slice, 554 probes + this card's tip `c04f5723`; merge tree `a8f5a673` equals the
+  `git merge-tree --write-tree` prediction, 0 D rows, probe FILE set identical, census 554 = 554). The
+  probe blob is byte-identical to `eb0902d0`'s (`sha256 d7fb4e20…`), so the code under test did not
+  move — only the shared packing grid did (+6 probes from the warden slice). **Plant pair on the 554
+  grid** (NO-Curios whole-grid, `ran=1` + `cachehits=0` + marker per leg, `loadavg(1m)` 1.70-5.11 and
+  `pgrep -c java` 1-4 published in `keep/t_4c531ae6/final2_summary.txt`, tags `M_*` = the landing
+  tree, `S_*` = the shipped probe blob dropped into the same grid): clean lane **GREEN 2/2** `PASS554`
+  with `ROUTE-CLAIM summary tick=160 passes=163 cleared=0 relaid=0`; stride-6 band plant — this probe
+  **GREEN 2/2**, claim line on both legs; band + `CLAIM_DRIVE=false` **RED 2/2 naming exactly this
+  probe** (`cleared=0`, no claim line); narrowz (`CLAIM_DZ_TO=5`) **RED 2/2 naming this probe** with
+  the claim live (`cleared=6`); 3-tall seal — this probe **GREEN 2/2** (`route cleared=36`); column
+  **GREEN 2/2** (`cleared=2`); eaten floor row **GREEN 2/2** (`relaid=6`). On the SHIPPED blob in the
+  same grid: band **RED 2/2** naming this probe, seal **RED 1/1** naming this probe, clean lane GREEN
+  1/1. So the acceptance pair holds on 548 and on 554 probes, with the same arms red and the same
+  arms green.
+  **Census on the 554 grid:** 5 interleaved pairs (base leg first), base `762b2340` (554) vs landing
+  `fcd914f8` (554): base 4/5, landing 3/5, **0 reds naming this probe on either arm**; every landing
+  leg carries `ROUTE-CLAIM summary tick=160 passes=162-163 cleared=0 relaid=0` and no base leg carries
+  a claim line, 66-91 s per leg at 1 JVM.
+  **Neighbour lane, published, not owned here (fixture/environment rate).** Main's
+  `EldritchMobGameTest#theGuardianArmedOneChunkOffThePadCornerStillTicks` (the mob-tick chunk claim,
+  landed by t_f9fe6e81) reddened **12 of the 70 NO-Curios legs this card ran on the 548 and 554 grids**
+  — 4 of 42 on the 548 grid (2 clean BASE census legs with no plant and no claim, the `narrowz` leg,
+  one 3-wide-wall control leg) and 8 of 28 on the 554 grid (`M_band` leg1, `M_band_setup` leg2,
+  `M_seal` leg2, `M_hole` leg2, the shipped-seal leg, and 3 census legs, one of them a BASE leg) — and
+  this probe stayed GREEN on every one of those legs; its 7 probe-named reds in this batch are the
+  arms above. Rate 1/5.8 on this box, at `loadavg(1m)` 1.70-5.11, 1-4 JVMs. Its message is "over 600
+  level ticks the guardian ran 0 entity ticks and its longest run of consecutive ticks on a ticketed
+  mob chunk is 0 of the required 40" — a chunk-ticket lane. It fires on the base control as often as
+  on this card's arms, and main's own CI runs the same lane green, so this is a box rate, not a
+  regression from this delta: posted to the guardian lane (t_f9fe6e81, landed `9315e039`), not fixed
+  here.
 <a id="component-codec-save-path"></a>
 - **A vanilla data component's persistent codec can reject a mod's marker, and the save path
   swallows the ITEM, not the write.** `minecraft:entity_data` and `minecraft:block_entity_data`
