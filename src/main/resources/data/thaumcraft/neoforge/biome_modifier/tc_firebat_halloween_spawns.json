@@ -1,0 +1,15 @@
+{
+  "type": "thaumcraft:halloween_spawns",
+  "biomes": [
+    "#minecraft:is_overworld",
+    "#minecraft:is_nether"
+  ],
+  "spawns": [
+    {
+      "type": "thaumcraft:firebat",
+      "weight": 5,
+      "minCount": 1,
+      "maxCount": 2
+    }
+  ]
+}

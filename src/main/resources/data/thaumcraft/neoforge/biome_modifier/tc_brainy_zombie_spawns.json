@@ -1,0 +1,15 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": [
+    "#minecraft:is_overworld",
+    "#minecraft:is_nether"
+  ],
+  "spawners": [
+    {
+      "type": "thaumcraft:brainyzombie",
+      "weight": 10,
+      "minCount": 1,
+      "maxCount": 1
+    }
+  ]
+}
