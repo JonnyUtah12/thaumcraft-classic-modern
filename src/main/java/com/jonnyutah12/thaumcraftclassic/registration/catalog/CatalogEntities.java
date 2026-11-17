@@ -226,6 +226,41 @@ public final class CatalogEntities {
                     ELDRITCH_WARDEN::get, 5579298, 4210752, new Item.Properties()));
 
 
+
+
+    /**
+     * {@code thaumcraft:spawnegg.cultistleader} — the Crimson Praetor's spawner egg
+     * (content-mapping {@code Thaumcraft:spawnegg.*}, TC-M6-06-s-c6b). The
+     * original mapped it as one entry of the meta-indexed {@code ItemSpawnerEgg}:
+     * {@code addMapping("CultistLeader", 16732245, 5263440)} (ConfigEntities.java:116). Layer 0 takes
+     * the first colour and layer 1 the second ({@code ItemSpawnerEgg#func_82790_a}),
+     * the order {@code SpawnEggItem#getColor(int)} answers in, so the pair goes
+     * in as background / highlight. The id keeps the ledger's dot verbatim; its
+     * model is {@code models/item/spawnegg.cultistleader.json} (the vanilla egg
+     * template) and its label is the lang key
+     * {@code item.thaumcraft.spawnegg.cultistleader}.
+     */
+    public static final DeferredItem<DeferredSpawnEggItem> SPAWN_EGG_CULTIST_LEADER =
+            ITEMS.register("spawnegg.cultistleader", () -> new DeferredSpawnEggItem(
+                    CULTIST_LEADER::get, 16732245, 5263440, new Item.Properties()));
+
+    /**
+     * {@code thaumcraft:spawnegg.cultistportal} — the Crimson Portal's spawner egg
+     * (content-mapping {@code Thaumcraft:spawnegg.*}, TC-M6-06-s-c6b). The
+     * original mapped it as one entry of the meta-indexed {@code ItemSpawnerEgg}:
+     * {@code addMapping("CultistPortal", 16732245, 16732415)} (ConfigEntities.java:118). Layer 0 takes
+     * the first colour and layer 1 the second ({@code ItemSpawnerEgg#func_82790_a}),
+     * the order {@code SpawnEggItem#getColor(int)} answers in, so the pair goes
+     * in as background / highlight. The id keeps the ledger's dot verbatim; its
+     * model is {@code models/item/spawnegg.cultistportal.json} (the vanilla egg
+     * template) and its label is the lang key
+     * {@code item.thaumcraft.spawnegg.cultistportal}.
+     */
+    public static final DeferredItem<DeferredSpawnEggItem> SPAWN_EGG_CULTIST_PORTAL =
+            ITEMS.register("spawnegg.cultistportal", () -> new DeferredSpawnEggItem(
+                    CULTIST_PORTAL::get, 16732245, 16732415, new Item.Properties()));
+
+
     private CatalogEntities() {
     }
 

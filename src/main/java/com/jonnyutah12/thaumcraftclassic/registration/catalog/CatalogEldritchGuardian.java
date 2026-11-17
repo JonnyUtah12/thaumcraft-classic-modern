@@ -111,6 +111,25 @@ public final class CatalogEldritchGuardian {
                     ELDRITCH_GUARDIAN::get, 2236962, 4210752, new Item.Properties()));
 
 
+
+
+    /**
+     * {@code thaumcraft:spawnegg.inhabitedzombie} — the Shambling Husk's spawner egg
+     * (content-mapping {@code Thaumcraft:spawnegg.*}, TC-M6-06-s-c6b). The
+     * original mapped it as one entry of the meta-indexed {@code ItemSpawnerEgg}:
+     * {@code addMapping("InhabitedZombie", 5601109, 5570560)} (ConfigEntities.java:124). Layer 0 takes
+     * the first colour and layer 1 the second ({@code ItemSpawnerEgg#func_82790_a}),
+     * the order {@code SpawnEggItem#getColor(int)} answers in, so the pair goes
+     * in as background / highlight. The id keeps the ledger's dot verbatim; its
+     * model is {@code models/item/spawnegg.inhabitedzombie.json} (the vanilla egg
+     * template) and its label is the lang key
+     * {@code item.thaumcraft.spawnegg.inhabitedzombie}.
+     */
+    public static final DeferredItem<DeferredSpawnEggItem> SPAWN_EGG_INHABITED_ZOMBIE =
+            ITEMS.register("spawnegg.inhabitedzombie", () -> new DeferredSpawnEggItem(
+                    INHABITED_ZOMBIE::get, 5601109, 5570560, new Item.Properties()));
+
+
     private CatalogEldritchGuardian() {
     }
 

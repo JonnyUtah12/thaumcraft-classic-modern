@@ -506,5 +506,12 @@
   "item.thaumcraft.spawnegg.eldritchwarden": "Eldritch Warden Spawn Egg",
   "item.thaumcraft.spawnegg.pech": "Pech Forager Spawn Egg",
   "item.thaumcraft.spawnegg.mindspider": "Mind Spider Spawn Egg",
-  "item.thaumcraft.spawnegg.eldritchguardian": "Eldritch Guardian Spawn Egg"
+  "item.thaumcraft.spawnegg.eldritchguardian": "Eldritch Guardian Spawn Egg",
+  "item.thaumcraft.spawnegg.cultistknight": "Crimson Knight Spawn Egg",
+  "item.thaumcraft.spawnegg.cultistcleric": "Crimson Cleric Spawn Egg",
+  "item.thaumcraft.spawnegg.cultistleader": "Crimson Praetor Spawn Egg",
+  "item.thaumcraft.spawnegg.cultistportal": "Crimson Portal Spawn Egg",
+  "item.thaumcraft.spawnegg.eldritchcrab": "Eldritch Crab Spawn Egg",
+  "item.thaumcraft.spawnegg.inhabitedzombie": "Shambling Husk Spawn Egg",
+  "item.thaumcraft.spawnegg.thaumslime": "Thaumic Slime Spawn Egg"
 }
