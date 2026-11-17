@@ -44,8 +44,16 @@ import net.minecraft.gametest.framework.GameTestHelper;
  * is {@code #minecraft:is_nether}; {@code Type.MAGICAL} ({@code :169}) is
  * {@code #neoforge:is_magical}, and the census of THAT set is the honest state
  * this class records: the shipped tag carries no biome, so the Pech's entry
- * selects nothing (BD row of this card), which is also the original's effective
- * state on modern Forge.</p>
+ * selects nothing (BD-146), which is also the original's effective state on
+ * modern Forge.</p>
+ *
+ * <p>A multi-tag set ships as a PAIR of files: {@code Biome.LIST_CODEC}
+ * ({@code Biome.java:53}) is {@code RegistryCodecs.homogeneousList}, which takes
+ * ONE holder set, and the measured decode of a JSON list of tag strings is
+ * {@code IllegalStateException: Not a JSON object: "#minecraft:is_nether"} — a
+ * registry-load failure that kills every probe in the batch (BD-148). The Angry
+ * Zombie and the Halloween Firebat each ship overworld + Nether halves, and the
+ * probes pin each half and pin the End out of both.</p>
  */
 @GameTestHolder(ThaumcraftClassic.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -59,6 +67,9 @@ public final class MonsterSpawnListGameTest {
     private static final String FIREBAT_NETHER = "tc_firebat_nether_spawns";
     private static final String FIREBAT_HALLOWEEN = "tc_firebat_halloween_spawns";
     private static final String WISP = "tc_wisp_spawns";
+    /** The Nether halves of the two multi-tag sets (BD-148: one holder set per file). */
+    private static final String BRAINY_NETHER = "tc_brainy_zombie_nether_spawns";
+    private static final String FIREBAT_HALLOWEEN_NETHER = "tc_firebat_halloween_nether_spawns";
 
     private static ResourceKey<Biome> biomeKey(final String path) {
         return ResourceKey.create(Registries.BIOME, ResourceLocation.withDefaultNamespace(path));
@@ -95,6 +106,20 @@ public final class MonsterSpawnListGameTest {
         return add;
     }
 
+    /** The port's calendar-gated modifier, loaded and shaped: exactly one entry per file. */
+    private static HalloweenSpawnsBiomeModifier halloween(final GameTestHelper helper,
+            final Registry<BiomeModifier> mods, final String path) {
+        final BiomeModifier loaded = modifier(helper, mods, path);
+        helper.assertTrue(loaded instanceof HalloweenSpawnsBiomeModifier,
+                "thaumcraft:" + path + " loaded as " + loaded.codec()
+                        + ", not the port's thaumcraft:halloween_spawns");
+        final HalloweenSpawnsBiomeModifier gated = (HalloweenSpawnsBiomeModifier) loaded;
+        helper.assertTrue(gated.spawners().size() == 1,
+                ":181 adds exactly one entry per shipped file; thaumcraft:" + path + " carries "
+                        + gated.spawners().size());
+        return gated;
+    }
+
     private static boolean carries(final GameTestHelper helper, final Registry<Biome> biomes,
             final net.minecraft.core.HolderSet<Biome> set, final String biomePath) {
         return set.contains(biomes.getHolderOrThrow(biomeKey(biomePath)));
@@ -118,16 +143,34 @@ public final class MonsterSpawnListGameTest {
 
         final AddSpawnsBiomeModifier brainy =
                 asAddSpawns(helper, modifier(helper, mods, BRAINY), BRAINY);
+        final AddSpawnsBiomeModifier brainyNether =
+                asAddSpawns(helper, modifier(helper, mods, BRAINY_NETHER), BRAINY_NETHER);
         assertEntry(helper, brainy.spawners().get(0), "brainyzombie", 10, 1, 1,
                 "ConfigEntities.java:163 (the Angry Zombie, weight 10, pack 1-1)");
+        assertEntry(helper, brainyNether.spawners().get(0), "brainyzombie", 10, 1, 1,
+                "ConfigEntities.java:163 (the same entry over the Nether half of the set)");
         // :161-163 — every biome with a monster spawn list: overworld and Nether,
         // the End excluded (its monster list is empty, which is what the loop tests).
+        // The set ships as a PAIR of files: Biome.LIST_CODEC (Biome.java:53,
+        // RegistryCodecs.homogeneousList) takes ONE holder set per modifier, and the
+        // measured decode of a JSON list of tag strings is
+        // "IllegalStateException: Not a JSON object: #minecraft:is_nether" — the
+        // registry load dies and the whole game-test batch dies with it (BD-148).
+        // So each half is pinned on its own file and the End is pinned out of both.
         helper.assertTrue(carries(helper, biomes, brainy.biomes(), "plains")
                         && carries(helper, biomes, brainy.biomes(), "deep_dark")
-                        && carries(helper, biomes, brainy.biomes(), "crimson_forest")
-                        && !carries(helper, biomes, brainy.biomes(), "end_highlands"),
-                "the Angry Zombie's biome set is not the original's monster-list-bearing set "
-                        + "(overworld + Nether in, the End out): " + brainy.biomes().size() + " biomes");
+                        && !carries(helper, biomes, brainy.biomes(), "crimson_forest"),
+                "the Angry Zombie's overworld file is not the overworld half of the original's "
+                        + "monster-list-bearing set: " + brainy.biomes().size() + " biomes");
+        helper.assertTrue(carries(helper, biomes, brainyNether.biomes(), "crimson_forest")
+                        && carries(helper, biomes, brainyNether.biomes(), "nether_wastes")
+                        && !carries(helper, biomes, brainyNether.biomes(), "plains"),
+                "the Angry Zombie's Nether file is not the Nether half of the original's "
+                        + "monster-list-bearing set: " + brainyNether.biomes().size() + " biomes");
+        helper.assertTrue(!carries(helper, biomes, brainy.biomes(), "end_highlands")
+                        && !carries(helper, biomes, brainyNether.biomes(), "end_highlands"),
+                "the Angry Zombie's shipped pair selects an End biome, which the original's loop "
+                        + "skips because the End's monster list is empty");
 
         final AddSpawnsBiomeModifier firebat =
                 asAddSpawns(helper, modifier(helper, mods, FIREBAT_NETHER), FIREBAT_NETHER);
@@ -196,21 +239,27 @@ public final class MonsterSpawnListGameTest {
         helper.assertTrue(closed.isEmpty(),
                 "the shipped gate opens the entry outside October 31: " + closed);
 
-        final BiomeModifier loaded = modifier(helper, mods, FIREBAT_HALLOWEEN);
-        helper.assertTrue(loaded instanceof HalloweenSpawnsBiomeModifier,
-                "thaumcraft:" + FIREBAT_HALLOWEEN + " loaded as " + loaded.codec()
-                        + ", not the port's thaumcraft:halloween_spawns");
-        final HalloweenSpawnsBiomeModifier halloween = (HalloweenSpawnsBiomeModifier) loaded;
-        helper.assertTrue(halloween.spawners().size() == 1,
-                ":181 adds exactly one entry; the shipped modifier carries "
-                        + halloween.spawners().size());
+        // The original's all-biome set ships as the overworld + Nether pair, one
+        // holder set per file (BD-148), and BOTH halves ride the port's gate.
+        final HalloweenSpawnsBiomeModifier halloween = halloween(helper, mods, FIREBAT_HALLOWEEN);
+        final HalloweenSpawnsBiomeModifier halloweenNether =
+                halloween(helper, mods, FIREBAT_HALLOWEEN_NETHER);
         assertEntry(helper, halloween.spawners().get(0), "firebat", 5, 1, 2,
-                "ConfigEntities.java:181 (the Halloween Firebat, weight 5, pack 1-2, all biomes)");
+                "ConfigEntities.java:181 (the Halloween Firebat, weight 5, pack 1-2, overworld half)");
+        assertEntry(helper, halloweenNether.spawners().get(0), "firebat", 5, 1, 2,
+                "ConfigEntities.java:181 (the same entry, Nether half of the all-biome set)");
         helper.assertTrue(carries(helper, biomes, halloween.biomes(), "plains")
-                        && carries(helper, biomes, halloween.biomes(), "crimson_forest")
-                        && !carries(helper, biomes, halloween.biomes(), "end_highlands"),
-                "the Halloween entry's set is not the original's `biomes` list "
-                        + "(every biome, the End's empty monster list aside): " + halloween.biomes().size());
+                        && !carries(helper, biomes, halloween.biomes(), "crimson_forest"),
+                "the Halloween entry's overworld file is not the overworld half of the original's "
+                        + "`biomes` list: " + halloween.biomes().size());
+        helper.assertTrue(carries(helper, biomes, halloweenNether.biomes(), "crimson_forest")
+                        && !carries(helper, biomes, halloweenNether.biomes(), "plains"),
+                "the Halloween entry's Nether file is not the Nether half of the original's "
+                        + "`biomes` list: " + halloweenNether.biomes().size());
+        helper.assertTrue(!carries(helper, biomes, halloween.biomes(), "end_highlands")
+                        && !carries(helper, biomes, halloweenNether.biomes(), "end_highlands"),
+                "the Halloween pair selects an End biome, which the original's loop skips: "
+                        + halloween.biomes().size() + "/" + halloweenNether.biomes().size());
 
         // The live state: the entry is applied exactly when the calendar says
         // Halloween, and the probe records which side of that edge the run is on.
@@ -240,7 +289,8 @@ public final class MonsterSpawnListGameTest {
         final Registry<BiomeModifier> mods =
                 level.registryAccess().registryOrThrow(NeoForgeRegistries.Keys.BIOME_MODIFIERS);
         final List<String> drift = new ArrayList<>();
-        for (final String file : List.of(BRAINY, PECH, FIREBAT_NETHER, FIREBAT_HALLOWEEN, WISP)) {
+        for (final String file : List.of(BRAINY, BRAINY_NETHER, PECH, FIREBAT_NETHER,
+                        FIREBAT_HALLOWEEN, FIREBAT_HALLOWEEN_NETHER, WISP)) {
             final BiomeModifier modifier = modifier(helper, mods, file);
             final List<MobSpawnSettings.SpawnerData> entries = modifier instanceof AddSpawnsBiomeModifier add
                     ? add.spawners()
