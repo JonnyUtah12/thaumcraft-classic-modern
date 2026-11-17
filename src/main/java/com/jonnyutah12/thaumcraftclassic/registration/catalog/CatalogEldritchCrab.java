@@ -58,11 +58,15 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  */
 public final class CatalogEldritchCrab {
 
-    /** The crab has no spawn-egg row in the content mapping (no {@code
-     *  thaumcraft:spawn_egg} line names {@code eldritchcrab}), so this slice
-     *  registers no egg item for it — the family's rule (a row the mapping does
-     *  not carry is not invented). Pinned for the unit test. */
-    public static final boolean HAS_SPAWN_EGG_ROW = false;
+    /** The crab's egg row {@code Thaumcraft:spawnegg.EldritchCrab} (id
+     *  {@code thaumcraft:spawnegg.eldritchcrab}) SHIPPED in TC-M6-06-s-c6b with
+     *  the original's {@code addMapping} pair (5592405 / 5570560,
+     *  {@code ConfigEntities.java:122}), registered as
+     *  {@code CatalogEldritchCrab.SPAWN_EGG_ELDRITCH_CRAB}. The family's
+     *  no-invented-egg rule is now satisfied by the row, not by the absence of
+     *  one. Pinned for the unit test, {@code EldritchCrabGameTest} and
+     *  {@code SpawnEggGameTest}. */
+    public static final boolean HAS_SPAWN_EGG_ROW = true;
 
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
             DeferredRegister.create(Registries.ENTITY_TYPE, ThaumcraftClassic.MOD_ID);

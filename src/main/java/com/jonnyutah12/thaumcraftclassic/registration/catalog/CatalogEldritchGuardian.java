@@ -63,10 +63,14 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  */
 public final class CatalogEldritchGuardian {
 
-    /** Neither mob has a spawn-egg row this slice ships (the egg rows
-     *  {@code content-mapping.csv:354}/{@code :362} are card c6's), so no egg
-     *  item is invented here — the family's rule. Pinned for the unit test. */
-    public static final boolean HAS_SPAWN_EGG_ROW = false;
+    /** Both egg rows shipped with TC-M6-06-s-c6b: the guardian's
+     *  {@code thaumcraft:spawnegg.eldritchguardian} (2236962 / 4210752,
+     *  {@code ConfigEntities.java:108}) and the Shambling Husk's
+     *  {@code thaumcraft:spawnegg.inhabitedzombie} (5601109 / 5570560,
+     *  {@code :124}), registered here as {@code SPAWN_EGG_ELDRITCH_GUARDIAN} +
+     *  {@code SPAWN_EGG_INHABITED_ZOMBIE}. Pinned for {@code EldritchMobGameTest}
+     *  and {@code SpawnEggGameTest}. */
+    public static final boolean HAS_SPAWN_EGG_ROW = true;
 
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
             DeferredRegister.create(Registries.ENTITY_TYPE, ThaumcraftClassic.MOD_ID);
