@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:block",
+  "_comment": "TC-M5-04-s: the fibres drop nothing — the original's BlockTaintFibres.getItemDropped (1.7.10 BlockTaintFibres.java:242-244) returns Item.getById(0), i.e. no item, for every meta. The empty pool list is that rule; RegistrationGameTest.taintFibresDropNothing counts the drops to prove it.",
+  "pools": []
+}

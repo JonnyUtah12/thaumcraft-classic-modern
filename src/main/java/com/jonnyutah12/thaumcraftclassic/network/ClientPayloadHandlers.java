@@ -6,6 +6,7 @@ import com.jonnyutah12.thaumcraftclassic.network.payload.BiomeChangePayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.BoreDigPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.MiscEventPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.NotePayload;
+import com.jonnyutah12.thaumcraftclassic.network.payload.OpenThaumonomiconPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.ResearchCompletePayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.RunicChargePayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.SyncAspectsPayload;
@@ -28,6 +29,7 @@ import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXInfusionSourcePayl
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXShieldPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXSonicPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXVisDrainPayload;
+import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXWardBlockPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXWispZapPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXZapPayload;
 
@@ -105,6 +107,27 @@ final class ClientPayloadHandlers {
         ClientNetworkData.setRunicCharge(payload.playerId(), payload.charge(), payload.maxCharge());
     }
 
+    // --- GUI open (BOOK-1 / t_1e6b18cc) ---
+
+    /**
+     * The book's open arm. The original's
+     * {@code player.openGui(Thaumcraft.instance, 12, world, 0, 0, 0)}
+     * ({@code ItemThaumonomicon.java:79}) reached the client through FML's
+     * GuiOpen packet, which built the {@code GuiScreen} the mod's GuiHandler
+     * returned for id 12 — and that element has no container
+     * ({@code GuiResearchBrowser.java:41} extends {@code GuiScreen}). 1.21.1
+     * has no containerless server-initiated open, so this payload carries the
+     * open and the client shows the containerless book screen (BD-22).
+     *
+     * <p>The client screen class is named fully-qualified and resolved lazily:
+     * this handler class loads on both dists (the channel registers handlers on
+     * both), and a dedicated server — which never receives a clientbound
+     * payload — must never load a {@code Dist.CLIENT} screen class.</p>
+     */
+    static void handleOpenThaumonomicon(final OpenThaumonomiconPayload payload) {
+        com.jonnyutah12.thaumcraftclassic.client.ThaumonomiconScreen.openFromServer(payload.category());
+    }
+
     // --- misc ---
 
     static void handleBiomeChange(final BiomeChangePayload payload) {
@@ -155,6 +178,10 @@ final class ClientPayloadHandlers {
 
     static void handleFxShield(final FXShieldPayload payload) {
         ClientEffectHooks.fxShield(payload.sourceEntityId(), payload.targetEntityId());
+    }
+
+    static void handleWardBlock(final FXWardBlockPayload payload) {
+        ClientEffectHooks.wardBlock(payload);
     }
 
     static void handleFxSonic(final FXSonicPayload payload) {

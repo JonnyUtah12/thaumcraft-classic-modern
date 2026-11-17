@@ -6,6 +6,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
 import com.jonnyutah12.thaumcraftclassic.wands.VisCostRules;
 import com.jonnyutah12.thaumcraftclassic.wands.WandVis;
 import com.jonnyutah12.thaumcraftclassic.wands.VisPool;
+import com.jonnyutah12.thaumcraftclassic.aspect.Aspect;
 import com.jonnyutah12.thaumcraftclassic.aspect.AspectList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -41,19 +42,33 @@ import java.util.List;
  * ({@link #findMatch}); the original called it twice per cycle, once for the
  * item and once for the cost list, with identical inputs.</p>
  *
- * <p>Out of this tile by design: {@code gui_arcane_workbench} (TC-M7-04) — the
- * original drove the cycle from that GUI, here the cycle runs on the block's
- * use interaction ({@link BlockArcaneWorkbench#useWithoutItem}); the vanilla
- * {@code CraftingManager} step of {@code updateContainer} (the workbench core
- * is the arcane path, TC-M4-03-s); and the wand's real cap + gear discounts
+ * <p>Out of this tile by design: the wand's real cap + gear discounts
  * (TC-M6-01 / TC-M8-02) — the cost goes through TC-M4-02's chain
  * ({@link VisCostRules#effectiveCosts} → {@link WandVis#consumeAllVisCrafting})
  * with the neutral cap {@link #NEUTRAL_CAP} until that card supplies one.</p>
+ *
+ * <p>TC-M7-04-m2 wired the GUI: the tile is a {@link net.minecraft.world.MenuProvider}
+ * and {@link #updateCrafting} is the container-tick step the original's
+ * {@code ContainerArcaneWorkbench.updateContainer} ran, so the cycle now runs from
+ * the open menu ({@code menus/ArcaneWorkbenchMenu}) as it did in 1.7.10, not from
+ * the block's use interaction. The vanilla {@code CraftingManager} step of
+ * {@code updateContainer} (the workbench core is the arcane path, TC-M4-03-s) stays
+ * out of scope.</p>
  */
-public class TileArcaneWorkbench extends BlockEntity implements WorldlyContainer {
+public class TileArcaneWorkbench extends BlockEntity
+        implements WorldlyContainer, net.minecraft.world.MenuProvider {
 
     /** Slots 0..8 the 3x3 grid, 9 the result, 10 the wand (original stackList). */
     private final ItemStack[] stacks = new ItemStack[11];
+
+    /** Tile slot the result goes in — the original's slot 9 ({@code SlotCraftingArcaneWorkbench}). */
+    public static final int SLOT_RESULT = 9;
+
+    /** Tile slot the wand goes in — the original's slot 10 ({@code SlotLimitedByWand}). */
+    public static final int SLOT_WAND = 10;
+
+    /** The 3x3 grid is tile slots 0..8, the original's {@code craftMatrix}. */
+    public static final int GRID_SIZE = 9;
 
     /**
      * The original reads the cap off {@code ItemWandCasting.getCap()}, which is
@@ -101,9 +116,122 @@ public class TileArcaneWorkbench extends BlockEntity implements WorldlyContainer
         return true;
     }
 
+    /**
+     * The container tick of {@code ContainerArcaneWorkbench.updateContainer} — the
+     * arcane step only: the original recomputed the cycle every container tick and
+     * only ever filled slot 9 when it was empty, so an open menu pays once per
+     * result, not once per tick.
+     */
+    public void updateCrafting(@Nullable final Player player) {
+        if (this.stacks[9].isEmpty()) {
+            craft(player);
+        }
+    }
+
+    /**
+     * The price the current match charges, in real vis, after
+     * {@link VisCostRules#effectiveCosts} (the original's
+     * {@code findMatchingArcaneRecipeAspects}, which is the same lookup with the
+     * consumption-modifier chain applied). {@code null} when nothing matches.
+     *
+     * <p>The neutral cap is the tile's own {@link #NEUTRAL_CAP}, so the number the
+     * menu syncs is exactly the number {@link #craft} pays — one source of truth.</p>
+     */
+    @Nullable
+    public AspectList currentCost(@Nullable final Player player) {
+        final ArcaneWorkbenchRecipe match = findMatch(player);
+        return match == null ? null
+                : VisCostRules.effectiveCosts(match.aspects(), NEUTRAL_CAP, null, 0, false, true);
+    }
+
+    /**
+     * Real vis → centi-vis, the original's {@code * 100}
+     * ({@code ItemWandCasting.java:314}, the port's
+     * {@link com.jonnyutah12.thaumcraftclassic.wands.WandVis#consumeAllVisCrafting}).
+     * The menu's data slots travel in centi-vis so the screen can compare them
+     * against the wand's charge with no unit conversion of its own.
+     */
+    public static AspectList centiVisCost(final AspectList realCosts) {
+        final AspectList centi = new AspectList();
+        for (final Aspect aspect : realCosts.getAspects()) {
+            centi.add(aspect, realCosts.getAmount(aspect) * WandVis.CENTI_VIS_PER_VIS);
+        }
+        return centi;
+    }
+
+    /** The wand slot's charge for one aspect, in centi-vis (0 without a wand). */
+    public int wandCharge(final Aspect aspect) {
+        return WandVis.getVis(WandVis.poolOf(this.stacks[10]), aspect);
+    }
+
+    /**
+     * Whether the wand slot can pay a centi-vis price — the original's simulate
+     * call {@code consumeAllVisCrafting(stack, player, cost, false)} from
+     * {@code GuiArcaneWorkbench}, whose {@code doTake = false} means "check only".
+     *
+     * <p>The quirk is reproduced, not fixed: a match with an empty price list is
+     * unpayable ({@code consumeAllVis} returns false for a zero-size list in the
+     * original too), so such a recipe shows "Insufficient vis" and never crafts on
+     * both sides.</p>
+     */
+    public boolean canWandPay(@Nullable final AspectList centiCosts) {
+        return centiCosts != null
+                && VisCostRules.canPay(WandVis.poolOf(this.stacks[10]), centiCosts);
+    }
+
+    /**
+     * The take-time payment of {@code SlotCraftingArcaneWorkbench.onCraft}: the
+     * original charged the vis twice — once in the container tick to reveal the
+     * result, and again ({@code consumeAllVisCrafting(..., true)}) when the player
+     * lifted it. The second charge is all-or-nothing and its failure does not stop
+     * the take, exactly as in the original.
+     */
+    public boolean payVisOnTake(@Nullable final Player player) {
+        final AspectList cost = currentCost(player);
+        if (cost == null) {
+            return false;
+        }
+        final VisPool pool = WandVis.poolOf(this.stacks[10]);
+        final VisPool paid = WandVis.consumeAllVisCrafting(pool, cost);
+        if (paid == null) {
+            return false;
+        }
+        WandVis.setPool(this.stacks[10], paid);
+        setChanged();
+        return true;
+    }
+
+    /**
+     * One item out of every grid cell, the original's {@code onCraft} loop
+     * ({@code this.craftMatrix.decrStackSize(i, 1)} for slots 0..8). The original's
+     * container-item branch (bucket-style returns) is not ported: no shipped arcane
+     * row takes a container item, and 1.21.1 returns container items through the
+     * recipe's own {@code getRemainingItems}, which this recipe type does not
+     * declare (recorded in {@code docs/BEHAVIORAL_DEVIATIONS.md} BD-18).
+     */
+    public void consumeGrid() {
+        for (int i = 0; i < 9; i++) {
+            removeItem(i, 1);
+        }
+    }
+
+    // --- menu seam (content-mapping.csv thaumcraft:gui_arcane_workbench) -----
+
+    @Override
+    public net.minecraft.network.chat.Component getDisplayName() {
+        return net.minecraft.network.chat.Component
+                .translatable("container.thaumcraft.gui_arcane_workbench");
+    }
+
+    @Override
+    public net.minecraft.world.inventory.AbstractContainerMenu createMenu(final int id,
+            final net.minecraft.world.entity.player.Inventory inventory, final Player player) {
+        return new com.jonnyutah12.thaumcraftclassic.menus.ArcaneWorkbenchMenu(id, inventory, this);
+    }
+
     /** {@code ThaumcraftCraftingManager.findMatchingArcaneRecipe}: walk in load order. */
     @Nullable
-    private ArcaneWorkbenchRecipe findMatch(@Nullable final Player player) {
+    public ArcaneWorkbenchRecipe findMatch(@Nullable final Player player) {
         final RecipeManager recipes = this.level.getRecipeManager();
         if (recipes == null) {
             return null;

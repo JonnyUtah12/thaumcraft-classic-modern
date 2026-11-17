@@ -411,13 +411,19 @@ RecipeManager's parse errors for our mod go from 31 to 0.
 
 ## D-016 — Original display strings are committed, and ship in the public jar
 
-**Status: OPEN — needs an explicit call.** Found 2026-10-28 while cutting
-v0.1.0-alpha.4.
+**Status: DECIDED (owner, 2026-11-05) — option 2 adopted: build-time generation.**
+Found 2026-10-28 while cutting v0.1.0-alpha.4.
 
 **Fact.** `src/main/resources/assets/thaumcraft/lang/en_us.json` is committed to
-the public repository (landed `fca4fb8`, merged `3810797`). Of its **241 shipped
-values, 231 appear verbatim in the original 4.2.3.5 `en_US.lang`** (All Rights
-Reserved); 10 are authored for port-created ids. Measured by comparing shipped
+the public repository (landed `fca4fb8`, merged `3810797`). Of its **242 shipped
+values, 232 appear verbatim in the original 4.2.3.5 `en_US.lang`** (All Rights
+Reserved); 10 are authored for port-created ids. (SPINE-2 / t_76ab9b65 added the
+242nd: the creative-tab label `itemGroup.thaumcraft.thaumcraft` = “Thaumcraft”
+mirrors the original `itemGroup.thaumcraft=Thaumcraft` (en_US.lang:670) verbatim,
+recorded here per the D-004 rule that original-mirroring strings go to D-016; the
+1.21.1 key convention is `itemGroup.<ns>.<id>`, NOT `item_category.*` — the
+shipped code and both localization probes key tabs as `itemGroup.thaumcraft.*`
+and no `item_category` key ever shipped.) Measured by comparing shipped
 values against the original file, not by trusting the card's own 118-key claim.
 
 **Why it conflicts.** D-004 states original assets are never committed or
@@ -447,6 +453,36 @@ same class as the alpha.1 release still carrying a ~10.38 MB asset-included jar.
 **Recommendation:** option 2 deferred by one release, with option 1's wording
 correction done now (the notes should not claim the jar is free of original
 content while it carries 231 original strings).
+
+**Decision (owner, 2026-11-05).** Option 2, undelayed: original display strings are
+**generated at build time** from the user's own extracted assets (`reference/assets`,
+the `.lang` conversion the `asset-mapping.csv` rule specified and never implemented),
+and only port-authored ids stay committed. Measured scope (re-measured 2026-11-05 on
+`9345066`; an earlier note here said **993** keys with **591** pages — that counted
+reference *sites*, the same key listed by several entries, not distinct keys): the
+shipped graph references **711 distinct** `tc.research_*` keys — **201**
+`research_name`, **201** `research_text`, **309** `research_page` — and
+`en_us.json` defines **0** of them, so the Thaumonomicon's page layer
+resolves to raw translation keys today, while its detail pane renders real English from
+the graph's own `nameEnUs`/`textEnUs` (199 of 201 entries; `CAP_iron` and `ROD_wood`
+carry neither). Coverage against the player's own extracted
+`reference/assets/thaumcraft/lang/en_US.lang` (1793 lines, 722 `tc.research*` keys) is
+**707 of 711 by exact string**: 199 name, 199 text, and the page set matches the graph
+1:1 (309/309). The **4** keys with no original string anywhere are
+`tc.research_name.CAP_iron`, `tc.research_text.CAP_iron`, `tc.research_name.ROD_wood`,
+`tc.research_text.ROD_wood` — the same two entries that carry no `nameEnUs`/`textEnUs`.
+So option 2 closes 707 keys by conversion and leaves 4 to be port-authored. The 27 `tc.*` keys the book's chrome draws (purchase, short, missing,
+popup, error, resonator, forbidden levels) are port-authored and stay.
+The 232 already-committed original values move out of `src/` on their own card, because
+that migration moves `LocalizationFileTest` and `LocalizationGameTest` expectations.
+Stated plainly, the consequence this option warns about: **a code-only artifact ships
+with raw keys** for every original-derived name, description and book page, until the
+player overlays their own extracted assets. Git history is not rewritten.
+
+**Effect on the board.** BOOK-3 (`t_552332a0`) is unblocked by this call and re-scoped
+to the generation mechanism plus the **711** research keys — **707 by conversion** from
+the player's own `en_US.lang`, **4** (`CAP_iron` / `ROD_wood` name + text) needing
+port-authored strings; it is no longer a licensing question.
 
 ## D-017 — A golem card proposal was rejected for naming non-existent classes
 
@@ -494,3 +530,280 @@ golem research entries already shipped, and the 96 golem rows already in
 `content-mapping.csv`. Golems were also removed from TC-M6-06-s
 (`t_26136494`), which had been carrying "elemental + golem + taint mob" in one
 150-iteration budget.
+
+## D-018 — Item models are port-authored, and the sprite they name is the original's own icon (SPINE-3, `t_15e43d12`)
+
+**Status: Accepted.**
+
+**Context.** The user's playability report says items are invisible/unsearchable.
+Measured on `ebf6030`: 52 registered items, **1** committed item model
+(`models/item/blockcustomore.json`). An item with no model JSON renders the
+missing-model placeholder, and its textures are absent from the code-only jar
+anyway (D-004). The alpha.3/alpha.4 release notes already list "item models and
+renderers" as not implemented, so the fix must say which half it closes.
+
+**Decision.**
+
+1. **One model per registered id** at
+   `src/main/resources/assets/thaumcraft/models/item/<id>.json`. Meta-carrying
+   families (`itemresource` 19 metas, `itemshard` 7, `itemnugget` 15,
+   `blockcosmeticopaque` 16) stay **one id** with the
+   `thaumcraft:item_meta` / `block_item_meta` component, so they get **one**
+   model; per-meta appearance is recorded as BD-17, not silently collapsed.
+2. **A model is authored, never copied** (D-004). 4.2.3.5 registers item icons
+   in code — its asset tree has no item model files — so every committed model
+   is ours (MIT), and it names original textures **by path** through the
+   overlay's `items`→`item` / `blocks`→`block` remap (D-005).
+3. **The sprite must be the original's icon.** The card forbids the lazy
+   `thaumcraft:item/<id>` guess: each model's `layer0` is the sprite the
+   original's own item/block class registered as icon index 0 (e.g.
+   `itemcompassstone` → `item/sinister_stone`, `blockairy` → `item/taint_over_2`
+   from `BlockAiryItem`, `tilearcaneworkbench` → `models/worktable`,
+   `itemessence` → `item/phial` + `item/essence`). Three items whose original
+   draw was a custom **renderer** with a blank registered icon
+   (`blockjarfilleditem`, `itemthaumometer`, `trunkspawner`) use the original's
+   own art as a flat sprite (`block/jar_side`, the vanilla compass face,
+   `models/trunk`) because the port ships no item renderer — stated in the model,
+   the CSV rows and BD-17.
+4. **Every named sprite must be a published overlay path.** `asset-mapping.csv`
+   is the contract, so a model that names an UNUSED texture is a contract break.
+   The four `ItemNuggetEdible` ids (`itemnuggetbeef/chicken/pork/fish`) register
+   the original's `nuggetbeef/chicken/pork/fish` icons
+   (`reference/.../config/ConfigItems.java:399-405`), so those 4 rows moved
+   UNUSED → published and the unused-asset inventory went 42 → 38. The card's
+   "39 registered items" count is the same registry read in the same tree state
+   as SPINE-2 (which measured 52); this card reports 52 and says so.
+5. **The gate derives its expected set from the registry.** A hardcoded model
+   list can never go red, so `ItemModelCoverageGameTest` enumerates
+   `BuiltInRegistries.ITEM` (via `ModCreativeTabs.isShippedCatalogItem`, which
+   also excludes the `testprobe` fixture fixtures) and asserts a model per id,
+   the converse (no dead models), chain resolution with explicit namespaces,
+   sprite resolution **when an overlay is installed** (self-disabling with a
+   logged note when it is not, so the code-only release artifact stays green),
+   and §15 rule 9 lang/tab consistency.
+6. **Scope stays honest.** Models only: blockstates/block models for the other
+   51 blocks, 3D block-item rendering, per-meta models and the 4 custom item
+   renderers are follow-up cards (BD-17). The block-item models use the
+   `minecraft:item/generated` form with the block's own icon, which is what the
+   original's block items displayed in 1.7.10 inventory.
+
+**Verification.** RED: `runGameTestServer` exit 1 — "2 required tests failed"
+(51 of 52 items had no model / 51 chains did not resolve). GREEN: exit 0
+"All 130 required tests passed"; `-Ptc.noCurios` 130/130; `./gradlew build`
+exit 0 (379 unit / 0 failures / 1 skipped). The asset gates
+`check_asset_paths.py` (2929 assets) and `check_content_mapping.py`
+(1001 entries / 910 done) run inside `build` and stayed green.
+
+## D-019 — GUI port posture: assert against the port's classes, and derive the listing from data (BOOK-2, `t_10805b95`)
+
+**Status: Accepted.** This is the section the `a084fc8` commit message announced
+as "D-018 GUI port posture". D-018 is already the item-model decision, so the
+GUI posture lands here as D-019 and the `BD-13` cross-reference is repointed.
+The section is written by the GUI card that needs it, for the same reason
+`a084fc8` says the posture exists: a GUI card read `done` with no screen and no
+menu in the tree.
+
+**Context.** Every 1.7.10 GUI in the original is immediate-mode GL:
+`GuiResearchBrowser.java` measures 890 lines of `GL11` state calls,
+`Tessellator` quads and `UtilsFX.bindTexture`, and `GuiResearchRecipe` is 1613
+lines more. There is no 1.21.1 class with that shape, so there is nothing to
+`javap` against and no decompiled port target to translate line by line: the
+platform replaced the whole idiom with `GuiGraphics` and `Screen`. Two failure
+modes follow from that and this rule closes both. (a) A card invents a 1.21.1
+counterpart and asserts against it — the `t_547e7ad8` record is the concrete
+case: `done`, with no book screen and no book menu in the tree, and
+`ModClientScreens` registering only `TrunkScreen`. (b) A card asserts a GUI
+feature in the only harness the build gates on, `runGameTestServer`, which is a
+**dedicated server**: `Minecraft.getInstance()` is null, no `Screen` is ever
+constructed, no key or mouse event is ever delivered, and
+`RegisterMenuScreensEvent` never fires. An "the player sees the tabs" assertion
+is therefore unfalsifiable there, and a card that believes it shipped has
+shipped a green test over an empty window.
+
+**Rule.**
+
+1. **Assertions target the port's classes.** A GUI card names the class it
+   ships and asserts against it (structure, wiring, data flow), never against a
+   class the port does not have and never against a pixel.
+2. **The measurable half goes outside the `Screen`.** The listing, selection
+   and navigation state live in a class that imports no Minecraft type
+   (`ResearchBrowserModel` for the book), so the game probes can build it on the
+   server against the live registries and the unit tests can build it in a plain
+   JVM. The `Screen` draws what that object computes and holds no list of its
+   own. A GUI feature with no non-GUI seam is a design problem: state it, do
+   not fake its test.
+3. **The expected set comes from data, never from a list.** A research listing
+   is gated against the shipped JSON parsed raw at test time, the way D-018 §5
+   gates item models against the live registry. A hardcoded id list can never
+   go red — the trap that has bitten this repo repeatedly.
+4. **The honest limit is written down.** Pixels need the ATM10 client; the
+   matrix row says the harness cannot see the window, in the same cell as the
+   tests that pass. "TESTED" on a GUI row means the structure is measured, not
+   that the render was observed.
+
+**Verification.** `ResearchBrowserGraphContentTest` (7 unit tests, expected set
+read out of `entries.json` / `categories.json` at test time) and
+`ThaumonomiconBookGameTest` (3 BOOK-2 probes, 8 in the suite). RED with the
+hardcoded-category mutation: `runGameTestServer` **exit 1** —
+`booktabstripisthegraphscategoriesinregistrationorder`,
+`bookrowscovereverygraphentryandnothingoutsideit`,
+`booknavigationwalkscategoriesandentriesandrefusesstrangers`; unit
+`theBrowserSourcesCarryNoHardcodedGraphKeys` **exit 1** on the same mutation.
+GREEN on the shipped tree: exit 0, all required tests passed, `build` exit 0.
+
+## D-020 — The two Thaumonomicon lanes merge into ONE screen (INTEGRATE-BOOK-LANES, `t_ee886c7e`)
+
+**Status: Accepted.** Two unmerged lanes both shipped a class called
+`client/ThaumonomiconScreen`: the BOOK lane's (`7a1108a`, tabs + entry listing +
+per-entry detail panel, stacked on main `a084fc8`) and the research lane's
+(`a3d98bc`, a node-browser over the presentation model). One tree cannot carry
+both, and the note↔book wiring needs both lanes.
+
+**The decision, and why this direction.** The BOOK lane's screen is THE book
+screen. The research lane's node-browser and its `ThaumonomiconClientHooks`
+open seam are deleted, and its note/purchase affordance moves onto the BOOK
+screen's entry rows. The direction is not a preference between two screens: it
+is the open path. BOOK-1 chose the containerless payload route (BD-22) over a
+`thaumcraft:gui_thaumonomicon` `MenuType`, so the research lane's
+`ThaumonomiconClientHooks` open seam has nothing to hook into on this tree, and
+its `ThaumonomiconScreen.open` was a second open path for the same book. The
+research lane's presentation model — `research/book/{ThaumonomiconBook,BookFrame,
+BookPageView,BookTab,BookNode,BookEdge,BookNoteRequest,ThaumonomiconKnowledge,
+ThaumonomiconHost}` — survives as data, and its probes keep measuring it.
+
+**The wiring that replaced the deleted screen.** Right-click on an entry row
+sends that row's arm on its own; left-click opens the row and then runs the arm,
+which is a no-op for an entry the player already knows, so the BOOK-2/BOOK-4
+row behaviour is unchanged. The arm is decided by the shipped pure rule
+`BookNoteRequest.decide` (reached through `ResearchDetailModel.affordance`, the
+same seam BOOK-4 put under the panel) and rides the shipped
+`PlayerCompleteToServerPayload` — type 1 for the note, type 0 for the aspect
+purchase — into `ResearchManager.handlePlayerCompleteRequest`. That stays the
+port's only completion path (with `ResearchManager.completeResearch` and
+`ResearchCompletePayload`): the merge adds no second one. The five-state hint
+line draws beside the cursor inside the 256x230 pane and repeats in the detail
+panel; the 3000 ms `tc.research.popup` centring expression from
+`GuiResearchBrowser.java:722-725`, `(width - paneWidth)/2 + 128`, lands on that
+pane (`ThaumonomiconScreen.BOOK_PAGE_WIDTH` × 2).
+
+**Ids.** The research lane re-used BD-17/BD-18/BD-19, which main `a084fc8`
+already owns (item models, taint, wisp FX). Those rows renumber to
+**BD-23/BD-24/BD-25** and the research lane's duplicate `BD-13` reference is
+folded into main's BD-13 row; every cross-reference (the BD-13 pointer, the
+`FEATURE_MATRIX` cells, `feature-tracking`, `content-mapping`) follows, so
+`BEHAVIORAL_DEVIATIONS.md` is BD-01…BD-25 with no reused number.
+
+**Gate evidence on the merged tree.** `build --rerun-tasks` exit 0 with **562
+unit tests / 0 failures / 0 errors / 2 pre-existing skips**; `runGameTestServer`
+exit 0 **"All 199 required tests passed :)"**; `-Ptc.noCurios runGameTestServer`
+exit 0 with the same 199. The merge also had to teach the tree two things the
+BOOK lane never registered: `models/item/itemresearchnotes.json` and
+`models/item/iteminkwell.json`, because main's `everyshippeditemhasamodeljson` +
+`everyitemmodelchainresolves` gates demand a model chain for every registered
+item and the research lane shipped none (the sprites are ARR, D-004, so they
+render with the overlay); and `InfusionAltarGameTest`'s essentia-drain assertion
+now measures a **delta** over a baseline, because `TestProbeContent`'s probe
+drain counter is static and the merged registration order put
+`CrucibleGameTest`'s essentia leg in front of it — the absolute read was a
+cross-test read, not a regression.
+
+## D-021 — The BD ledger's id space is `main`'s: incoming rows append, they never renumber (ledger reconcile, `t_9a2c9f91`)
+
+**Status: Accepted.** `docs/BEHAVIORAL_DEVIATIONS.md` is one file that carried
+many ledgers at once. Measured on 118 live heads against `main` = `7933db8`:
+**14-44 `| BD-` rows per head, median 18, 111 of the 118 heads at least 9 rows
+short of `main`'s 45, and not one head at `main`'s count.** The card that owns
+this (`t_9a2c9f91`) opened on 29 rows on `main` and 16/19/20/27/27 on the first
+five heads it measured, and grew to twelve+ ledgers as more clusters were
+adjudicated; between that measurement and this reconcile the golem lane landed
+its own reconcile (`0c66385`, see the precedent below) and `main` grew from
+BD-01…BD-29 to BD-01…BD-45. So the divergence is not a numbering drift, it is
+**deleted rows**: a stale head merged with a wholesale "take theirs" on this
+prose file deletes every row that head never carried — a row nobody edited
+carries no conflict marker, so the deletion lands green. The same channel
+reverted 43 rows of `docs/content-mapping.csv`. `BD-19` had three distinct
+occupants at once: Wisp FX art on `main`, Scribing Tools on `d0ed716`, the
+KnowFrag recipe row on `96b247a`, and the id space is contiguous with no slack,
+so every reassignment shifts its neighbours.
+
+**The decision, and why this direction.** `main`'s rows are the **incumbent**:
+their ids and their text are kept verbatim, and the incoming rows are appended
+on the **end** of main's id space. Three moves are forbidden, and they are
+forbidden in code, not in prose — renumbering to match a branch's numbering is
+what produced the divergent ledgers; trimming rows to make two counts agree
+deletes real records; taking either side of the file wholesale on the strength
+of it conflicting is the deletion channel above. A head's row is **rejected**
+(not appended) when `main` already owns that deviation, measured three ways:
+its fingerprint appears in a historical blob of the ledger in main's history
+(a stale predecessor of a row main rewrote), its System cell is textually the
+same row as a main row (token Jaccard ≥ 0.50), or main's ledger narrates ≥ 55 %
+of its distinctive tokens on a token set big enough to be a fair test (≥ 12).
+Variants of one deviation across several heads collapse to one row keyed by the
+deviation's label — the System cell before its first parenthesis — and the
+fullest variant is canonical, because lanes suffix the same label with their own
+card ids (`Thaumatorium window (TC-M7-04-m2c / t_8f57a102)` vs the same label
+with `…and TC-M7-04-m2e / t_f1395853`).
+
+**Ids.** The reconcile appended **19 deviations as BD-46 … BD-64** (measured:
+19 novel deviations across 118 heads; 39 head-rows collapsed into them), and
+**rejected 17** head rows as deviations main already owns. The two rejections
+that need a name, pinned in `ADJUDICATED` in `scripts/bd_ledger.py` with the
+measured coverage: `Container screen backgrounds and client-visible machine
+state` → **BD-37** (main's row records `authored as BD-17 on wt/m7-gui,
+renumbered at landing`; coverage of main's ledger 1.00 for the
+`wt/m7-gui-tau-glyphs` variant, 0.69 for `wt/m7-gui-state`, whose only delta is
+"state sync closed by TC-M7-04-m4" — that fact belongs in BD-37's cells when the
+GUI fleet lands, not in a new row), and `Wisp block collision` → **BD-19**
+(main's row documents the ported push verbatim, `FxWispPush` reading the mote's
+own cell, coverage 0.57). Every (head, old id) pair is in the generated
+**`docs/bd-id-map.csv`** (39 rows, `head,head_sha,old_id,new_id,card,canonical,system`)
+— that file is what a queued landing cites: rewrite your citations to the
+allocated id, and where the map says your row is covered, edit the incumbent
+row's cells at landing instead of adding a row. One incumbent row is touched,
+and only its cell placement: `BD-13`'s id cell carried
+`BD-13 (see D-019 for the GUI port posture)`, which made the row count in the
+`^| BD-` line count every card quotes and vanish from a strict parse — a row
+invisible to a merge audit. The parenthetical moved to its System cell.
+
+**The tool, and the test that keeps it true.** `scripts/bd_ledger.py` runs the
+rule: `audit` (per-head row counts, novel rows, and the rejections with their
+reasons), `emit` (writes the reconciled ledger + the id map, main incumbent),
+`check` (count floor, id uniqueness/contiguity/zero-padding, the two counting
+methods agreeing, declared status token per row, every citation resolving), and
+`revert` (merge-tree each head onto the reconciled tree and report the incumbent
+rows its merge deletes). `BehavioralDeviationLedgerContractTest`
+(`src/test/java/com/jonnyutah12/thaumcraftclassic/docs/`, 7 probes, pure JDK —
+the ledger is plain Markdown, so it belongs in `./gradlew test`, CI's `build`
+job, not the game-test harness) freezes all 45 incumbent rows as
+id → System-cell fingerprints and asserts: the count never decreases and both
+counting methods agree; the incumbent rows survive with their System cells
+verbatim (the anti-revert assertion); ids unique / zero-padded / contiguous;
+every `BD-NN` cited anywhere in `docs/`, `src/`, `scripts/`, `README.md`,
+`CHANGELOG.md` resolves to exactly one row; every row carries a token the file's
+own `Status vocabulary:` paragraph declares (the paragraph was extended to the
+11 classes the rows actually use, measured over the reconciled file); the map
+resolves and every appended row names its source head, old id and landing card;
+and appended ids start exactly where the incumbent space ends, so an incoming
+row can never steal a main id.
+
+**Precedent, not invention.** The golem lane did exactly this in-branch
+(`0c66385`, "the six golem renderers/models + BD-30..BD-45 renumbering",
+`t_647f672e`): main's BD-01…BD-29 kept as incumbent, its own rows appended as
+BD-30…BD-45, no side-pick, no count-matching trim. That landing is why `main`
+carries 45 rows here, and it is the measured proof that the rule lands.
+
+**Gate evidence on the reconciled tree.** The test was written first and shown
+**RED** on the unreconciled tree: `./gradlew test --tests
+'*BehavioralDeviationLedgerContractTest*'` → **exit 1**, `7 tests completed, 6
+failed` (deleted incumbent BD-13, missing `docs/bd-id-map.csv`, 3 cited ids
+resolving to 0 rows, the loose/strict count split at 45 vs 44, 19 rows with no
+declared status token). After the reconcile the same command → **exit 0**
+(`BUILD SUCCESSFUL`, 7/7 probes, 0 skipped). `./gradlew build --rerun-tasks` →
+**exit 0** with **733 unit tests / 0 failures / 0 errors / 2 pre-existing
+skips**; `./gradlew runGameTestServer` → **exit 0 "All 292 required tests
+passed :)"**; `./gradlew -Ptc.noCurios runGameTestServer` → **exit 0** with the
+same 292. `python3 scripts/bd_ledger.py --main <reconciled head> revert` over
+**121 heads (57 of them CONFLICTED on this very file)** reports
+**`total reverting rows across 121 heads: 0`, exit 0** — no head's merge deletes
+an incumbent row once the ids are allocated and the map exists.
+

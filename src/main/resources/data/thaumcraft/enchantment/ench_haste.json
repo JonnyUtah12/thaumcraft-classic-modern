@@ -1,0 +1,21 @@
+{
+  "_source": "TC-M6-05-s-e1c registration slice. Id contract: docs/content-mapping.csv row Thaumcraft:ench_haste (kind=enchantment). The row names the enchantment that recipe.202.infusion_enchantment.json (original_key InfEnchHaste) puts on the pedestal item; the original applies it to foot armour, so the payload keys on the vanilla foot-armor applicability tag. Registration only: the Haste effect body (speed attribute on the wearer) is the next slice, so this payload carries no `effects` component.",
+  "description": {
+    "translate": "enchantment.thaumcraft.ench_haste"
+  },
+  "supported_items": "#minecraft:enchantable/foot_armor",
+  "weight": 3,
+  "max_level": 3,
+  "min_cost": {
+    "base": 15,
+    "per_level_above_first": 9
+  },
+  "max_cost": {
+    "base": 65,
+    "per_level_above_first": 9
+  },
+  "anvil_cost": 2,
+  "slots": [
+    "feet"
+  ]
+}

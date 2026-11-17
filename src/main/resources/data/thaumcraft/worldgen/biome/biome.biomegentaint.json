@@ -1,0 +1,18 @@
+{
+  "_comment": "TC-M5-04-s: the Tainted Land biome (content-mapping.csv row Thaumcraft:biome.BiomeGenTaint, new_id thaumcraft:biome.biomegentaint; id contract D-001). Port of thaumcraft.common.lib.world.biomes.BiomeGenTaint. Colours are the original's, mapped onto 1.21.1's four required BiomeSpecialEffects slots plus the two optional plant slots: fog_color 7160201 (setFogColor), sky_color 7160201 (setSkyColor — the base biome sky the modern client tints for rain/thunder), water_color 13373832 (getWaterColorMultiplier), grass_color + foliage_color 8154503 (func_150558_b / func_150571_c), water_fog_color 329011 (the BiomeGenBase default the original never overrode, the same value vanilla's own biomes carry). DEVIATION (BD-14): the original's func_76731_a(float) = 8144127 — the 'sky at height' colour 1.7.10's RenderSky mixed in as the camera rose — has NO slot in 1.21.1, whose client derives the altitude gradient from the single sky_color, so it cannot be carried as data; it stays pinned as the original's number in TaintRulesParityTest and is client-side-only, so no server behaviour changes. temperature/downfall 0.5 are the BiomeGenBase defaults the original never overrode, and has_precipitation true is its untouched enableRain. features/carvers are empty: the original's GenLayerBiome settings set tree frequency 2 and red-mushroom 2 with -999 (off) for ores, reeds, dead bushes and oil, and its decorateSpecial passes (the taint blob, the 10 fibre-scatter and 8 surface-spread passes, the 1-in-8 WorldGenBigMagicTree) are worldgen features owned by TC-M5-05. spawners is empty for the same reason: the original's one entry is the Taintacle (Config.spawnTaintacle, weight 1, 1-1, monster category) and a biome JSON naming an unregistered entity type fails to decode, so TC-M6-06 adds it with the entity. spawn_costs empty: the original has none.",
+  "has_precipitation": true,
+  "temperature": 0.5,
+  "downfall": 0.5,
+  "effects": {
+    "sky_color": 7160201,
+    "fog_color": 7160201,
+    "water_color": 13373832,
+    "water_fog_color": 329011,
+    "grass_color": 8154503,
+    "foliage_color": 8154503
+  },
+  "carvers": {},
+  "features": [],
+  "spawners": {},
+  "spawn_costs": {}
+}

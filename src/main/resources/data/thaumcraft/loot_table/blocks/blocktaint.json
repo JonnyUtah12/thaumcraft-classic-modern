@@ -1,0 +1,78 @@
+{
+  "type": "minecraft:block",
+  "_comment": "TC-M5-04-s: the original BlockTaint drop table, transcribed from its hooks (1.7.10 BlockTaint.java:200-220). getItemDropped: meta 1 (tainted soil) drops vanilla dirt, meta 2 (flesh) drops rotten flesh, meta 0 (crust) drops nothing (Item.getById(0)); quantityDropped: 9 for flesh, super (1) elsewhere; canSilkHarvest: meta 2 only, so only the flesh pool carries a silk branch (the block itself, with its variant components). 1.21.x resolves block drops from this table, not a block hook.",
+  "pools": [
+    {
+      "name": "thaumcraft:soil_to_dirt",
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "thaumcraft:blocktaint",
+          "properties": { "variant": "1" }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "minecraft:dirt" } ]
+    },
+    {
+      "name": "thaumcraft:flesh_silk",
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "thaumcraft:blocktaint",
+          "properties": { "variant": "2" }
+        },
+        {
+          "condition": "minecraft:match_tool",
+          "predicate": {
+            "predicates": {
+              "minecraft:enchantments": [
+                { "enchantments": "minecraft:silk_touch", "levels": { "min": 1 } }
+              ]
+            }
+          }
+        }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": {
+            "minecraft:block_state": { "variant": "2" },
+            "thaumcraft:item_meta": 2
+          }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blocktaint" } ]
+    },
+    {
+      "name": "thaumcraft:flesh_rotten",
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "thaumcraft:blocktaint",
+          "properties": { "variant": "2" }
+        },
+        {
+          "condition": "minecraft:inverted",
+          "term": {
+            "condition": "minecraft:match_tool",
+            "predicate": {
+              "predicates": {
+                "minecraft:enchantments": [
+                  { "enchantments": "minecraft:silk_touch", "levels": { "min": 1 } }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "functions": [ { "function": "minecraft:set_count", "count": 9 } ],
+      "entries": [ { "type": "minecraft:item", "name": "minecraft:rotten_flesh" } ]
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "minecraft:glass_bottle"
+    },
+    {
+      "item": "minecraft:feather"
+    },
+    {
+      "tag": "thaumcraft:oredict.dyeblack"
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:iteminkwell",
+    "count": 1
+  },
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java:3976-3977 (Thaumcraft 4.2.3.5): ConfigResearch.recipes.put(\"Scribe2\", shapelessOreDictRecipe(new ItemStack(ConfigItems.itemInkwell), new Object[]{Items.field_151069_bo, Items.field_151008_G, \"dyeBlack\"})); registered into the CraftingManager at mod load by the shapelessOreDictRecipe helper (ConfigRecipes.java:4091-4095), never research-gated - the ConfigResearch key only names the Thaumonomicon display page. MCP resolution (reference/mcp-mappings/fields_1.7.10_mcp_stable_11.csv): Items.field_151069_bo = glass_bottle (:1671) -> minecraft:glass_bottle, Items.field_151008_G = feather (:1610) -> minecraft:feather; dyeBlack = 1.7.10 dye meta 0 = Ink Sac, split in 1.21.1 into black_dye + ink_sac, read here through the thaumcraft:oredict.dyeblack tag. Every ingredient is a vanilla item, so this row is the inkwell's unconditional survival acquisition path (Scribe1 needs a ported empty phial); the glass bottle stands in for the phial exactly as in the original. Extracted by hand for TC-M3-04-s-vi (t_28fe696f).",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:glass_bottle"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:feather"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:iteminkwell"
+    }
+  ]
+}

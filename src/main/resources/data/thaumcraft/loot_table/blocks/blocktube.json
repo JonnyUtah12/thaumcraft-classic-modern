@@ -1,0 +1,110 @@
+{
+  "type": "minecraft:block",
+  "_comment": "The original BlockTube drops the block itself for every metadata value (the filtered tube's label drop is the getDrops override in BlockTube, not this table). 1.21.1 has no implicit self-drop, so the table exists to keep that drop and to carry the original blockTube metadata 0..7 (D-001) on the block_state component so a re-placed tube keeps its variant (a plain tube, a valve, a filter, a buffer, a restricted tube or a directional tube).",
+  "pools": [
+    {
+      "rolls": 1.0,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "thaumcraft:blocktube", "properties": { "variant": "0" } }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "minecraft:block_state": { "variant": "0" } }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blocktube" } ]
+    },
+    {
+      "rolls": 1.0,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "thaumcraft:blocktube", "properties": { "variant": "1" } }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "minecraft:block_state": { "variant": "1" } }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blocktube" } ]
+    },
+    {
+      "rolls": 1.0,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "thaumcraft:blocktube", "properties": { "variant": "2" } }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "minecraft:block_state": { "variant": "2" } }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blocktube" } ]
+    },
+    {
+      "rolls": 1.0,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "thaumcraft:blocktube", "properties": { "variant": "3" } }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "minecraft:block_state": { "variant": "3" } }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blocktube" } ]
+    },
+    {
+      "rolls": 1.0,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "thaumcraft:blocktube", "properties": { "variant": "4" } }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "minecraft:block_state": { "variant": "4" } }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blocktube" } ]
+    },
+    {
+      "rolls": 1.0,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "thaumcraft:blocktube", "properties": { "variant": "5" } }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "minecraft:block_state": { "variant": "5" } }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blocktube" } ]
+    },
+    {
+      "rolls": 1.0,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "thaumcraft:blocktube", "properties": { "variant": "6" } }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "minecraft:block_state": { "variant": "6" } }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blocktube" } ]
+    },
+    {
+      "rolls": 1.0,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "thaumcraft:blocktube", "properties": { "variant": "7" } }
+      ],
+      "functions": [
+        {
+          "function": "minecraft:set_components",
+          "components": { "minecraft:block_state": { "variant": "7" } }
+        }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "thaumcraft:blocktube" } ]
+    }
+  ]
+}

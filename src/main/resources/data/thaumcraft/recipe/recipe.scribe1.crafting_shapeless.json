@@ -1,0 +1,40 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemessence"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 0
+      }
+    },
+    {
+      "item": "minecraft:feather"
+    },
+    {
+      "tag": "thaumcraft:oredict.dyeblack"
+    }
+  ],
+  "result": {
+    "id": "thaumcraft:iteminkwell",
+    "count": 1
+  },
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java:3971-3975 (Thaumcraft 4.2.3.5): ConfigResearch.recipes.put(\"Scribe1\", shapelessOreDictRecipe(new ItemStack(ConfigItems.itemInkwell), new Object[]{new ItemStack(ConfigItems.itemEssence, 1, 0), Items.field_151008_G, \"dyeBlack\"})); the shapelessOreDictRecipe helper (ConfigRecipes.java:4091-4095) registers the row into the CraftingManager at mod load, so the original never research-gates it - the ConfigResearch key only names the Thaumonomicon display page. MCP resolution (reference/mcp-mappings/fields_1.7.10_mcp_stable_11.csv): Items.field_151008_G = feather (:1610) -> minecraft:feather; the ore-dict name dyeBlack was 1.7.10 dye meta 0 = Ink Sac, and 1.21.1 splits that identity into black_dye + ink_sac, so the row reads the thaumcraft:oredict.dyeblack tag carrying both. ConfigItems.itemEssence meta 0 = the EMPTY phial: the port keeps the original's metas on thaumcraft:item_meta (D-001), so the ingredient is the registered {\"type\": \"neoforge:components\", ...} Ingredient pinned to item_meta 0 (D-015) - a filled phial (meta 1) must never be eaten by this row, the same meta-precision shape as recipe.31.crucible.json's meta-1 phial catalyst. Extracted by hand for TC-M3-04-s-vi (t_28fe696f): the vanilla-crafting extractor enumerated only GameRegistry.addRecipe-style rows, so the ore-dict shapeless family (Scribe1/Scribe2/Scribe3, Table, Thaumometer, Phial's OreDict sibling) has no recipe.N content-mapping row, and this row's id names the original's ConfigResearch key.",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemessence"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "minecraft:feather"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:iteminkwell"
+    }
+  ]
+}

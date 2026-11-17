@@ -2,6 +2,8 @@ package com.jonnyutah12.thaumcraftclassic.blocks;
 
 import com.jonnyutah12.thaumcraftclassic.tiles.TileArcaneWorkbench;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
@@ -39,16 +41,29 @@ public class BlockArcaneWorkbench extends Block implements EntityBlock {
     }
 
     /**
-     * The original opened {@code ContainerArcaneWorkbench} from the player's GUI
-     * ({@code gui_arcane_workbench}, TC-M7-04); without that GUI the craft cycle
-     * runs on the plain use interaction so the seam exists in 1.21.1.
+     * {@code BlockArcaneWorkbench.func_149727_b} — the original's
+     * {@code onBlockActivated} opened {@code ContainerArcaneWorkbench} and returned
+     * true; the sneak-with-a-wand branch is vanilla's own, which reaches this method
+     * only when the player is not sneaking.
+     *
+     * <p>TC-M7-04-m2 replaces TC-M4-03-s's interim GUI-less stand-in (a plain
+     * {@code craft(player)} on the use interaction) with the original's menu open.
+     * The craft cycle now runs from {@code ArcaneWorkbenchMenu.broadcastChanges} —
+     * the 1.7.10 {@code updateContainer} seam — while the menu is open, and stops
+     * when it closes, exactly as in 1.7.10.</p>
      */
     @Override
     public net.minecraft.world.InteractionResult useWithoutItem(final BlockState state, final Level level,
             final BlockPos pos, final Player player, final BlockHitResult hit) {
-        if (level.getBlockEntity(pos) instanceof TileArcaneWorkbench bench && bench.craft(player)) {
-            return net.minecraft.world.InteractionResult.CONSUME;
+        if (!(level.getBlockEntity(pos) instanceof MenuProvider provider)) {
+            return net.minecraft.world.InteractionResult.PASS;
         }
-        return net.minecraft.world.InteractionResult.PASS;
+        if (level.isClientSide) {
+            return net.minecraft.world.InteractionResult.SUCCESS;
+        }
+        if (player instanceof ServerPlayer serverPlayer) {
+            serverPlayer.openMenu(provider, pos);
+        }
+        return net.minecraft.world.InteractionResult.CONSUME;
     }
 }

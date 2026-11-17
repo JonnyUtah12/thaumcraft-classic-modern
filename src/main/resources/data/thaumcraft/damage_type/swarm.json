@@ -1,0 +1,7 @@
+{
+  "message_id": "thaumcraft.swarm",
+  "exhaustion": 0.1,
+  "scaling": "when_caused_by_living_non_player",
+  "effects": "hurt",
+  "_comment": "Original DamageSourceThaumcraft.swarm: plain source, delivered via causeSwarmDamage(killer) by the Taint Swarm / Swarmer (TC-M6-06). Registered so their damage and death messages resolve; msgId 'thaumcraft.swarm' resolves the original death.attack.swarm[.item] strings."
+}

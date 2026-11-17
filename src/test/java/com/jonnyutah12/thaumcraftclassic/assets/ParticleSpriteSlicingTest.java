@@ -5,9 +5,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -59,7 +61,44 @@ class ParticleSpriteSlicingTest {
             new CellParticle("sparkle", "sparkle", cells(112, 120)),
             new CellParticle("bubble", "bubble", new int[] {16, 17}),
             new CellParticle("beam_impact", "impact", cells(80, 95)),
-            new CellParticle("sparkle_glow", "sparkle_glow", cells(112, 115)));
+            new CellParticle("sparkle_glow", "sparkle_glow", cells(112, 115)),
+            // TC-M7-02-c-s-f1b: the EG wisp steps u = age%13/16 at v = 0.1875
+            // (FXWispEG.java:59-62) — row 3, columns 0..12 of the sheet grid.
+            new CellParticle("wisp_eg", "wisp_eg", cells(48, 60)),
+            // TC-M7-02-c-s-f5: the shared particle families. Each cell list is
+            // read off the original class's own UV lines (D-017), the way the
+            // rune family's cells 96..111 were.
+            new CellParticle("scorch", "scorch", cells(151, 159)),            // FXScorch.java:43,100-104
+            new CellParticle("smoke_spiral", "smoke_spiral", cells(1, 5)),    // FXSmokeSpiral.java:31-33
+            new CellParticle("smoke_trail", "smoke_trail", cells(1, 5)),      // FXSmokeTrail.java:52-55
+            new CellParticle("vent", "vent", cells(1, 5)),                    // FXVent.java:95-97
+            new CellParticle("swarm", "swarm", cells(71, 78)),                // FXSwarm.java:56-59 (row 4)
+            new CellParticle("bore_sparkle", "bore_sparkle", cells(64, 67)),  // FXBoreSparkle.java:56-59
+            new CellParticle("vis_sparkle", "vis_sparkle", cells(128, 143)),  // FXVisSparkle.java:49-52 (row 8)
+            new CellParticle("essentia_trail", "essentia_trail", new int[] {25}), // FXEssentiaTrail.java:69-70
+            new CellParticle("drop", "drop", cells(112, 114)),               // FXDrop.java:27,52,58,73
+            // TC-M7-02-c-s-f3: the rune decal draws u = runeIndex%16/16 at
+            // v = 0.375 (FXBlockRunes.java:50-51) — row 6, columns 0..15 of the
+            // sheet grid, i.e. cells 96..111. The ctor's runeIndex roll is
+            // 224..239 (line 34); only its %16 column reaches the texture.
+            new CellParticle("rune", "rune", cells(96, 111)));
+
+    /**
+     * TC-M7-02-c-s-f1b: the wisp and the arcing wisp draw regions of the
+     * VANILLA /misc/fx.png sheet (FXWisp.java:148-151, FXWispArcing.java:
+     * 74-77), which the reference tree does not ship. They stand in on the
+     * sliced Thaumcraft glow frame (BD-46), so their definitions must name
+     * exactly that one sprite.
+     */
+    private static final Map<String, String> SUBSTITUTE_PARTICLES = Map.of(
+            "wisp", "sparkle_0",
+            "wisp_arcing", "sparkle_0",
+            // TC-M7-02-c-s-f5 (BD-84): FXBurst's strip is the node renderer's own
+            // sheet, TileNodeRenderer.nodetex (FXBurst.java:26-31), which the
+            // reference tree does not ship. The definition stands in on the
+            // sliced glow frame; the class's 32-frame count (u = age % 32 / 32)
+            // stays pinned in TcBurstOptions.FRAMES.
+            "burst", "sparkle_glow_0");
 
     /**
      * A whole-tile particle: the committed JSON name and its sprite base names
@@ -70,7 +109,14 @@ class ParticleSpriteSlicingTest {
             "beam", List.of("beam0", "beam1", "beam2", "beam3"),
             "beam_golem_boss", List.of("beam0", "beam1", "beam2", "beam3"),
             "arc", List.of("beam0"),
-            "bolt", List.of("bolt_glow", "bolt_core"));
+            "bolt", List.of("bolt_glow", "bolt_core"),
+            // TC-M7-02-c-s-f5: the sonic boom is a whole-file strip, not cells —
+            // FXSonic.java:38-45 binds the shell to models/ripple1..15.png, so the
+            // build copies those 15 pages whole (build.gradle
+            // originalWholeFileParticleFrames). Their pixels ride the
+            // asset-mapping contract (docs/asset-mapping.csv maps all 15 pages);
+            // this probe pins that every frame the definition names exists.
+            "sonic", IntStream.rangeClosed(0, 14).mapToObj(i -> "sonic_" + i).toList());
 
     /** Sliced tile base name -> original file under textures/misc. */
     private static final Map<String, String> ORIGINAL_TILES = Map.of(
@@ -80,6 +126,50 @@ class ParticleSpriteSlicingTest {
             "beam3", "beam3.png",
             "bolt_glow", "p_large.png",
             "bolt_core", "p_small.png");
+
+    /**
+     * TC-M7-02-c-s-f4: the ward/shield-rune family draws whole
+     * <code>textures/models</code> frames, not sheet cells and not misc tiles.
+     * {@code FXBlockWard} binds {@code /models/hemis<frame>.png} with
+     * {@code frame = min(15, (int)(15F * fade))} (FXBlockWard.java:52-54), so
+     * the ward takes hemis0..15. {@code FXShieldRunes} binds
+     * {@code /models/hemis<frame>.png} with
+     * {@code frame = min(15, (int)(14F * fade) + 1)} (FXShieldRunes.java:60) —
+     * 1..15, so <b>hemis0 belongs to the ward alone</b> — and switches to
+     * {@code /models/ripple<frame>.png} on the mob branch (FXShieldRunes.java:61-63).
+     * Kept in step with the {@code originalModelFrames} map in build.gradle.
+     */
+    private static final Map<String, List<String>> MODEL_PARTICLES = modelDefinitions();
+
+    /** Sliced model-frame base name -> original file under textures/models. */
+    private static final Map<String, String> ORIGINAL_MODEL_FRAMES = modelFrameSources();
+
+    private static Map<String, List<String>> modelDefinitions() {
+        final Map<String, List<String>> out = new LinkedHashMap<>();
+        out.put("ward", modelFrames("hemis", 0, 15));
+        out.put("shield_runes", modelFrames("hemis", 1, 15));
+        out.put("shield_runes_mob", modelFrames("ripple", 1, 15));
+        return out;
+    }
+
+    private static Map<String, String> modelFrameSources() {
+        final Map<String, String> out = new LinkedHashMap<>();
+        for (int frame = 0; frame <= 15; frame++) {
+            out.put("hemis" + frame, "hemis" + frame + ".png");
+        }
+        for (int frame = 1; frame <= 15; frame++) {
+            out.put("ripple" + frame, "ripple" + frame + ".png");
+        }
+        return out;
+    }
+
+    private static List<String> modelFrames(final String base, final int from, final int to) {
+        final List<String> out = new ArrayList<>();
+        for (int frame = from; frame <= to; frame++) {
+            out.add(base + frame);
+        }
+        return List.copyOf(out);
+    }
 
     private static int[] cells(final int from, final int to) {
         int[] out = new int[to - from + 1];
@@ -92,7 +182,9 @@ class ParticleSpriteSlicingTest {
     private static List<String> particleJsonNames() {
         List<String> names = new ArrayList<>();
         CELL_PARTICLES.forEach(p -> names.add(p.json()));
+        names.addAll(SUBSTITUTE_PARTICLES.keySet().stream().sorted().toList());
         names.addAll(TILE_PARTICLES.keySet().stream().sorted().toList());
+        names.addAll(MODEL_PARTICLES.keySet().stream().sorted().toList());
         return names;
     }
 
@@ -137,6 +229,14 @@ class ParticleSpriteSlicingTest {
             }
         }
 
+        for (Map.Entry<String, String> entry : SUBSTITUTE_PARTICLES.entrySet()) {
+            List<String> textures = texturesOf(Files.readString(definition(entry.getKey())));
+            assertEquals(1, textures.size(),
+                    entry.getKey() + ": the fx.png stand-in is one frame (BD-46)");
+            assertEquals("thaumcraft:particle/" + entry.getValue(), textures.get(0),
+                    entry.getKey() + ": the definition must name the glow frame it stands in on");
+        }
+
         for (Map.Entry<String, List<String>> entry : TILE_PARTICLES.entrySet()) {
             List<String> textures = texturesOf(Files.readString(definition(entry.getKey())));
             assertEquals(entry.getValue().size(), textures.size(),
@@ -151,6 +251,27 @@ class ParticleSpriteSlicingTest {
                                 + "(FXBeam.java:77-81, FXLightningBolt.java:178-182)");
             }
         }
+
+        for (Map.Entry<String, List<String>> entry : MODEL_PARTICLES.entrySet()) {
+            List<String> textures = texturesOf(Files.readString(definition(entry.getKey())));
+            assertEquals(entry.getValue().size(), textures.size(),
+                    entry.getKey() + ": the frame list must cover every models frame the "
+                            + "original binds (" + entry.getValue().size() + ")");
+            for (int frame = 0; frame < entry.getValue().size(); frame++) {
+                String id = textures.get(frame);
+                assertTrue(SPRITE_ID.matcher(id).matches(),
+                        entry.getKey() + " frame " + frame + ": not a particle-atlas sprite id: " + id);
+                assertEquals("thaumcraft:particle/" + entry.getValue().get(frame), id,
+                        entry.getKey() + ": the frame order must follow the original ramp "
+                                + "(FXBlockWard.java:52-54, FXShieldRunes.java:60-66 — the rune "
+                                + "ramp starts at 1, so hemis0 is the ward's alone)");
+            }
+        }
+        assertTrue(texturesOf(Files.readString(definition("ward"))).contains("thaumcraft:particle/hemis0"),
+                "the ward's ramp is 0..15 (FXBlockWard.java:53)");
+        assertTrue(!texturesOf(Files.readString(definition("shield_runes")))
+                        .contains("thaumcraft:particle/hemis0"),
+                "the rune ramp is min(15, (int)(14F * fade) + 1) = 1..15 (FXShieldRunes.java:60)");
     }
 
     private static List<String> texturesOf(final String json) {
@@ -213,6 +334,38 @@ class ParticleSpriteSlicingTest {
             assertArrayEquals(src, dst,
                     entry.getKey() + " must be a pixel-identical copy of textures/misc/" + entry.getValue()
                             + " (the original binds it whole, no crop)");
+        }
+    }
+
+    /**
+     * The model frames are copied whole-file by
+     * {@code sliceOriginalParticleSprites}; this pins each copy to the original
+     * 128x128 texture pixel-for-pixel, so a wrong frame index in
+     * {@code originalModelFrames} is a red test and not a ward that flickers.
+     */
+    @Test
+    void slicedModelFramesAreTheOriginalTextures() throws IOException {
+        Path spritesDir = Path.of(System.getProperty("tc.originalParticleSpritesDir", ""));
+        Path modelsDir = Path.of(System.getProperty("tc.originalModelTexturesDir", ""));
+        Assumptions.assumeTrue(Files.isDirectory(spritesDir),
+                "sliceOriginalParticleSprites has not run — run ./gradlew processResources first");
+        Assumptions.assumeTrue(Files.isDirectory(modelsDir),
+                "the original models textures are only present with the reference tree (CI has none)");
+        Path particleDir = spritesDir.resolve("assets/thaumcraft/textures/particle");
+        for (Map.Entry<String, String> entry : ORIGINAL_MODEL_FRAMES.entrySet()) {
+            Path original = modelsDir.resolve(entry.getValue());
+            assertTrue(Files.isRegularFile(original), "the original frame is missing: " + original);
+            Path sprite = particleDir.resolve(entry.getKey() + ".png");
+            assertTrue(Files.isRegularFile(sprite),
+                    entry.getKey() + ": the models frame was not copied: " + sprite);
+            BufferedImage source = ImageIO.read(original.toFile());
+            BufferedImage copied = ImageIO.read(sprite.toFile());
+            assertEquals(source.getWidth(), copied.getWidth(), entry.getKey() + " keeps the width");
+            assertEquals(source.getHeight(), copied.getHeight(), entry.getKey() + " keeps the height");
+            assertArrayEquals(
+                    source.getRGB(0, 0, source.getWidth(), source.getHeight(), null, 0, source.getWidth()),
+                    copied.getRGB(0, 0, source.getWidth(), source.getHeight(), null, 0, source.getWidth()),
+                    entry.getKey() + " must be the original " + entry.getValue() + " pixel for pixel");
         }
     }
 

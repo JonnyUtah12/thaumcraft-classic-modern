@@ -10,6 +10,8 @@ import net.minecraft.world.inventory.Slot;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import java.util.List;
+
 /**
  * The Traveling Trunk container screen (content-mapping.csv
  * {@code thaumcraft:GUI_TRUNK}, original {@code GuiTravelingTrunk} for
@@ -25,7 +27,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * pitch, wider than vanilla's 18 px), and the player inventory is the standard
  * 3x9 grid at {@code y = 118 + row*18} with the hotbar at {@code y = 176}.</p>
  *
- * <p><b>Background (docs/BEHAVIORAL_DEVIATIONS.md BD-15).</b> The original drew
+ * <p><b>Background (docs/BEHAVIORAL_DEVIATIONS.md BD-37).</b> The original drew
  * {@code guitrunkbase.png}, a texture that only ships in an asset-overlay build
  * (the original assets are All Rights Reserved and are never committed, D-004),
  * so it is not in the code-only jar this card is gated on. The panel is
@@ -47,11 +49,22 @@ import net.neoforged.api.distmarker.OnlyIn;
  * rendering blank. No {@code §} colour codes are used anywhere: 1.21.1
  * formatting is carried by {@link Component} styles.</p>
  *
- * <p>Not implemented here, and on their own cards: the original's stay-toggle
- * button (the menu already answers it through
- * {@link TrunkMenu#BUTTON_TOGGLE_STAY} / {@code clickMenuButton}, the GUI
- * button is TC-M7-04 follow-up work), the hand-mirror and deconstruction-table
- * screens, and every other GUI id.</p>
+ * <p>Stay toggle (TC-M7-04-m4, BD-17): the original drew a 10x10 texel at
+ * {@code (112,0)} of its overlay-only sheet while {@code getStay()} was true,
+ * and its click box {@code k1 < 10 && l1 <= 10} flipped the mode and set the
+ * click's tooltip to the mode the toggle produces ("Traveling Trunk: Stay
+ * mode" / "Follow mode"). The port frames that box, fills it with the authored
+ * indicator colour while staying (the same fill the spa mix and the break bar
+ * use), shows the next-mode text as a hover tooltip, and sends
+ * {@link TrunkMenu#BUTTON_TOGGLE_STAY} on click — the menu's
+ * {@code clickMenuButton} already answers it. The stay flag arrives through the
+ * menu's data slot (BD-17 closure), so the control reflects the synced state.
+ * The machine screens whose content has no menu type yet stay on their own
+ * cards. The hand-mirror and deconstruction-table screens listed here as
+ * follow-ups in cr1 are done: they landed in TC-M7-04-s (t_7eb3e438) as
+ * {@link HandMirrorScreen} and {@link DeconstructionTableScreen}, together
+ * with {@link MagicBoxScreen} and {@link SpaScreen}, which is every
+ * {@code MenuType} the mod registers.</p>
  */
 @OnlyIn(Dist.CLIENT)
 public class TrunkScreen extends AbstractContainerScreen<TrunkMenu> {
@@ -122,6 +135,52 @@ public class TrunkScreen extends AbstractContainerScreen<TrunkMenu> {
         // carried stack + the hover highlight) and the labels.
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
+        // The original set the stay text inside its click handler as a mob
+        // tooltip string; the modern tooltip surface is set per-frame during
+        // render, same box, same next-mode content (stayClickText).
+        if (ContainerLayout.inTrunkStayBox(mouseX - this.leftPos, mouseY - this.topPos)) {
+            guiGraphics.renderTooltip(this.font,
+                    List.of(stayClickText(this.menu).getVisualOrderText()), mouseX, mouseY);
+        }
+    }
+
+    /** The lang key shown when a click would put the trunk into stay mode. */
+    static final String STAY_ON_KEY = "container.thaumcraft.gui_trunk.stay_on";
+    /** The lang key shown when a click would return the trunk to follow mode. */
+    static final String STAY_OFF_KEY = "container.thaumcraft.gui_trunk.stay_off";
+
+    /**
+     * The original stay box: {@code k1 >= 0 && l1 >= 0 && k1 < 10 && l1 <= 10}
+     * at {@code (112,0)} — the inclusive row-10 edge kept verbatim.
+     */
+    static boolean inStayButtonBox(final int relX, final int relY) {
+        return ContainerLayout.inTrunkStayBox(relX, relY);
+    }
+
+    /**
+     * The text the original attached to the click: it sets the tooltip to the
+     * mode the toggle produces — "Follow mode" while staying, "Stay mode"
+     * while following.
+     */
+    static Component stayClickText(final TrunkMenu menu) {
+        return Component.translatable(menu.isStaying() ? STAY_OFF_KEY : STAY_ON_KEY);
+    }
+
+    /**
+     * The original {@code func_73864_a} tail: the stay box (checked first)
+     * sends the stay-toggle menu button; slot clicks go through super, in the
+     * original's order.
+     */
+    @Override
+    public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
+        if (button == 0 && inStayButtonBox((int) mouseX - this.leftPos, (int) mouseY - this.topPos)) {
+            if (this.minecraft != null) {
+                this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId,
+                        TrunkMenu.BUTTON_TOGGLE_STAY);
+            }
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
@@ -145,6 +204,21 @@ public class TrunkScreen extends AbstractContainerScreen<TrunkMenu> {
         for (int i = 0; i < trunkSlotCount && i < this.menu.slots.size(); i++) {
             final Slot slot = this.menu.slots.get(i);
             guiGraphics.blitSprite(SLOT_SPRITE, slot.x - 1, slot.y - 1, 18, 18);
+        }
+
+        // The stay toggle control (TC-M7-04-m4, BD-17): the original's on-state
+        // texel is overlay-only, so staying fills the 10x10 box at (112,0) with
+        // the authored indicator colour and following keeps it framed.
+        if (this.menu.isStaying()) {
+            guiGraphics.fill(this.leftPos + ContainerLayout.TRUNK_STAY_X,
+                    this.topPos + ContainerLayout.TRUNK_STAY_Y,
+                    this.leftPos + ContainerLayout.TRUNK_STAY_X + ContainerLayout.TRUNK_STAY_WIDTH,
+                    this.topPos + ContainerLayout.TRUNK_STAY_Y + ContainerLayout.TRUNK_STAY_HEIGHT,
+                    ContainerLayout.TRUNK_STAY_ON_FILL);
+        } else {
+            guiGraphics.renderOutline(this.leftPos + ContainerLayout.TRUNK_STAY_X,
+                    this.topPos + ContainerLayout.TRUNK_STAY_Y,
+                    ContainerLayout.TRUNK_STAY_WIDTH, ContainerLayout.TRUNK_STAY_HEIGHT, PANEL_FRAME);
         }
     }
 }

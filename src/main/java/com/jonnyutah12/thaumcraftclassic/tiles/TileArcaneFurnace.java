@@ -11,12 +11,17 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
@@ -73,7 +78,8 @@ import java.util.Optional;
  *   base and the nozzle drop themselves.</li>
  * </ul>
  */
-public class TileArcaneFurnace extends BlockEntity implements BlockDeviceBase.TickingDeviceTile {
+public class TileArcaneFurnace extends BlockEntity
+        implements BlockDeviceBase.TickingDeviceTile, net.minecraft.world.Container, MenuProvider {
 
     private final ItemStack[] items = new ItemStack[ArcaneFurnaceLogic.SLOTS];
 
@@ -139,6 +145,119 @@ public class TileArcaneFurnace extends BlockEntity implements BlockDeviceBase.Ti
         }
         setChanged();
         return out;
+    }
+
+    // --- Container surface for the gui_id 9 menu (TC-M7-04-m1) -------------
+
+    /** The tile's inventory width; the GUI exposes only slots 0 and 1 (the original container). */
+    public static final int SLOTS = ArcaneFurnaceLogic.SLOTS;
+
+    @Override
+    public int getContainerSize() {
+        return getSizeInventory();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        for (int a = 0; a < items.length; a++) {
+            if (!items[a].isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public ItemStack getItem(final int slot) {
+        return getStackInSlot(slot);
+    }
+
+    @Override
+    public ItemStack removeItem(final int slot, final int count) {
+        return decrStackSize(slot, count);
+    }
+
+    @Override
+    public ItemStack removeItemNoUpdate(final int slot) {
+        final ItemStack stack = items[slot];
+        items[slot] = ItemStack.EMPTY;
+        return stack;
+    }
+
+    @Override
+    public void setItem(final int slot, final ItemStack stack) {
+        setInventorySlotContents(slot, stack);
+    }
+
+    @Override
+    public void clearContent() {
+        clearInventory();
+        setChanged();
+    }
+
+    @Override
+    public int getMaxStackSize() {
+        return ArcaneFurnaceLogic.STACK_LIMIT;
+    }
+
+    @Override
+    public boolean canPlaceItem(final int slot, final ItemStack stack) {
+        // GUI slot 0 takes exactly the smeltable class (the original's
+        // SlotLimitedHasAspects analogue); the tile's own intake,
+        // addItemsToInventory, keeps its original rules untouched.
+        return slot != 0 || canSmeltStack(stack);
+    }
+
+    /** The stack class the input slot and shift-click fill accept. */
+    public boolean canSmeltStack(final ItemStack stack) {
+        return !stack.isEmpty() && smeltFor(stack).isPresent();
+    }
+
+    /** Cook progress for the menu's data slot 0 (the original syncs this to the GUI). */
+    public int getFurnaceCookTime() {
+        return furnaceCookTime;
+    }
+
+    /** Menu-side mirror of the synced cook progress (client copy only). */
+    public void setFurnaceCookTime(final int value) {
+        furnaceCookTime = value;
+    }
+
+    /** Cook duration for the menu's data slot 1. */
+    public int getFurnaceMaxCookTime() {
+        return furnaceMaxCookTime;
+    }
+
+    /** Menu-side mirror of the synced cook duration (client copy only). */
+    public void setFurnaceMaxCookTime(final int value) {
+        furnaceMaxCookTime = value;
+    }
+
+    @Override
+    public boolean stillValid(final Player player) {
+        // The TileSpa seam: a player 8+ blocks away closes the window.
+        if (level.getBlockEntity(worldPosition) != this) {
+            return false;
+        }
+        return player.distanceToSqr(
+                worldPosition.getX() + 0.5, worldPosition.getY() + 0.5, worldPosition.getZ() + 0.5) <= 64.0;
+    }
+
+    // --- MenuProvider (gui_id 9, TC-M7-04-m1) ------------------------------
+
+    @Override
+    public Component getDisplayName() {
+        // The original tile names this window container.alchemyfurnace
+        // ("Alchemical Furnace" in the 1.7.10 lang); the port keys GUI titles
+        // by gui id, the container.thaumcraft.gui_* convention.
+        return Component.translatable("container.thaumcraft.gui_alchemy_furnace");
+    }
+
+    @Override
+    public AbstractContainerMenu createMenu(final int windowId, final Inventory playerInventory,
+                                            final Player player) {
+        return new com.jonnyutah12.thaumcraftclassic.menus.AlchemyFurnaceMenu(
+                windowId, playerInventory, this);
     }
 
     // --- ticking (original updateEntity) ----------------------------------

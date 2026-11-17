@@ -11,6 +11,7 @@ import com.jonnyutah12.thaumcraftclassic.network.payload.FocusChangeToServerPayl
 import com.jonnyutah12.thaumcraftclassic.network.payload.ItemKeyToServerPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.MiscEventPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.NotePayload;
+import com.jonnyutah12.thaumcraftclassic.network.payload.OpenThaumonomiconPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.PlayerCompleteToServerPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.ResearchCompletePayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.RunicChargePayload;
@@ -35,6 +36,7 @@ import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXInfusionSourcePayl
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXShieldPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXSonicPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXVisDrainPayload;
+import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXWardBlockPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXWispZapPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.fx.FXZapPayload;
 import io.netty.buffer.ByteBuf;
@@ -100,6 +102,14 @@ public final class ModNetwork {
         toClient(registrar, ResearchCompletePayload.TYPE, ResearchCompletePayload.STREAM_CODEC, ClientPayloadHandlers::handleResearchComplete);
         toClient(registrar, RunicChargePayload.TYPE, RunicChargePayload.STREAM_CODEC, ClientPayloadHandlers::handleRunicCharge);
 
+        // --- GUI open (S2C) — BOOK-1 / t_1e6b18cc --------------------------------
+        // The port's replacement for FML 1.7.10's GuiOpen packet for a
+        // GuiScreen-only GUI: the Thaumonomicon browser has no container
+        // (GuiResearchBrowser extends GuiScreen), so it cannot ride
+        // 1.21.1's openMenu. See BD-22.
+        toClient(registrar, OpenThaumonomiconPayload.TYPE, OpenThaumonomiconPayload.STREAM_CODEC,
+                ClientPayloadHandlers::handleOpenThaumonomicon);
+
         // --- client-initiated actions (C2S) — original ...ToServer classes ---
         toServer(registrar, ScannedToServerPayload.TYPE, ScannedToServerPayload.STREAM_CODEC, ServerPayloadHandlers::handleScanned);
         toServer(registrar, AspectCombinationToServerPayload.TYPE, AspectCombinationToServerPayload.STREAM_CODEC, ServerPayloadHandlers::handleAspectCombination);
@@ -134,6 +144,7 @@ public final class ModNetwork {
         toClient(registrar, FXEssentiaSourcePayload.TYPE, FXEssentiaSourcePayload.STREAM_CODEC, ClientPayloadHandlers::handleFxEssentiaSource);
         toClient(registrar, FXInfusionSourcePayload.TYPE, FXInfusionSourcePayload.STREAM_CODEC, ClientPayloadHandlers::handleFxInfusionSource);
         toClient(registrar, FXShieldPayload.TYPE, FXShieldPayload.STREAM_CODEC, ClientPayloadHandlers::handleFxShield);
+        toClient(registrar, FXWardBlockPayload.TYPE, FXWardBlockPayload.STREAM_CODEC, ClientPayloadHandlers::handleWardBlock);
         toClient(registrar, FXSonicPayload.TYPE, FXSonicPayload.STREAM_CODEC, ClientPayloadHandlers::handleFxSonic);
         toClient(registrar, FXVisDrainPayload.TYPE, FXVisDrainPayload.STREAM_CODEC, ClientPayloadHandlers::handleFxVisDrain);
         toClient(registrar, FXWispZapPayload.TYPE, FXWispZapPayload.STREAM_CODEC, ClientPayloadHandlers::handleFxWispZap);

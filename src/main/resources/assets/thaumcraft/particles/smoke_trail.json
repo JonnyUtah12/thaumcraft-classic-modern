@@ -1,0 +1,9 @@
+{
+  "textures": [
+    "thaumcraft:particle/smoke_trail_0",
+    "thaumcraft:particle/smoke_trail_1",
+    "thaumcraft:particle/smoke_trail_2",
+    "thaumcraft:particle/smoke_trail_3",
+    "thaumcraft:particle/smoke_trail_4"
+  ]
+}

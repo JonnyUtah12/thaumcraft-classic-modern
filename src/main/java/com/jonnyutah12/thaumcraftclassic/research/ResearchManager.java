@@ -1,8 +1,10 @@
 package com.jonnyutah12.thaumcraftclassic.research;
 
 import com.jonnyutah12.thaumcraftclassic.ThaumcraftClassic;
+import com.jonnyutah12.thaumcraftclassic.api.IScribeTools;
 import com.jonnyutah12.thaumcraftclassic.config.TcConfig;
 import com.jonnyutah12.thaumcraftclassic.config.TcConfigCatalog;
+import com.jonnyutah12.thaumcraftclassic.items.ItemResearchNotes;
 import com.jonnyutah12.thaumcraftclassic.network.payload.AspectPoolPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.PlayerCompleteToServerPayload;
 import com.jonnyutah12.thaumcraftclassic.network.payload.ResearchCompletePayload;
@@ -11,12 +13,16 @@ import com.jonnyutah12.thaumcraftclassic.network.payload.WarpMessagePayload;
 import com.jonnyutah12.thaumcraftclassic.player.ModAttachments;
 import com.jonnyutah12.thaumcraftclassic.player.PlayerKnowledgeData;
 import com.jonnyutah12.thaumcraftclassic.player.PlayerWarpData;
+import com.jonnyutah12.thaumcraftclassic.registration.ModDataComponents;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.M3ResearchContent;
 import com.jonnyutah12.thaumcraftclassic.sound.ModSounds;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayList;
@@ -462,40 +468,189 @@ public final class ResearchManager {
         }
 
         if (payload.requestType() == PlayerCompleteToServerPayload.REQUEST_NOTE) {
-            // TODO(TC-M3-04): createResearchNoteForPlayer — ink/scribe-tool
-            // consumption and the hex-grid note item; the note item itself is a
-            // TC-M6 catalog row. The reveal rules it feeds (findHiddenResearch,
-            // createClue) are implemented here.
-            ThaumcraftClassic.LOGGER.debug("research note requested by {} for {}",
-                    player.getGameProfile().getName(), key);
-            return;
-        }
-
-        final ResearchEntryData entry = graph().entry(key);
-        PlayerKnowledgeData paid = knowledge;
-        if (entry != null && entry.tags() != null) {
-            for (final ResearchEntryData.AspectTag tag : entry.tags()) {
-                paid = paid.withAspectPoolAdded(tag.aspect(), -tag.amount());
-                player.setData(ModAttachments.PLAYER_KNOWLEDGE, paid);
-                PacketDistributor.sendToPlayer(player,
-                        new AspectPoolPayload(tag.aspect(), -tag.amount(), paid.aspectAmount(tag.aspect())));
+            // Original :56-58: the note arm is createResearchNoteForPlayer —
+            // it spends the scribing ink and hands over a puzzle note, and it
+            // never completes research. The completion authority stays the note
+            // item (ItemResearchNotes.completeWithSiblings) and the purchase
+            // arm below; the Thaumonomicon only asks.
+            createResearchNoteForPlayer(player, key);
+        } else {
+            final ResearchEntryData entry = graph().entry(key);
+            PlayerKnowledgeData paid = knowledge;
+            if (entry != null && entry.tags() != null) {
+                for (final ResearchEntryData.AspectTag tag : entry.tags()) {
+                    paid = paid.withAspectPoolAdded(tag.aspect(), -tag.amount());
+                    player.setData(ModAttachments.PLAYER_KNOWLEDGE, paid);
+                    PacketDistributor.sendToPlayer(player,
+                            new AspectPoolPayload(tag.aspect(), -tag.amount(), paid.aspectAmount(tag.aspect())));
+                }
             }
-        }
 
-        PacketDistributor.sendToPlayer(player, new ResearchCompletePayload(key));
-        completeResearch(player, key);
+            PacketDistributor.sendToPlayer(player, new ResearchCompletePayload(key));
+            completeResearch(player, key);
 
-        if (entry != null && entry.siblings() != null) {
-            for (final String sibling : entry.siblings()) {
-                final PlayerKnowledgeData current = player.getData(ModAttachments.PLAYER_KNOWLEDGE);
-                if (!isResearchComplete(current, sibling) && doesPlayerHaveRequisites(current, sibling)) {
-                    PacketDistributor.sendToPlayer(player, new ResearchCompletePayload(sibling));
-                    completeResearch(player, sibling);
+            if (entry != null && entry.siblings() != null) {
+                for (final String sibling : entry.siblings()) {
+                    final PlayerKnowledgeData current = player.getData(ModAttachments.PLAYER_KNOWLEDGE);
+                    if (!isResearchComplete(current, sibling) && doesPlayerHaveRequisites(current, sibling)) {
+                        PacketDistributor.sendToPlayer(player, new ResearchCompletePayload(sibling));
+                        completeResearch(player, sibling);
+                    }
                 }
             }
         }
 
+        // The original plays thaumcraft:learn at 0.75/1.0 after BOTH arms,
+        // inside the requisites gate (PacketPlayerCompleteToServer.java:89-90).
         player.level().playSound(null, player, ModSounds.LEARN.value(), SoundSource.PLAYERS, 0.75F, 1.0F);
+    }
+
+    // ------------------------------------------------- note requests (book arm)
+
+    /**
+     * Original {@code ResearchManager.createResearchNoteForPlayer}
+     * ({@code ResearchManager.java:102-121}), the server answer to the
+     * Thaumonomicon's note request: an inventory slot that already carries a
+     * note for this entry is returned untouched (no ink is spent, no second
+     * note); otherwise, when the player has scribing ink (a scribe tool with
+     * ink left, {@link #consumeInkFromPlayer}, and paper, the original's
+     * {@code inventory.hasItem(Items.paper)} — the MCP field
+     * {@code Items.field_151121_aF} is {@code paper}, and the original's own
+     * hint line names it: {@code tc.research.shortprim} = "You need scribing
+     * tools and paper to get this research note"}), one durability comes off the
+     * scribe tool, the note is generated, and it goes into the inventory —
+     * dropped at the player when there is no room, as the original's
+     * {@code dropPlayerItemWithRandomChoice} fallback did ({@code :111-113}).
+     *
+     * @return the note the player now has, or null when the ink gate failed or
+     *     the entry cannot be a note (no primary tag)
+     */
+    public static ItemStack createResearchNoteForPlayer(final ServerPlayer player, final String key) {
+        final List<ItemStack> rows = player.getInventory().items;
+        final int slot = noteSlot(rows, key);
+        if (slot >= 0) {
+            return rows.get(slot);
+        }
+        if (!(consumeInkFromPlayer(rows, false) && carriesPaper(rows))) {
+            return null;
+        }
+        consumeInkFromPlayer(rows, true);
+        final ItemStack note = createNote(key, player.level());
+        if (note == null) {
+            // The original spent the ink and then dereferenced the null
+            // createNote result. An entry with no primary tag is not a note, so
+            // the ink stays unspent: the same documented guard BD-18 records for
+            // the note item's reveal arm.
+            return null;
+        }
+        if (!player.getInventory().add(note)) {
+            player.drop(note, false);
+        }
+        // The original's tail (ResearchManager.java:115): the stack went into a
+        // slot the open container does not model, so it refreshes the client's
+        // view of the inventory — 1.21.1's detectAndWriteChanges is broadcastChanges.
+        player.inventoryMenu.broadcastChanges();
+        return note;
+    }
+
+    /**
+     * The original's {@code ResearchManager.createNote}
+     * ({@code ResearchManager.java:300-331}) as far as the port generates it:
+     * meta-0 note stack stamped with the entry's generated hex grid
+     * ({@code NotePuzzle.generate}, TC-M3-04-s) — key, primary-aspect colour,
+     * {@code complete} false, {@code copies} 0. Null when the entry has no
+     * primary tag, which is the original's own null return.
+     */
+    static ItemStack createNote(final String key, final Level level) {
+        final ResearchNoteData data =
+                NotePuzzle.generate(graph().entry(key), new Random(level.getRandom().nextLong()));
+        return data == null ? null : ItemResearchNotes.puzzleNote(data);
+    }
+
+    /**
+     * Original {@code ResearchManager.getResearchSlot}
+     * ({@code ResearchManager.java:185-201}): the main-inventory slot holding a
+     * research note whose note data names this entry, or -1.
+     *
+     * @param rows the player's main inventory rows (the original scanned
+     *     {@code inventory.main}, the 36 main slots — never armour or offhand)
+     */
+    public static int noteSlot(final List<ItemStack> rows, final String key) {
+        for (int slot = 0; slot < rows.size(); slot++) {
+            final ItemStack stack = rows.get(slot);
+            if (stack == null || stack.isEmpty()
+                    || !stack.is(M3ResearchContent.ITEM_RESEARCH_NOTES.get())) {
+                continue;
+            }
+            final ResearchNoteData note = stack.get(ModDataComponents.RESEARCH_NOTE.get());
+            if (note != null && key != null && key.equals(note.key())) {
+                return slot;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Original {@code ResearchManager.consumeInkFromPlayer}
+     * ({@code ResearchManager.java:204-217}): the first main-inventory slot
+     * holding a scribe tool ({@link IScribeTools}) with durability left. With
+     * {@code doit} it spends one use of that tool, exactly as the original's
+     * {@code inv[a].damageItem(1, player)} did — damage climbs by one and the
+     * stack is destroyed at the cap.
+     */
+    public static boolean consumeInkFromPlayer(final List<ItemStack> rows, final boolean doit) {
+        for (final ItemStack stack : rows) {
+            if (stack == null || stack.isEmpty()) {
+                continue;
+            }
+            if (stack.getItem() instanceof IScribeTools
+                    && stack.getDamageValue() < stack.getMaxDamage()) {
+                if (doit) {
+                    useScribeInk(stack);
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * The paper half of the original's {@code hasScribestuff}
+     * ({@code GuiResearchBrowser.java:104-108} —
+     * {@code InventoryUtils.isPlayerCarrying(player, new ItemStack(Items.field_151121_aF)) >= 0},
+     * and that MCP field is {@code paper}: {@code reference/mcp-mappings/fields_1.7.10_mcp_stable_11.csv:1723}
+     * {@code field_151121_aF,paper,2,}) and the server's
+     * {@code inventory.hasItem(Items.paper)} ({@code ResearchManager.java:108}).
+     * The paper is required and is NOT consumed — the only cost paid is the one
+     * durability off the scribe tool.
+     */
+    public static boolean carriesPaper(final List<ItemStack> rows) {
+        for (final ItemStack stack : rows) {
+            if (stack != null && !stack.isEmpty() && stack.is(Items.PAPER)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * The original browser's whole {@code hasScribestuff} gate
+     * ({@code GuiResearchBrowser.java:104-108}): a scribe tool with ink left AND
+     * paper carried. The client reads it from its own inventory view, the
+     * server re-reads it from its own, so a spoofed request cannot print notes.
+     */
+    public static boolean hasScribingInk(final List<ItemStack> rows) {
+        return consumeInkFromPlayer(rows, false) && carriesPaper(rows);
+    }
+
+    /** The original's {@code ItemStack.damageItem(1, player)} on one stack. */
+    private static void useScribeInk(final ItemStack tool) {
+        final int damage = tool.getDamageValue() + 1;
+        if (damage >= tool.getMaxDamage()) {
+            tool.shrink(1);
+        } else {
+            tool.setDamageValue(damage);
+        }
     }
 
     /**

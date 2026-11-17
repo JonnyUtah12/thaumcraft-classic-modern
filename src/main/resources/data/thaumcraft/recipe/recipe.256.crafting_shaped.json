@@ -1,0 +1,38 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "KKK",
+    "KKK",
+    "KKK"
+  ],
+  "key": {
+    "K": {
+      "type": "neoforge:components",
+      "items": [
+        "thaumcraft:itemresource"
+      ],
+      "components": {
+        "thaumcraft:item_meta": 9
+      }
+    }
+  },
+  "result": {
+    "id": "thaumcraft:itemresearchnotes",
+    "count": 1,
+    "components": {
+      "thaumcraft:item_meta": 42
+    }
+  },
+  "_source": "decompiled thaumcraft/common/config/ConfigRecipes.java:3860-3865 (Thaumcraft 4.2.3.5): ConfigResearch.recipes.put(\"KnowFrag\", GameRegistry.addShapedRecipe(new ItemStack(ConfigItems.itemResearchNotes, 1, 42), \"KKK\", \"KKK\", \"KKK\", 'K', new ItemStack(ConfigItems.itemResource, 1, 9))) — nine knowledge fragments into one blank discovery note. The original registered the row under the KNOWFRAG research key for its Thaumonomicon page (that entry is setAutoUnlock, so the recipe is never research-gated); the recipe display on a research page is the Thaumonomicon card's, not this row's. Extracted by hand for TC-M3-04-s-iv (t_175d2196) — the vanilla-crafting extractor that produced recipe.N.crafting_shaped rows has no item_meta vocabulary, so the meta-carrying ingredient is written in the registered {\"type\": \"neoforge:components\", ...} Ingredient form.",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresource"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:itemresearchnotes"
+    }
+  ]
+}

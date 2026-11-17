@@ -1,0 +1,73 @@
+{
+  "type": "thaumcraft:arcane_workbench",
+  "research_all": [
+    "CAP_thaumium",
+    "ROD_blaze"
+  ],
+  "aspects": [
+    {
+      "aspect": "aer",
+      "amount": 36
+    },
+    {
+      "aspect": "terra",
+      "amount": 36
+    },
+    {
+      "aspect": "ignis",
+      "amount": 36
+    },
+    {
+      "aspect": "aqua",
+      "amount": 36
+    },
+    {
+      "aspect": "ordo",
+      "amount": 36
+    },
+    {
+      "aspect": "perditio",
+      "amount": 36
+    }
+  ],
+  "pattern": [
+    "  C",
+    " R ",
+    "C  "
+  ],
+  "key": {
+    "C": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandcap",
+      "meta": 2
+    },
+    "R": {
+      "type": "thaumcraft:wand_component",
+      "item": "thaumcraft:wandrod",
+      "meta": 6
+    }
+  },
+  "result": {
+    "id": "thaumcraft:wandcasting",
+    "count": 1,
+    "components": {
+      "thaumcraft:wand_cap": "thaumium",
+      "thaumcraft:wand_rod": "blaze",
+      "thaumcraft:item_meta": 36
+    }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcap"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandrod"
+    },
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumcraft:wandcasting"
+    }
+  ]
+}
