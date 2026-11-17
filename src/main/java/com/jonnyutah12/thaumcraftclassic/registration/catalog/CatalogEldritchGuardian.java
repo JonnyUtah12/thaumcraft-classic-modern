@@ -8,8 +8,11 @@ import com.jonnyutah12.thaumcraftclassic.world.outerlands.EldritchMobHost;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.common.DeferredSpawnEggItem;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
+import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -60,10 +63,14 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  */
 public final class CatalogEldritchGuardian {
 
-    /** Neither mob has a spawn-egg row this slice ships (the egg rows
-     *  {@code content-mapping.csv:354}/{@code :362} are card c6's), so no egg
-     *  item is invented here — the family's rule. Pinned for the unit test. */
-    public static final boolean HAS_SPAWN_EGG_ROW = false;
+    /** Both egg rows shipped with TC-M6-06-s-c6b: the guardian's
+     *  {@code thaumcraft:spawnegg.eldritchguardian} (2236962 / 4210752,
+     *  {@code ConfigEntities.java:108}) and the Shambling Husk's
+     *  {@code thaumcraft:spawnegg.inhabitedzombie} (5601109 / 5570560,
+     *  {@code :124}), registered here as {@code SPAWN_EGG_ELDRITCH_GUARDIAN} +
+     *  {@code SPAWN_EGG_INHABITED_ZOMBIE}. Pinned for {@code EldritchMobGameTest}
+     *  and {@code SpawnEggGameTest}. */
+    public static final boolean HAS_SPAWN_EGG_ROW = true;
 
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
             DeferredRegister.create(Registries.ENTITY_TYPE, ThaumcraftClassic.MOD_ID);
@@ -78,11 +85,61 @@ public final class CatalogEldritchGuardian {
             ENTITY_TYPES.register("inhabitedzombie",
                     () -> EntityInhabitedZombie.buildType(MobCategory.MONSTER));
 
+
+    // --- spawner eggs (TC-M6-06-s-c6b) -------------------------------
+    /**
+     * The egg items of this holder (TC-M6-06-s-c6b). 1.21.1 registers ONE item
+     * per mob, so the original's single meta-indexed {@code ItemSpawnerEgg}
+     * becomes one {@code DeferredSpawnEggItem} per mob under the ledger's
+     * dotted {@code new_id} (BD-40: the dot is part of the id, and the
+     * localization audit resolves the lang key by longest inventoried id
+     * prefix).
+     */
+    public static final DeferredRegister.Items ITEMS =
+            DeferredRegister.createItems(ThaumcraftClassic.MOD_ID);
+
+    /**
+     * {@code thaumcraft:spawnegg.eldritchguardian} — the Eldritch Guardian's spawner egg
+     * (content-mapping {@code Thaumcraft:spawnegg.*}, TC-M6-06-s-c6b). The
+     * original mapped it as one entry of the meta-indexed {@code ItemSpawnerEgg}:
+     * {@code addMapping("EldritchGuardian", 2236962, 4210752)} (ConfigEntities.java:108). Layer 0 takes
+     * the first colour and layer 1 the second ({@code ItemSpawnerEgg#func_82790_a}),
+     * the order {@code SpawnEggItem#getColor(int)} answers in, so the pair goes
+     * in as background / highlight. The id keeps the ledger's dot verbatim; its
+     * model is {@code models/item/spawnegg.eldritchguardian.json} (the vanilla egg
+     * template) and its label is the lang key
+     * {@code item.thaumcraft.spawnegg.eldritchguardian}.
+     */
+    public static final DeferredItem<DeferredSpawnEggItem> SPAWN_EGG_ELDRITCH_GUARDIAN =
+            ITEMS.register("spawnegg.eldritchguardian", () -> new DeferredSpawnEggItem(
+                    ELDRITCH_GUARDIAN::get, 2236962, 4210752, new Item.Properties()));
+
+
+
+
+    /**
+     * {@code thaumcraft:spawnegg.inhabitedzombie} — the Shambling Husk's spawner egg
+     * (content-mapping {@code Thaumcraft:spawnegg.*}, TC-M6-06-s-c6b). The
+     * original mapped it as one entry of the meta-indexed {@code ItemSpawnerEgg}:
+     * {@code addMapping("InhabitedZombie", 5601109, 5570560)} (ConfigEntities.java:124). Layer 0 takes
+     * the first colour and layer 1 the second ({@code ItemSpawnerEgg#func_82790_a}),
+     * the order {@code SpawnEggItem#getColor(int)} answers in, so the pair goes
+     * in as background / highlight. The id keeps the ledger's dot verbatim; its
+     * model is {@code models/item/spawnegg.inhabitedzombie.json} (the vanilla egg
+     * template) and its label is the lang key
+     * {@code item.thaumcraft.spawnegg.inhabitedzombie}.
+     */
+    public static final DeferredItem<DeferredSpawnEggItem> SPAWN_EGG_INHABITED_ZOMBIE =
+            ITEMS.register("spawnegg.inhabitedzombie", () -> new DeferredSpawnEggItem(
+                    INHABITED_ZOMBIE::get, 5601109, 5570560, new Item.Properties()));
+
+
     private CatalogEldritchGuardian() {
     }
 
     public static void init(final IEventBus modEventBus) {
         ENTITY_TYPES.register(modEventBus);
+        ITEMS.register(modEventBus);
         modEventBus.addListener(CatalogEldritchGuardian::onAttributeCreation);
         // The guardian's summon claim (see the javadoc): the structures' and the
         // warp lane's summon builds the registered type at the cell they picked.

@@ -48,6 +48,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
@@ -309,11 +310,18 @@ public final class EldritchCrabGameTest {
                         && EntityEldritchCrab.FIRE_IMMUNE == false,
                 "neither the crab's 215 lines nor the orb's 92 set isImmuneToFire, and no builder"
                         + " calls EntityType.Builder#fireImmune");
-        // The crab has no spawn-egg row in the content mapping, so no egg item.
-        helper.assertTrue(!CatalogEldritchCrab.HAS_SPAWN_EGG_ROW
-                        && !BuiltInRegistries.ITEM.containsKey(ResourceLocation
-                                .fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "spawnegg.eldritchcrab")),
-                "no egg row means no invented egg item");
+        // The crab's egg row is :122's (5592405 / 5570560). It shipped with
+        // TC-M6-06-s-c6b, so the item exists and spawns the crab of this row —
+        // measured per-egg across all 15 by SpawnEggGameTest.
+        final ResourceLocation crabEgg = ResourceLocation
+                .fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "spawnegg.eldritchcrab");
+        helper.assertTrue(CatalogEldritchCrab.HAS_SPAWN_EGG_ROW
+                        && BuiltInRegistries.ITEM.containsKey(crabEgg)
+                        && BuiltInRegistries.ITEM.get(crabEgg) instanceof SpawnEggItem
+                        && ((SpawnEggItem) BuiltInRegistries.ITEM.get(crabEgg))
+                                .getType(ItemStack.EMPTY) == crab,
+                ":122 — the crab's egg row shipped with TC-M6-06-s-c6b: the item must exist under "
+                        + crabEgg + " and spawn thaumcraft:eldritchcrab");
         helper.succeed();
     }
 

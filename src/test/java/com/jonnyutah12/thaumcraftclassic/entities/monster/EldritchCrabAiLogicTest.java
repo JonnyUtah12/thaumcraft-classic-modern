@@ -58,10 +58,13 @@ class EldritchCrabAiLogicTest {
     }
 
     @Test
-    void theCrabHasNoEggRow() {
-        // No thaumcraft:spawn_egg entry names the crab (content-mapping has no
-        // egg row for it), so no egg item is registered by this slice.
-        assertFalse(CatalogEldritchCrab.HAS_SPAWN_EGG_ROW);
+    void theCrabEggRowShippedWithTheEggSlice() {
+        // The crab's egg row Thaumcraft:spawnegg.EldritchCrab is the ledger row
+        // of ConfigEntities.java:122's addMapping("EldritchCrab", 5592405,
+        // 5570560); it shipped in TC-M6-06-s-c6b, so the constant now answers
+        // true and the registered item is measured by the game leg
+        // (SpawnEggGameTest + EldritchCrabGameTest).
+        assertTrue(CatalogEldritchCrab.HAS_SPAWN_EGG_ROW);
     }
 
     // ---------------------------------------------------------------- size

@@ -19,6 +19,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaTra
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogGolems;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogInfusion;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogMobSpawns;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogPech;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResearchBook;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogResources;
@@ -301,6 +302,13 @@ public final class ModRegistration {
         // from the documented no-op into the live seam. Renderer TC-M7-03,
         // spawn-egg rows TC-M6-06-s-c6.
         CatalogEldritchGuardian.init(modEventBus);
+
+        // TC-M6-06-s-c6b: the monster roster's biome spawn lists. The five
+        // addSpawn calls of ConfigEntities.initEntitySpawns (:157-187) ship as
+        // data/thaumcraft/neoforge/biome_modifier/*.json; this holder registers
+        // the one code piece they need — the thaumcraft:halloween_spawns
+        // serializer behind the calendar-gated Firebat entry (:178-181).
+        CatalogMobSpawns.init(modEventBus);
 
         // Modded registries (TC-M4-01): the aspect registry is created via
         // NewRegistryEvent and its 48 holders attach here, same constructor-

@@ -24,6 +24,8 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.item.SpawnEggItem;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
@@ -250,8 +252,17 @@ public final class EldritchMobGameTest {
                 ":159-161 — the guardian is not fire-immune on either engine");
         helper.assertTrue(CatalogEldritchGuardian.ELDRITCH_GUARDIAN.get() == guardian,
                 "the catalog's ELDRITCH_GUARDIAN holder is not the registered type");
-        helper.assertTrue(CatalogEldritchGuardian.HAS_SPAWN_EGG_ROW == false,
-                ":113 — the guardian's egg is the guardian row's egg (mod_index 56), not a row");
+        // The guardian's egg row shipped with TC-M6-06-s-c6b (2236962 / 4210752,
+        // :108): the item exists under the ledger's dotted id and spawns the guardian.
+        final ResourceLocation guardianEgg = ResourceLocation
+                .fromNamespaceAndPath(ThaumcraftClassic.MOD_ID, "spawnegg.eldritchguardian");
+        helper.assertTrue(CatalogEldritchGuardian.HAS_SPAWN_EGG_ROW
+                        && BuiltInRegistries.ITEM.containsKey(guardianEgg)
+                        && BuiltInRegistries.ITEM.get(guardianEgg) instanceof SpawnEggItem
+                        && ((SpawnEggItem) BuiltInRegistries.ITEM.get(guardianEgg))
+                                .getType(ItemStack.EMPTY) == guardian,
+                ":108 — the guardian's egg row shipped with TC-M6-06-s-c6b: the item must exist under "
+                        + guardianEgg + " and spawn thaumcraft:eldritchguardian");
 
         final EntityType<?> zombie = registered(helper, "inhabitedzombie");
         helper.assertTrue(Math.abs(zombie.getDimensions().width() - InhabitedZombieAiLogic.WIDTH) < 1.0E-4F
