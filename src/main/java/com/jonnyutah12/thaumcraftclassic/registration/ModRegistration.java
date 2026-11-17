@@ -15,6 +15,7 @@ import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEldritchRea
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogMindSpider;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogOuterLands;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaStorage;
+import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFoci;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogEssentiaTransport;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogFurniture;
 import com.jonnyutah12.thaumcraftclassic.registration.catalog.CatalogGolems;
@@ -83,6 +84,7 @@ public final class ModRegistration {
         // shared ModItems holder; class-init trigger only, no new bus wiring.
         CatalogBaubles.init(); // TC-M8-02 bauble items
         CatalogWands.init(modEventBus); // TC-M6-01 wand items + thaumcraft:wand_component registry
+        CatalogFoci.init(); // TC-M6-02 focus items + the focus pouch
 
         ModDataComponents.DATA_COMPONENT_TYPES.register(modEventBus);
         ModLootNumberProviders.register(modEventBus); // SPINE-1 fortuned_uniform rolls

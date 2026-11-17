@@ -141,6 +141,10 @@ class LocalizationFileTest {
             "item.thaumcraft.itemgolemupgrade.4.desc", "item.thaumcraft.itemgolemupgrade.5.desc",
             "tc.adv",
             "item.capacity.text", "item.ItemAmuletVis.text",
+            // TC-M6-02: the per-cast / per-tick focus cost lines ItemFocus emits
+            // (the original item.Focus.cost1 / item.Focus.cost2 keys, kept in the
+            // port's one-suffix shape).
+            "item.thaumcraft.focus.cost1", "item.thaumcraft.focus.cost2",
             "item.thaumcraft.itemresearchnotes.discovery",
             "item.researchnotes.unknown.1", "item.researchnotes.unknown.2",
             "tc.forbidden", "tc.forbidden.level.1", "tc.forbidden.level.2",
