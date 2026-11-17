@@ -498,5 +498,13 @@
   "container.thaumcraft.wand_slot_hint": "Wand slot: the workbench pays its vis from here",
   "warp.text.6": "A thick fog appears from nowhere. Something stirs in its depths.",
   "warp.text.7": "They're everywhere! Run!",
-  "warp.text.14": "You have a moment of clarity."
+  "warp.text.14": "You have a moment of clarity.",
+  "item.thaumcraft.spawnegg.brainyzombie": "Angry Zombie Spawn Egg",
+  "item.thaumcraft.spawnegg.giantbrainyzombie": "Furious Zombie Spawn Egg",
+  "item.thaumcraft.spawnegg.wisp": "Wisp Spawn Egg",
+  "item.thaumcraft.spawnegg.firebat": "Firebat Spawn Egg",
+  "item.thaumcraft.spawnegg.eldritchwarden": "Eldritch Warden Spawn Egg",
+  "item.thaumcraft.spawnegg.pech": "Pech Forager Spawn Egg",
+  "item.thaumcraft.spawnegg.mindspider": "Mind Spider Spawn Egg",
+  "item.thaumcraft.spawnegg.eldritchguardian": "Eldritch Guardian Spawn Egg"
 }
